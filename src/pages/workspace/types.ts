@@ -1,0 +1,145 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKSPACE SETTINGS — SHARED TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface WorkspaceInfo {
+  workspaceName: string;
+  workspaceId: string;
+  timezone: string;
+  language: string;
+  dateFormat: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+}
+
+export interface NotificationPrefs {
+  email: boolean;
+  browser: boolean;
+  mobile: boolean;
+  mentions: boolean;
+  assignments: boolean;
+  newConversations: boolean;
+}
+
+export type AvailabilityStatus = 'online' | 'busy' | 'offline';
+
+export interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: 'Active' | 'Invited';
+  avatar: string;
+}
+
+export type ChannelType = 'whatsapp' | 'instagram' | 'facebook' | 'gmail' | 'email';
+
+export interface Channel {
+  id: number;
+  name: string;
+  identifier: string;
+  status: 'Connected' | 'Error';
+  icon: string;
+  color: string;
+  msgs: number;
+  channelType?: ChannelType;
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  category: string;
+  connected: boolean;
+}
+
+export interface WidgetConfig {
+  color: string;
+  position: string;
+  greeting: string;
+  showOnMobile: boolean;
+  autoOpen: boolean;
+  delay: string;
+}
+
+export interface ContactField {
+  id: number;
+  name: string;
+  type: string;
+  required: boolean;
+  system: boolean;
+}
+
+export interface LifecycleStage {
+  id: number;
+  name: string;
+  color: string;
+  count: number;
+}
+
+export interface ClosingNoteTemplate {
+  id: number;
+  title: string;
+  text: string;
+}
+
+export interface ClosingNoteSettings {
+  required: boolean;
+  templates: ClosingNoteTemplate[];
+}
+
+export interface Snippet {
+  id: number;
+  shortcut: string;
+  title: string;
+  content: string;
+}
+
+export interface ConversationTag {
+  id: number;
+  name: string;
+  color: string;
+  count: number;
+}
+
+export interface AISettings {
+  enabled: boolean;
+  autoSuggest: boolean;
+  tone: string;
+  language: string;
+  summarize: boolean;
+  sentiment: boolean;
+  translate: boolean;
+  smartReply: boolean;
+}
+
+export interface AIPrompt {
+  id: number;
+  name: string;
+  prompt: string;
+  active: boolean;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description: string;
+  memberIds: number[];
+}
+
+export interface CallSettings {
+  enabled: boolean;
+  recording: boolean;
+  voicemail: boolean;
+  transcription: boolean;
+  holdMusic: boolean;
+  callerId: string;
+  maxDuration: string;
+  voicemailGreeting: string;
+}
