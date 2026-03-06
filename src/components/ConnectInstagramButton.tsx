@@ -8,15 +8,12 @@ const REDIRECT_URI = import.meta.env.VITE_META_REDIRECT_URI;
 const scopes = [
   // "instagram_basic",
   // "instagram_manage_messages",
-  // "pages_show_list",
   // "pages_manage_metadata"
-  // "pages_messaging",
-
+  
+  "pages_show_list",
+  "pages_messaging",
 "instagram_basic",  
-"instagram_business_manage_messages",
-"instagram_manage_messages"
-
-// "pages_manage_metadata"
+"pages_manage_metadata"
   // "business_management", "whatsapp_business_management", "whatsapp_business_messaging", "public_profile"
 ].join(",");
 
@@ -29,7 +26,11 @@ export default function ConnectInstagramButton() {
       `?client_id=${APP_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&scope=${scopes}` +
-      `&response_type=code`;
+      `&response_type=code` +
+            `&state=teststate123`
+
+      
+      ;
 
     window.location.href = oauthUrl;
   };
