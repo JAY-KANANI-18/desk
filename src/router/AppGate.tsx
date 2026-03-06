@@ -14,7 +14,7 @@ export const AppGate = () => {
   
   // if (isLoading || orgLoading || organizations == null) {
   //   return <div>Loading...</div>;
-  }
+  // }
 
   if (!user) {
     return <AppRouter />;
