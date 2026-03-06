@@ -10,10 +10,10 @@ const scopes = [
   // "instagram_manage_messages",
   // "pages_show_list",
   // "pages_manage_metadata"
-  "instagram_business_basic",
+  "pages_messaging",
 
-"instagram_manage_comments",  
-"instagram_business_manage_messages"
+"instagram_basic",  
+"pages_manage_metadata"
   // "business_management", "whatsapp_business_management", "whatsapp_business_messaging", "public_profile"
 ].join(",");
 
