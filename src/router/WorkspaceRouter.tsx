@@ -34,6 +34,10 @@ export const WorkspaceRouter = () => {
 
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/inbox" replace />} />
+<Route
+  path="meta/instagram/callback"
+  element={<InstagramCallback />}
+/>
 
         <Route path="inbox" element={<InboxLayout />}>
           <Route index element={<InboxPage />} />
@@ -47,10 +51,6 @@ export const WorkspaceRouter = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="channels" element={<Channels />} />
 
-<Route
-  path="/meta/instagram/callback"
-  element={<InstagramCallback />}
-/>
 
         <Route
           path="channel/connect/:channelId"
