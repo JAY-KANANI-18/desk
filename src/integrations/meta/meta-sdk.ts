@@ -21,7 +21,7 @@ export function getMetaSDK(): Promise<any> {
         appId: import.meta.env.VITE_META_APP_ID,
         cookie: true,
         xfbml: false,
-        version: "v19.0",
+        version: "v22.0",
       });
 
       resolve(FB);

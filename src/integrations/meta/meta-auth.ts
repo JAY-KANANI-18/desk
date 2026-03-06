@@ -11,6 +11,10 @@ export async function loginWithMeta(channel: "whatsapp" | "messenger" | "instagr
       options.response_type = "code";
       options.display = "popup";
       options.override_default_response_type = true;
+      options.extras = {
+  feature: "whatsapp_embedded_signup",
+  sessionInfoVersion: 2
+};
       // options.redirect_uri = import.meta.env.META_REDIRECT_URI;
     }
 
