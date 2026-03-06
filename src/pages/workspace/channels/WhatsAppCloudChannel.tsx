@@ -5,6 +5,7 @@ import type { Channel } from '../types';
 import type { WhatsAppConfig, FBAuthResponse } from './types';
 import { ChannelApi } from '../../../lib/channelApi';
 import MetaConnectButton from '../../../components/MetaConnectButton';
+import ConnectWhatsAppButtonPage from '../../../components/DynamicMetaConnectButton';
 
 // Declare FB SDK global (loaded via script tag in production)
 declare const FB: any;
@@ -347,12 +348,19 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect }: Pro
               : <><FBIcon />Continue with Facebook</>}
           </button> */}
 
-            <MetaConnectButton
+            {/* <MetaConnectButton
         channel="whatsapp"
         onSuccess={(auth) => {          console.log('Meta auth successful:', auth);
-          // You can call your backend API here to exchange the auth response for a channel connection
-          // For example:
-          // channelApi.connectWhatsAppViaFB(auth).then(channel => onConnect(channel)).catch(err => setError('Connection failed. Please try again.'));
+         
+        }}
+
+      /> */}
+
+      <ConnectWhatsAppButtonPage
+        onConnected={() => {
+          setError(null);
+          setConnecting(false);
+          // Optionally refresh channels list here
         }}
       />
           <p className="text-[11px] text-gray-400 text-center">

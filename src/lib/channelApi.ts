@@ -30,6 +30,8 @@ webhookSecret
     deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),
     sendMessage: (channelId: string, conversationId: string, message: any) =>
         api.post(`/channels/message`, { channelId, conversationId, ...message }),
+    startOauthWhatsapp: (workspaceId: string) =>
+        api.get(`/channels/whatsapp/oauth?workspaceId=${workspaceId}`),
 
 }
 
