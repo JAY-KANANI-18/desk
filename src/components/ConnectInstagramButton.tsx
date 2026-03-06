@@ -6,10 +6,14 @@ const APP_ID = import.meta.env.VITE_META_APP_ID;
 const REDIRECT_URI = import.meta.env.VITE_META_REDIRECT_URI;
 
 const scopes = [
-  "instagram_basic",
-  "instagram_manage_messages",
-  "pages_show_list",
-  "pages_manage_metadata"
+  // "instagram_basic",
+  // "instagram_manage_messages",
+  // "pages_show_list",
+  // "pages_manage_metadata"
+  "instagram_business_basic",
+
+"instagram_manage_comments",  
+"instagram_business_manage_messages"
   // "business_management", "whatsapp_business_management", "whatsapp_business_messaging", "public_profile"
 ].join(",");
 
