@@ -1,9 +1,11 @@
 import React, {
   createContext, useContext, useState,
   useCallback, useRef,
+  useEffect,
 } from 'react';
 import { playNotificationSound } from '../lib/notificationSound';
 import type { NotificationSoundType } from '../lib/notificationSound';
+import { useSocket } from '../socket/socket-provider';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -61,6 +63,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [unreadCount, setUnreadCount]     = useState(0);
   const [soundEnabled, setSoundEnabled]   = useState(true);
 
+const socket = useSocket(); 
+  useEffect(() => {
+
+  if (!socket) return;
+
+  socket.on("notification:new", (data) => {
+    console.log("Notification", data);
+  });
+
+  return () => {
+    socket.off("notification:new");
+  };
+
+}, [socket]);
   // Keep a ref so intervals/callbacks always see the latest value
   const soundEnabledRef = useRef(soundEnabled);
   soundEnabledRef.current = soundEnabled;

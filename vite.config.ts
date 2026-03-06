@@ -18,4 +18,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+   server: {
+    host: true,
+    // https: true,
+    allowedHosts: [
+      ".ngrok-free.dev",
+      ".ngrok.io",
+      ".axorainfotech.com"
+    ]
+  }
 });

@@ -1,24 +1,25 @@
-import { useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import { InboxProvider, useInbox } from '../context/InboxContext';
-import { SubSidebar }       from './inbox/SubSidebar';
-import { ConversationList } from './inbox/ConversationList';
-import { ChatHeader }       from './inbox/ChatHeader';
-import { MessageArea }      from './inbox/MessageArea';
-import { InputArea }        from './inbox/InputArea';
-import { ContactSidebar }   from './inbox/ContactSidebar';
-import type { Conversation } from './inbox/types';
+import { useEffect, useCallback } from "react";
+import { useParams, useNavigate, Outlet } from "react-router-dom";
+import { InboxProvider, useInbox } from "../context/InboxContext";
+import { SubSidebar } from "./inbox/SubSidebar";
+import { ConversationList } from "./inbox/ConversationList";
+import { ChatHeader } from "./inbox/ChatHeader";
+import { MessageArea } from "./inbox/MessageArea";
+import { InputArea } from "./inbox/InputArea";
+import { ContactSidebar } from "./inbox/ContactSidebar";
+import type { Conversation } from "./inbox/types";
 
 // ─── Inner page — reads from InboxContext, syncs with URL param ───────────────
 export function InboxPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
+  console.log("INBOX PAGE");
 
   const {
     convList,
     selectedConversation,
     messages,
-    channelOverrides,
+    // channelOverrides,
     selectedChannel,
     inputMode,
     snoozedUntil,
@@ -26,14 +27,27 @@ export function InboxPage() {
     msgSearchOpen,
     msgSearch,
     selectConversation,
-    addMessage,
+      channels,
     handleChannelChange,
     setInputMode,
     setSnoozedUntil,
     setChatStatus,
     toggleMsgSearch,
     setMsgSearch,
+    sendMessage,
   } = useInbox();
+
+  console.log({selectedChannel,channels});
+  
+  const handleSendMessage = useCallback(
+    (msg) => {
+      console.log("SENDING MESSAGE", msg);
+      return sendMessage(msg);
+      
+
+    },
+    [sendMessage]
+  );
 
   // Redirect /inbox → /inbox/:firstId on mount or when convList loads
   useEffect(() => {
@@ -47,15 +61,18 @@ export function InboxPage() {
     if (!conversationId) return;
     const id = Number(conversationId);
     if (id === selectedConversation.id) return;
-    const conv = convList.find(c => c.id === id);
+    const conv = convList.find((c) => c.id === id);
     if (conv) selectConversation(conv);
   }, [conversationId, convList]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wrap selectConversation to also push URL
-  const handleSelectConversation = useCallback((conv: Conversation) => {
-    selectConversation(conv);
-    navigate(`/inbox/${conv.id}`);
-  }, [selectConversation, navigate]);
+  const handleSelectConversation = useCallback(
+    (conv: Conversation) => {
+      selectConversation(conv);
+      navigate(`/inbox/${conv.id}`);
+    },
+    [selectConversation, navigate]
+  );
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -65,7 +82,7 @@ export function InboxPage() {
         conversations={convList}
         selectedConversation={selectedConversation}
         onSelectConversation={handleSelectConversation}
-        channelOverrides={channelOverrides}
+        channels={channels}
       />
 
       <div className="flex-1 flex flex-col bg-white min-w-0">
@@ -87,7 +104,10 @@ export function InboxPage() {
           msgSearchOpen={msgSearchOpen}
           msgSearch={msgSearch}
           onMsgSearchChange={setMsgSearch}
-          onCloseMsgSearch={() => { setMsgSearch(''); toggleMsgSearch(); }}
+          onCloseMsgSearch={() => {
+            setMsgSearch("");
+            toggleMsgSearch();
+          }}
         />
         <InputArea
           key={selectedConversation.id}
@@ -96,7 +116,8 @@ export function InboxPage() {
           selectedConversation={selectedConversation}
           selectedChannel={selectedChannel}
           onChannelChange={handleChannelChange}
-          onSendMessage={addMessage}
+          channels={channels}
+          onSendMessage={handleSendMessage}
         />
       </div>
 

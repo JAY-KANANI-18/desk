@@ -6,6 +6,7 @@ import {
   MessageSquare, Zap, Globe,
 } from 'lucide-react';
 import { CHANNEL_TYPE_TO_SLUG } from './channels/ManageChannelPage';
+import { ChannelApi } from '../lib/channelApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ConnectedChannel {
@@ -264,7 +265,7 @@ const ConnectedChannelsView = ({
     navigate(`/channel/manage/${slug}/${ch.id}`, { state: { channel: ch } });
   };
 
-  const errorChannels = channels.filter(c => c.status === 'Error');
+  const errorChannels = channels?.filter(c => c?.status === 'Error');
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -309,10 +310,10 @@ const ConnectedChannelsView = ({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Connected', value: channels.filter(c => c.status === 'Connected').length, icon: <CheckCircle2 size={18} className="text-green-500" />, bg: 'bg-green-50' },
-            { label: 'With errors', value: channels.filter(c => c.status === 'Error').length, icon: <XCircle size={18} className="text-red-500" />, bg: 'bg-red-50' },
-            { label: 'Total messages', value: channels.reduce((s, c) => s + c.msgs, 0).toLocaleString(), icon: <MessageSquare size={18} className="text-blue-500" />, bg: 'bg-blue-50' },
-            { label: 'Total channels', value: channels.length, icon: <Zap size={18} className="text-purple-500" />, bg: 'bg-purple-50' },
+            { label: 'Connected', value: channels?.filter(c => c?.status === 'Connected').length, icon: <CheckCircle2 size={18} className="text-green-500" />, bg: 'bg-green-50' },
+            { label: 'With errors', value: channels?.filter(c => c?.status === 'Error').length, icon: <XCircle size={18} className="text-red-500" />, bg: 'bg-red-50' },
+            { label: 'Total messages', value: channels?.reduce((s, c) => s + (c?.msgs || 0), 0).toLocaleString(), icon: <MessageSquare size={18} className="text-blue-500" />, bg: 'bg-blue-50' },
+            { label: 'Total channels', value: channels?.length, icon: <Zap size={18} className="text-purple-500" />, bg: 'bg-purple-50' },
           ].map(stat => (
             <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
               <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center`}>
@@ -352,19 +353,19 @@ const ConnectedChannelsView = ({
                   key={ch.id}
                   className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors group"
                 >
-                  <div className={`w-11 h-11 ${ch.color} rounded-xl flex items-center justify-center text-xl flex-shrink-0 shadow-sm`}>
+                  {/* <div className={`w-11 h-11 ${ch.color} rounded-xl flex items-center justify-center text-xl flex-shrink-0 shadow-sm`}>
                     {ch.icon}
-                  </div>
+                  </div> */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{ch.name}</p>
                     <p className="text-xs text-gray-500 truncate">{ch.type} · {ch.identifier}</p>
                   </div>
                   <div className="hidden md:block text-right mr-2">
-                    <p className="text-sm font-semibold text-gray-800">{ch.msgs.toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-gray-800">{ch?.msgs?.toLocaleString()}</p>
                     <p className="text-xs text-gray-400">messages</p>
                   </div>
                   <div className="hidden lg:block text-right mr-2">
-                    <p className="text-xs text-gray-500">Since {ch.connectedAt}</p>
+                    <p className="text-xs text-gray-500">Since {ch?.connectedAt}</p>
                   </div>
                   <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${
                     ch.status === 'Connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
@@ -594,6 +595,19 @@ export const Channels = () => {
   const location = useLocation();
   const [view, setView] = useState<'channels' | 'catalog'>('channels');
   const [channels, setChannels] = useState<ConnectedChannel[]>(CONNECTED_CHANNELS);
+
+
+  useEffect(() => {
+
+
+     ChannelApi.getChannels().then(chs => {
+      console.log({chs});
+      
+      setChannels(chs);
+     });
+   
+  }, []); 
+
 
   // Pick up newly connected channel coming back from a connect page
   useEffect(() => {

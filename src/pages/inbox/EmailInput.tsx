@@ -22,9 +22,10 @@ function getAttachmentType(file: File): AttachmentType {
 }
 
 interface EmailInputProps {
+  channels: any[] | null;
   selectedConversation: Conversation;
-  selectedChannel: string;
-  onChannelChange: (channel: string) => void;
+  selectedChannel: any;
+  onChannelChange: (channel: any) => void;
   onSendMessage: (msg: Message) => void;
 }
 
@@ -49,7 +50,7 @@ const formatButtons: (FormatBtn | 'sep')[] = [
   { icon: <AlignRight size={14} />,    command: 'justifyRight',  title: 'Align right'        },
 ];
 
-export function EmailInput({ selectedConversation, selectedChannel, onChannelChange, onSendMessage }: EmailInputProps) {
+export function EmailInput({ channels, selectedConversation, selectedChannel, onChannelChange, onSendMessage }: EmailInputProps) {
   const [to,      setTo]      = useState(selectedConversation.name);
   const [cc,      setCc]      = useState('');
   const [bcc,     setBcc]     = useState('');
@@ -70,7 +71,7 @@ export function EmailInput({ selectedConversation, selectedChannel, onChannelCha
   const variableDropdownRef = useRef<HTMLDivElement>(null);
   const channelRef          = useRef<HTMLDivElement>(null);
 
-  const ch = channelConfig[selectedChannel] ?? channelConfig['email'];
+  const ch = channelConfig[selectedChannel?.type] ?? channelConfig['email'];
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
@@ -244,17 +245,17 @@ export function EmailInput({ selectedConversation, selectedChannel, onChannelCha
           {channelMenuOpen && (
             <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1.5">Send via channel</p>
-              {Object.entries(channelConfig).map(([key, cfg]) => (
+              {channels?.map((ch) => (
                 <button
-                  key={key}
-                  onClick={() => { onChannelChange(key); setChannelMenuOpen(false); }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel === key ? 'bg-gray-50' : ''}`}
+                  key={ch.id}
+                  onClick={() => { onChannelChange(ch); setChannelMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${cfg.bg}`}>
-                    {cfg.icon}
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${channelConfig[ch.ty].bg}`}>
+                    {channelConfig[ch.ty].icon}
                   </span>
-                  <span className="flex-1 text-left font-medium text-gray-700">{cfg.label}</span>
-                  {selectedChannel === key && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+                  <span className="flex-1 text-left font-medium text-gray-700">{channelConfig[ch.ty].label}</span>
+                  {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
                 </button>
               ))}
             </div>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Eye, EyeOff, CheckCircle, ExternalLink, AlertCircle } from 'lucide-react';
-import { channelApi } from './channelApi';
 import { DUMMY_MODE } from '../api';
 import type { Channel } from '../types';
 import type { WhatsAppConfig, FBAuthResponse } from './types';
+import { ChannelApi } from '../../../lib/channelApi';
+import MetaConnectButton from '../../../components/MetaConnectButton';
 
 // Declare FB SDK global (loaded via script tag in production)
 declare const FB: any;
@@ -90,10 +91,10 @@ const SETUP_STEPS = [
 
 // ── Credential fields ─────────────────────────────────────────────────────────
 const CRED_FIELDS = [
-  { key: 'phoneNumberId', label: 'Phone Number ID',              placeholder: '1234567890',    hint: 'Found in Meta Business Suite → WhatsApp → API Setup' },
-  { key: 'wabaId',        label: 'WhatsApp Business Account ID', placeholder: '9876543210',    hint: 'Your WABA ID from Meta Business Manager' },
-  { key: 'accessToken',   label: 'Permanent Access Token',       placeholder: 'EAAxxxxxxxx…',  type: 'password', hint: 'Generate a permanent token in Meta Business Suite' },
-  { key: 'webhookSecret', label: 'Webhook Verify Token',         placeholder: 'my_secret_token', hint: 'A secret string you choose to verify webhook calls' },
+  { key: 'phoneNumberId', label: 'Phone Number ID', placeholder: '1234567890', hint: 'Found in Meta Business Suite → WhatsApp → API Setup' },
+  { key: 'wabaId', label: 'WhatsApp Business Account ID', placeholder: '9876543210', hint: 'Your WABA ID from Meta Business Manager' },
+  { key: 'accessToken', label: 'Permanent Access Token', placeholder: 'EAAxxxxxxxx…', type: 'password', hint: 'Generate a permanent token in Meta Business Suite' },
+  { key: 'webhookSecret', label: 'Webhook Verify Token', placeholder: 'my_secret_token', hint: 'A secret string you choose to verify webhook calls' },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -113,8 +114,14 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect }: Pro
     setConnecting(true);
     setError(null);
     try {
-      const channel = await channelApi.connectWhatsApp(form);
-      onConnect(channel);
+      console.log({ form });
+
+      const channel = await ChannelApi.whatsappManualConnect( form.accessToken,
+        form.phoneNumberId,
+        form.wabaId,
+        form.webhookSecret, 
+      );  
+      // onConnect(channel);
     } catch {
       setError('Failed to connect. Please check your credentials and try again.');
     } finally {
@@ -330,7 +337,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect }: Pro
               <AlertCircle size={13} className="flex-shrink-0" /> {error}
             </div>
           )}
-          <button
+          {/* <button
             onClick={handleFBLogin}
             disabled={connecting}
             className="w-full flex items-center justify-center gap-2.5 py-3 bg-[#1877F2] text-white rounded-xl font-semibold text-sm hover:bg-[#166FE5] transition-colors disabled:opacity-60 shadow-sm"
@@ -338,7 +345,16 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect }: Pro
             {connecting
               ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Connecting…</>
               : <><FBIcon />Continue with Facebook</>}
-          </button>
+          </button> */}
+
+            <MetaConnectButton
+        channel="whatsapp"
+        onSuccess={(auth) => {          console.log('Meta auth successful:', auth);
+          // You can call your backend API here to exchange the auth response for a channel connection
+          // For example:
+          // channelApi.connectWhatsAppViaFB(auth).then(channel => onConnect(channel)).catch(err => setError('Connection failed. Please try again.'));
+        }}
+      />
           <p className="text-[11px] text-gray-400 text-center">
             You'll authorize access to your WhatsApp Business account via Meta.
           </p>

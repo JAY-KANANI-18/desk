@@ -22,37 +22,37 @@ export type MediaAttachment = {
 
 export type Message = {
   id: number;
-  conversationId: number;
+  conversationId?: number;
   type: 'reply' | 'comment';
   text: string;
   author: string;
   initials: string;
   time: string;
   status?: MessageStatus;
+  direction?: ChatDirection;
   channel?: string;
   attachments?: MediaAttachment[];
 };
 
 export type Conversation = {
   id: number;
-  name: string;
-  message: string;
+
+  lastMessage: Message;
   time: string;
   unreadCount: number;
   tag: string;
-  avatar: string;
-  channel: string;
-  direction: ChatDirection;
+  channel: any;
+  contact: Contact;
 };
 
 export type CallLog = {
   id: number;
-  name: string;
-  avatar: string;
+  contact: Contact;
   direction: CallDirection;
   duration: string;
   time: string;
   tag: string;
+
 };
 
 export type ChannelConfig = {
@@ -63,8 +63,9 @@ export type ChannelConfig = {
 
 export interface Contact {
   id: number;
-  conversationId: number;
-  name: string;
+  conversationId?: number;
+  firstName: string;
+  lastName?: string;
   email: string;
   phone: string;
   company: string;

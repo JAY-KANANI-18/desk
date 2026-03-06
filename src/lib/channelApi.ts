@@ -1,0 +1,35 @@
+import axios, { AxiosInstance } from 'axios';
+import { api } from './api';
+
+interface Channel {
+    id: string;
+    name: string;
+    type: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface CreateChannelPayload {
+    name: string;
+    type: string;
+}
+
+export const ChannelApi = {
+    whatsappManualConnect: (accessToken: string, phoneNumberId
+: string,wabaId:string,webhookSecret:string) =>
+        api.post("/channels/whatsapp/connect-manual", {
+            accessToken,
+            phoneNumberId,
+wabaId,
+webhookSecret
+        }),
+    getChannels: () => api.get('/channels'),
+    createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
+        api.post(`/channels?workspaceId=${workspaceId}`, payload),
+    deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),
+    sendMessage: (channelId: string, conversationId: string, message: any) =>
+        api.post(`/channels/message`, { channelId, conversationId, ...message }),
+
+}
+

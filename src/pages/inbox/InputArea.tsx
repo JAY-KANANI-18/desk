@@ -8,12 +8,13 @@ interface InputAreaProps {
   inputMode: 'reply' | 'comment';
   onInputModeChange: (mode: 'reply' | 'comment') => void;
   selectedConversation: Conversation;
-  selectedChannel: string;
-  onChannelChange: (channel: string) => void;
+  selectedChannel: any;
+  onChannelChange: (channel: any) => void;
   onSendMessage: (msg: Message) => void;
+  channels: any[] | null;
 }
 
-export function InputArea({ inputMode, onInputModeChange, selectedConversation, selectedChannel, onChannelChange, onSendMessage }: InputAreaProps) {
+export function InputArea({ inputMode, onInputModeChange, selectedConversation, selectedChannel, onChannelChange, onSendMessage , channels}: InputAreaProps) {
   return (
     <div className="border-t border-gray-200">
       {/* Mode tabs */}
@@ -40,11 +41,11 @@ export function InputArea({ inputMode, onInputModeChange, selectedConversation, 
         </button>
       </div>
 
-      {inputMode === 'reply' && (selectedChannel === 'email' || selectedChannel === 'gmail')
-        ? <EmailInput selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
+      {inputMode === 'reply' && (selectedChannel?.type === 'email' || selectedChannel?.type === 'gmail')
+        ? <EmailInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
         : inputMode === 'reply'
-        ? <ReplyInput selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
-        : <CommentInput conversationId={selectedConversation.id} onSendMessage={onSendMessage} />
+        ? <ReplyInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
+        : <CommentInput   conversationId={selectedConversation.id} onSendMessage={onSendMessage} />
       }
     </div>
   );

@@ -68,15 +68,15 @@ export function ChatHeader({
       {/* Left: contact info */}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-sm font-semibold">{selectedConversation.avatar}</div>
+          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-sm font-semibold">{selectedConversation.contact.avatar}</div>
           {/* <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white text-white ${ch.bg}`}>{ch.icon}</span> */}
         </div>
         <div>
-          <h3 className="font-semibold">{selectedConversation.name}</h3>
+          <h3 className="font-semibold">{selectedConversation.contact.firstName} {selectedConversation.contact.lastName}</h3>
           <span className="text-xs text-gray-500 flex items-center gap-1">
             {/* <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white ${ch.bg}`}>{ch.icon}{ch.label}</span>
             <span className="text-gray-400">·</span> */}
-            {selectedConversation.tag}
+            {selectedConversation.contact?.tag}
           </span>
         </div>
       </div>

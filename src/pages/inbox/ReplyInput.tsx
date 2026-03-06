@@ -20,13 +20,14 @@ function getAttachmentType(file: File): AttachmentType {
 }
 
 interface ReplyInputProps {
+  channels: any[];
   selectedConversation: Conversation;
-  selectedChannel: string;
-  onChannelChange: (channel: string) => void;
+  selectedChannel: any;
+  onChannelChange: (channel: any) => void;
   onSendMessage: (msg: Message) => void;
 }
 
-export function ReplyInput({ selectedConversation, selectedChannel, onChannelChange, onSendMessage }: ReplyInputProps) {
+export function ReplyInput({ channels, selectedConversation, selectedChannel, onChannelChange, onSendMessage }: ReplyInputProps) {
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -43,7 +44,7 @@ export function ReplyInput({ selectedConversation, selectedChannel, onChannelCha
   const channelRef          = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
 
-  const ch = channelConfig[selectedChannel] ?? channelConfig['email'];
+  const ch = channelConfig[selectedChannel?.type] ?? channelConfig['email'];
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
@@ -143,7 +144,7 @@ export function ReplyInput({ selectedConversation, selectedChannel, onChannelCha
       author: 'You',
       initials: 'ME',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      channel: selectedChannel,
+      channel: selectedChannel?.type,
       attachments: attachments.length > 0 ? attachments : undefined,
     });
     setMessage('');
@@ -183,17 +184,17 @@ export function ReplyInput({ selectedConversation, selectedChannel, onChannelCha
           {channelMenuOpen && (
             <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1.5">Send via channel</p>
-              {Object.entries(channelConfig).map(([key, cfg]) => (
+              {channels?.map((ch) => (
                 <button
-                  key={key}
-                  onClick={() => { onChannelChange(key); setChannelMenuOpen(false); }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel === key ? 'bg-gray-50' : ''}`}
+                  key={ch.id}
+                  onClick={() => { onChannelChange(ch); setChannelMenuOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${cfg.bg}`}>
-                    {cfg.icon}
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${channelConfig[ch.type].bg}`}>
+                    {channelConfig[ch.type].icon}
                   </span>
-                  <span className="flex-1 text-left font-medium text-gray-700">{cfg.label}</span>
-                  {selectedChannel === key && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+                  <span className="flex-1 text-left font-medium text-gray-700">{channelConfig[ch.type].label}</span>
+                  {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
                 </button>
               ))}
             </div>

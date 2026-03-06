@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   MessageSquare,
   LayoutDashboard,
@@ -17,23 +17,23 @@ import {
   ChevronRight,
   ChevronLeft,
   Map,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nav items
 // ─────────────────────────────────────────────────────────────────────────────
 const navItems = [
-  { icon: MessageSquare, label: 'Inbox', path: '/inbox' },
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Users, label: 'Contacts', path: '/contacts' },
-  { icon: Radio, label: 'Broadcast', path: '/broadcast' },
-  { icon: Workflow, label: 'Workflows', path: '/workflows' },
-  { icon: BarChart3, label: 'Reports', path: '/reports' },
-  { icon: Plug, label: 'Channels', path: '/channels' },
-  { icon: UsersRound, label: 'Team', path: '/team' },
-  { icon: Building2, label: 'Organization', path: '/organization' },
-  { icon: CreditCard, label: 'Billing', path: '/billing' },
-  { icon: Map, label: 'Sitemap', path: '/sitemap' },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: MessageSquare, label: "Inbox", path: "/inbox" },
+  { icon: Users, label: "Contacts", path: "/contacts" },
+  { icon: Radio, label: "Broadcast", path: "/broadcast" },
+  { icon: Workflow, label: "Workflows", path: "/workflows" },
+  { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: Plug, label: "Channels", path: "/channels" },
+  { icon: UsersRound, label: "Team", path: "/team" },
+  { icon: Building2, label: "Organization", path: "/organization" },
+  { icon: CreditCard, label: "Billing", path: "/billing" },
+  { icon: Map, label: "Sitemap", path: "/sitemap" },
 ];
 
 interface SidebarProps {
@@ -47,7 +47,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const navigate = useNavigate();
 
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [isExpanded, setIsExpanded]             = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleNavClick = () => {
     if (onNavigate) onNavigate();
@@ -56,7 +56,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   return (
     <div
       className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4 h-screen transition-all duration-300 ease-in-out ${
-        isExpanded ? 'w-56' : 'w-16'
+        isExpanded ? "w-56" : "w-16"
       }`}
     >
       {/* Toggle Button */}
@@ -68,12 +68,16 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       </button>
 
       {/* Logo */}
-      <div className={`flex items-center gap-3 mb-8 px-3 w-full ${isExpanded ? 'justify-start' : 'justify-center'}`}>
+      <div
+        className={`flex items-center gap-3 mb-8 px-3 w-full ${isExpanded ? "justify-start" : "justify-center"}`}
+      >
         <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <span className="text-white font-bold text-xl">M</span>
         </div>
         {isExpanded && (
-          <span className="font-bold text-gray-800 text-lg whitespace-nowrap overflow-hidden">Meera</span>
+          <span className="font-bold text-gray-800 text-lg whitespace-nowrap overflow-hidden">
+            Meera
+          </span>
         )}
       </div>
 
@@ -87,17 +91,19 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
             title={!isExpanded ? item.label : undefined}
             className={({ isActive }) =>
               `flex items-center gap-3 h-10 rounded-lg transition-colors px-3 ${
-                isExpanded ? 'w-full' : 'w-10 justify-center'
+                isExpanded ? "w-full" : "w-10 justify-center"
               } ${
                 isActive
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-100"
               }`
             }
           >
             <item.icon size={20} className="flex-shrink-0" />
             {isExpanded && (
-              <span className="text-sm font-medium whitespace-nowrap overflow-hidden">{item.label}</span>
+              <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
+                {item.label}
+              </span>
             )}
           </NavLink>
         ))}
@@ -107,9 +113,9 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       <div className="flex flex-col gap-1 w-full px-2 mt-auto">
         {/* Tasks */}
         <button
-          title={!isExpanded ? 'Tasks' : undefined}
+          title={!isExpanded ? "Tasks" : undefined}
           className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
-            isExpanded ? 'w-full' : 'w-10 justify-center'
+            isExpanded ? "w-full" : "w-10 justify-center"
           }`}
         >
           <CheckSquare size={20} className="flex-shrink-0" />
@@ -120,18 +126,23 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         <div className="relative">
           <button
             onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-            title={!isExpanded ? 'Settings' : undefined}
+            title={!isExpanded ? "Settings" : undefined}
             className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
-              isExpanded ? 'w-full' : 'w-10 justify-center'
+              isExpanded ? "w-full" : "w-10 justify-center"
             }`}
           >
             <Settings size={20} className="flex-shrink-0" />
-            {isExpanded && <span className="text-sm font-medium">Settings</span>}
+            {isExpanded && (
+              <span className="text-sm font-medium">Settings</span>
+            )}
           </button>
 
           {showSettingsMenu && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowSettingsMenu(false)} />
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowSettingsMenu(false)}
+              />
               <div className="absolute left-full bottom-0 ml-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                 <div className="p-2">
                   <NavLink
@@ -158,8 +169,12 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   >
                     <Building2 size={18} />
                     <div>
-                      <div className="text-sm font-medium">Organization settings</div>
-                      <div className="text-xs text-gray-500">AXORA (ID: 368530)</div>
+                      <div className="text-sm font-medium">
+                        Organization settings
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        AXORA (ID: 368530)
+                      </div>
                     </div>
                   </NavLink>
                   <NavLink
@@ -169,8 +184,12 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   >
                     <Settings size={18} />
                     <div>
-                      <div className="text-sm font-medium">Workspace settings</div>
-                      <div className="text-xs text-gray-500">My New Workspace</div>
+                      <div className="text-sm font-medium">
+                        Workspace settings
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        My New Workspace
+                      </div>
                     </div>
                   </NavLink>
                   <NavLink
@@ -183,7 +202,9 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   </NavLink>
                   <div className="border-t border-gray-200 my-2" />
                   <div className="px-3 py-2">
-                    <div className="text-xs font-semibold text-gray-500 mb-2">Quick access</div>
+                    <div className="text-xs font-semibold text-gray-500 mb-2">
+                      Quick access
+                    </div>
                     <NavLink
                       to="/channels"
                       onClick={() => setShowSettingsMenu(false)}
@@ -210,13 +231,20 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                     </NavLink>
                   </div>
                   <div className="border-t border-gray-200 mt-2 pt-2 px-3 pb-2">
-                    <div className="text-xs text-gray-500 mb-2">Your current plan</div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      Your current plan
+                    </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">Growth</span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Growth</span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        Growth
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
-                      <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: '0.1%' }} />
+                      <div
+                        className="bg-blue-600 h-1.5 rounded-full"
+                        style={{ width: "0.1%" }}
+                      />
                     </div>
                     <div className="text-xs text-gray-500">1 / 1,000 MACs</div>
                   </div>

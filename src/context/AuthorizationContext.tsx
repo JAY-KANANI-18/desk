@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useMemo, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useMemo, useCallback } from "react";
+import { useAuth } from "./AuthContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROLES
 // Hierarchy (highest → lowest): owner > admin > supervisor > agent
 // ─────────────────────────────────────────────────────────────────────────────
-export type Role = 'owner' | 'admin' | 'supervisor' | 'agent';
+export type Role = "owner" | "admin" | "supervisor" | "agent";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISSIONS
@@ -13,35 +13,35 @@ export type Role = 'owner' | 'admin' | 'supervisor' | 'agent';
 // ─────────────────────────────────────────────────────────────────────────────
 export type Permission =
   // Inbox
-  | 'inbox.view'
-  | 'inbox.assign'
-  | 'inbox.resolve'
-  | 'inbox.delete'
+  | "inbox.view"
+  | "inbox.assign"
+  | "inbox.resolve"
+  | "inbox.delete"
   // Contacts
-  | 'contacts.view'
-  | 'contacts.edit'
-  | 'contacts.delete'
-  | 'contacts.import'
+  | "contacts.view"
+  | "contacts.edit"
+  | "contacts.delete"
+  | "contacts.import"
   // Broadcast
-  | 'broadcast.view'
-  | 'broadcast.send'
+  | "broadcast.view"
+  | "broadcast.send"
   // Workflows
-  | 'workflows.view'
-  | 'workflows.manage'
+  | "workflows.view"
+  | "workflows.manage"
   // Reports
-  | 'reports.view'
-  | 'reports.export'
+  | "reports.view"
+  | "reports.export"
   // Channels
-  | 'channels.view'
-  | 'channels.manage'
+  | "channels.view"
+  | "channels.manage"
   // Team
-  | 'team.view'
-  | 'team.manage'
+  | "team.view"
+  | "team.manage"
   // Billing
-  | 'billing.view'
-  | 'billing.manage'
+  | "billing.view"
+  | "billing.manage"
   // Workspace
-  | 'workspace.settings';
+  | "workspace.settings";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROLE → PERMISSIONS MAP
@@ -50,44 +50,72 @@ export type Permission =
 // ─────────────────────────────────────────────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   owner: [
-    'inbox.view', 'inbox.assign', 'inbox.resolve', 'inbox.delete',
-    'contacts.view', 'contacts.edit', 'contacts.delete', 'contacts.import',
-    'broadcast.view', 'broadcast.send',
-    'workflows.view', 'workflows.manage',
-    'reports.view', 'reports.export',
-    'channels.view', 'channels.manage',
-    'team.view', 'team.manage',
-    'billing.view', 'billing.manage',
-    'workspace.settings',
+    "inbox.view",
+    "inbox.assign",
+    "inbox.resolve",
+    "inbox.delete",
+    "contacts.view",
+    "contacts.edit",
+    "contacts.delete",
+    "contacts.import",
+    "broadcast.view",
+    "broadcast.send",
+    "workflows.view",
+    "workflows.manage",
+    "reports.view",
+    "reports.export",
+    "channels.view",
+    "channels.manage",
+    "team.view",
+    "team.manage",
+    "billing.view",
+    "billing.manage",
+    "workspace.settings",
   ],
   admin: [
-    'inbox.view', 'inbox.assign', 'inbox.resolve', 'inbox.delete',
-    'contacts.view', 'contacts.edit', 'contacts.delete', 'contacts.import',
-    'broadcast.view', 'broadcast.send',
-    'workflows.view', 'workflows.manage',
-    'reports.view', 'reports.export',
-    'channels.view', 'channels.manage',
-    'team.view', 'team.manage',
-    'billing.view',
-    'workspace.settings',
+    "inbox.view",
+    "inbox.assign",
+    "inbox.resolve",
+    "inbox.delete",
+    "contacts.view",
+    "contacts.edit",
+    "contacts.delete",
+    "contacts.import",
+    "broadcast.view",
+    "broadcast.send",
+    "workflows.view",
+    "workflows.manage",
+    "reports.view",
+    "reports.export",
+    "channels.view",
+    "channels.manage",
+    "team.view",
+    "team.manage",
+    "billing.view",
+    "workspace.settings",
   ],
   supervisor: [
-    'inbox.view', 'inbox.assign', 'inbox.resolve',
-    'contacts.view', 'contacts.edit',
-    'broadcast.view', 'broadcast.send',
-    'workflows.view',
-    'reports.view',
-    'channels.view',
-    'team.view',
+    "inbox.view",
+    "inbox.assign",
+    "inbox.resolve",
+    "contacts.view",
+    "contacts.edit",
+    "broadcast.view",
+    "broadcast.send",
+    "workflows.view",
+    "reports.view",
+    "channels.view",
+    "team.view",
   ],
   agent: [
-    'inbox.view', 'inbox.resolve',
-    'contacts.view',
-    'broadcast.view',
-    'workflows.view',
-    'reports.view',
-    'channels.view',
-    'team.view',
+    "inbox.view",
+    "inbox.resolve",
+    "contacts.view",
+    "broadcast.view",
+    "workflows.view",
+    "reports.view",
+    "channels.view",
+    "team.view",
   ],
 };
 
@@ -105,15 +133,20 @@ interface AuthorizationContextType {
   hasRole: (role: Role | Role[]) => boolean;
 }
 
-const AuthorizationContext = createContext<AuthorizationContextType | null>(null);
+const AuthorizationContext = createContext<AuthorizationContextType | null>(
+  null
+);
 
-export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+//
+export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user } = useAuth();
 
   const role = useMemo<Role | null>(() => {
     if (!user) return null;
     const r = user.role as Role;
-    return ROLE_PERMISSIONS[r] ? r : 'agent';
+    return ROLE_PERMISSIONS[r] ? r : "agent";
   }, [user]);
 
   const permissions = useMemo<Permission[]>(() => {
@@ -143,7 +176,10 @@ export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuthorization = () => {
   const ctx = useContext(AuthorizationContext);
-  if (!ctx) throw new Error('useAuthorization must be used within AuthorizationProvider');
+  if (!ctx)
+    throw new Error(
+      "useAuthorization must be used within AuthorizationProvider"
+    );
   return ctx;
 };
 

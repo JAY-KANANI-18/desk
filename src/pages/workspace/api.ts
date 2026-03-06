@@ -8,7 +8,7 @@ import type {
 // ─────────────────────────────────────────────────────────────────────────────
 // DUMMY MODE — flip to false when your real API is ready
 // ─────────────────────────────────────────────────────────────────────────────
-export const DUMMY_MODE = true;
+export const DUMMY_MODE = false;
 
 /** Simulates network latency in dummy mode */
 export const delay = (ms = 350) => new Promise<void>(resolve => setTimeout(resolve, ms));

@@ -1,7 +1,11 @@
 import React, {
-  createContext, useContext, useState,
-  useCallback, useEffect, useRef,
-} from 'react';
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -31,7 +35,7 @@ export interface ActiveCall {
   isOnHold: boolean;
   isSpeaker: boolean;
   isRecording: boolean;
-  status: 'active' | 'on_hold';
+  status: "active" | "on_hold";
 }
 
 interface CallContextType {
@@ -50,15 +54,39 @@ interface CallContextType {
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock data
 // ─────────────────────────────────────────────────────────────────────────────
-const DUMMY_MODE = true;
+const DUMMY_MODE = false;
 
 const MOCK_CALLERS: CallContact[] = [
-  { id: 1, name: 'Sarah Johnson',   phone: '+1 (555) 234-5678', company: 'Acme Corp',     isKnown: true  },
-  { id: 2, name: 'Michael Chen',    phone: '+1 (555) 876-5432', company: 'TechStart Inc', isKnown: true  },
-  {        name: 'Unknown Caller',  phone: '+1 (555) 000-1234',                            isKnown: false },
-  { id: 3, name: 'Emma Williams',   phone: '+44 20 7946 0958',  company: 'Global Ltd',    isKnown: true  },
-  { id: 4, name: 'James Rodriguez', phone: '+1 (555) 321-9876', company: 'StartupXYZ',    isKnown: true  },
-  {        name: 'Unknown Caller',  phone: '+1 (555) 888-0000',                            isKnown: false },
+  {
+    id: 1,
+    name: "Sarah Johnson",
+    phone: "+1 (555) 234-5678",
+    company: "Acme Corp",
+    isKnown: true,
+  },
+  {
+    id: 2,
+    name: "Michael Chen",
+    phone: "+1 (555) 876-5432",
+    company: "TechStart Inc",
+    isKnown: true,
+  },
+  { name: "Unknown Caller", phone: "+1 (555) 000-1234", isKnown: false },
+  {
+    id: 3,
+    name: "Emma Williams",
+    phone: "+44 20 7946 0958",
+    company: "Global Ltd",
+    isKnown: true,
+  },
+  {
+    id: 4,
+    name: "James Rodriguez",
+    phone: "+1 (555) 321-9876",
+    company: "StartupXYZ",
+    isKnown: true,
+  },
+  { name: "Unknown Caller", phone: "+1 (555) 888-0000", isKnown: false },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,21 +97,23 @@ const CallContext = createContext<CallContextType | null>(null);
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider
 // ─────────────────────────────────────────────────────────────────────────────
-export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CallProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  const [activeCall,   setActiveCall]   = useState<ActiveCall   | null>(null);
+  const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
 
   // Stable refs so callbacks/timeouts always see latest state
   const incomingRef = useRef(incomingCall);
-  const activeRef   = useRef(activeCall);
+  const activeRef = useRef(activeCall);
   incomingRef.current = incomingCall;
-  activeRef.current   = activeCall;
+  activeRef.current = activeCall;
 
   // ── Duration timer (only ticks when not on hold) ─────────────────────────
   useEffect(() => {
     if (!activeCall) return;
     const interval = setInterval(() => {
-      setActiveCall(prev => {
+      setActiveCall((prev) => {
         if (!prev || prev.isOnHold) return prev;
         return { ...prev, duration: prev.duration + 1 };
       });
@@ -103,11 +133,12 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!DUMMY_MODE) return;
     const t = setTimeout(() => {
       if (!incomingRef.current && !activeRef.current) {
-        const caller = MOCK_CALLERS[Math.floor(Math.random() * MOCK_CALLERS.length)];
+        const caller =
+          MOCK_CALLERS[Math.floor(Math.random() * MOCK_CALLERS.length)];
         setIncomingCall({
           id: `call_${Date.now()}`,
           contact: caller,
-          channel: 'phone',
+          channel: "phone",
           startedAt: Date.now(),
         });
       }
@@ -118,12 +149,12 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ── Actions ──────────────────────────────────────────────────────────────
   const simulateIncomingCall = useCallback((contact?: Partial<CallContact>) => {
     if (incomingRef.current || activeRef.current) return;
-    const base   = MOCK_CALLERS[Math.floor(Math.random() * MOCK_CALLERS.length)];
+    const base = MOCK_CALLERS[Math.floor(Math.random() * MOCK_CALLERS.length)];
     const caller = { ...base, ...contact };
     setIncomingCall({
       id: `call_${Date.now()}`,
       contact: caller,
-      channel: 'phone',
+      channel: "phone",
       startedAt: Date.now(),
     });
   }, []);
@@ -141,25 +172,55 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isOnHold: false,
       isSpeaker: false,
       isRecording: false,
-      status: 'active',
+      status: "active",
     });
     setIncomingCall(null);
   }, []);
 
-  const rejectCall    = useCallback(() => setIncomingCall(null), []);
-  const endCall       = useCallback(() => setActiveCall(null), []);
-  const toggleMute    = useCallback(() => setActiveCall(p => p ? { ...p, isMuted:      !p.isMuted      } : null), []);
-  const toggleHold    = useCallback(() => setActiveCall(p => p ? { ...p, isOnHold:     !p.isOnHold,    status: p.isOnHold ? 'active' : 'on_hold' } : null), []);
-  const toggleSpeaker = useCallback(() => setActiveCall(p => p ? { ...p, isSpeaker:    !p.isSpeaker    } : null), []);
-  const toggleRecord  = useCallback(() => setActiveCall(p => p ? { ...p, isRecording:  !p.isRecording  } : null), []);
+  const rejectCall = useCallback(() => setIncomingCall(null), []);
+  const endCall = useCallback(() => setActiveCall(null), []);
+  const toggleMute = useCallback(
+    () => setActiveCall((p) => (p ? { ...p, isMuted: !p.isMuted } : null)),
+    []
+  );
+  const toggleHold = useCallback(
+    () =>
+      setActiveCall((p) =>
+        p
+          ? {
+              ...p,
+              isOnHold: !p.isOnHold,
+              status: p.isOnHold ? "active" : "on_hold",
+            }
+          : null
+      ),
+    []
+  );
+  const toggleSpeaker = useCallback(
+    () => setActiveCall((p) => (p ? { ...p, isSpeaker: !p.isSpeaker } : null)),
+    []
+  );
+  const toggleRecord = useCallback(
+    () =>
+      setActiveCall((p) => (p ? { ...p, isRecording: !p.isRecording } : null)),
+    []
+  );
 
   return (
-    <CallContext.Provider value={{
-      incomingCall, activeCall,
-      acceptCall, rejectCall, endCall,
-      toggleMute, toggleHold, toggleSpeaker, toggleRecord,
-      simulateIncomingCall,
-    }}>
+    <CallContext.Provider
+      value={{
+        incomingCall,
+        activeCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        toggleMute,
+        toggleHold,
+        toggleSpeaker,
+        toggleRecord,
+        simulateIncomingCall,
+      }}
+    >
       {children}
     </CallContext.Provider>
   );
@@ -170,6 +231,6 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 // ─────────────────────────────────────────────────────────────────────────────
 export const useCall = (): CallContextType => {
   const ctx = useContext(CallContext);
-  if (!ctx) throw new Error('useCall must be used within CallProvider');
+  if (!ctx) throw new Error("useCall must be used within CallProvider");
   return ctx;
 };

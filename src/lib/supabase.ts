@@ -5,8 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 // Get them from: https://app.supabase.com/project/_/settings/api
 // ─────────────────────────────────────────────────────────────
 
-const supabaseUrl = 'https://placeholder.supabase.co';
-const supabaseAnonKey = 'placeholder-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (supabaseUrl === 'https://placeholder.supabase.co') {
   console.warn(

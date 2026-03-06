@@ -4,6 +4,8 @@ import { channelApi } from './channelApi';
 import { DUMMY_MODE } from '../api';
 import type { Channel } from '../types';
 import type { FBAuthResponse } from './types';
+import MetaConnectButton from '../../../components/MetaConnectButton';
+import ConnectInstagramButton from '../../../components/ConnectInstagramButton';
 
 declare const FB: any;
 
@@ -137,7 +139,7 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect }: Props) 
         </div>
       )}
 
-      <button
+      {/* <button
         onClick={handleFBLogin}
         disabled={connecting}
         className="w-full flex items-center justify-center gap-2.5 py-3 bg-[#1877F2] text-white rounded-xl font-semibold text-sm hover:bg-[#166FE5] transition-colors disabled:opacity-60 shadow-sm"
@@ -145,7 +147,11 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect }: Props) 
         {connecting
           ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Connecting…</>
           : <><FBIcon />Continue with Facebook</>}
-      </button>
+      </button> */}
+
+            <ConnectInstagramButton>
+              
+            </ConnectInstagramButton>
       <p className="text-[11px] text-gray-400 text-center">
         Instagram uses Facebook Login. Your Instagram account must be linked to a Facebook Page.
       </p>
