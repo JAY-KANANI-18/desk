@@ -12,8 +12,8 @@ export const AppGate = () => {
   const { organizations, orgLoading } = useOrganization();
   console.log({isLoading ,orgLoading,organizations});
   
-  if (isLoading || orgLoading || organizations == null) {
-    return <div>Loading...</div>;
+  // if (isLoading || orgLoading || organizations == null) {
+  //   return <div>Loading...</div>;
   }
 
   if (!user) {
