@@ -11,7 +11,7 @@ export default defineConfig({
     outDir: "dist"
   }
 ,
-  base: "./",
+  base: "/",
   css: {
     postcss: {
       plugins: [tailwind()],
