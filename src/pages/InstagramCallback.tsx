@@ -14,15 +14,15 @@ export default function InstagramCallback() {
     console.log({codeeeeeeeeeeeee:code});
     
 
-    if (!code) return;
+    // if (!code) return;
 
-    fetch("/api/meta/instagram/exchange", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ code })
-    });
+    // fetch("/api/meta/instagram/exchange", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json"
+    //   },
+    //   body: JSON.stringify({ code })
+    // });
 
   }, []);
 

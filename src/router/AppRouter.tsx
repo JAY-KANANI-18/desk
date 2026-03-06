@@ -28,6 +28,7 @@ import { WorkspaceSettings } from "../pages/workspace";
 import { ManageChannelPage } from "../pages/channels/ManageChannelPage";
 import { ConnectChannelPage } from "../pages/channels/ConnectChannelPage";
 import { BillingPlans } from "../pages/BillingPlans";
+import InstagramCallback from "../pages/InstagramCallback";
 
 export const AppRouter = () => {
   return (
@@ -39,6 +40,9 @@ export const AppRouter = () => {
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/verify-email" element={<VerifyEmail />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
+        {/* META CALLBACKS */}
+      <Route path="/meta/instagram/callback" element={<InstagramCallback />} />
+      {/* <Route path="/whatsapp/callback" element={<WhatsAppCallback />} /> */}
 
       {/* FALLBACK */}
 

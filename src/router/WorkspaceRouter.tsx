@@ -35,7 +35,7 @@ export const WorkspaceRouter = () => {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/inbox" replace />} />
 <Route
-  path="meta/instagram/callback"
+  path="/meta/instagram/callback"
   element={<InstagramCallback />}
 />
 
