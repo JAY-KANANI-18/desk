@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, X, Search } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { Snippet } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const Snippets = () => {
   const [snippets, setSnippets]           = useState<Snippet[]>([]);
-  const [loading, setLoading]             = useState(true);
+  const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState<string | null>(null);
   const [search, setSearch]               = useState('');
   const [showAdd, setShowAdd]             = useState(false);
@@ -16,10 +16,10 @@ export const Snippets = () => {
   const [saving, setSaving]               = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setSnippets(await workspaceApi.getSnippets()); }
-    catch { setError('Failed to load snippets.'); }
-    finally { setLoading(false); }
+    // setLoading(true); 
+    setError(null);
+   setSnippets(await workspaceApi.getSnippets()); 
+    
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -32,7 +32,6 @@ export const Snippets = () => {
   const handleSave = async () => {
     if (!form.shortcut || !form.content) return;
     setSaving(true);
-    try {
       if (editSnippet) {
         await workspaceApi.updateSnippet(editSnippet.id, form);
         setSnippets(prev => prev.map(s => s.id === editSnippet.id ? { ...s, ...form } : s));
@@ -42,14 +41,12 @@ export const Snippets = () => {
       }
       setForm({ shortcut: '', title: '', content: '' });
       setShowAdd(false); setEditSnippet(null);
-    } catch { setError('Failed to save snippet.'); }
-    finally { setSaving(false); }
+ 
   };
 
   const handleDelete = async (id: number) => {
     setSnippets(prev => prev.filter(s => s.id !== id));
-    try { await workspaceApi.deleteSnippet(id); }
-    catch { load(); }
+   await workspaceApi.deleteSnippet(id); 
   };
 
   const openEdit = (s: Snippet) => {

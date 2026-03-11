@@ -1418,7 +1418,7 @@ export const Contacts = () => {
                   {[
                     "First row must be the header row (exactly as shown above)",
                     "Lifecycle values: New Lead, Hot Lead, Payment, Customer, Cold Lead",
-                    "Channel values: email, whatsapp, instagram, facebook, websitechat",
+                    "Channel values: email, whatsapp, instagram, messenger, websitechat",
                     "Multiple tags separated by semicolons (;) — e.g. VIP;Follow-up",
                   ].map((note) => (
                     <li
@@ -1689,7 +1689,7 @@ export const Contacts = () => {
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                   <option value="instagram">Instagram</option>
-                  <option value="facebook">Facebook</option>
+                  <option value="messenger">Messenger</option>
                   <option value="websitechat">Website Chat</option>
                 </select>
               </div>

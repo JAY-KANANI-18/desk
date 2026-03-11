@@ -18,7 +18,7 @@ export function SubSidebar() {
       <div className={`relative bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${open ? 'w-48' : 'w-12'}`}>
         <button
           onClick={() => { setOpen(!open); if (!open) { setSearchOpen(false); setSearch(''); } }}
-          className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-10"
+          className="absolute -right-3 top-3 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-10"
         >
           {open ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
         </button>
@@ -26,14 +26,14 @@ export function SubSidebar() {
         {open ? (
           <>
             <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Inbox</h2>
-                <button
+              <div className="flex items-center justify-between ">
+                <h2 className="text-sm font-semibold">Inbox</h2>
+                {/* <button
                   onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearch(''); }}
                   className={`p-1.5 rounded-lg transition-colors ${searchOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-500'}`}
                 >
                   <Search size={16} />
-                </button>
+                </button> */}
               </div>
               {searchOpen && (
                 <div className="relative mb-2">
@@ -68,11 +68,11 @@ export function SubSidebar() {
                     {item.count !== null && <span className="text-xs text-gray-500">{item.count}</span>}
                   </button>
                 ))}
-                {showIncomingCalls && (
+                {/* {showIncomingCalls && (
                   <button className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2">
                     <Phone size={16} /><span className="text-sm">Incoming Calls</span>
                   </button>
-                )}
+                )} */}
               </div>
 
               {filteredLifecycle.length > 0 && (

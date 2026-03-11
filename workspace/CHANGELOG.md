@@ -248,7 +248,7 @@ You MUST maintain this file to track your work across messages. This is NON-NEGO
 
 ### 2026-03-01 (feature)
 - Unified `SentComment` → `Message` type; messages stored in `localStorage` (`inbox_messages_v1`)
-- Wired Send button in `ReplyInput`; `MessageArea` auto-scrolls; `key={selectedConversation.id}` resets input
+- Wired Send button in `ReplyInput`; `MessageArea` auto-scrolls; `key={selectedConversation?.id}` resets input
 
 ### 2026-03-01 (fix)
 - Removed stray `</parameter>` tags from 7 inbox sub-files; rewrote `MessageArea.tsx`; created `AudioRecorder.tsx`

@@ -5,11 +5,8 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { authApi } from "../lib/authApi";
-import type { AuthUser } from "../lib/authApi";
+
 import { organizationApi } from "../lib/organizationApi";
-import { useAuth } from "./AuthContext";
-import { useWorkspace } from "./WorkspaceContext";
 import { ChannelApi } from "../lib/channelApi";
 
 interface Workspace {
@@ -25,15 +22,7 @@ interface Organization {
 }
 
 interface OrganizationContextType {
-  orgLoading: boolean;
-  organizations: Organization[];
-  activeOrganization: Organization | null;
-  inviteUser: (
-    email: string,
-    role: string,
-    workspaceAccess: any
-  ) => Promise<any>;
-  orgUsers: any;
+channels: any;
   refreshOrganizationsUsers: () => Promise<any>;
   organizationSetup: () => Promise<any>;
   setActiveOrganizationFunc: (
@@ -48,7 +37,21 @@ const ChannelContext = createContext<OrganizationContextType | null>(null);
 export const ChannelContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [ channels, setChannels] = useState()
   
+
+  const refreshChannels = useCallback(async () => {
+    const result = await ChannelApi.getChannels();
+    
+    setChannels(result);
+    return result;
+  }, []);
+
+  useEffect(()=>{
+
+    refreshChannels();
+
+  },[])
 
   const whstappChannelManualSetup = useCallback(async (channelName: string) => {
     // Call API to create channel
@@ -69,7 +72,6 @@ export const ChannelContextProvider: React.FC<{ children: React.ReactNode }> = (
   const refreshOrganizations = useCallback(async () => {
     const result = await organizationApi.me();
 
-    console.log({ resulttttttttt:result });
 
     return result;
   }, []);
@@ -91,9 +93,12 @@ export const ChannelContextProvider: React.FC<{ children: React.ReactNode }> = (
   }
 
   const refreshOrganizationsUsers = useCallback(async () => {
-    console.log({orgUsers});
     
   }, []);
+
+  
+
+
 
 
 
@@ -103,7 +108,7 @@ export const ChannelContextProvider: React.FC<{ children: React.ReactNode }> = (
   return (
     <ChannelContext.Provider
       value={{
-        
+        channels,
 
       }}
     >

@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   Map,
 } from "lucide-react";
+import { useOrganization } from "../context/OrganizationContext";
+import { useWorkspace } from "../context/WorkspaceContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nav items
@@ -26,14 +28,14 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: MessageSquare, label: "Inbox", path: "/inbox" },
   { icon: Users, label: "Contacts", path: "/contacts" },
-  { icon: Radio, label: "Broadcast", path: "/broadcast" },
-  { icon: Workflow, label: "Workflows", path: "/workflows" },
+  // { icon: Radio, label: "Broadcast", path: "/broadcast" },
+  // { icon: Workflow, label: "Workflows", path: "/workflows" },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Plug, label: "Channels", path: "/channels" },
-  { icon: UsersRound, label: "Team", path: "/team" },
-  { icon: Building2, label: "Organization", path: "/organization" },
-  { icon: CreditCard, label: "Billing", path: "/billing" },
-  { icon: Map, label: "Sitemap", path: "/sitemap" },
+  
+  // { icon: Building2, label: "Organization", path: "/organization" },
+  // { icon: CreditCard, label: "Billing", path: "/billing" },
+  // { icon: Map, label: "Sitemap", path: "/sitemap" },
 ];
 
 interface SidebarProps {
@@ -48,6 +50,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+    const {activeOrganization} = useOrganization();
+    const {activeWorkspace} = useWorkspace();
 
   const handleNavClick = () => {
     if (onNavigate) onNavigate();
@@ -55,10 +59,11 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   return (
     <div
-      className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4 h-screen transition-all duration-300 ease-in-out ${
-        isExpanded ? "w-56" : "w-16"
-      }`}
-    >
+  className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4
+  transition-all duration-300 ease-in-out
+  ${isExpanded ? "w-56" : "w-16"} 
+  h-screen`}
+>
       {/* Toggle Button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -112,7 +117,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       {/* Bottom Items */}
       <div className="flex flex-col gap-1 w-full px-2 mt-auto">
         {/* Tasks */}
-        <button
+        {/* <button
           title={!isExpanded ? "Tasks" : undefined}
           className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
             isExpanded ? "w-full" : "w-10 justify-center"
@@ -120,7 +125,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         >
           <CheckSquare size={20} className="flex-shrink-0" />
           {isExpanded && <span className="text-sm font-medium">Tasks</span>}
-        </button>
+        </button> */}
 
         {/* Settings */}
         <div className="relative">
@@ -145,7 +150,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
               />
               <div className="absolute left-full bottom-0 ml-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                 <div className="p-2">
-                  <NavLink
+                  {/* <NavLink
                     to="/channels"
                     onClick={() => setShowSettingsMenu(false)}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg"
@@ -160,8 +165,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   >
                     <Workflow size={18} />
                     <span className="text-sm">Integrations</span>
-                  </NavLink>
-                  <div className="border-t border-gray-200 my-2" />
+                  </NavLink> */}
+                  {/* <div className="border-t border-gray-200 my-2" /> */}
                   <NavLink
                     to="/organization"
                     onClick={() => setShowSettingsMenu(false)}
@@ -173,7 +178,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                         Organization settings
                       </div>
                       <div className="text-xs text-gray-500">
-                        AXORA (ID: 368530)
+                        {activeOrganization?.name} (ID: {activeOrganization?.id})
                       </div>
                     </div>
                   </NavLink>
@@ -188,12 +193,12 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                         Workspace settings
                       </div>
                       <div className="text-xs text-gray-500">
-                        My New Workspace
+                        {activeWorkspace?.name}
                       </div>
                     </div>
                   </NavLink>
                   <NavLink
-                    to="/workspace-settings"
+                    to="/user/settings"
                     onClick={() => setShowSettingsMenu(false)}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full"
                   >
@@ -205,14 +210,14 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                     <div className="text-xs font-semibold text-gray-500 mb-2">
                       Quick access
                     </div>
-                    <NavLink
+                    {/* <NavLink
                       to="/channels"
                       onClick={() => setShowSettingsMenu(false)}
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg"
                     >
                       <Plug size={18} />
                       <span className="text-sm">Channels</span>
-                    </NavLink>
+                    </NavLink> */}
                     <NavLink
                       to="/team"
                       onClick={() => setShowSettingsMenu(false)}
@@ -230,7 +235,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       <span className="text-sm">Billing & usage</span>
                     </NavLink>
                   </div>
-                  <div className="border-t border-gray-200 mt-2 pt-2 px-3 pb-2">
+                  {/* <div className="border-t border-gray-200 mt-2 pt-2 px-3 pb-2">
                     <div className="text-xs text-gray-500 mb-2">
                       Your current plan
                     </div>
@@ -247,7 +252,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       />
                     </div>
                     <div className="text-xs text-gray-500">1 / 1,000 MACs</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, GripVertical, X } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { Toggle } from '../components/Toggle';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';

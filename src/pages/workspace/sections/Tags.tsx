@@ -1,43 +1,42 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { ConversationTag } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const Tags = () => {
   const [tags, setTags]       = useState<ConversationTag[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newTag, setNewTag]   = useState({ name: '', color: '#6366f1' });
   const [adding, setAdding]   = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setTags(await workspaceApi.getTags()); }
-    catch { setError('Failed to load tags.'); }
-    finally { setLoading(false); }
+    // setLoading(true); 
+    setError(null);
+   setTags(await workspaceApi.getTags()); 
+    
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleAdd = async () => {
     if (!newTag.name) return;
-    setAdding(true);
-    try {
+    // setAdding(true);
+
       const created = await workspaceApi.addTag(newTag);
       setTags(prev => [...prev, created]);
       setNewTag({ name: '', color: '#6366f1' });
       setShowAdd(false);
-    } catch { setError('Failed to add tag.'); }
-    finally { setAdding(false); }
+   
   };
 
   const handleDelete = async (id: number) => {
     setTags(prev => prev.filter(t => t.id !== id));
-    try { await workspaceApi.deleteTag(id); }
-    catch { load(); }
+ await workspaceApi.deleteTag(id); 
+   
   };
 
   if (loading) return <SectionLoader />;

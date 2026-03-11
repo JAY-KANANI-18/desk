@@ -27,7 +27,7 @@ export const ResetPassword = () => {
   const requirements = [
     { label: 'At least 6 characters', met: password.length >= 6 },
     { label: 'Contains a number', met: /[0-9]/.test(password) },
-    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    // { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,32 +51,33 @@ export const ResetPassword = () => {
     if (result.success) {
       setSuccess(true);
     } else {
-      setError('Failed to reset password. Please try again.');
+      setError(result.error || 'Failed to reset password. Please try again.');
     }
   };
 
   if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="text-green-600" size={32} />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Password reset!</h2>
-            <p className="text-gray-500 text-sm mb-6">
-              Your password has been successfully reset. You can now sign in with your new password.
-            </p>
-            <button
-              onClick={() => navigate('/auth/login')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
-            >
-              Back to sign in
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    navigate('/dashboard');
+    // return (
+    //   <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    //     <div className="w-full max-w-md">
+    //       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
+    //         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+    //           <CheckCircle className="text-green-600" size={32} />
+    //         </div>
+    //         <h2 className="text-xl font-bold text-gray-900 mb-2">Password reset!</h2>
+    //         <p className="text-gray-500 text-sm mb-6">
+    //           Your password has been successfully reset. You can now sign in with your new password.
+    //         </p>
+    //         <button
+    //           onClick={() => navigate('/auth/login')}
+    //           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+    //         >
+    //           Back to sign in
+    //         </button>
+    //       </div>
+    //     </div>
+    //   </div>
+    // );
   }
 
   return (
@@ -84,9 +85,9 @@ export const ResetPassword = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
+          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
-          </div>
+          </div> */}
           <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
           <p className="text-gray-500 mt-1 text-sm">Must be different from your previous password</p>
         </div>
@@ -181,11 +182,11 @@ export const ResetPassword = () => {
           </form>
         </div>
 
-        <div className="text-center mt-6">
+        {/* <div className="text-center mt-6">
           <Link to="/auth/login" className="text-sm text-gray-500 hover:text-gray-700 font-medium">
             ← Back to sign in
           </Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );

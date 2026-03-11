@@ -75,7 +75,7 @@ export function ConversationList({
   conversations,
   selectedConversation,
   onSelectConversation,
-  channels ,
+  channels,
 }: ConversationListProps) {
   const [chatSearch, setChatSearch] = useState("");
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
@@ -160,12 +160,12 @@ export function ConversationList({
             </span>
           )}
         </button>
-        <button
+        {/* <button
           onClick={() => setActiveTab("calls")}
           className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === "calls" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
         >
           Calls
-        </button>
+        </button> */}
       </div>
 
       {activeTab === "chats" ? (
@@ -225,15 +225,14 @@ export function ConversationList({
                 <button
                   key={dir}
                   onClick={() => setChatDirection(dir)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                    chatDirection === dir
+                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${chatDirection === dir
                       ? dir === "incoming"
                         ? "bg-green-50 border-green-400 text-green-700"
                         : dir === "outgoing"
                           ? "bg-blue-50 border-blue-400 text-blue-700"
                           : "bg-gray-100 border-gray-400 text-gray-700"
                       : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {dir === "incoming" && <ArrowDownLeft size={12} />}
                   {dir === "outgoing" && <ArrowUpRight size={12} />}
@@ -259,35 +258,51 @@ export function ConversationList({
                   const cfg =
                     channelConfig[effectiveChannel] ?? channelConfig["email"];
                   const isUnread = conv.unreadCount > 0;
-                  const isSelected = selectedConversation.id === conv.id;
+                  const isSelected = selectedConversation?.id === conv.id;
 
                   return (
                     <div
                       key={conv.id}
                       onClick={() => onSelectConversation(conv)}
-                      className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors ${
-                        isSelected
+                      className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors ${isSelected
                           ? "bg-blue-50"
                           : isUnread
                             ? "bg-white hover:bg-gray-50"
                             : "hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Avatar + channel badge */}
-                        <div className="relative flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${isUnread ? "bg-gray-400 text-white" : "bg-gray-300"}`}
-                          >
-                            {conv?.contact?.avatar || conv?.contact.avatar}
-                          </div>
-                          <span
-                            className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white text-white ${cfg.bg}`}
-                            title={cfg.label}
-                          >
-                            {cfg.icon}
-                          </span>
-                        </div>
+                    <div className="relative flex-shrink-0">
+  <div
+    className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold ${
+      isUnread ? "bg-gray-400 text-white" : "bg-gray-300"
+    }`}
+  >
+    {conv?.contact?.avatarUrl ? (
+      <img
+        src={conv.contact.avatarUrl}
+        alt={conv.contact.firstName || "avatar"}
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <span>
+        {conv?.contact?.firstName?.charAt(0)?.toUpperCase() || "?"}
+      </span>
+    )}
+  </div>
+
+  <span
+    className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white bg-white"
+    title={cfg.label}
+  >
+    <img
+      src={cfg.icon}
+      alt={cfg.label}
+      className="w-3 h-3"
+    />
+  </span>
+</div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
@@ -296,7 +311,7 @@ export function ConversationList({
                             <span
                               className={`text-sm truncate ${isUnread ? "font-bold text-gray-900" : "font-medium text-gray-800"}`}
                             >
-                              {conv.contact.firstName}
+                              {conv?.contact?.firstName}
                             </span>
                             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                               <span
@@ -412,9 +427,9 @@ export function ConversationList({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="font-medium text-sm">
-                        {call.contact.firstName}
+                        {call?.contact?.firstName}
                       </span>
-                      <span className="text-xs text-gray-500">{call.time}</span>
+                      <span className="text-xs text-gray-500">{call?.time}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {isMissed ? (

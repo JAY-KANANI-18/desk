@@ -4,6 +4,9 @@ import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered,
   Link, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, DollarSign,
   ChevronDown, Check,
+  XCircle,
+  XCircleIcon,
+  CircleX,
 } from 'lucide-react';
 import type { Conversation, Message, MediaAttachment, AttachmentType } from './types';
 import { variables, channelConfig } from './data';
@@ -37,25 +40,25 @@ type FormatBtn = {
 };
 
 const formatButtons: (FormatBtn | 'sep')[] = [
-  { icon: <Bold size={14} />,          command: 'bold',          title: 'Bold (Ctrl+B)'      },
-  { icon: <Italic size={14} />,        command: 'italic',        title: 'Italic (Ctrl+I)'    },
-  { icon: <Underline size={14} />,     command: 'underline',     title: 'Underline (Ctrl+U)' },
-  { icon: <Strikethrough size={14} />, command: 'strikeThrough', title: 'Strikethrough'      },
+  { icon: <Bold size={14} />, command: 'bold', title: 'Bold (Ctrl+B)' },
+  { icon: <Italic size={14} />, command: 'italic', title: 'Italic (Ctrl+I)' },
+  { icon: <Underline size={14} />, command: 'underline', title: 'Underline (Ctrl+U)' },
+  { icon: <Strikethrough size={14} />, command: 'strikeThrough', title: 'Strikethrough' },
   'sep',
-  { icon: <List size={14} />,          command: 'insertUnorderedList', title: 'Bullet list'   },
-  { icon: <ListOrdered size={14} />,   command: 'insertOrderedList',   title: 'Numbered list' },
+  { icon: <List size={14} />, command: 'insertUnorderedList', title: 'Bullet list' },
+  { icon: <ListOrdered size={14} />, command: 'insertOrderedList', title: 'Numbered list' },
   'sep',
-  { icon: <AlignLeft size={14} />,     command: 'justifyLeft',   title: 'Align left'         },
-  { icon: <AlignCenter size={14} />,   command: 'justifyCenter', title: 'Align center'       },
-  { icon: <AlignRight size={14} />,    command: 'justifyRight',  title: 'Align right'        },
+  { icon: <AlignLeft size={14} />, command: 'justifyLeft', title: 'Align left' },
+  { icon: <AlignCenter size={14} />, command: 'justifyCenter', title: 'Align center' },
+  { icon: <AlignRight size={14} />, command: 'justifyRight', title: 'Align right' },
 ];
 
 export function EmailInput({ channels, selectedConversation, selectedChannel, onChannelChange, onSendMessage }: EmailInputProps) {
-  const [to,      setTo]      = useState(selectedConversation.name);
-  const [cc,      setCc]      = useState('');
-  const [bcc,     setBcc]     = useState('');
+  const [toOverride, setToOverride] = useState<string | null>(null);
+  const [cc, setCc] = useState('');
+  const [bcc, setBcc] = useState('');
   const [subject, setSubject] = useState('');
-  const [showCc,  setShowCc]  = useState(false);
+  const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -64,36 +67,44 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
   const [variableHighlight, setVariableHighlight] = useState(0);
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
 
-  const editorRef           = useRef<HTMLDivElement>(null);
-  const fileRef             = useRef<HTMLInputElement>(null);
-  const imageRef            = useRef<HTMLInputElement>(null);
-  const videoRef            = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
-  const channelRef          = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<HTMLDivElement>(null);
 
-  const ch = channelConfig[selectedChannel?.type] ?? channelConfig['email'];
+  const ch = channelConfig[selectedChannel?.type] 
+  console.log({ channelConfig });
+
+  const to = toOverride ?? selectedConversation?.contact?.email ?? '';
+
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
-        v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
-        v.label.toLowerCase().includes(variableQuery.toLowerCase())
-      )
+      v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
+      v.label.toLowerCase().includes(variableQuery.toLowerCase())
+    )
     : [];
 
   // Reset when conversation changes
   useEffect(() => {
-    setTo(selectedConversation.name);
+
+    setToOverride(null); // reset override, falls back to prop value
+
     setCc('');
     setBcc('');
     setSubject('');
     setShowCc(false);
     setShowBcc(false);
     setAttachedFiles([]);
+
     if (editorRef.current) editorRef.current.innerHTML = '';
+
     setIsEmpty(true);
     setVariableQuery(null);
-  }, [selectedConversation.id]);
 
+  }, [selectedConversation.id]);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -116,7 +127,7 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
     const active = new Set<string>();
     const cmds = ['bold', 'italic', 'underline', 'strikeThrough', 'insertUnorderedList', 'insertOrderedList'];
     cmds.forEach(cmd => {
-      try { if (document.queryCommandState(cmd)) active.add(cmd); } catch {}
+      try { if (document.queryCommandState(cmd)) active.add(cmd); } catch { }
     });
     setActiveFormats(active);
   }, []);
@@ -211,7 +222,7 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
     }));
     onSendMessage({
       id: Date.now(),
-      conversationId: selectedConversation.id,
+      conversationId: selectedConversation?.id,
       type: 'reply',
       text: textContent,
       author: 'You',
@@ -234,16 +245,28 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
         <div className="relative" ref={channelRef}>
           <button
             onClick={() => setChannelMenuOpen(o => !o)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition-all hover:opacity-90 active:scale-95 shadow-sm ${ch.bg}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-90 active:scale-95 shadow-sm `}
             title="Switch channel"
           >
-            <span className="[&>svg]:!w-3 [&>svg]:!h-3">{ch.icon}</span>
-            <span>{ch.label}</span>
-            <ChevronDown size={11} className={`transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`} />
+            <span className="flex items-center justify-center">
+              <img
+                src={ch.icon}
+                alt={ch.label}
+                className="w-3 h-3"
+              />
+            </span>
+
+  <span className="flex-1 text-left font-medium text-gray-700">
+                    {selectedChannel.name || "Unnamed channel"}
+                  </span>
+            <ChevronDown
+              size={11}
+              className={`transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {channelMenuOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
+            <div className="absolute bottom-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1.5">Send via channel</p>
               {channels?.map((ch) => (
                 <button
@@ -251,33 +274,39 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
                   onClick={() => { onChannelChange(ch); setChannelMenuOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${channelConfig[ch.ty].bg}`}>
-                    {channelConfig[ch.ty].icon}
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">
+                    <img
+                      src={channelConfig[ch.type]?.icon}
+                      alt={channelConfig[ch.type]?.label}
+                      className="w-4 h-4"
+                    />
                   </span>
-                  <span className="flex-1 text-left font-medium text-gray-700">{channelConfig[ch.ty].label}</span>
-                  {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+
+                  <span className="flex-1 text-left font-medium text-gray-700">
+                    {ch.name || "Unnamed channel"}
+                  </span>
+
+                  {selectedChannel?.id === ch.id && (
+                    <Check size={13} className="text-blue-600 flex-shrink-0" />
+                  )}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <button className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm">
+        {/* <button className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm">
           <span className="text-lg">✨</span>AI Assist
-        </button>
+        </button> */}
       </div>
 
       {/* ── Header fields ── */}
       <div className="border-t border-gray-200 divide-y divide-gray-100">
         {/* To */}
         <div className="flex items-center gap-2 px-4 py-2">
-          <span className="text-xs font-semibold text-gray-400 w-10 flex-shrink-0">To</span>
-          <input
-            type="text"
-            value={to}
-            onChange={e => setTo(e.target.value)}
-            className="flex-1 text-sm text-gray-800 focus:outline-none placeholder-gray-400 bg-transparent"
-            placeholder="recipient@example.com"
-          />
+          <span className="text-xs font-semibold text-gray-400 w-10 flex-shrink-0">Sub</span>
+          <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+            className="flex-1 text-sm text-gray-800 focus:outline-none placeholder-gray-400 bg-transparent font-medium" placeholder="Subject" />
+          <CircleX size={14} onClick={() => setSubject('')} />
           <div className="flex items-center gap-1 flex-shrink-0">
             {!showCc && (
               <button onClick={() => setShowCc(true)} className="text-xs text-gray-400 hover:text-blue-600 px-1.5 py-0.5 rounded hover:bg-blue-50 transition-colors font-medium">Cc</button>
@@ -306,11 +335,7 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
           </div>
         )}
 
-        <div className="flex items-center gap-2 px-4 py-2">
-          <span className="text-xs font-semibold text-gray-400 w-10 flex-shrink-0">Sub</span>
-          <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
-            className="flex-1 text-sm text-gray-800 focus:outline-none placeholder-gray-400 bg-transparent font-medium" placeholder="Subject" />
-        </div>
+
       </div>
 
       {/* ── Formatting toolbar ── */}
@@ -342,7 +367,7 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
       </div>
 
       {/* ── Rich text editor with variable dropdown ── */}
-      <div className="relative min-h-[120px] max-h-[220px] overflow-y-auto">
+      <div className="relative min-h-[80px] max-h-[220px] overflow-y-auto">
 
         {/* Variable dropdown */}
         {variableQuery !== null && filteredVariables.length > 0 && (
@@ -405,13 +430,13 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
           onKeyDown={e => {
             if (variableQuery !== null && filteredVariables.length > 0) {
               if (e.key === 'ArrowDown') { e.preventDefault(); setVariableHighlight(h => Math.min(h + 1, filteredVariables.length - 1)); return; }
-              if (e.key === 'ArrowUp')   { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
-              if (e.key === 'Enter')     { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
-              if (e.key === 'Escape')    { setVariableQuery(null); return; }
+              if (e.key === 'ArrowUp') { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
+              if (e.key === 'Enter') { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
+              if (e.key === 'Escape') { setVariableQuery(null); return; }
             }
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSend(); }
           }}
-          className="min-h-[120px] px-4 py-3 text-sm text-gray-800 focus:outline-none leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+          className="min-h-[80px] px-4 py-3 text-sm text-gray-800 focus:outline-none leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
           style={{ wordBreak: 'break-word' }}
         />
       </div>
@@ -430,10 +455,9 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
                   </button>
                 </div>
               ) : (
-                <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${
-                  af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200'
+                <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200'
                   : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                    : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                   {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
                   <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
                   <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
@@ -463,7 +487,7 @@ export function EmailInput({ channels, selectedConversation, selectedChannel, on
           <button onClick={handleSend} disabled={!canSend}
             className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${canSend ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
             <Send size={14} />
-            Send Email
+            Send mail
           </button>
         </div>
       </div>

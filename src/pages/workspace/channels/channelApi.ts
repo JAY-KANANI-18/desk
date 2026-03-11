@@ -68,10 +68,10 @@ export const channelApi = {
         icon: '💙',
         color: 'bg-blue-600',
         msgs: 0,
-        channelType: 'facebook',
+        channelType: 'messenger',
       };
     }
-    const res = await fetch('/api/channels/facebook/connect', {
+    const res = await fetch('/api/channels/messenger/connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(auth),

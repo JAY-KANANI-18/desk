@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Phone, Save, Check } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { Toggle } from '../components/Toggle';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { CallSettings } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const Calls = () => {
   const [settings, setSettings] = useState<CallSettings | null>(null);

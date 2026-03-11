@@ -23,7 +23,17 @@ import {
   Star,
   Trash2,
   Users,
+  ExternalLink,
+  Mail,
+  Reply,
+  Eye,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
+import DOMPurify from "dompurify";
+import { useChannel } from "../../context/ChannelContext";
+import { Conversation } from "./types";
+import { useWorkspace } from "../../context/WorkspaceContext";
 
 /* ================= TYPES ================= */
 
@@ -42,7 +52,8 @@ export interface MediaAttachment {
 
 export interface Message {
   id: number;
-  conversationId: number;
+  conversationId: string;
+  channelId: string;
   type: "reply" | "comment" | "system";
   text: string;
   author: string;
@@ -51,16 +62,12 @@ export interface Message {
   channel?: string;
   status?: MessageStatus;
   direction?: "incoming" | "outgoing";
+  metadata?: any;
   attachments?: MediaAttachment[];
+  
 }
 
-export interface Conversation {
-  id: number;
-  name: string;
-  avatar: string;
-  message: string;
-  channel: string;
-}
+
 
 /* ================= CONSTANTS ================= */
 
@@ -73,7 +80,7 @@ const channelConfig: Record<
   whatsapp: { label: "WhatsApp", bg: "bg-green-500", icon: "W" },
   email: { label: "Email", bg: "bg-blue-500", icon: "@" },
   instagram: { label: "Instagram", bg: "bg-pink-500", icon: "I" },
-  facebook: { label: "Facebook", bg: "bg-blue-600", icon: "F" },
+  messenger: { label: "Facebook", bg: "bg-blue-600", icon: "F" },
   websitechat: { label: "Chat", bg: "bg-gray-500", icon: "C" },
 };
 
@@ -172,7 +179,7 @@ const CHANNEL_ACTIONS: Record<string, ActionDef[]> = {
     { id: "copy", icon: Copy, label: "Copy" },
     { id: "delete", icon: Trash2, label: "Delete", danger: true },
   ],
-  facebook: [
+  messenger: [
     { id: "reply", icon: CornerUpLeft, label: "Reply" },
     { id: "react", icon: Smile, label: "React" },
     { id: "copy", icon: Copy, label: "Copy" },
@@ -211,11 +218,10 @@ function QuickActions({
 
   return (
     <div
-      className={`absolute ${posClass} top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-white border border-gray-200 rounded-full shadow-lg px-1.5 py-1 z-20 transition-all duration-150 ${
-        visible
-          ? "opacity-100 scale-100"
-          : "opacity-0 scale-95 pointer-events-none"
-      }`}
+      className={`absolute ${posClass} top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-white border border-gray-200 rounded-full shadow-lg px-1.5 py-1 z-20 transition-all duration-150 ${visible
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-95 pointer-events-none"
+        }`}
     >
       {actions.map((action) => (
         <div key={action.id} className="relative">
@@ -225,11 +231,10 @@ function QuickActions({
               setTooltip(action.label)
             }
             onMouseLeave={() => setTooltip(null)}
-            className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
-              action.danger
-                ? "hover:bg-red-50 text-gray-400 hover:text-red-500"
-                : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-            }`}
+            className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${action.danger
+              ? "hover:bg-red-50 text-gray-400 hover:text-red-500"
+              : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+              }`}
           >
             <action.icon size={13} />
           </button>
@@ -248,7 +253,7 @@ function QuickActions({
 /* ─── mini audio player ────────────────────────────────────────────────────── */
 
 function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolean; dark?: boolean }) {
-  const [playing, setPlaying]   = useState(false);
+  const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -256,7 +261,7 @@ function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolea
   const toggle = () => {
     if (!audioRef.current) return;
     if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else { audioRef.current.play().catch(() => {}); setPlaying(true); }
+    else { audioRef.current.play().catch(() => { }); setPlaying(true); }
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -267,12 +272,12 @@ function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolea
     setProgress(pct * 100);
   };
 
-  const trackBg   = dark ? 'bg-white/30' : 'bg-gray-200';
-  const trackFill = dark ? 'bg-white'    : 'bg-blue-500';
-  const btnBg     = dark ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700';
-  const labelClr  = dark ? 'text-white/80' : 'text-gray-500';
-  const timeClr   = dark ? 'text-white/70' : 'text-gray-400';
-  const wrapBg    = dark ? 'bg-blue-600'   : 'bg-gray-100';
+  const trackBg = dark ? 'bg-white/30' : 'bg-gray-200';
+  const trackFill = dark ? 'bg-white' : 'bg-blue-500';
+  const btnBg = dark ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700';
+  const labelClr = dark ? 'text-white/80' : 'text-gray-500';
+  const timeClr = dark ? 'text-white/70' : 'text-gray-400';
+  const wrapBg = dark ? 'bg-blue-600' : 'bg-gray-100';
 
   return (
     <div className={`flex items-center gap-2.5 ${wrapBg} rounded-2xl rounded-br-sm px-3 py-2.5 min-w-[200px] max-w-[260px] shadow-sm`}>
@@ -324,7 +329,7 @@ function SingleAttachmentBubble({
         <img src={att.url} alt={att.name} className="w-full max-h-[200px] object-cover" />
         <div className="px-3 py-2 flex items-center gap-2 border-t border-gray-100">
           <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
           </div>
           <p className="text-[11px] font-medium text-gray-600 truncate flex-1">{att.name}</p>
         </div>
@@ -338,7 +343,7 @@ function SingleAttachmentBubble({
         <video controls src={att.url} className="w-full max-h-[200px] bg-black block" />
         <div className="px-3 py-2 flex items-center gap-2 border-t border-gray-100">
           <div className="w-6 h-6 rounded-md bg-purple-50 flex items-center justify-center flex-shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
           </div>
           <p className="text-[11px] font-medium text-gray-600 truncate flex-1">{att.name}</p>
         </div>
@@ -404,37 +409,34 @@ export function MessageArea({
   onMsgSearchChange,
   onCloseMsgSearch,
 }: MessageAreaProps) {
-  const messagesEndRef =
-    useRef<HTMLDivElement>(null);
-  const scrollRef =
-    useRef<HTMLDivElement>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const prevScrollHeightRef = useRef(0);
-  const prevConvIdRef = useRef(
-    selectedConversation.id
-  );
+  const prevConvIdRef = useRef(selectedConversation?.id);
   const prevMsgLenRef = useRef(messages.length);
   const isFirstRenderRef = useRef(true);
 
-  const [hoveredMsgId, setHoveredMsgId] =
-    useState<string | null>(null);
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
 
-  const [visibleCount, setVisibleCount] =
-    useState(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const [loadingMore, setLoadingMore] =
-    useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [emailModalMsg, setEmailModalMsg] = useState<any>(null);
+  const { channels } = useChannel();
+  const {workspaceUsers} = useWorkspace();
+  const previewLength = 220;
+
 
   const allFiltered = msgSearch
     ? messages.filter((m) =>
-        m.text
-          .toLowerCase()
-          .includes(msgSearch.toLowerCase())
-      )
+      m.text?.toLowerCase().includes(msgSearch.toLowerCase())
+    )
     : messages;
 
-  const hasMore =
-    allFiltered.length > visibleCount;
+  const hasMore = allFiltered.length > visibleCount;
 
   const visibleMessages = allFiltered.slice(
     Math.max(0, allFiltered.length - visibleCount)
@@ -445,22 +447,18 @@ export function MessageArea({
 
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
-      prevConvIdRef.current =
-        selectedConversation.id;
+      prevConvIdRef.current = selectedConversation?.id;
       prevMsgLenRef.current = messages.length;
-      scrollRef.current.scrollTop =
-        scrollRef.current.scrollHeight;
+
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       return;
     }
 
     const convChanged =
-      prevConvIdRef.current !==
-      selectedConversation.id;
+      prevConvIdRef.current !== selectedConversation?.id;
 
     if (convChanged) {
-      prevConvIdRef.current =
-        selectedConversation.id;
-
+      prevConvIdRef.current = selectedConversation?.id;
       prevMsgLenRef.current = messages.length;
 
       setVisibleCount(PAGE_SIZE);
@@ -485,38 +483,26 @@ export function MessageArea({
     }
 
     prevMsgLenRef.current = messages.length;
-  }, [selectedConversation.id, messages]);
+  }, [selectedConversation?.id, messages]);
 
   useLayoutEffect(() => {
-    if (
-      prevScrollHeightRef.current > 0 &&
-      scrollRef.current
-    ) {
-      const newScrollHeight =
-        scrollRef.current.scrollHeight;
+    if (prevScrollHeightRef.current > 0 && scrollRef.current) {
+      const newScrollHeight = scrollRef.current.scrollHeight;
 
       const diff =
-        newScrollHeight -
-        prevScrollHeightRef.current;
+        newScrollHeight - prevScrollHeightRef.current;
 
-      scrollRef.current.scrollTop =
-        diff > 0 ? diff : 0;
+      scrollRef.current.scrollTop = diff > 0 ? diff : 0;
 
       prevScrollHeightRef.current = 0;
     }
   }, [visibleCount]);
 
   const handleScroll = () => {
-    if (
-      !scrollRef.current ||
-      loadingMore ||
-      !hasMore
-    )
-      return;
+    if (!scrollRef.current || loadingMore || !hasMore) return;
 
     if (scrollRef.current.scrollTop <= 60) {
-      prevScrollHeightRef.current =
-        scrollRef.current.scrollHeight;
+      prevScrollHeightRef.current = scrollRef.current.scrollHeight;
 
       setLoadingMore(true);
 
@@ -527,8 +513,18 @@ export function MessageArea({
     }
   };
 
+  function openEmailModal(msg: any) {
+    setEmailModalMsg(msg);
+  }
+
+  function closeEmailModal() {
+    setEmailModalMsg(null);
+  }
+
   return (
     <>
+      {/* SEARCH BAR */}
+
       {msgSearchOpen && (
         <div className="px-4 py-2.5 bg-gray-50 border-b flex gap-3">
           <div className="relative flex-1">
@@ -568,16 +564,16 @@ export function MessageArea({
         </div>
       )}
 
-            {/* Snooze banner */}
+      {/* Snooze banner */}
 
-        {snoozedUntil && (
+      {snoozedUntil && (
         <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
           <AlarmClock size={14} className="text-amber-600" />
           <span className="text-sm text-amber-700 font-medium">
             This chat is snoozed
-            {snoozedUntil === '30m'      && ' for 30 minutes'}
-            {snoozedUntil === '1h'       && ' for 1 hour'}
-            {snoozedUntil === '3h'       && ' for 3 hours'}
+            {snoozedUntil === '30m' && ' for 30 minutes'}
+            {snoozedUntil === '1h' && ' for 1 hour'}
+            {snoozedUntil === '3h' && ' for 3 hours'}
             {snoozedUntil === 'tomorrow' && ' until tomorrow morning'}
             {snoozedUntil === 'nextweek' && ' until next week'}
           </span>
@@ -591,10 +587,10 @@ export function MessageArea({
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-6"
-                style={{ scrollBehavior: 'auto', overflowAnchor: 'none' }}
+        style={{ scrollBehavior: 'auto', overflowAnchor: 'none' }}
 
       >
-  {/* Skeleton while loading older messages */}
+        {/* Skeleton while loading older messages */}
         {/* {loadingMore && (
           <div className="mb-2">
             <MessageSkeleton />
@@ -622,9 +618,8 @@ export function MessageArea({
           </p>
         </div> */}
 
-        {visibleMessages.map((msg,i) => {
-          const isOutgoing =
-            msg.direction === "outgoing";
+        {visibleMessages.map((msg) => {
+          const isOutgoing = msg.direction === "outgoing";
 
           const alignClass = isOutgoing
             ? "justify-end"
@@ -636,6 +631,17 @@ export function MessageArea({
 
           const hoverKey = `msg-${msg.id}`;
 
+          const isExpanded = expanded[msg.id];
+
+          const previewText = isExpanded
+            ? msg.text
+            : msg.text?.slice(0, previewLength);
+
+          console.log({ msgDEBUG: msg }, { depth: null }) // DEBUG;
+
+          let channelType = channels?.find(c => c?.id === msg?.channelId)?.type; // DEBUG
+          const isEmail = channelType === "email";
+          const OutgoingSender = workspaceUsers?.find(u => u.id === msg?.metadata?.sender?.userId);
           if (msg.type === "comment") {
             return (
               <div
@@ -666,7 +672,6 @@ export function MessageArea({
               </div>
             );
           }
-
           return (
             <div
               key={msg.id}
@@ -674,62 +679,126 @@ export function MessageArea({
             >
               {!isOutgoing && (
                 <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs">
-                  {msg.initials}
-                </div>
+                  {selectedConversation?.contact?.avatarUrl ? (
+                    <img
+                      src={selectedConversation.contact.avatarUrl}
+                      alt={selectedConversation.contact.firstName || "avatar"}
+                      className="w-full rounded-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {selectedConversation?.contact?.firstName?.charAt(0)?.toUpperCase() || "C"}
+                    </span>
+                  )}                
+                  </div>
               )}
 
               <div
                 className="relative flex flex-col max-w-sm"
-                onMouseEnter={() =>
-                  setHoveredMsgId(hoverKey)
-                }
-                onMouseLeave={() =>
-                  setHoveredMsgId(null)
-                }
+                onMouseEnter={() => setHoveredMsgId(hoverKey)}
+                onMouseLeave={() => setHoveredMsgId(null)}
               >
                 <QuickActions
-                  channel={
-                    msg.channel ??
-                    selectedConversation.channel
-                  }
+                  channel={msg.channel ?? selectedConversation?.channel}
                   isOutgoing={isOutgoing}
                   msgText={msg.text}
-                  visible={
-                    hoveredMsgId === hoverKey
-                  }
+                  visible={hoveredMsgId === hoverKey}
                 />
 
-                {msg.attachments?.map((att, i) => (
-                  <SingleAttachmentBubble
-                    key={i}
-                    att={att}
-                  />
+                {msg?.messageAttachments?.map((att, i) => (
+                  
+                  <SingleAttachmentBubble key={i} att={att} />
                 ))}
 
                 {msg.text && (
-                  <div
-                    className={`rounded-2xl px-4 py-2.5 shadow-sm ${bubbleColor}`}
-                  >
-                    <p className="text-sm">
-                      {msg.text}
-                    </p>
-                  </div>
+                  isEmail ? (
+                    // ── EMAIL BUBBLE ──
+                    <div className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor}`}>
+                      {/* Subject row */}
+                      {msg?.metadata?.email?.subject && (
+                        <div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
+                          <Mail size={10} className="flex-shrink-0 opacity-60" />
+                          <span className="text-xs font-medium opacity-70 truncate max-w-[220px]">
+                            {msg?.metadata?.email?.subject}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Body */}
+                      <div className={`px-4 ${msg?.metadata?.email?.subject ? "pt-1" : "pt-3"} pb-2`}>
+                        <p className="text-sm whitespace-pre-wrap">
+                          {previewText}
+                          {!isExpanded && msg.text.length > previewLength && "…"}
+                        </p>
+
+                        {msg.text.length > previewLength && (
+                          <button
+                            onClick={() => setExpanded(s => ({ ...s, [msg.id]: !isExpanded }))}
+                            className={`mt-2 flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-100 opacity-70 ${isOutgoing ? "text-blue-200" : "text-indigo-500"
+                              }`}
+                          >
+                            {isExpanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Show more</>}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Open + Reply */}
+                      <div className="flex items-center gap-3 px-4 pb-3 pt-0">
+                        <button
+                          onClick={() => openEmailModal(msg)}
+                          className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity"
+                        >
+                          <Eye size={11} />
+
+                        </button>
+                        <button className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity">
+                          <Reply size={11} />
+
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // ── REGULAR BUBBLE (untouched) ──
+                    <div className={`rounded-2xl px-4 py-3 shadow-sm ${bubbleColor}`}>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {previewText}
+                        {!isExpanded && msg.text.length > previewLength && "..."}
+                      </p>
+
+                      {msg.text.length > previewLength && (
+                        <button
+                          onClick={() => setExpanded(s => ({ ...s, [msg.id]: !isExpanded }))}
+                          className={`mt-2 flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-100 opacity-70 ${isOutgoing ? "text-blue-200" : "text-indigo-500"
+                            }`}
+                        >
+                          {isExpanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Show more</>}
+                        </button>
+                      )}
+                    </div>
+                  )
                 )}
 
                 <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                  <span>{msg.time }</span>
-
-                  {isOutgoing && (
-                    <MsgStatusIcon
-                      status={msg.status}
-                    />
-                  )}
+                  <span>{msg.time}</span>
+                  {isOutgoing && <MsgStatusIcon status={msg.status} />}
                 </div>
               </div>
 
               {isOutgoing && (
                 <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs">
-                  {msg.initials}
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs">
+                  {OutgoingSender ?.avatarUrl ? (
+                    <img
+                      src={OutgoingSender.avatarUrl}
+                      alt={OutgoingSender.firstName || "avatar"}
+                      className="w-full rounded-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {OutgoingSender?.firstName?.charAt(0)?.toUpperCase() || "U"}
+                    </span>
+                  )}                
+                  </div>
                 </div>
               )}
             </div>
@@ -738,6 +807,39 @@ export function MessageArea({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* EMAIL MODAL */}
+
+      {emailModalMsg && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[750px] max-h-[80vh] rounded-xl shadow-xl flex flex-col">
+
+            <div className="border-b px-4 py-3 flex justify-between items-center">
+              <div className="font-semibold text-sm">
+                {emailModalMsg.metadata?.email?.subject}
+              </div>
+
+              <button
+                onClick={closeEmailModal}
+                className="text-sm"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-4">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(
+                    emailModalMsg.metadata
+                      ?.htmlBody || ""
+                  ),
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

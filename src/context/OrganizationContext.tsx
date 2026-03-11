@@ -110,7 +110,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   }
 
   const refreshOrganizationsUsers = useCallback(async () => {
-    const result = await organizationApi.getusers(activeOrganization.id);
+    const result = await organizationApi.getusers(activeOrganization?.id);
     setOrgUsers(result);
     console.log({orgUsers});
     

@@ -3,18 +3,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface WorkspaceInfo {
-  workspaceName: string;
-  workspaceId: string;
+  id: string;
+  name: string;
+  organizationId: string;
   timezone: string;
   language: string;
   dateFormat: string;
 }
 
 export interface UserProfile {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   role: string;
+  avatarUrl?: string;
 }
 
 export interface NotificationPrefs {
@@ -26,10 +29,10 @@ export interface NotificationPrefs {
   newConversations: boolean;
 }
 
-export type AvailabilityStatus = 'online' | 'busy' | 'offline';
+export type AvailabilityStatus = 'online' | 'busy' | 'dnd';
 
 export interface TeamMember {
-  id: number;
+  id: string  ;
   name: string;
   email: string;
   role: string;
@@ -37,10 +40,10 @@ export interface TeamMember {
   avatar: string;
 }
 
-export type ChannelType = 'whatsapp' | 'instagram' | 'facebook' | 'gmail' | 'email';
+export type ChannelType = 'whatsapp' | 'instagram' | 'messenger' | 'gmail' | 'email';
 
 export interface Channel {
-  id: number;
+  id: string;
   name: string;
   identifier: string;
   status: 'Connected' | 'Error';
@@ -127,10 +130,10 @@ export interface AIPrompt {
 }
 
 export interface Team {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  memberIds: number[];
+  memberIds: string[];
 }
 
 export interface CallSettings {

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
+import { User } from '../../context/AuthContext';
 
 export type ChatDirection = 'incoming' | 'outgoing';
 export type CallDirection = 'incoming' | 'outgoing' | 'missed';
 
-export type Assignee =
-  | { kind: 'user'; id: string; name: string; initials: string; online: boolean }
-  | { kind: 'team'; id: string; name: string; color: string }
-  | null;
+export type Assignee = User
+  // | { kind: 'user'; id: string; firstName: string;  lastName:string; initials: string; online: boolean,activityStatus: string }
+  // | { kind: 'team'; id: string; name: string; color: string }
+  // | null;
 
 export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read';
 
@@ -14,7 +15,7 @@ export type AttachmentType = 'image' | 'audio' | 'video' | 'doc';
 
 export type MediaAttachment = {
   type: AttachmentType;
-  name: string;
+  filename: string;
   url: string;
   mimeType?: string;
   size?: number;
@@ -33,6 +34,8 @@ export type Message = {
   channel?: string;
   attachments?: MediaAttachment[];
 };
+
+
 
 export type Conversation = {
   id: number;
@@ -71,6 +74,8 @@ export interface Contact {
   company: string;
   lifecycleStage: string;
   tags: string[];
-  avatar: string;
+  avatarUrl: string;
   channel: string;
+  assigneeId: string | null;
+  status: 'open' | 'closed';
 }

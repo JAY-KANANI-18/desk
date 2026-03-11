@@ -23,27 +23,26 @@ export function InboxPage() {
     selectedChannel,
     inputMode,
     snoozedUntil,
-    chatStatus,
+    selectedContact,
     msgSearchOpen,
     msgSearch,
     selectConversation,
-      channels,
+    channels,
     handleChannelChange,
     setInputMode,
     setSnoozedUntil,
-    setChatStatus,
     toggleMsgSearch,
     setMsgSearch,
     sendMessage,
   } = useInbox();
 
-  console.log({selectedChannel,channels});
-  
+  console.log({ selectedChannel, channels, selectedConversation });
+
   const handleSendMessage = useCallback(
     (msg) => {
       console.log("SENDING MESSAGE", msg);
       return sendMessage(msg);
-      
+
 
     },
     [sendMessage]
@@ -60,7 +59,7 @@ export function InboxPage() {
   useEffect(() => {
     if (!conversationId) return;
     const id = Number(conversationId);
-    if (id === selectedConversation.id) return;
+    if (id === selectedConversation?.id) return;
     const conv = convList.find((c) => c.id === id);
     if (conv) selectConversation(conv);
   }, [conversationId, convList]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -85,43 +84,49 @@ export function InboxPage() {
         channels={channels}
       />
 
-      <div className="flex-1 flex flex-col bg-white min-w-0">
-        <ChatHeader
-          selectedConversation={selectedConversation}
-          snoozedUntil={snoozedUntil}
-          onSnooze={setSnoozedUntil}
-          onUnsnooze={() => setSnoozedUntil(null)}
-          chatStatus={chatStatus}
-          onChatStatusChange={setChatStatus}
-          msgSearchOpen={msgSearchOpen}
-          onToggleMsgSearch={toggleMsgSearch}
-        />
-        <MessageArea
-          selectedConversation={selectedConversation}
-          messages={messages[selectedConversation.id] ?? []}
-          snoozedUntil={snoozedUntil}
-          onUnsnooze={() => setSnoozedUntil(null)}
-          msgSearchOpen={msgSearchOpen}
-          msgSearch={msgSearch}
-          onMsgSearchChange={setMsgSearch}
-          onCloseMsgSearch={() => {
-            setMsgSearch("");
-            toggleMsgSearch();
-          }}
-        />
-        <InputArea
-          key={selectedConversation.id}
-          inputMode={inputMode}
-          onInputModeChange={setInputMode}
-          selectedConversation={selectedConversation}
-          selectedChannel={selectedChannel}
-          onChannelChange={handleChannelChange}
-          channels={channels}
-          onSendMessage={handleSendMessage}
-        />
-      </div>
+      {selectedConversation ? (
+        <div className="flex-1 flex flex-col bg-white min-w-0">
+          <ChatHeader
+            selectedConversation={selectedConversation}
+            snoozedUntil={snoozedUntil}
+            onSnooze={setSnoozedUntil}
+            onUnsnooze={() => setSnoozedUntil(null)}
+            msgSearchOpen={msgSearchOpen}
+            onToggleMsgSearch={toggleMsgSearch}
+          />
+          <MessageArea
+            selectedConversation={selectedConversation}
+            messages={messages[selectedConversation?.id] ?? []}
+            snoozedUntil={snoozedUntil}
+            onUnsnooze={() => setSnoozedUntil(null)}
+            msgSearchOpen={msgSearchOpen}
+            msgSearch={msgSearch}
+            onMsgSearchChange={setMsgSearch}
+            onCloseMsgSearch={() => {
+              setMsgSearch("");
+              toggleMsgSearch();
+            }}
+          />
+          <InputArea
+            key={selectedConversation?.id}
+            inputMode={inputMode}
+            onInputModeChange={setInputMode}
+            selectedConversation={selectedConversation}
+            selectedChannel={selectedChannel}
+            onChannelChange={handleChannelChange}
+            channels={channels}
+            onSendMessage={handleSendMessage}
+          />
 
-      <ContactSidebar selectedConversation={selectedConversation} />
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">Select a conversation to start messaging</p>
+        </div>
+      )
+      }
+
+      {selectedConversation?.id && <ContactSidebar key={selectedConversation?.id} selectedConversation={selectedConversation} contactDetails={selectedContact} />}
     </div>
   );
 }

@@ -7,14 +7,17 @@ import React, {
 } from "react";
 import { authApi } from "../lib/authApi";
 import type { AuthUser } from "../lib/authApi";
+import { supabase } from "../lib/supabase";
 
 // ─── Domain user type ─────────────────────────────────────────────────────────
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  avatar: string;
+  avatarUrl?: string;
   role: string;
+  activityStatus?: string;
 }
 
 // ─── Context shape ────────────────────────────────────────────────────────────
@@ -25,6 +28,7 @@ interface AuthContextType {
   pendingEmail: string;
   authFlow: "signup" | "forgot-password" | null;
   orgsLoaded: boolean;
+  passwordSet: boolean;
   login: (
     email: string,
     password: string
@@ -46,11 +50,12 @@ interface AuthContextType {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const toUser = (u: AuthUser): User => ({
+const toUser = (u: AuthUser | User): User => ({
   id: u.id,
-  name: u.name,
+  firstName: "",
+  lastName: "",
   email: u.email,
-  avatar: u.name.slice(0, 2).toUpperCase(),
+  ...(u?.avatarUrl && { avatarUrl: u.avatarUrl }),
   role: u.role,
 });
 
@@ -66,6 +71,8 @@ interface Organization {
   workspaces: Workspace[];
 }
 
+
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -77,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [passwordSet, setPasswordSet] = useState(false);
   const [authFlow, setAuthFlow] = useState<"signup" | "forgot-password" | null>(
     null
   );
@@ -84,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Apply / clear session ──────────────────────────────────────────────────
   const applyUser = useCallback((u: AuthUser | null) => {
     if (u) {
+      console.log({ UUUUUUUUUU: u });
+     
       setUser(toUser(u));
       setIsAuthenticated(true);
     } else {
@@ -91,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsAuthenticated(false);
     }
   }, []);
+
 
   //
   // const refreshOrganizations = useCallback(async () => {
@@ -129,39 +140,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // }, []);
 
   const refreshUser = useCallback(async () => {
-    try {
-      const result = await authApi.getUser();
 
-      if (result.success && result.data) {
-        console.log(result.data);
+    const result = await authApi.getUser();
 
-        setUser(result.data);
+    if (result.success && result.data) {
 
-        let workspaces: Workspace[] = [];
+      setUser(result.data);
 
-        if (result.data?.organizations) {
-        }
+      let workspaces: Workspace[] = [];
+
+      if (result.data?.organizations) {
       }
-    } catch (err) {
-      console.error("Failed to fetch user", err);
     }
+
   }, []);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    authApi
-      .getSession()
-      .then((u) => {
-        applyUser(u);
-        setIsLoading(false);
-        refreshUser();
-        // refreshOrganizations();
-      })
-      .catch((e) => {
-        console.log({ e });
+    const initAuth = async () => {
+      try {
+        const { user: u, session } = await authApi.getSession();
+        console.log({session, ffwefwe: session?.session?.user?.user_metadata?.passwordSet });
+        if (session) {
+          setPasswordSet(session?.session?.user?.user_metadata?.passwordSet || false);
+          
+        }
 
+
+        applyUser(u);
+        await refreshUser();
+        // await refreshOrganizations();
+
+      } catch (e) {
+        console.log({ e });
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+
+    initAuth();
+    console.log("INIR");
 
     const unsubscribe = authApi.onAuthStateChange((u) => {
       applyUser(u);
@@ -169,7 +187,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return unsubscribe;
   }, [applyUser]);
-
   // ── Auth actions ───────────────────────────────────────────────────────────
   const login = useCallback(
     async (email: string, password: string) => {
@@ -216,7 +233,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const verifyCode = useCallback(
     async (code: string) => {
       const result = await authApi.verifyCode(code, pendingEmail, authFlow);
-
+      if (authFlow === "forgot-password") {
+        navigate("/auth/reset-password");
+      }
       if (authFlow === "signup") {
         await authApi.organizationSetup(
           pendingEmail,
@@ -267,6 +286,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user,
         pendingEmail,
         authFlow,
+        passwordSet,
+
 
         login,
         signup,

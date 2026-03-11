@@ -24,7 +24,7 @@ const SectionContent = () => {
 
   switch (activeItem) {
     case 'General info':      return <GeneralInfo />;
-    case 'Personal Settings': return <UserSettings />;
+    // case 'Personal Settings': return <UserSettings />;
     case 'User settings':     return <TeamSettings />;
     case 'Teams':             return <Teams />;
     case 'Channels':       return <ChannelsSettings />;

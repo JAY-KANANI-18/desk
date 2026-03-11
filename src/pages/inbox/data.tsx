@@ -142,7 +142,7 @@ export const conversations: Conversation[] = [
       lifecycleStage: "Customer",
       tags: ["Customer"],
       avatar: "TB",
-      channel: "facebook",
+      channel: "messenger",
     },
     lastMessage: {
       id: 5,
@@ -154,12 +154,12 @@ export const conversations: Conversation[] = [
       time: "Yesterday",
       status: "sent",
       direction: "outgoing",
-      channel: "facebook",
+      channel: "messenger",
     },
     time: "Yesterday",
     unreadCount: 0,
     tag: "Customer",
-    channel: "facebook",
+    channel: "messenger",
     direction: "outgoing",
   },
   {
@@ -197,24 +197,32 @@ export const conversations: Conversation[] = [
 
 export const channelConfig: Record<string, ChannelConfig> = {
   whatsapp: {
-    icon: <MessageCircle size={8} />,
+    icon: "https://cdn.simpleicons.org/whatsapp",
     bg: "bg-green-500",
     label: "WhatsApp",
   },
   instagram: {
-    icon: <Instagram size={8} />,
+    icon: "https://cdn.simpleicons.org/instagram",
     bg: "bg-pink-500",
     label: "Instagram",
   },
-  facebook: {
-    icon: <Facebook size={8} />,
+  messenger: {
+    icon: "https://cdn.simpleicons.org/messenger",
     bg: "bg-blue-600",
     label: "Messenger",
   },
-  gmail: { icon: <Mail size={8} />, bg: "bg-red-500", label: "Gmail" },
-  email: { icon: <Mail size={8} />, bg: "bg-blue-500", label: "Email" },
+  gmail: {
+    icon: "https://cdn.simpleicons.org/gmail",
+    bg: "bg-red-500",
+    label: "Gmail",
+  },
+  email: {
+    icon: "https://cdn.simpleicons.org/maildotru",
+    bg: "bg-blue-500",
+    label: "Email",
+  },
   websitechat: {
-    icon: <Globe size={8} />,
+    icon: "https://cdn.simpleicons.org/googlechat",
     bg: "bg-purple-500",
     label: "Website Chat",
   },

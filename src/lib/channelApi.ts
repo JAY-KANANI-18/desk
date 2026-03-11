@@ -17,21 +17,46 @@ interface CreateChannelPayload {
 
 export const ChannelApi = {
     whatsappManualConnect: (accessToken: string, phoneNumberId
-: string,wabaId:string,webhookSecret:string) =>
+        : string, wabaId: string, webhookSecret: string) =>
         api.post("/channels/whatsapp/connect-manual", {
             accessToken,
             phoneNumberId,
-wabaId,
-webhookSecret
+            wabaId,
+            webhookSecret
         }),
     getChannels: () => api.get('/channels'),
     createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
         api.post(`/channels?workspaceId=${workspaceId}`, payload),
     deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),
-    sendMessage: (channelId: string, conversationId: string, message: any) =>
-        api.post(`/channels/message`, { channelId, conversationId, ...message }),
+  
     startOauthWhatsapp: (workspaceId: string) =>
         api.get(`/channels/whatsapp/oauth?workspaceId=${workspaceId}`),
+    updateWhatsAppChannel: (channelId: string, data: any) =>
+        api.put(`/channels/whatsapp/${channelId}`, data),
+    updateInstagramChannel: (channelId: string, data: any) =>
+        api.put(`/channels/instagram/${channelId}`, data),
+    updateMessengerChannel: (channelId: string, data: any) =>
+        api.put(`/channels/messenger/${channelId}`, data),
+    updateEmailChannel: (channelId: string, data: any) =>
+        api.put(`/channels/email/${channelId}`, data),
+    updateGmailChannel: (channelId: string, data: any) =>
+        api.put(`/channels/gmail/${channelId}`, data),
+    updateWebsiteChatChannel: (channelId: string, data: any) =>
+        api.put(`/channels/website-chat/${channelId}`, data),
+
+    connectWhatsAppViaFB: (auth: any) =>
+        api.post("/channels/whatsapp/connect-fb", {
+            accessToken: auth.accessToken,
+            userID: auth.userID,
+                email: auth.email,
+                name: auth.name,    
+
+
+        })
+
+
+
+
 
 }
 

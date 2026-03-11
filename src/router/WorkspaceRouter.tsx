@@ -13,7 +13,6 @@ import { Dashboard } from "../pages/Dashboard";
 import { InboxLayout, InboxPage } from "../pages/Inbox";
 import { GeneralOrgInfo } from "../pages/organization/GeneralOrgInfo";
 import { Reports } from "../pages/Reports";
-import { Team } from "../pages/Team";
 import { Workflows } from "../pages/Workflows";
 import { WorkspaceSettings } from "../pages/workspace";
 import { ManageChannelPage } from "../pages/channels/ManageChannelPage";
@@ -26,6 +25,9 @@ import { WhatsAppFees } from "../pages/organization/WhatsAppFees";
 import { WorkspacesManage } from "../pages/organization/WorkspacesManage";
 import { OrgUsersSettings } from "../pages/organization/OrgUsersSettings";
 import InstagramCallback from "../pages/InstagramCallback";
+import { ChannelCatalogView } from "../pages/ConnectChannel";
+import { UserSettings } from "../pages/workspace/sections/UserSettings";
+import { ResetPassword } from "../pages/auth/ResetPassword";
 
 export const WorkspaceRouter = () => {
   return (
@@ -50,6 +52,10 @@ export const WorkspaceRouter = () => {
         <Route path="workflows" element={<Workflows />} />
         <Route path="reports" element={<Reports />} />
         <Route path="channels" element={<Channels />} />
+        <Route path="user/settings" element={<UserSettings />} />
+        <Route path="channels/connect" element={<ChannelCatalogView />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+
 
 
         <Route
@@ -60,8 +66,8 @@ export const WorkspaceRouter = () => {
           path="channel/manage/:channelType/:channelId"
           element={<ManageChannelPage />}
         />
-
-        <Route path="team" element={<Team />} />
+<Route path="channel/manage/:channelType/:channelId" element={<ManageChannelPage />} />
+<Route path="channel/manage/:channelType/:channelId/:sectionId" element={<ManageChannelPage />} />
 
         <Route path="organization" element={<Organization />}>
           <Route index element={<Navigate to="account-info" replace />} />

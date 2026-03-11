@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { Integration } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const Integrations = () => {
   const [integrations, setIntegrations] = useState<Integration[]>([]);

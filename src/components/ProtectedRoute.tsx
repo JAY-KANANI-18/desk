@@ -50,13 +50,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const isOnboardingPage = location.pathname.startsWith("/onboarding");
 
-  console.log({ organizations });
 
   // 🚀 Logged in but no org → force onboarding
   if (organizations?.length === 0 && !isOnboardingPage) {
     return <Navigate to="/onboarding" replace />;
   }
-  console.log({ organizations });
 
   // 🔐 Permission check (only after onboarding)
   if (organizations?.length > 0 && isOnboardingPage) {

@@ -5,6 +5,7 @@
 // Replace apiFetch() stubs with your actual API client (axios, react-query, etc.)
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { api } from "./api";
 import { apiFetch } from "./apiClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,6 +184,42 @@ export const contactsApi = {
         return res;
     },
 
+    assignContact: async (contactId: number, assigneeId: string | null): Promise<void> => {
+        return await api.patch(`/contacts/${contactId}/assign`, {
+            assigneeId,
+        });
+    },
+    getContact: async (contactId: number): Promise<Contact> => {
+        const res = await api.get(`/contacts/${contactId}`);
+        return res;
+    },
+
+    statusUpdate: async (contactId: number, status: string | null): Promise<void> => {
+        return await api.patch(`/contacts/${contactId}/status`, {
+            status,
+        });
+    },
+
+    SaveContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
+        const res = await api.post("/contacts", contact);
+        return res;
+    },
+    // CreateContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
+    //     const res = await api.post("/contacts", contact);
+    //     return res;
+    // },
+    updateContact: async (id: number, updates: Partial<Contact>): Promise<Contact> => {
+        const res = await api.patch(`/contacts/${id}`, updates);
+        return res;
+    },
+    MergeContacts: async (keepId: number | undefined, removeId: number, merged: Contact): Promise<Contact> => {
+        const res = await api.post(`/contacts/merge`, {
+            keepId,
+            removeId,
+            merged,
+        });
+        return res;
+    },
     /** POST /contacts — creates a new contact */
     createContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
         const res = await apiFetch("/contacts", {
@@ -195,18 +232,18 @@ export const contactsApi = {
     },
 
     /** PUT /contacts/:id — updates a contact */
-    updateContact: async (
-        id: number,
-        updates: Partial<Contact>
-    ): Promise<Contact> => {
-        const res = await apiFetch(`/contacts/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updates),
-        });
-        if (!res.ok) throw new Error("Failed to update contact");
-        return res.json();
-    },
+    // updateContact: async (
+    //     id: number,
+    //     updates: Partial<Contact>
+    // ): Promise<Contact> => {
+    //     const res = await apiFetch(`/contacts/${id}`, {
+    //         method: "PATCH",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify(updates),
+    //     });
+    //     if (!res.ok) throw new Error("Failed to update contact");
+    //     return res.json();
+    // },
 
     /** DELETE /contacts/:id — deletes a single contact */
     deleteContact: async (id: number): Promise<void> => {

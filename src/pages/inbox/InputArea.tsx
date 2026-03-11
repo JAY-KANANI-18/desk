@@ -45,7 +45,7 @@ export function InputArea({ inputMode, onInputModeChange, selectedConversation, 
         ? <EmailInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
         : inputMode === 'reply'
         ? <ReplyInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
-        : <CommentInput   conversationId={selectedConversation.id} onSendMessage={onSendMessage} />
+        : <CommentInput   conversationId={selectedConversation?.id} onSendMessage={onSendMessage} />
       }
     </div>
   );

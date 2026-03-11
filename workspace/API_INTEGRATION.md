@@ -60,7 +60,7 @@ type Conversation = {
   unreadCount: number;
   tag: string;           // e.g. "New Lead", "Customer"
   avatar: string;        // 2-letter initials
-  channel: string;       // "whatsapp" | "email" | "instagram" | "facebook" | "websitechat"
+  channel: string;       // "whatsapp" | "email" | "instagram" | "messenger" | "websitechat"
   direction: 'incoming' | 'outgoing';
 };
 ```
@@ -614,7 +614,7 @@ Array<{
   icon: string;
   color: string;        // Tailwind bg class
   msgs: number;
-  channelType?: 'whatsapp' | 'instagram' | 'facebook' | 'gmail' | 'email';
+  channelType?: 'whatsapp' | 'instagram' | 'messenger' | 'gmail' | 'email';
 }>
 ```
 

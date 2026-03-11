@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, X, Sparkles } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { AIPrompt } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const AIPrompts = () => {
   const [prompts, setPrompts]         = useState<AIPrompt[]>([]);

@@ -5,11 +5,13 @@ import { channelConfig, variables } from './data';
 import type { Conversation, Message, MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
+import { useInbox } from '../../context/InboxContext';
 
 type AttachedFile = {
   file: File;
   type: AttachmentType;
   url: string;
+  previewUrl?: string;
 };
 
 function getAttachmentType(file: File): AttachmentType {
@@ -19,6 +21,10 @@ function getAttachmentType(file: File): AttachmentType {
   return 'doc';
 }
 
+interface AudioRecorderProps {
+  onSend: (audio: Blob) => void
+  onCancel: () => void
+}
 interface ReplyInputProps {
   channels: any[];
   selectedConversation: Conversation;
@@ -36,22 +42,26 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
   const [variableQuery, setVariableQuery] = useState<string | null>(null);
   const [variableHighlight, setVariableHighlight] = useState(0);
 
-  const textareaRef         = useRef<HTMLTextAreaElement>(null);
-  const fileRef             = useRef<HTMLInputElement>(null);
-  const imageRef            = useRef<HTMLInputElement>(null);
-  const videoRef            = useRef<HTMLInputElement>(null);
-  const emojiRef            = useRef<HTMLDivElement>(null);
-  const channelRef          = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
 
   const ch = channelConfig[selectedChannel?.type] ?? channelConfig['email'];
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
-        v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
-        v.label.toLowerCase().includes(variableQuery.toLowerCase())
-      )
+      v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
+      v.label.toLowerCase().includes(variableQuery.toLowerCase())
+    )
     : [];
+
+  const { uploadFile } = useInbox();
+
+
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -83,9 +93,9 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (variableQuery !== null && filteredVariables.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setVariableHighlight(h => Math.min(h + 1, filteredVariables.length - 1)); return; }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
-      if (e.key === 'Enter')     { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
-      if (e.key === 'Escape')    { setVariableQuery(null); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
+      if (e.key === 'Escape') { setVariableQuery(null); return; }
     }
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
   };
@@ -111,15 +121,33 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
     }
   };
 
-  const addFiles = (files: FileList | null) => {
+  const addFiles = async (files: FileList | null) => {
+
     if (!files) return;
-    const newFiles: AttachedFile[] = Array.from(files).map(file => ({
-      file,
-      type: getAttachmentType(file),
-      url: URL.createObjectURL(file),
-    }));
-    setAttachedFiles(prev => [...prev, ...newFiles]);
-  };
+
+    const uploaded: AttachedFile[] = [];
+
+    for (const file of Array.from(files)) {
+
+      const previewUrl = URL.createObjectURL(file)
+
+      const uploadedUrl = await uploadFile(
+        file,
+        selectedConversation.id
+      )
+
+      uploaded.push({
+        file,
+        type: getAttachmentType(file),
+        previewUrl: previewUrl  ,
+        url: uploadedUrl || ""
+      })
+
+    }
+
+    setAttachedFiles(prev => [...prev, ...uploaded])
+
+  }
 
   const removeFile = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
@@ -131,14 +159,14 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
     if (!canSend) return;
     const attachments: MediaAttachment[] = attachedFiles.map(af => ({
       type: af.type,
-      name: af.file.name,
+      filename: af.file.name,
       url: af.url,
       mimeType: af.file.type,
-      size: af.file.size,
+      // size: af.file.size,
     }));
     onSendMessage({
       id: Date.now(),
-      conversationId: selectedConversation.id,
+      conversationId: selectedConversation?.id,
       type: 'reply',
       text: message.trim(),
       author: 'You',
@@ -151,20 +179,39 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
     setAttachedFiles([]);
   };
 
-  const handleAudioSend = (audioUrl: string) => {
-    onSendMessage({
-      id: Date.now(),
-      conversationId: selectedConversation.id,
-      type: 'reply',
-      text: '',
-      author: 'You',
-      initials: 'ME',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      channel: selectedChannel,
-      attachments: [{ type: 'audio', name: 'Voice message', url: audioUrl }],
-    });
-    setShowRecorder(false);
-  };
+  const handleAudioSend = async (audioBlob: Blob) => {
+
+ const file = new File(
+  [audioBlob],
+  `audio_recording.m4a`,
+  { type: "audio/x-m4a" }
+);
+
+  const url = await uploadFile(
+    file,
+    selectedConversation.id
+  );
+
+  onSendMessage({
+    id: Date.now(),
+    conversationId: selectedConversation?.id,
+    type: 'reply',
+    text: '',
+    author: 'You',
+    initials: 'ME',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    channel: selectedChannel,
+    attachments: [{
+      type: 'audio',
+      filename: file.name,
+      url,
+      mimeType: file.type,
+      // size: file.size
+    }],
+  });
+
+  setShowRecorder(false);
+};
 
   return (
     <div className="p-4">
@@ -173,16 +220,18 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
         <div className="relative" ref={channelRef}>
           <button
             onClick={() => setChannelMenuOpen(o => !o)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-white text-xs font-medium transition-all hover:opacity-90 active:scale-95 shadow-sm ${ch.bg}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg  text-xs font-medium transition-all hover:opacity-90 active:scale-95 shadow-sm }`}
             title="Switch channel"
           >
-            <span className="[&>svg]:!w-3 [&>svg]:!h-3">{ch.icon}</span>
-            <span>{ch.label}</span>
+            <img src={channelConfig[selectedChannel?.type]?.icon} alt={`${selectedChannel?.name} icon`} className="w-3 h-3" />
+
+            {/* <span className="[&>svg]:!w-3 [&>svg]:!h-3">{  channelConfig[selectedChannel?.type].icon}</span> */}
+            <span>{selectedChannel?.name}</span>
             <ChevronDown size={11} className={`transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {channelMenuOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
+            <div className="absolute bottom-full left-0  mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1.5">Send via channel</p>
               {channels?.map((ch) => (
                 <button
@@ -190,20 +239,21 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
                   onClick={() => { onChannelChange(ch); setChannelMenuOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}
                 >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 ${channelConfig[ch.type].bg}`}>
-                    {channelConfig[ch.type].icon}
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 [&>svg]:!w-3 [&>svg]:!h-3 `}>
+                    <img src={channelConfig[ch.type].icon} alt={`${ch.name} icon`} className="w-4 h-4" />
+
                   </span>
-                  <span className="flex-1 text-left font-medium text-gray-700">{channelConfig[ch.type].label}</span>
-                  {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+                  <span className="flex-1 text-left font-medium text-gray-700">{ch.name}</span>
+                  {selectedChannel?.id === ch.type && <Check size={13} className="text-blue-600 flex-shrink-0" />}
                 </button>
               ))}
             </div>
           )}
         </div>
-
+        {/* 
         <button className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
           <span className="text-lg">✨</span>AI Assist
-        </button>
+        </button> */}
       </div>
 
       {showRecorder ? (
@@ -267,7 +317,7 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
             onKeyDown={handleKeyDown}
             placeholder="Use '/' for snippets, '$' for variables, ':' for emoji"
             className="w-full px-4 py-3 resize-none focus:outline-none rounded-t-lg text-sm"
-            rows={3}
+            rows={1}
           />
 
           {/* File previews */}
@@ -278,7 +328,7 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
                   af.type === 'image' ? (
                     <div key={i} className="relative group flex-shrink-0">
                       <img
-                        src={af.url}
+                        src={af.previewUrl}
                         alt={af.file.name}
                         className="w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm"
                       />
@@ -295,13 +345,12 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
                   ) : (
                     <span
                       key={i}
-                      className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${
-                        af.type === 'audio'
+                      className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio'
                           ? 'bg-red-50 text-red-700 border-red-200'
                           : af.type === 'video'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}
                     >
                       {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
                       <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
@@ -369,18 +418,17 @@ export function ReplyInput({ channels, selectedConversation, selectedChannel, on
             <button
               onClick={handleSend}
               disabled={!canSend}
-              className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
-                canSend
+              className={`flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${canSend
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
+                }`}
             >
-              <Send size={15} />
-              <span>Send via</span>
-              <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold text-white ${ch.bg}`}>
+              <Send size={20} />
+              {/* <span>Send</span> */}
+              {/* <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold text-white ${ch.bg}`}>
                 <span className="[&>svg]:!w-2.5 [&>svg]:!h-2.5">{ch.icon}</span>
-                {/* {ch.label} */}
-              </span>
+                {ch.label}
+              </span> */}
             </button>
           </div>
         </div>

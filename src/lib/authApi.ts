@@ -14,6 +14,8 @@ export interface AuthUser {
 }
 
 
+
+
 // ─── Mock users ───────────────────────────────────────────────────────────────
 // Each entry maps to a role in the authorization system.
 // Password for all demo accounts: demo123
@@ -52,10 +54,17 @@ const fromSupabase = (
 export const authApi = {
   // ── Session ───────────────────────────────
 
-  getSession: async (): Promise<AuthUser | null> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user ? fromSupabase(session.user) : null;
-  },
+getSession: async (): Promise<any | null> => {
+  console.log("GET SESSION CALLED");
+
+  const { data, error } = await supabase.auth.getSession();
+
+  console.log("SESSION RESULT", data, error);
+
+  const session = data?.session;
+
+  return { session: data, user : {...(session?.user ? fromSupabase(session.user) : null)}}
+},
 
   onAuthStateChange: (
     callback: (user: AuthUser | null) => void
@@ -113,6 +122,7 @@ export const authApi = {
       options: {
         data: {
           full_name: name,
+           passwordSet: true
         },
       },
     });
@@ -128,7 +138,7 @@ export const authApi = {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/inbox`,
+        redirectTo: `${window.location.origin}/dashboard`,
       },
     });
   },
@@ -220,9 +230,12 @@ export const authApi = {
   resetPassword: async (
     newPassword: string
   ): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+    const { error } = await supabase.auth.
+      updateUser({
+        password: newPassword,
+        data:{passwordSet: true}
+      });
+    console.log({ error });
 
     if (error) return { success: false, error: error.message };
 

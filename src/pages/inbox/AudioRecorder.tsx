@@ -4,7 +4,7 @@ import { WAVEFORM_BARS } from './data';
 import { formatTime } from './utils';
 
 interface AudioRecorderProps {
-  onSend: (audioUrl: string) => void;
+  onSend: (audioBlob: Blob) => void;
   onCancel: () => void;
 }
 
@@ -16,11 +16,12 @@ export function AudioRecorder({ onSend, onCancel }: AudioRecorderProps) {
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
 
-  const mediaRecorderRef  = useRef<MediaRecorder | null>(null);
-  const audioChunksRef    = useRef<Blob[]>([]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef          = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef       = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const audioBlobRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     startRecording();
@@ -28,23 +29,34 @@ export function AudioRecorder({ onSend, onCancel }: AudioRecorderProps) {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mimeType =
+        MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "audio/webm";
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(audioChunksRef.current, {
+          type: mimeType === "audio/mp4" ? "audio/x-m4a" : "audio/webm"
+        });
+         audioBlobRef.current = blob;
+
         const url = URL.createObjectURL(blob);
         audioUrlRef.current = url;
         setAudioUrl(url);
+
         setPhase('recorded');
+
         stream.getTracks().forEach(t => t.stop());
       };
 
@@ -72,10 +84,16 @@ export function AudioRecorder({ onSend, onCancel }: AudioRecorderProps) {
   };
 
   const handleSend = () => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
-    const url = audioUrlRef.current ?? '';
-    audioUrlRef.current = null; // don't revoke — URL is passed to message
-    onSend(url);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+
+    if (!audioBlobRef.current) return;
+
+    onSend(audioBlobRef.current);
+
   };
 
   const togglePlayback = () => {

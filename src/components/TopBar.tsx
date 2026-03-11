@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -22,6 +22,7 @@ import {
   Building2,
   Check,
   Plus,
+  Key,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -32,6 +33,8 @@ import type {
 } from "../context/NotificationContext";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { AvailabilityStatus } from "../pages/workspace/types";
+import { workspaceApi } from "../lib/workspaceApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Workspace Switcher
@@ -96,8 +99,6 @@ const WorkspaceSwitcher = () => {
   // const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(
   //   MOCK_ORGS[0].workspaces[0]
   // );
-  console.log({ INNNN: organizations });
-  console.log({ activeWorkspace });
 
   const select = (ws: Workspace) => {
     setActiveWorkspaceFunc(ws);
@@ -108,9 +109,8 @@ const WorkspaceSwitcher = () => {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 h-9 px-2.5 rounded-lg transition-colors ${
-          open ? "bg-gray-100" : "hover:bg-gray-100"
-        }`}
+        className={`flex items-center gap-2 h-9 px-2.5 rounded-lg transition-colors ${open ? "bg-gray-100" : "hover:bg-gray-100"
+          }`}
       >
         {/* Workspace avatar */}
         <div
@@ -159,9 +159,9 @@ const WorkspaceSwitcher = () => {
                         <div className="text-sm font-medium text-gray-800">
                           {ws.name}
                         </div>
-                        <div className="text-xs text-gray-400">
+                        {/* <div className="text-xs text-gray-400">
                           {ws.plan} plan
-                        </div>
+                        </div> */}
                       </div>
 
                       {activeWorkspace.id === ws.id && (
@@ -175,7 +175,7 @@ const WorkspaceSwitcher = () => {
             <div
               className="border-t border-gray-100 p-1.5"
               onClick={() => {
-                navigate("/organization");
+                navigate("/organization/workspaces");
                 setOpen(false);
               }}
             >
@@ -416,20 +416,57 @@ const HelpPanel = ({ onClose }: { onClose: () => void }) => (
   </>
 );
 
+const STATUSES: { key: AvailabilityStatus; label: string; color: string }[]
+  = [
+    { key: 'online', label: 'Online', color: 'bg-green-500' },
+    { key: 'away', label: 'Away', color: 'bg-yellow-400' },
+    { key: 'dnd', label: 'Do not disturb', color: 'bg-red-500' },
+  ];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TopBar
 // ─────────────────────────────────────────────────────────────────────────────
 export const TopBar = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { unreadCount, markAllRead } = useNotifications();
+const { user, logout } = useAuth();
+const { workspaceUsers } = useWorkspace();
+const { unreadCount, markAllRead } = useNotifications();
 
-  const { simulateIncomingCall } = useCall();
+const [showNotifications, setShowNotifications] = useState(false);
+const [showHelp, setShowHelp] = useState(false);
+const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+const [activityStatus, setActivityStatus] = useState<{
+  key: string;
+  label: string;
+  color: string;
+} | null>(null);
 
+const [open, setOpen] = useState(false);
+const ref = useRef<HTMLDivElement>(null);
+useEffect(() => {
+  if (!workspaceUsers || !user) return;
+
+  const currentUser = workspaceUsers.find((u) => u.id === user.id);
+
+  if (!currentUser?.activityStatus) return;
+
+  const status = STATUSES.find((s) => s.key === currentUser.activityStatus);
+
+  if (status) {
+    setActivityStatus(status);
+  }
+}, [workspaceUsers, user]);
+
+
+  useEffect(() => {
+   
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
@@ -443,6 +480,13 @@ export const TopBar = () => {
     markAllRead();
   }, [markAllRead]);
 
+  const handleAvailabilityChange = async (status: any) => {
+    const prev = activityStatus;
+    setActivityStatus(status);
+    try { await workspaceApi.updateAvailability( status.key); }
+    catch { setActivityStatus(prev); }
+  };
+
   return (
     <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
       {/* Left — workspace switcher */}
@@ -451,14 +495,14 @@ export const TopBar = () => {
       {/* Right — action icons */}
       <div className="flex items-center gap-1">
         {/* Simulate incoming call (demo) */}
-        <button
+        {/* <button
           onClick={() => simulateIncomingCall()}
           title="Simulate incoming call (demo)"
           className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-green-600 transition-colors relative"
         >
           <Phone size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white" />
-        </button>
+        </button> */}
 
         {/* Help */}
         <div className="relative">
@@ -468,11 +512,10 @@ export const TopBar = () => {
               setShowNotifications(false);
               setShowUserMenu(false);
             }}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
-              showHelp
-                ? "bg-gray-100 text-gray-700"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            }`}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${showHelp
+              ? "bg-gray-100 text-gray-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
             title="Help"
           >
             <HelpCircle size={20} />
@@ -484,11 +527,10 @@ export const TopBar = () => {
         <div className="relative">
           <button
             onClick={openNotifications}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative ${
-              showNotifications
-                ? "bg-gray-100 text-gray-700"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            }`}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative ${showNotifications
+              ? "bg-gray-100 text-gray-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
             title="Notifications"
           >
             <Bell size={20} />
@@ -518,39 +560,76 @@ export const TopBar = () => {
               setShowHelp(false);
             }}
             className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title={user?.name ?? "User"}
+            title={user?.firstName || user?.lastName || "User"}
           >
             <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-              {user?.avatar ?? "U"}
+              {user?.avatarUrl && <img
+                src={user?.avatarUrl}
+                alt={"avatar"}
+                className="w-full rounded-full h-full object-cover"
+              />}
             </div>
             <span className="text-sm font-medium text-gray-700 hidden md:block max-w-[120px] truncate">
-              {user?.name ?? "User"}
+              {user?.firstName || user?.lastName || user?.email || "User"}
             </span>
           </button>
 
           {showUserMenu && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className={`fixed inset-0 z-10 transition-opacity duration-500
+      ${showUserMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20">
+              <div className={`absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20
+    transition-all duration-200 origin-top-right
+    ${showUserMenu ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+              >
                 <div className="p-4 border-b border-gray-100">
                   <div className="font-semibold text-gray-800">
-                    {user?.name?.toUpperCase() ?? "USER"}
+                    {user?.firstName ?? "User"
+                    }
                   </div>
                   <div className="text-sm text-gray-500 truncate">
                     {user?.email ?? ""}
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span className="text-sm text-gray-600">Online</span>
+                  <div className="relative" ref={ref}>
+                    <button
+                      onClick={() => setOpen(o => !o)}
+                      className="flex items-center gap-2 mt-2 group"
+                    >
+                      <div className={`w-2 h-2 rounded-full ${activityStatus?.color}`} />
+                      <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
+                        {activityStatus?.label}
+                      </span>
+                      <ChevronDown
+                        size={13}
+                        className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    <div className={`absolute top-0 right-full mr-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden
+                                                  transition-all duration-200 origin-top-left
+                                                ${open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+                    >
+                      {STATUSES.map(s => (
+                        <button
+                          key={s.key}
+                          onClick={() => { handleAvailabilityChange(s); setOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color}`} />
+                          <span className="text-sm text-gray-700 flex-1 text-left">{s.label}</span>
+                          {status.key === s.key && <Check size={13} className="text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="p-2">
                   <button
                     onClick={() => {
-                      navigate("/workspace-settings");
+                      navigate("/user/settings");
                       setShowUserMenu(false);
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
@@ -560,6 +639,16 @@ export const TopBar = () => {
                   </button>
                   <button
                     onClick={() => {
+                      navigate("/auth/reset-password");
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
+                  >
+                    <Key size={16} className="text-gray-400" />
+                    Reset Password
+                  </button>
+                  {/* <button
+                    onClick={() => {
                       navigate("/workspace-settings");
                       setShowUserMenu(false);
                     }}
@@ -567,7 +656,7 @@ export const TopBar = () => {
                   >
                     <Settings size={16} className="text-gray-400" />
                     Settings
-                  </button>
+                  </button> */}
                   <div className="border-t border-gray-100 my-2" />
                   <button
                     onClick={handleLogout}

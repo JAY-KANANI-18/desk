@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wand2 } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { Toggle } from '../components/Toggle';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { AISettings } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const AIAssist = () => {
   const [settings, setSettings] = useState<AISettings | null>(null);

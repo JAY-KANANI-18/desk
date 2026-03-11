@@ -9,6 +9,8 @@ async function getAccessToken(): Promise<string | null> {
         data: { session },
     } = await supabase.auth.getSession();
 
+    localStorage.setItem("access_token", JSON.stringify(session?.access_token) ?? "");
+
     return session?.access_token ?? null;
 }
 
@@ -62,6 +64,8 @@ export async function apiFetch(
 
             // logout user
             await supabase.auth.signOut();
+            localStorage.removeItem("access_token");
+
             toast.error("Session expired");
 
             // window.location.href = "/login";

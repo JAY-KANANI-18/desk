@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, X, Plus } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { Channel, ChannelType } from '../types';
@@ -9,6 +8,7 @@ import { FacebookChannel }      from '../channels/FacebookChannel';
 import { InstagramChannel }     from '../channels/InstagramChannel';
 import { GmailChannel }         from '../channels/GmailChannel';
 import { EmailChannel }         from '../channels/EmailChannel';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 // ── Channel catalogue ─────────────────────────────────────────────────────────
 const CHANNEL_DEFS: {
@@ -48,7 +48,7 @@ const CHANNEL_DEFS: {
     badgeText: 'text-pink-700',
   },
   {
-    type: 'facebook',
+    type: 'messenger',
     name: 'Facebook Messenger',
     emoji: '💙',
     description: 'Receive and reply to Messenger conversations from your Page.',
@@ -97,7 +97,7 @@ const ChannelModal = ({
   onClose: () => void;
   connected: Channel | null;
   onConnect: (channel: Channel) => void;
-  onDisconnect: (id: number) => void;
+  onDisconnect: (id: string) => void;
 }) => {
   const def = CHANNEL_DEFS.find(d => d.type === type)!;
 
@@ -106,7 +106,7 @@ const ChannelModal = ({
     // keep modal open to show connected state
   };
 
-  const handleDisconnect = (id: number) => {
+  const handleDisconnect = (id: string) => {
     onDisconnect(id);
     onClose();
   };
@@ -115,7 +115,7 @@ const ChannelModal = ({
     const props = { connected, onConnect: handleConnect, onDisconnect: handleDisconnect };
     switch (type) {
       case 'whatsapp':  return <WhatsAppCloudChannel {...props} />;
-      case 'facebook':  return <FacebookChannel {...props} />;
+      case 'messenger':  return <FacebookChannel {...props} />;
       case 'instagram': return <InstagramChannel {...props} />;
       case 'gmail':     return <GmailChannel {...props} />;
       case 'email':     return <EmailChannel {...props} />;
@@ -245,15 +245,10 @@ export const ChannelsSettings = () => {
   const [modalType, setModalType]   = useState<ChannelType | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // setLoading(true);
     setError(null);
-    try {
       setChannels(await workspaceApi.getChannels());
-    } catch {
-      setError('Failed to load channels.');
-    } finally {
-      setLoading(false);
-    }
+  
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -269,7 +264,7 @@ export const ChannelsSettings = () => {
     ]);
   };
 
-  const handleDisconnect = async (id: number) => {
+  const handleDisconnect = async (id: string) => {
     setChannels(prev => prev.filter(c => c.id !== id));
     setModalType(null);
     try { await workspaceApi.disconnectChannel(id); } catch { /* silent */ }

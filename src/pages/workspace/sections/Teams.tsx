@@ -1,24 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, X, Pencil, Users } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { Team, TeamMember } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 // ─── Team modal ───────────────────────────────────────────────────────────────
 interface TeamModalProps {
   team: Team | null; // null = create mode
   members: TeamMember[];
   onClose: () => void;
-  onSave: (name: string, description: string, memberIds: number[]) => Promise<void>;
+  onSave: (name: string, description: string, memberIds: string[]) => Promise<void>;
 }
 
 const TeamModal = ({ team, members, onClose, onSave }: TeamModalProps) => {
-  const [name, setName]               = useState(team?.name ?? '');
+  const [name, setName] = useState(team?.name ?? '');
   const [description, setDescription] = useState(team?.description ?? '');
-  const [selected, setSelected]       = useState<Set<number>>(new Set(team?.memberIds ?? []));
-  const [saving, setSaving]           = useState(false);
-  const [error, setError]             = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set(team?.memberIds ?? []));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toggle = (id: number) =>
     setSelected(prev => {
@@ -29,15 +29,11 @@ const TeamModal = ({ team, members, onClose, onSave }: TeamModalProps) => {
 
   const handleSave = async () => {
     if (!name.trim()) { setError('Team name is required'); return; }
-    setSaving(true); setError(null);
-    try {
-      await onSave(name.trim(), description.trim(), [...selected]);
-      onClose();
-    } catch {
-      setError('Failed to save team. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+    // setSaving(true); 
+    setError(null);
+    await onSave(name.trim(), description.trim(), [...selected]);
+    onClose();
+
   };
 
   return (
@@ -101,11 +97,10 @@ const TeamModal = ({ team, members, onClose, onSave }: TeamModalProps) => {
                       <p className="text-sm font-medium text-gray-800 truncate">{m.name}</p>
                       <p className="text-xs text-gray-500 truncate">{m.email}</p>
                     </div>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                      m.role === 'Admin'   ? 'bg-purple-100 text-purple-700' :
-                      m.role === 'Manager' ? 'bg-blue-100 text-blue-700'     :
-                                            'bg-gray-100 text-gray-600'
-                    }`}>{m.role}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${m.role === 'Admin' ? 'bg-purple-100 text-purple-700' :
+                        m.role === 'Manager' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
+                      }`}>{m.role}</span>
                   </label>
                 );
               })}
@@ -138,31 +133,29 @@ const TeamModal = ({ team, members, onClose, onSave }: TeamModalProps) => {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export const Teams = () => {
-  const [teams, setTeams]     = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [modalTeam, setModalTeam] = useState<Team | null | undefined>(undefined); // undefined = closed, null = create
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try {
-      const [t, m] = await Promise.all([workspaceApi.getTeams(), workspaceApi.getTeamMembers()]);
-      setTeams(t); setMembers(m);
-    } catch { setError('Failed to load teams.'); }
-    finally { setLoading(false); }
+    // setLoading(true);
+    setError(null);
+    const [t, m] = await Promise.all([workspaceApi.getTeams(), workspaceApi.getTeamMembers()]);
+    setTeams(t); setMembers(m);
+
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (name: string, description: string, memberIds: number[]) => {
+  const handleSave = async (name: string, description: string, memberIds: string[]) => {
     if (modalTeam) {
       // Edit
-      const prev = teams;
       setTeams(ts => ts.map(t => t.id === modalTeam.id ? { ...t, name, description, memberIds } : t));
-      try { await workspaceApi.updateTeam(modalTeam.id, { name, description, memberIds }); }
-      catch { setTeams(prev); throw new Error('update failed'); }
+      await workspaceApi.updateTeam(modalTeam.id, { name, description, memberIds });
+
     } else {
       // Create
       const newTeam = await workspaceApi.createTeam({ name, description, memberIds });
@@ -170,14 +163,12 @@ export const Teams = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const prev = teams;
+  const handleDelete = async (id: string) => {
     setTeams(ts => ts.filter(t => t.id !== id));
-    try { await workspaceApi.deleteTeam(id); }
-    catch { setTeams(prev); setError('Failed to delete team.'); }
+    await workspaceApi.deleteTeam(id);
   };
 
-  const getMemberById = (id: number) => members.find(m => m.id === id);
+  const getMemberById = (id: string) => members.find(m => m.id === id);
 
   if (loading) return <SectionLoader />;
   if (error && teams.length === 0) return <SectionError message={error} onRetry={load} />;

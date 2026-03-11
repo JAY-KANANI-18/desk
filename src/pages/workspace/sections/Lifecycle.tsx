@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, GripVertical, Edit2, X } from 'lucide-react';
-import { workspaceApi } from '../api';
 import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { LifecycleStage } from '../types';
+import { workspaceApi } from '../../../lib/workspaceApi';
 
 export const Lifecycle = () => {
   const [stages, setStages]     = useState<LifecycleStage[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [showAdd, setShowAdd]   = useState(false);
   const [newStage, setNewStage] = useState({ name: '', color: '#6366f1' });
@@ -15,36 +15,32 @@ export const Lifecycle = () => {
   const [adding, setAdding]     = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setStages(await workspaceApi.getLifecycleStages()); }
-    catch { setError('Failed to load lifecycle stages.'); }
-    finally { setLoading(false); }
+    // setLoading(true); 
+    setError(null);
+     setStages(await workspaceApi.getLifecycleStages()); 
+    
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleAdd = async () => {
     if (!newStage.name) return;
-    setAdding(true);
-    try {
+    // setAdding(true);
       const created = await workspaceApi.addLifecycleStage(newStage);
       setStages(prev => [...prev, created]);
       setNewStage({ name: '', color: '#6366f1' });
-      setShowAdd(false);
-    } catch { setError('Failed to add stage.'); }
-    finally { setAdding(false); }
+      // setShowAdd(false);
+    
   };
 
   const handleNameBlur = async (id: number, name: string) => {
     setEditId(null);
-    try { await workspaceApi.updateLifecycleStage(id, { name }); }
-    catch { load(); }
+    await workspaceApi.updateLifecycleStage(id, { name }); 
   };
 
   const handleDelete = async (id: number) => {
     setStages(prev => prev.filter(s => s.id !== id));
-    try { await workspaceApi.deleteLifecycleStage(id); }
-    catch { load(); }
+   await workspaceApi.deleteLifecycleStage(id); 
   };
 
   if (loading) return <SectionLoader />;
