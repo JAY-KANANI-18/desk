@@ -153,7 +153,7 @@ export function ChatHeader({
         <div className="relative" ref={assignRef}>
           <button
             onClick={() => { setAssignOpen(!assignOpen); setAssignSearch(''); }}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 min-w-[130px]"
+            className=" py-1.5 text-sm  rounded-lg hover:bg-gray-50 flex items-center gap-2 "
           >
             {assignee === null ? (
               <><UserCircle2 size={16} className="text-gray-400" /><span className="text-gray-500">Unassigned</span></>
@@ -161,7 +161,9 @@ export function ChatHeader({
             // assignee.kind === 'user' ? (
               <>
                 <div className="relative flex-shrink-0">
-                  <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-blue-700">{assignee?.firstName?.charAt(0) || assignee.lastName.charAt(0)}</div>
+                                              <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="w-5 h-5 rounded-full object-cover" />
+
+                  {/* <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-blue-700">{assignee?.firstName?.charAt(0) || assignee.lastName.charAt(0)}</div> */}
                   {assignee.activityStatus === 'online' && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />}
                 </div>
                 <span className="truncate max-w-[80px]">{assignee?.firstName?.split(' ')[0]} {assignee?.lastName?.split(' ')[0]}</span>
@@ -173,7 +175,7 @@ export function ChatHeader({
             //   </>
             // )
             }
-            <ChevronDown size={14} className="text-gray-400 ml-auto flex-shrink-0" />
+            <ChevronDown size={14} className="text-black font-bold  flex-shrink-0" />
           </button>
 
           {assignOpen && (
@@ -210,7 +212,11 @@ export function ChatHeader({
                              ...member }); }}
                           className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
                           <div className="relative flex-shrink-0">
-                            <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700">{member?.lastName?.charAt(0) || member?.firstName?.charAt(0)}</div>
+                                  {member.avatarUrl ? (
+                                    <img src={member.avatarUrl} alt={`${member.firstName} ${member.lastName}`} className="w-7 h-7 rounded-full object-cover" />
+                                  ) : (
+                                    <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700">{member?.lastName?.charAt(0) || member?.firstName?.charAt(0)}</div>
+                                  )}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${member?.activityStatus === 'online' ? 'bg-green-500' : 'bg-gray-300'}`} />
                           </div>
                           <div className="flex-1 min-w-0 text-left">

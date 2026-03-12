@@ -1,158 +1,73 @@
-import { AlertTriangle } from "lucide-react";
-import { ChannelApi } from "../../../lib/channelApi";
-import { ConnectedChannel, EditableField, ReadonlyField, SaveButton, useSave } from "../../channels/ManageChannelPage";
-import { useState } from "react";
+// src/pages/workspace/channels/GmailConfig.tsx
+import { useState } from 'react';
+import { Mail, ExternalLink, CheckCircle, RefreshCw } from 'lucide-react';
+import { ChannelApi } from '../../../lib/channelApi';
+import { ConnectedChannel, SaveButton, useSave, DangerZone } from '../../channels/ManageChannelPage';
 
 export const GmailConfiguration = ({
-  channel,
-  onDisconnect,
-}: {
-  channel: ConnectedChannel;
-  onDisconnect: () => void;
-}) => {
-
+  channel, onDisconnect,
+}: { channel: ConnectedChannel; onDisconnect: () => void }) => {
   const { saving, saved, error, save } = useSave();
-  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [email, setEmail] = useState(channel?.config?.email ?? channel?.identifier ?? '');
 
-  // load from API config
-  const [emailAddress, setEmailAddress] = useState(channel?.config?.emailAddress || '');
-  const [clientId, setClientId] = useState(channel?.config?.clientId || '');
-  const [clientSecret, setClientSecret] = useState(channel?.config?.clientSecret || '');
-  const [accessToken, setAccessToken] = useState(channel?.config?.accessToken || '');
-  const [refreshToken, setRefreshToken] = useState(channel?.config?.refreshToken || '');
-  const [tokenExpiry, setTokenExpiry] = useState(channel?.config?.tokenExpiry || '');
-
-  const handleSave = () =>
-    save(() =>
-      ChannelApi.updateGmailChannel(String(channel?.id), {
-        emailAddress,
-        clientId,
-        clientSecret,
-        accessToken,
-        refreshToken,
-        tokenExpiry,
-      })
-    );
+  const connected = channel?.status === 'Connected';
 
   return (
     <div className="space-y-6">
-
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">
-          Configure Gmail
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          OAuth2 credentials for Gmail send/receive.
-        </p>
-      </div>
-
-      <div className="space-y-5">
-
-        <EditableField
-          label="Email Address"
-          value={emailAddress}
-          onChange={setEmailAddress}
-          placeholder="support@gmail.com"
-        />
-
-        <EditableField
-          label="OAuth Client ID"
-          value={clientId}
-          onChange={setClientId}
-          placeholder="123456789-xxxx.apps.googleusercontent.com"
-          hint="From Google Cloud Console → Credentials"
-        />
-
-        <EditableField
-          label="Client Secret"
-          value={clientSecret}
-          onChange={setClientSecret}
-          placeholder="GOCSPX-XXXXXXXXXXXX"
-        />
-
-        <EditableField
-          label="Access Token"
-          value={accessToken}
-          onChange={setAccessToken}
-          placeholder="ya29.xxxxx"
-        />
-
-        <EditableField
-          label="Refresh Token"
-          value={refreshToken}
-          onChange={setRefreshToken}
-          placeholder="1//0gxxxxxxxx"
-          hint="Used to refresh expired access tokens automatically"
-        />
-
-        <EditableField
-          label="Token Expiry"
-          value={tokenExpiry}
-          onChange={setTokenExpiry}
-          placeholder="2025-12-31T00:00:00Z"
-        />
-
-        <ReadonlyField
-          label="Redirect URI"
-          value="https://app.yourplatform.com/oauth/gmail/callback"
-          hint="Add this URI in Google Cloud Console → OAuth credentials"
-        />
-
-      </div>
-
-      <SaveButton
-        saving={saving}
-        saved={saved}
-        error={error}
-        onClick={handleSave}
-      />
-
-      {/* Danger Zone */}
-
-      <div className="border border-red-200 rounded-xl p-5">
-        <div className="flex items-start justify-between gap-4">
-
-          <div>
-            <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <AlertTriangle size={15} className="text-red-500" />
-              Danger Zone
-            </p>
-
-            <p className="text-xs text-gray-500 mt-1">
-              Disconnect this Gmail channel.
-            </p>
+      {/* Header */}
+      <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-white">
+          <span className={`w-2.5 h-2.5 rounded-full shadow ${connected ? 'bg-green-400 shadow-green-200' : 'bg-gray-300'}`} />
+          <span className="text-sm font-semibold text-slate-800">Gmail Configuration</span>
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+            <Mail size={13} className="text-red-500" />
+            <span>{email || '—'}</span>
           </div>
-
-          {!confirmDisconnect ? (
-            <button
-              onClick={() => setConfirmDisconnect(true)}
-              className="flex-shrink-0 px-3 py-1.5 border border-red-300 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50"
-            >
-              Disconnect
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-
-              <button
-                onClick={() => setConfirmDisconnect(false)}
-                className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={onDisconnect}
-                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700"
-              >
-                Confirm
-              </button>
-
-            </div>
-          )}
-
+        </div>
+        <div className="px-5 py-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Connected Account</span>
+            <span className="text-sm font-medium text-slate-700">{email || 'Not connected'}</span>
+          </div>
         </div>
       </div>
 
+      {/* OAuth info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <CheckCircle size={15} className="text-blue-600 flex-shrink-0" />
+          <p className="text-sm font-medium text-blue-900">Connected via Google OAuth</p>
+        </div>
+        <p className="text-xs text-blue-700 pl-6">
+          Gmail channels use OAuth 2.0. To reconnect or change the account, click the button below to re-authenticate with Google.
+        </p>
+        <div className="pl-6 pt-1">
+          <a
+            href={`/auth/gmail/connect?channelId=${channel.id}`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
+          >
+            <RefreshCw size={14} />
+            Reconnect Gmail account
+          </a>
+        </div>
+      </div>
+
+      {/* Display label */}
+      <div>
+        <h2 className="text-sm font-semibold text-slate-800 mb-1">Display Settings</h2>
+        <p className="text-xs text-slate-400 mb-4">Control how this channel appears to contacts.</p>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-slate-600">Channel Label</label>
+          <input value={channel.name} readOnly
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
+          <p className="text-xs text-slate-400">Change the label in the Channels list page.</p>
+        </div>
+      </div>
+
+      <SaveButton saving={saving} saved={saved} error={error}
+        onClick={() => save(() => ChannelApi.updateGmailChannel(String(channel.id), { email }))}
+        label="Save Settings" />
+      <DangerZone channelLabel="Gmail" onDisconnect={onDisconnect} />
     </div>
   );
 };

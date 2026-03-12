@@ -825,28 +825,31 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     return fileUrl;
   }
 
-  const sendMessage = useCallback(
-    async (msg: Omit<Message, "id" | "time" | "status">) => {
-      console.log({ selectedConversation, convList });
+ const sendMessage = useCallback(
+  async (msg: Omit<Message, "id" | "time" | "status"> & { template?: any }) => {
 
-      const message = await inboxApi.sendMessage(
-        selectedChannel?.id
-        ,
-        String(selectedConversation?.id),
-        // "dd8262b6-3c42-47ce-b1e4-cd40da048229",
-        // "7e971c3b-f7e8-4609-961f-41064b77a265",
+    const payload: any = {
+      ...(msg.text && { text: msg.text }),
+      ...(msg.attachments?.length && { attachments: msg.attachments })
+    };
 
+    if (msg.template) {
+      payload.metadata = {
+        template: msg.template
+      };
+    }
 
-        { ...{ text: msg.text, attachments: msg.attachments } }
-      );
-      console.log({ message });
+    const message = await inboxApi.sendMessage(
+      selectedChannel?.id,
+      String(selectedConversation?.id),
+      payload
+    );
 
+    console.log({ message });
 
-
-    },
-
-    [selectedChannel, selectedConversation, convList]
-  );
+  },
+  [selectedChannel?.id, selectedConversation?.id]
+);
   const handleChannelChange = useCallback(
     (channel: any) => {
       // selectedChannel = channel;

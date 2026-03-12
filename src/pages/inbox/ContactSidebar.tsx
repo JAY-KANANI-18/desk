@@ -521,8 +521,7 @@ export function ContactSidebar({ selectedConversation , contactDetails }: { sele
               />
             ) : (
               <div
-                className="w-[64px] h-[64px] rounded-[18px] flex items-center justify-center text-[22px] font-bold text-white select-none"
-                style={{ background: `linear-gradient(135deg, ${GRADIENTS[2][0]}, ${GRADIENTS[2][1]})` }}
+                className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700"
               >
                 {initials(contactDetails?.firstName ?? '', contactDetails?.lastName ?? '')}
               </div>

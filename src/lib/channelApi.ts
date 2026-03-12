@@ -50,9 +50,17 @@ export const ChannelApi = {
             userID: auth.userID,
                 email: auth.email,
                 name: auth.name,    
-
-
-        })
+        }),
+    listWhatsAppTemplates : (channelId: string) =>
+        api.get(`/channels/${channelId}/whatsapp/templates`),
+    previewTemplate : (channelId: string, templateName: string, language: string) =>
+        api.get(`/channels/whatsapp/${channelId}/templates/preview?name=${templateName}&language=${language}`),
+    syncWhatsAppTemplates : (channelId: string) =>
+        api.post(`/channels/${channelId}/whatsapp/templates/sync`),
+    listIceBreakers : (channelId: string, workspaceId: string) =>
+        api.get(`/channels/${channelId}/instagram/icebreakers?workspaceId=${workspaceId}`),
+    syncIceBreakers : (channelId: string, workspaceId: string) =>
+        api.post(`/channels/${channelId}/instagram/icebreakers/sync?workspaceId=${workspaceId}`),
 
 
 

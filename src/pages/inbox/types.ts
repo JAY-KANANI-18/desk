@@ -33,6 +33,8 @@ export type Message = {
   direction?: ChatDirection;
   channel?: string;
   attachments?: MediaAttachment[];
+  // For message search results
+  template?:any
 };
 
 

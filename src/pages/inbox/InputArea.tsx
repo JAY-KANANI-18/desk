@@ -1,51 +1,99 @@
-import { Send, MessageSquare } from 'lucide-react';
-import type { Conversation, Message } from './types';
-import { ReplyInput } from './ReplyInput';
-import { CommentInput } from './CommentInput';
-import { EmailInput } from './EmailInput';
+/**
+ * InputArea.tsx
+ *
+ * The bottom input zone for the inbox conversation view.
+ *
+ * Design decisions:
+ * ─────────────────
+ * • NO separate Reply / Note tab bar — those tabs waste vertical space and look
+ *   clunky.  Instead, mode is toggled with two small icon-pills in the toolbar
+ *   itself (right side of the bottom bar in ReplyInput, or via a tiny top strip
+ *   in EmailInput). "Reply" is the default; "Note" turns the background amber.
+ *
+ * • When MessageArea calls onReply(ctx), this component receives the context
+ *   and passes it down:
+ *     – chat reply  → ReplyInput shows a quoted-message banner above the textarea
+ *     – email reply → EmailInput pre-fills To, Subject, threadId, messageId
+ *
+ * • EmailInput and ReplyInput share the same SharedInputProps interface so the
+ *   wrapper doesn't need to know the internals.
+ */
 
-interface InputAreaProps {
-  inputMode: 'reply' | 'comment';
-  onInputModeChange: (mode: 'reply' | 'comment') => void;
+import React, { useState, useEffect } from 'react';
+import { ReplyInput }  from './ReplyInput';
+import { EmailInput }  from './EmailInput';
+import type { Conversation, Message } from './types';
+import type { ReplyContext } from './MessageArea';
+
+// ─── Shared props both inputs accept ─────────────────────────────────────────
+
+export interface SharedInputProps {
+  channels: any[] | null;
   selectedConversation: Conversation;
   selectedChannel: any;
-  onChannelChange: (channel: any) => void;
+  onChannelChange: (ch: any) => void;
   onSendMessage: (msg: Message) => void;
-  channels: any[] | null;
+  /** 'reply' = normal reply, 'note' = internal note */
+  inputMode: 'reply' | 'note';
+  onInputModeChange: (mode: 'reply' | 'note') => void;
+  /** Populated when the user clicks Reply on a bubble in MessageArea */
+  replyContext?: ReplyContext | null;
+  onClearReplyContext?: () => void;
 }
 
-export function InputArea({ inputMode, onInputModeChange, selectedConversation, selectedChannel, onChannelChange, onSendMessage , channels}: InputAreaProps) {
-  return (
-    <div className="border-t border-gray-200">
-      {/* Mode tabs */}
-      <div className="flex border-b border-gray-200 bg-gray-50">
-        <button
-          onClick={() => onInputModeChange('reply')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            inputMode === 'reply'
-              ? 'border-blue-600 text-blue-600 bg-white'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          <Send size={13} />Reply
-        </button>
-        <button
-          onClick={() => onInputModeChange('comment')}
-          className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            inputMode === 'comment'
-              ? 'border-amber-500 text-amber-600 bg-white'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          <MessageSquare size={13} />Comment
-        </button>
-      </div>
+// ─── InputArea ────────────────────────────────────────────────────────────────
 
-      {inputMode === 'reply' && (selectedChannel?.type === 'email' || selectedChannel?.type === 'gmail')
-        ? <EmailInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
-        : inputMode === 'reply'
-        ? <ReplyInput channels={channels} selectedConversation={selectedConversation} selectedChannel={selectedChannel} onChannelChange={onChannelChange} onSendMessage={onSendMessage} />
-        : <CommentInput   conversationId={selectedConversation?.id} onSendMessage={onSendMessage} />
+interface InputAreaProps {
+  inputMode: 'reply' | 'note';
+  onInputModeChange: (mode: 'reply' | 'note') => void;
+  selectedConversation: Conversation;
+  selectedChannel: any;
+  onChannelChange: (ch: any) => void;
+  channels: any[] | null;
+  onSendMessage: (msg: Message) => void;
+  /** Forwarded from MessageArea's onReply callback */
+  replyContext?: ReplyContext | null;
+  onClearReplyContext?: () => void;
+}
+
+export function InputArea({
+  inputMode,
+  onInputModeChange,
+  selectedConversation,
+  selectedChannel,
+  onChannelChange,
+  channels,
+  onSendMessage,
+  replyContext,
+  onClearReplyContext,
+}: InputAreaProps) {
+  const isEmail = selectedChannel?.type === 'email'
+    || replyContext?.type === 'email';
+
+  // When an email reply context arrives, make sure we're not stuck on 'note'
+  useEffect(() => {
+    if (replyContext?.type === 'email' && inputMode === 'note') {
+      onInputModeChange('reply');
+    }
+  }, [replyContext]);
+
+  const sharedProps: SharedInputProps = {
+    channels,
+    selectedConversation,
+    selectedChannel,
+    onChannelChange,
+    onSendMessage,
+    inputMode,
+    onInputModeChange,
+    replyContext,
+    onClearReplyContext,
+  };
+
+  return (
+    <div className=" border-gray-200 bg-white flex-shrink-0">
+      {isEmail
+        ? <EmailInput {...sharedProps} />
+        : <ReplyInput  {...sharedProps} />
       }
     </div>
   );

@@ -131,3 +131,46 @@ export interface ProductCatalog {
   status: 'active' | 'inactive';
   connectedAt?: string;
 }
+
+
+// src/pages/workspace/channels/types.ts
+// Shared channel-related types used across the workspace channel components.
+
+export type ChannelType =
+  | 'whatsapp'
+  | 'instagram'
+  | 'messenger'
+  | 'email'
+  | 'gmail'
+  | 'website_chat';
+
+export type ChannelStatus = 'Connected' | 'Error' | 'Disconnected';
+
+export interface Channel {
+  id: number | string;
+  name: string;
+  type: ChannelType | string;
+  identifier: string;
+  status: ChannelStatus;
+  icon?: string;
+  color?: string;
+  msgs?: number;
+  connectedAt?: string;
+  config?: Record<string, any>;
+  credentials?: Record<string, any>;
+}
+
+export interface ChannelNavItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: string;
+}
+
+export interface ChannelMeta {
+  label: string;
+  icon: string;
+  color: string;
+  navItems: ChannelNavItem[];
+  additionalResources: { label: string; href: string }[];
+}

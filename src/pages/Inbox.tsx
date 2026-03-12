@@ -1,25 +1,35 @@
-import { useEffect, useCallback } from "react";
+/**
+ * InboxPage.tsx
+ *
+ * Changes vs. previous version:
+ * ──────────────────────────────
+ * • Adds `replyContext` state — set when MessageArea fires `onReply(ctx)`.
+ * • Passes `replyContext` + `onClearReplyContext` down to InputArea.
+ * • InputArea passes them further into ReplyInput / EmailInput.
+ * • Tab-bar-style `inputMode` prop is still threaded through (the mode toggle
+ *   now lives inside the inputs themselves as pills, but the state stays here).
+ */
+
+import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate, Outlet } from "react-router-dom";
 import { InboxProvider, useInbox } from "../context/InboxContext";
-import { SubSidebar } from "./inbox/SubSidebar";
+import { SubSidebar }       from "./inbox/SubSidebar";
 import { ConversationList } from "./inbox/ConversationList";
-import { ChatHeader } from "./inbox/ChatHeader";
-import { MessageArea } from "./inbox/MessageArea";
-import { InputArea } from "./inbox/InputArea";
-import { ContactSidebar } from "./inbox/ContactSidebar";
+import { ChatHeader }       from "./inbox/ChatHeader";
+import { MessageArea }      from "./inbox/MessageArea";
+import { InputArea }        from "./inbox/InputArea";
+import { ContactSidebar }   from "./inbox/ContactSidebar";
 import type { Conversation } from "./inbox/types";
+import type { ReplyContext } from "./inbox/MessageArea";
 
-// ─── Inner page — reads from InboxContext, syncs with URL param ───────────────
 export function InboxPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
-  console.log("INBOX PAGE");
 
   const {
     convList,
     selectedConversation,
     messages,
-    // channelOverrides,
     selectedChannel,
     inputMode,
     snoozedUntil,
@@ -36,42 +46,38 @@ export function InboxPage() {
     sendMessage,
   } = useInbox();
 
-  console.log({ selectedChannel, channels, selectedConversation });
+  // ── Reply context: set when user clicks "Reply" on a bubble ──────────────────
+  const [replyContext, setReplyContext] = useState<ReplyContext | null>(null);
 
-  const handleSendMessage = useCallback(
-    (msg) => {
-      console.log("SENDING MESSAGE", msg);
-      return sendMessage(msg);
+  const handleReply = useCallback((ctx: ReplyContext) => {
+    setReplyContext(ctx);
+    // If it's an email reply, make sure we're in reply mode (not note)
+    if (ctx.type === 'email') setInputMode('reply');
+  }, [setInputMode]);
 
+  const handleClearReplyContext = useCallback(() => setReplyContext(null), []);
 
-    },
-    [sendMessage]
-  );
+  // Clear reply context when conversation changes
+  useEffect(() => { setReplyContext(null); }, [selectedConversation?.id]);
 
-  // Redirect /inbox → /inbox/:firstId on mount or when convList loads
+  const handleSendMessage = useCallback((msg) => sendMessage(msg), [sendMessage]);
+
   useEffect(() => {
-    if (!conversationId && convList.length > 0) {
-      navigate(`/inbox/${convList[0].id}`, { replace: true });
-    }
+    if (!conversationId && convList.length > 0) navigate(`/inbox/${convList[0].id}`, { replace: true });
   }, [conversationId, convList, navigate]);
 
-  // Sync URL param → context (handles direct URL navigation & browser back/forward)
   useEffect(() => {
     if (!conversationId) return;
-    const id = Number(conversationId);
+    const id   = Number(conversationId);
     if (id === selectedConversation?.id) return;
     const conv = convList.find((c) => c.id === id);
     if (conv) selectConversation(conv);
-  }, [conversationId, convList]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [conversationId, convList]);
 
-  // Wrap selectConversation to also push URL
-  const handleSelectConversation = useCallback(
-    (conv: Conversation) => {
-      selectConversation(conv);
-      navigate(`/inbox/${conv.id}`);
-    },
-    [selectConversation, navigate]
-  );
+  const handleSelectConversation = useCallback((conv: Conversation) => {
+    selectConversation(conv);
+    navigate(`/inbox/${conv.id}`);
+  }, [selectConversation, navigate]);
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -94,6 +100,7 @@ export function InboxPage() {
             msgSearchOpen={msgSearchOpen}
             onToggleMsgSearch={toggleMsgSearch}
           />
+
           <MessageArea
             selectedConversation={selectedConversation}
             messages={messages[selectedConversation?.id] ?? []}
@@ -102,11 +109,10 @@ export function InboxPage() {
             msgSearchOpen={msgSearchOpen}
             msgSearch={msgSearch}
             onMsgSearchChange={setMsgSearch}
-            onCloseMsgSearch={() => {
-              setMsgSearch("");
-              toggleMsgSearch();
-            }}
+            onCloseMsgSearch={() => { setMsgSearch(""); toggleMsgSearch(); }}
+            onReply={handleReply}
           />
+
           <InputArea
             key={selectedConversation?.id}
             inputMode={inputMode}
@@ -116,22 +122,23 @@ export function InboxPage() {
             onChannelChange={handleChannelChange}
             channels={channels}
             onSendMessage={handleSendMessage}
+            replyContext={replyContext}
+            onClearReplyContext={handleClearReplyContext}
           />
-
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-gray-500">Select a conversation to start messaging</p>
         </div>
-      )
-      }
+      )}
 
-      {selectedConversation?.id && <ContactSidebar key={selectedConversation?.id} selectedConversation={selectedConversation} contactDetails={selectedContact} />}
+      {selectedConversation?.id && (
+        <ContactSidebar key={selectedConversation?.id} selectedConversation={selectedConversation} contactDetails={selectedContact} />
+      )}
     </div>
   );
 }
 
-// ─── Layout — mounts InboxProvider once, renders nested route via <Outlet /> ──
 export function InboxLayout() {
   return (
     <InboxProvider>
@@ -140,5 +147,4 @@ export function InboxLayout() {
   );
 }
 
-// ─── Legacy default export (kept for any direct imports) ─────────────────────
 export const Inbox = InboxLayout;
