@@ -23,11 +23,31 @@ export const inboxApi = {
     },
 
     getMessages: async (conversationId: number): Promise<Message[]> => {
-        const res = await apiFetch(`/conversations/${conversationId}/messages`);
+        const res = await apiFetch(`/conversations/${conversationId}/timeline`);
         // if (!res.ok) throw new Error("Failed to fetch messages");
         return res;
     },
-      sendMessage: (channelId: string, conversationId: string, message: any) =>
+
+
+    assignConv: async (conversationId: number, userId: string | null): Promise<void> => {
+        return await api.post(`/conversations/${conversationId}/assign/user`, {
+            userId,
+        });
+    },
+    unAssignConv: async (conversationId: number): Promise<void> => {
+        return await api.delete(`/conversations/${conversationId}/assign/user`);
+    },
+    addInternalNote: async (conversationId: number): Promise<void> => {
+        return await api.post(`/conversations/${conversationId}/notes`, {
+            text: "Internal note",
+        });
+    },
+    statusUpdate: async (conversationId: number, status: string | null): Promise<void> => {
+        return await api.patch(`/conversations/${conversationId}/status`, {
+            status,
+        });
+    },
+    sendMessage: (channelId: string, conversationId: string, message: any) =>
         api.post(`/conversations/${conversationId}/messages`, { channelId, conversationId, ...message }),
     markConversationRead: async (conversationId: number): Promise<Message[]> => {
         const res = await api.post(`/conversations/${conversationId}/messages/read`);
@@ -47,7 +67,7 @@ export const inboxApi = {
     //     return res;
     // },
 
-    getPresignedUploadUrl: async ({type, fileName, contentType, entityId} : { type: string; fileName: string; contentType: string; entityId: string }): Promise<{ uploadUrl: string; fileUrl: string }> => {
+    getPresignedUploadUrl: async ({ type, fileName, contentType, entityId }: { type: string; fileName: string; contentType: string; entityId: string }): Promise<{ uploadUrl: string; fileUrl: string }> => {
         const res = await apiFetch("/files/presign", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -55,7 +75,7 @@ export const inboxApi = {
         });
         return res;
     },
-  
+
     subscribeToUpdates: (
         onNewMessage: (msg: Message) => void,
         onNewConversation: (conv: Conversation) => void,

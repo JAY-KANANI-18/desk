@@ -939,6 +939,8 @@ export function MessageArea({
 
   /* ── Normalise → RenderItem[] ── */
   const allItems = useMemo<RenderItem[]>(() => {
+    console.log({timelineItems});
+    
     if (timelineItems && timelineItems.length > 0) {
       return timelineItems.map((item): RenderItem => {
         const ts = new Date(item.timestamp);

@@ -30,6 +30,7 @@ export function InboxPage() {
     convList,
     selectedConversation,
     messages,
+    timelineItems,
     selectedChannel,
     inputMode,
     snoozedUntil,
@@ -44,6 +45,7 @@ export function InboxPage() {
     toggleMsgSearch,
     setMsgSearch,
     sendMessage,
+    sendNote
   } = useInbox();
 
   // ── Reply context: set when user clicks "Reply" on a bubble ──────────────────
@@ -61,6 +63,7 @@ export function InboxPage() {
   useEffect(() => { setReplyContext(null); }, [selectedConversation?.id]);
 
   const handleSendMessage = useCallback((msg) => sendMessage(msg), [sendMessage]);
+  const handleSendNote = useCallback((msg) => sendNote(msg), [sendNote]);
 
   useEffect(() => {
     if (!conversationId && convList.length > 0) navigate(`/inbox/${convList[0].id}`, { replace: true });
@@ -104,6 +107,7 @@ export function InboxPage() {
           <MessageArea
             selectedConversation={selectedConversation}
             messages={messages[selectedConversation?.id] ?? []}
+            timelineItems={timelineItems}
             snoozedUntil={snoozedUntil}
             onUnsnooze={() => setSnoozedUntil(null)}
             msgSearchOpen={msgSearchOpen}
@@ -122,6 +126,7 @@ export function InboxPage() {
             onChannelChange={handleChannelChange}
             channels={channels}
             onSendMessage={handleSendMessage}
+            onSendNote={handleSendNote}
             replyContext={replyContext}
             onClearReplyContext={handleClearReplyContext}
           />

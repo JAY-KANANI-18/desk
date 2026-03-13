@@ -184,21 +184,12 @@ export const contactsApi = {
         return res;
     },
 
-    assignContact: async (contactId: number, assigneeId: string | null): Promise<void> => {
-        return await api.patch(`/contacts/${contactId}/assign`, {
-            assigneeId,
-        });
-    },
     getContact: async (contactId: number): Promise<Contact> => {
         const res = await api.get(`/contacts/${contactId}`);
         return res;
     },
 
-    statusUpdate: async (contactId: number, status: string | null): Promise<void> => {
-        return await api.patch(`/contacts/${contactId}/status`, {
-            status,
-        });
-    },
+  
 
     SaveContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
         const res = await api.post("/contacts", contact);

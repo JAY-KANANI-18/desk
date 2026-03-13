@@ -20,12 +20,12 @@ import {
 } from 'lucide-react';
 import { channelConfig, variables } from './data';
 import type { Conversation, Message, MediaAttachment, AttachmentType } from './types';
-import { EmojiPicker }   from './EmojiPicker';
+import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
 import { TemplateModal } from './TemplateModal';
-import { useInbox }      from '../../context/InboxContext';
+import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
-import type { ReplyContext }     from './MessageArea';
+import type { ReplyContext } from './MessageArea';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
@@ -93,26 +93,27 @@ export function ReplyInput({
   selectedChannel,
   onChannelChange,
   onSendMessage,
+  onSendNote,
   inputMode,
   onInputModeChange,
   replyContext,
   onClearReplyContext,
 }: SharedInputProps) {
-  const [message, setMessage]           = useState('');
+  const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const [emojiOpen, setEmojiOpen]       = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
-  const [variableQuery, setVariableQuery]     = useState<string | null>(null);
+  const [variableQuery, setVariableQuery] = useState<string | null>(null);
   const [variableHighlight, setVariableHighlight] = useState(0);
   const [templateOpen, setTemplateOpen] = useState(false);
 
-  const textareaRef        = useRef<HTMLTextAreaElement>(null);
-  const fileRef            = useRef<HTMLInputElement>(null);
-  const imageRef           = useRef<HTMLInputElement>(null);
-  const videoRef           = useRef<HTMLInputElement>(null);
-  const emojiRef           = useRef<HTMLDivElement>(null);
-  const channelRef         = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
 
   const { uploadFile } = useInbox();
@@ -121,9 +122,9 @@ export function ReplyInput({
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
-        v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
-        v.label.toLowerCase().includes(variableQuery.toLowerCase())
-      )
+      v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
+      v.label.toLowerCase().includes(variableQuery.toLowerCase())
+    )
     : [];
 
   // click-outside handlers
@@ -160,9 +161,9 @@ export function ReplyInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (variableQuery !== null && filteredVariables.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setVariableHighlight(h => Math.min(h + 1, filteredVariables.length - 1)); return; }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
-      if (e.key === 'Enter')     { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
-      if (e.key === 'Escape')    { setVariableQuery(null); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
+      if (e.key === 'Escape') { setVariableQuery(null); return; }
     }
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
   };
@@ -192,7 +193,7 @@ export function ReplyInput({
     if (!files) return;
     const uploaded: AttachedFile[] = [];
     for (const file of Array.from(files)) {
-      const previewUrl  = URL.createObjectURL(file);
+      const previewUrl = URL.createObjectURL(file);
       const uploadedUrl = await uploadFile(file, selectedConversation.id);
       uploaded.push({ file, type: getAttachmentType(file), previewUrl, url: uploadedUrl || '' });
     }
@@ -209,22 +210,30 @@ export function ReplyInput({
       type: af.type, filename: af.file.name, url: af.url, mimeType: af.file.type,
     }));
 
-    onSendMessage({
-      id: Date.now(),
-      conversationId: selectedConversation?.id,
-      type: isNote ? 'comment' : 'reply',
-      text: message.trim(),
-      author: 'You',
-      initials: 'ME',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      direction: 'outgoing',
-      channel: selectedChannel?.type,
-      attachments: attachments.length > 0 ? attachments : undefined,
-      // attach quoted context for BE
-      ...(replyContext?.type === 'chat' && replyContext.quotedMessage
-        ? { metadata: { replyTo: replyContext.quotedMessage } }
-        : {}),
-    } as any);
+    if (!isNote) {
+      onSendMessage({
+        id: Date.now(),
+        conversationId: selectedConversation?.id,
+        type: isNote ? 'comment' : 'reply',
+        text: message.trim(),
+        author: 'You',
+        initials: 'ME',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        direction: 'outgoing',
+        channel: selectedChannel?.type,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        // attach quoted context for BE
+        ...(replyContext?.type === 'chat' && replyContext.quotedMessage
+          ? { metadata: { replyTo: replyContext.quotedMessage } }
+          : {}),
+
+      } as any);
+    } else {
+
+      onSendNote({
+        text: message.trim()
+      } as any);
+    }
 
     setMessage('');
     setAttachedFiles([]);
@@ -234,7 +243,7 @@ export function ReplyInput({
 
   const handleAudioSend = async (audioBlob: Blob) => {
     const file = new File([audioBlob], 'audio_recording.m4a', { type: 'audio/x-m4a' });
-    const url  = await uploadFile(file, selectedConversation.id);
+    const url = await uploadFile(file, selectedConversation.id);
     onSendMessage({
       id: Date.now(),
       conversationId: selectedConversation?.id,
@@ -257,13 +266,13 @@ export function ReplyInput({
 
   const templateContextValues: Record<string, string> = {
     conversation_id: String(selectedConversation?.id ?? ''),
-    contact_name:    selectedConversation?.customerName ?? '',
+    contact_name: selectedConversation?.customerName ?? '',
   };
 
   /* ── bg ── */
-  const noteBg    = 'bg-amber-50';
-  const replyBg   = 'bg-white';
-  const activeBg  = isNote ? noteBg : replyBg;
+  const noteBg = 'bg-amber-50';
+  const replyBg = 'bg-white';
+  const activeBg = isNote ? noteBg : replyBg;
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
   const focusRing = isNote ? 'focus-within:ring-amber-300 focus-within:border-amber-400' : 'focus-within:ring-blue-400 focus-within:border-blue-400';
 
@@ -391,7 +400,7 @@ export function ReplyInput({
 
               <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
               <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button>
-              <button onClick={() => fileRef.current?.click()}  className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
+              <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
 
               <div className="relative" ref={emojiRef}>
                 <button onClick={() => setEmojiOpen(o => !o)}
@@ -420,9 +429,8 @@ export function ReplyInput({
                 <button
                   onClick={() => onInputModeChange('reply')}
                   title="Reply to customer"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                    !isNote ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isNote ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
                 >
                   <MessageSquare size={11} />
                   <span>Reply</span>
@@ -430,9 +438,8 @@ export function ReplyInput({
                 <button
                   onClick={() => onInputModeChange('note')}
                   title="Internal note"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                    isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
                 >
                   <StickyNote size={11} />
                   <span>Note</span>
@@ -441,22 +448,21 @@ export function ReplyInput({
 
               {/* Send button */}
               <button onClick={handleSend} disabled={!canSend}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${
-                  canSend
-                    ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}>
+                className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${canSend
+                  ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}>
                 <Send size={14} />
               </button>
             </div>
           </div>
-          
+
         </div>
       )}
 
       <input ref={imageRef} type="file" multiple accept="image/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
       <input ref={videoRef} type="file" multiple accept="video/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-      <input ref={fileRef}  type="file" multiple             className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={fileRef} type="file" multiple className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
     </div>
   );
 }

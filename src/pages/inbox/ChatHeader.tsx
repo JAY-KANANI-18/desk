@@ -8,6 +8,7 @@ import type { Conversation, Assignee } from './types';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useInbox } from '../../context/InboxContext';
 import { contactsApi } from '../../lib/contactApi';
+import { inboxApi } from '../../lib/inboxApi';
 
 interface ChatHeaderProps {
   selectedConversation: Conversation;
@@ -45,7 +46,7 @@ export function ChatHeader({
 
   const ch = channelConfig[selectedConversation?.channel] ?? channelConfig['email'];
   const { workspaceUsers } = useWorkspace();
-  const { assignContact } = useInbox();
+  const { assignConv,unAssignConv } = useInbox();
 
   console.log({ workspaceUsers });
 
@@ -69,7 +70,7 @@ export function ChatHeader({
 
   useEffect(() => {
     if (!selectedConversation) return;
-    setChatStatus(selectedConversation?.contact?.status);
+    setChatStatus(selectedConversation?.status);
   }, [selectedConversation]);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export function ChatHeader({
   }, [selectedConversation?.contact?.assigneeId, workspaceUsers]);
 
   const onChatStatusChange = async (status: 'open' | 'closed') => {
-    await contactsApi.statusUpdate(selectedConversation.contact.id, status);
+    await inboxApi.statusUpdate(selectedConversation.id, status);
     setChatStatus(status);
   }
 
@@ -101,7 +102,12 @@ export function ChatHeader({
   };
 
   const handleAssign = async (assignee?: Assignee) => {
-    await assignContact(selectedConversation.contact.id, assignee?.id ?? null);
+
+    if (assignee) {
+    await assignConv( assignee?.id ?? null);
+    } else {
+      await unAssignConv();
+    }
     setAssignee(assignee ?? null);
     setAssignOpen(false);
     setAssignSearch('');

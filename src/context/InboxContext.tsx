@@ -170,10 +170,13 @@ interface InboxContextType {
   msgSearch: string;
   channels: any[] | null;
   selectedContact: any;
+  timelineItems: any;
   uploadFile: ( file: File,conversationId: number,) => Promise<void>;
+  unAssignConv: () => Promise<void>;
+  sendNote: (msg: Omit<Message, "id" | "time" | "status">) => Promise<void>;
   selectConversation: (conv: Conversation) => void;
   addMessage: (msg: Message) => void;
-  assignContact: (contactId: number, userId: string | null) => Promise<void>;
+  assignConv: ( userId: string | null) => Promise<void>;
   refreshContact: () => Promise<void>;
   handleChannelChange: (channel: string) => void;
   setInputMode: React.Dispatch<React.SetStateAction<"reply" | "comment">>;
@@ -203,10 +206,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [messages, setMessages] = useState<Record<number, Message[]>>(() =>
     DUMMY_MODE ? loadMessages() : {}
-  );
-  // const [channelOverrides, setChannelOverrides] = useState<
-  //   Record<number, string>
-  // >({});
+);
+// const [channelOverrides, setChannelOverrides] = useState<
+//   Record<number, string>
+// >({});
+const [timelineItems, setTimelineItems] = useState<any>({});
   const [inputMode, setInputMode] = useState<"reply" | "comment">("reply");
   const [snoozedUntil, setSnoozedUntil] = useState<string | null>(null);
   const [msgSearchOpen, setMsgSearchOpen] = useState(false);
@@ -265,9 +269,12 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const socket = useSocket();
   const { activeWorkspace } = useWorkspace();
 
-  const assignContact = async (contactId: number, userId: string) => {
-    await contactsApi.assignContact(contactId, userId)
+  const assignConv = async ( userId: string) => {
+    await inboxApi.assignConv(selectedConversation?.id, userId)
 
+  }
+  const unAssignConv = async () => {
+    await inboxApi.unAssignConv(selectedConversation?.id)
   }
 
   useEffect(() => {
@@ -476,17 +483,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (DUMMY_MODE) return;
-    if (selectedConversation?.id) {
 
-      inboxApi
-        .getMessages(selectedConversation?.id)
-        .then((msgs) => {
-          setMessages((prev) => ({ ...prev, [selectedConversation?.id]: msgs }));
-        })
-    }
-  }, [selectedConversation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!DUMMY_MODE) return;
@@ -772,12 +769,13 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     (conversationId: number) => {
 
       inboxApi.getMessages(conversationId).then((msgs) => {
-        setMessages((prev) => ({ ...prev, [conversationId]: msgs }));
+        setTimelineItems(msgs);
+        // setMessages((prev) => ({ ...prev, [conversationId]: msgs }));
       })
 
-      return messages[conversationId] ?? [];
+      return timelineItems[conversationId] ?? [];
     },
-    [messages]
+    [timelineItems]
   );
 
   const selectConversation = useCallback((conv: Conversation) => {
@@ -850,6 +848,20 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   },
   [selectedChannel?.id, selectedConversation?.id]
 );
+ const sendNote = useCallback(
+  async (msg: any) => {
+
+    
+
+    const message = await inboxApi.addInternalNote(
+      selectedConversation?.id!,
+      msg
+    );
+
+
+  },
+  [selectedChannel?.id, selectedConversation?.id]
+);
   const handleChannelChange = useCallback(
     (channel: any) => {
       // selectedChannel = channel;
@@ -876,8 +888,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         msgSearch,
         channels,
         selectedContact,
+        timelineItems,
+        sendNote,
+        unAssignConv,
         uploadFile,
-        assignContact,
+        assignConv,
         refreshContact,
         selectConversation,
         addMessage,

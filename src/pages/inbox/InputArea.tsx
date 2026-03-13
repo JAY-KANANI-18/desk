@@ -64,6 +64,7 @@ export function InputArea({
   onChannelChange,
   channels,
   onSendMessage,
+  onSendNote,
   replyContext,
   onClearReplyContext,
 }: InputAreaProps) {
@@ -85,6 +86,7 @@ export function InputArea({
     onSendMessage,
     inputMode,
     onInputModeChange,
+    onSendNote,
     replyContext,
     onClearReplyContext,
   };
