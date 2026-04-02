@@ -191,12 +191,12 @@ export const Login = () => {
           </form>
 
           {/* SSO */}
-          <button
+          {/* <button
             type="button"
             className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Use single sign-on (SSO)
-          </button>
+          </button> */}
 
           {/* ── Demo credentials (only shown when DUMMY_MODE = true) ── */}
           {DUMMY_MODE && (

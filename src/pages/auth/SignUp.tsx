@@ -164,13 +164,13 @@ export const SignUp = () => {
                 Sign up with Google
               </button>
 
-              <div className="flex items-center gap-3 mb-6">
+              {/* <div className="flex items-center gap-3 mb-6">
                 <div className="flex-1 h-px bg-gray-200" />
                 <span className="text-xs text-gray-400 font-medium">
                   or sign up with email
                 </span>
                 <div className="flex-1 h-px bg-gray-200" />
-              </div>
+              </div> */}
 
               <div className="space-y-4">
                 {/* Name */}
@@ -184,7 +184,7 @@ export const SignUp = () => {
                       type="text"
                       value={account.name}
                       onChange={setAcc("name")}
-                      placeholder="John Doe"
+                      placeholder="John Wilson"
                       className={iconInputCls()}
                     />
                   </div>
@@ -199,6 +199,8 @@ export const SignUp = () => {
                     />
                     <input
                       type="email"
+                            autoComplete="new-password"
+
                       value={account.email}
                       onChange={setAcc("email")}
                       placeholder="you@company.com"
@@ -217,6 +219,8 @@ export const SignUp = () => {
                     <input
                       type={showPassword ? "text" : "password"}
                       value={account.password}
+                              autoComplete="new-password"
+
                       onChange={setAcc("password")}
                       placeholder="Min. 6 characters"
                       className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"

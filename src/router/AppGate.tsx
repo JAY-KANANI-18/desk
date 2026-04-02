@@ -13,12 +13,13 @@ import { CallProvider } from "../context/CallContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { SocketProvider } from "../socket/socket-provider";
 import { WorkflowProvider } from "../pages/workflow/WorkflowContext";
+import { RingSpinner } from "../pages/Loader";
 
 export const AppGate = () => {
   const { user, isLoading, passwordSet } = useAuth();
   
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <RingSpinner size={48} color="#4f46e5" />;
   }
 
   if (!user) {
@@ -36,7 +37,7 @@ export const AppGate = () => {
   
   const { organizations, orgLoading } = useOrganization();
   if (orgLoading) {
-      return <div>Loading...</div>;
+      return  <RingSpinner size={48} color="#4f46e5" />;
   }
 
   if (organizations?.length === 0) {
