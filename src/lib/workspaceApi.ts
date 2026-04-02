@@ -1,5 +1,6 @@
 import { Workspace } from "../context/WorkspaceContext";
 import { api } from "../lib/api";
+import { StepConfig, TriggerConfig, WorkflowSettings } from "../pages/workflow/workflow.types";
 
 /* =========================================================
    Types
@@ -151,18 +152,20 @@ export const workspaceApi = {
   ========================================================= */
 
   getLifecycleStages: () =>
-    api.get(`/workspaces/lifecycle-stages`),
+    api.get(`/workspaces/lifecycle`),
 
   addLifecycleStage: (stage: any) =>
-    api.post(`/workspaces/lifecycle-stages`, stage),
+    api.post(`/workspaces/lifecycle`, stage),
 
   updateLifecycleStage: (stageId: number, updates: any) =>
-    api.put(`/workspaces/lifecycle-stages/${stageId}`, updates),
+    api.patch(`/workspaces/lifecycle/${stageId}`, updates),
 
   deleteLifecycleStage: (stageId: number) =>
-    api.delete(`/workspaces/lifecycle-stages/${stageId}`),
-
-
+    api.delete(`/workspaces/lifecycle/${stageId}`),
+  updateVisibility: (enabled: boolean) =>
+    api.put(`/workspaces/lifecycle/visibility`, { enabled }),
+  reorderLifecycleStages: (stages: any) =>
+    api.patch(`/workspaces/lifecycle/reorder`, stages),
   /* =========================================================
      Closing Notes
   ========================================================= */
@@ -293,5 +296,107 @@ export const workspaceApi = {
 
   updateAvailability: (activityStatus: string) =>
     api.patch(`/users/me/availability`, { activityStatus }),
+
+  /* =========================================================
+     Workflow API (for testing, should be moved to its own file)
+  ========================================================= */
+  getWorkflows: () =>
+    api.get(`/workflows`),
+  getWorkflow: (id: string) =>
+    api.get(`/workflows/${id}`),
+  createWorkflow: (payload: { name: string; description?: string }) =>
+    api.post(`/workflows`, payload),
+  saveWorkflow: (id: string, payload: { name?: string; description?: string; config: { trigger?: TriggerConfig | null; steps?: StepConfig[]; settings?: WorkflowSettings } }) =>
+    api.patch(`/workflows/${id}`, payload),
+  publishWorkflow: (id: string) =>
+    api.patch(`/workflows/${id}/publish`),
+  stopWorkflow: (id: string) =>
+    api.patch(`/workflows/${id}/stop`),
+  cloneWorkflow: (id: string) =>
+    api.post(`/workflows/${id}/clone`),
+  deleteWorkflow: (id: string) =>
+    api.delete(`/workflows/${id}`),
+  renameWorkflow: (id: string, name: string) =>
+    api.patch(`/workflows/${id}/rename`, { name }),
+
+
+  getBilling: () =>
+    api.get(`/billing/me`),
+
+  createCheckout: (payload: { plan: 'starter' | 'growth' | 'pro'; provider: 'stripe' | 'razorpay' }) =>
+    api.post(`/billing/checkout`, payload),
+
+  cancelSubscription: () =>
+    api.post(`/billing/cancel`),
+
+  updateBillingDetails: (payload: {
+    companyName: string;
+    email: string;
+    phone?: string;
+    taxId?: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  }) =>
+    api.patch(`/billing/details`, payload),
+
+  getInvoices: () =>
+    api.get(`/billing/invoices`),
+
+
+  payInvoice: (invoiceId: string) =>
+    api.post(`/billing/invoices/${invoiceId}/pay`),
+
+addAddon: (dto: { type: 'extra_agents' | 'extra_contacts'; quantity: number }) =>
+  api.post('/billing/addon', dto),
+
+  createPortalSession: () =>
+    api.post(`/billing/portal`),
+
+  // Dashboard
+  getDashboardLifecycle: () =>
+    api.get(`/analytics/dashboard/lifecycle`),
+
+  getDashboardContacts: (params: {
+    tab: 'open' | 'assigned' | 'unassigned';
+    cursor?: string;
+    limit?: number;
+  }) =>
+    api.get(`/analytics/dashboard/contacts?tab=${params.tab}&cursor=${params.cursor || ''}&limit=${params.limit || 10}`,),
+
+  getDashboardMembers: (params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }) =>
+    api.get(`/analytics/dashboard/members?page=${params.page || 1}&limit=${params.limit || 10}&status=${params.status || ''}`,),
+
+  getDashboardMergeSuggestions: () =>
+    api.get(`/analytics/dashboard/merge-suggestions`),
+
+  mergeContacts: (primaryId: string, secondaryId: string) =>
+    api.post(`/contacts/merge`, { primaryId, secondaryId }),
+
+
+  getOverview: (params?: any) =>
+    api.get('/analytics/overview', { params }),
+
+  getMessages: (params?: any) =>
+    api.get('/analytics/messages', { params }),
+
+  getFailedMessages: (params?: any) =>
+    api.get('/analytics/messages/failed', { params }),
+
+  getContacts: (params?: any) =>
+    api.get('/analytics/contacts', { params }),
+
+  getConversations: (params?: any) =>
+    api.get('/analytics/conversations', { params }),
+
+  getLifecycle: (params?: any) =>
+    api.get('/analytics/lifecycle', { params }),
 
 };

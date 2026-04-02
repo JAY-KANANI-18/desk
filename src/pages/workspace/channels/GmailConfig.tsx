@@ -33,18 +33,18 @@ export const GmailConfiguration = ({
       </div>
 
       {/* OAuth info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-4 space-y-2">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-4 space-y-2">
         <div className="flex items-center gap-2">
-          <CheckCircle size={15} className="text-blue-600 flex-shrink-0" />
-          <p className="text-sm font-medium text-blue-900">Connected via Google OAuth</p>
+          <CheckCircle size={15} className="text-indigo-600 flex-shrink-0" />
+          <p className="text-sm font-medium text-indigo-900">Connected via Google OAuth</p>
         </div>
-        <p className="text-xs text-blue-700 pl-6">
+        <p className="text-xs text-indigo-700 pl-6">
           Gmail channels use OAuth 2.0. To reconnect or change the account, click the button below to re-authenticate with Google.
         </p>
         <div className="pl-6 pt-1">
           <a
             href={`/auth/gmail/connect?channelId=${channel.id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors"
           >
             <RefreshCw size={14} />
             Reconnect Gmail account

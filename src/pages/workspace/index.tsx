@@ -92,10 +92,10 @@ const WorkspaceSettingsInner = () => {
   const { activeItem } = useWorkspaceSettings();
 
   return (
-    <div className="h-full flex bg-gray-50 flex-col md:flex-row">
+    <div className="h-full flex bg-white flex-col md:flex-row">
       <SettingsSidebar />
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 md:p-6 lg:p-8 max-w-4xl">
+        <div className="p-4 md:p-6 lg:p-8 ">
           <h1 className="text-xl font-semibold text-gray-900 mb-6">{activeItem}</h1>
           <SectionContent />
         </div>

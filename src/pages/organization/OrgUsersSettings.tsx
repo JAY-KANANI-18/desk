@@ -81,7 +81,7 @@ export const InviteUserModal = ({ open, onClose, onSave, editUser }) => {
 
             <button
               onClick={addWorkspace}
-              className="text-blue-600 text-sm flex items-center gap-1"
+              className="text-indigo-600 text-sm flex items-center gap-1"
             >
               <Plus size={14} />
               Add Workspace
@@ -137,7 +137,7 @@ export const InviteUserModal = ({ open, onClose, onSave, editUser }) => {
           <button onClick={onClose}>Cancel</button>
 
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-indigo-600 text-white px-4 py-2 rounded"
             onClick={() => {
               onSave({
                 email,
@@ -223,7 +223,7 @@ export const OrgUsersSettings = () => {
             setEditUser(null);
             setInviteOpen(true);
           }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded"
         >
           <Plus size={15} />
           Invite User
@@ -246,7 +246,7 @@ export const OrgUsersSettings = () => {
 
             <div className="flex gap-3">
               <button
-                className="text-blue-600 text-sm flex items-center gap-1"
+                className="text-indigo-600 text-sm flex items-center gap-1"
                 onClick={() => {
                   setEditUser(user);
                   setInviteOpen(true);

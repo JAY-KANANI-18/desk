@@ -7,6 +7,7 @@ import { EmailChannel, EmailChannelSidebar } from '../workspace/channels/EmailCh
 import { GmailChannel } from '../workspace/channels/GmailChannel';
 import { WebsiteChatChannel } from '../workspace/channels/WebsiteChatChannel';
 import type { Channel as WsChannel } from '../workspace/types';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 // ─── Channel metadata ─────────────────────────────────────────────────────────
 const CHANNEL_META: Record<string, {
@@ -102,7 +103,7 @@ const GenericSidebar = ({ meta }: { meta: (typeof CHANNEL_META)[string] }) => (
     <div className="h-px bg-gray-100" />
 
     {meta.videoTutorial && (
-      <a href={meta.videoTutorial} className="flex items-center gap-2 text-[11px] text-blue-600 hover:underline no-underline font-medium">
+      <a href={meta.videoTutorial} className="flex items-center gap-2 text-[11px] text-indigo-600 hover:underline no-underline font-medium">
         <Video size={12} /> Step-by-step video tutorial
       </a>
     )}
@@ -113,7 +114,7 @@ const GenericSidebar = ({ meta }: { meta: (typeof CHANNEL_META)[string] }) => (
         <ul className="space-y-1.5">
           {meta.additionalResources.map(r => (
             <li key={r.label}>
-              <a href={r.href} className="flex items-start gap-1.5 text-[11px] text-blue-600 hover:underline no-underline leading-relaxed">
+              <a href={r.href} className="flex items-start gap-1.5 text-[11px] text-indigo-600 hover:underline no-underline leading-relaxed">
                 <span className="text-gray-300 mt-0.5 shrink-0">•</span>
                 {r.label}
               </a>
@@ -129,6 +130,7 @@ const GenericSidebar = ({ meta }: { meta: (typeof CHANNEL_META)[string] }) => (
 export const ConnectChannelPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
+  const {activeWorkspace} = useWorkspace();
 
   const meta = channelId ? CHANNEL_META[channelId] : null;
   const Component = channelId ? CHANNEL_COMPONENTS[channelId] : null;
@@ -174,7 +176,7 @@ export const ConnectChannelPage = () => {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-white shrink-0">
   <button
-  onClick={() => navigate('/channels')}
+  onClick={() => navigate('/channels/connect')}
   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all border-none bg-transparent cursor-pointer"
 >
   <ArrowLeft size={15} />
@@ -195,7 +197,7 @@ export const ConnectChannelPage = () => {
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 px-6 py-2 border-b border-gray-100 bg-white shrink-0">
         <button
-          onClick={() => navigate('/channels')}
+          onClick={() => navigate('/channels/connect')}
           className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors border-none bg-transparent cursor-pointer p-0 font-medium"
         >
           Channels
@@ -216,6 +218,7 @@ export const ConnectChannelPage = () => {
         <main className="flex-1 overflow-y-auto bg-gray-50">
           <div className="p-8 ">
             <Component
+              workspaceId={activeWorkspace?.id ?? ''}
               connected={null}
               onConnect={handleConnect}
               onDisconnect={() => navigate('/channels')}

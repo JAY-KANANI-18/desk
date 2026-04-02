@@ -84,25 +84,25 @@ export const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
           <p className="text-gray-500 mt-1 text-sm">
             We sent a 6-digit code to{' '}
-            <span className="text-blue-600 font-medium">{pendingEmail || 'your email'}</span>
+            <span className="text-indigo-600 font-medium">{pendingEmail || 'your email'}</span>
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
-              <ShieldCheck className="text-blue-600" size={28} />
+            <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center">
+              <ShieldCheck className="text-indigo-600" size={28} />
             </div>
           </div>
 
@@ -121,8 +121,8 @@ export const VerifyEmail = () => {
                   onKeyDown={e => handleKeyDown(i, e)}
                   className={`w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:outline-none transition-all ${
                     digit
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 text-gray-900 focus:border-blue-400'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 text-gray-900 focus:border-indigo-400'
                   } ${error ? 'border-red-300 bg-red-50' : ''}`}
                 />
               ))}
@@ -137,7 +137,7 @@ export const VerifyEmail = () => {
             <button
               type="submit"
               disabled={loading || code.join('').length < 6}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -157,7 +157,7 @@ export const VerifyEmail = () => {
               <button
                 onClick={handleResend}
                 disabled={resendLoading}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1 disabled:opacity-60"
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium inline-flex items-center gap-1 disabled:opacity-60"
               >
                 <RefreshCw size={13} className={resendLoading ? 'animate-spin' : ''} />
                 Resend

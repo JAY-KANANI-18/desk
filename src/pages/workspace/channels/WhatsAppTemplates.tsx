@@ -90,12 +90,12 @@ const PreviewModal = ({ template, channelId, onClose }: {
                     value={vars[v] ?? ''}
                     onChange={e => setVars(p => ({ ...p, [v]: e.target.value }))}
                     placeholder={`Value for {{${v}}}`}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               ))}
               <button onClick={handlePreview} disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60">
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-60">
                 {loading ? <Loader size={13} className="animate-spin" /> : <Eye size={13} />}
                 Preview
               </button>
@@ -119,7 +119,7 @@ const PreviewModal = ({ template, channelId, onClose }: {
                   <div className="px-3 pb-2 text-xs text-gray-400">{preview.footer}</div>
                 )}
                 {preview.buttons?.map((btn: any, i: number) => (
-                  <div key={i} className="border-t border-gray-100 px-3 py-2 text-xs text-center text-blue-600 font-medium">{btn.text}</div>
+                  <div key={i} className="border-t border-gray-100 px-3 py-2 text-xs text-center text-indigo-600 font-medium">{btn.text}</div>
                 ))}
               </div>
             </div>
@@ -212,15 +212,15 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
         <form onSubmit={handleSearch} className="relative flex-1 min-w-[200px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates…"
-            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </form>
         <select value={statusFilter} onChange={e => setStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="">All statuses</option>
           {['APPROVED','PENDING','REJECTED','PAUSED'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={catFilter} onChange={e => setCategory(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="">All categories</option>
           {['MARKETING','UTILITY','AUTHENTICATION'].map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -270,7 +270,7 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
                   <td className="px-4 py-3"><StatusBadge status={t.status}/></td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => setPreview(t)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors ml-auto">
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-indigo-600 hover:bg-indigo-50 rounded-lg font-medium transition-colors ml-auto">
                       <Eye size={12}/>Preview
                     </button>
                   </td>

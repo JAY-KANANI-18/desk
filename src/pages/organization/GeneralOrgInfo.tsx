@@ -16,7 +16,7 @@ export const GeneralOrgInfo = () => {
             Organization logo
           </label>
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
+            <div className="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
               A
             </div>
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
@@ -35,7 +35,7 @@ export const GeneralOrgInfo = () => {
           <input
             type="text"
             defaultValue="AXORA"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -48,7 +48,7 @@ export const GeneralOrgInfo = () => {
           <input
             type="url"
             defaultValue="https://axora.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -58,7 +58,7 @@ export const GeneralOrgInfo = () => {
             <Clock size={14} className="inline mr-1.5 text-gray-400" />
             Timezone
           </label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option>(UTC-08:00) Pacific Time</option>
             <option>(UTC-05:00) Eastern Time</option>
             <option>(UTC+00:00) UTC</option>
@@ -73,7 +73,7 @@ export const GeneralOrgInfo = () => {
             <Languages size={14} className="inline mr-1.5 text-gray-400" />
             Default language
           </label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option>English</option>
             <option>Spanish</option>
             <option>French</option>
@@ -83,7 +83,7 @@ export const GeneralOrgInfo = () => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
             Save changes
           </button>
           <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">

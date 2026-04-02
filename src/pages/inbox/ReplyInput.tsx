@@ -1,5 +1,5 @@
 /**
- * ReplyInput.tsx  — chat reply composer (WhatsApp / Instagram / Messenger / Chat)
+  * ReplyInput.tsx  — chat reply composer (WhatsApp / Instagram / Messenger / Chat)
  *
  * Changes vs. previous version:
  * ──────────────────────────────
@@ -22,7 +22,7 @@ import { channelConfig, variables } from './data';
 import type { Conversation, Message, MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
-import { TemplateModal } from './TemplateModal';
+import { Template, TemplateModal } from './TemplateModal';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
@@ -52,7 +52,7 @@ function QuotedReplyBanner({
 
   return (
     <div className="flex items-start gap-2 px-3 pt-2.5 pb-0">
-      <div className="flex-1 flex items-start gap-2 bg-gray-50 border-l-[3px] border-blue-500 rounded-r-lg px-3 py-2 min-w-0">
+      <div className="flex-1 flex items-start gap-2 bg-gray-50 border-l-[3px] border-indigo-500 rounded-r-lg px-3 py-2 min-w-0">
         {/* attachment thumb */}
         {q.attachmentType === 'image' && q.attachmentUrl && (
           <img src={q.attachmentUrl} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />
@@ -63,12 +63,12 @@ function QuotedReplyBanner({
           </div>
         )}
         {q.attachmentType === 'file' && (
-          <div className="w-9 h-9 rounded bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <File size={14} className="text-blue-500" />
+          <div className="w-9 h-9 rounded bg-indigo-50 flex items-center justify-center flex-shrink-0">
+            <File size={14} className="text-indigo-500" />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold text-blue-600 mb-0.5">{q.author}</p>
+          <p className="text-[11px] font-semibold text-indigo-600 mb-0.5">{q.author}</p>
           {q.text ? (
             <p className="text-[12px] text-gray-600 truncate leading-snug">{q.text}</p>
           ) : q.attachmentType ? (
@@ -88,9 +88,7 @@ function QuotedReplyBanner({
 /* ─── ReplyInput ─────────────────────────────────────────────────────────────── */
 
 export function ReplyInput({
-  channels,
-  selectedConversation,
-  selectedChannel,
+  
   onChannelChange,
   onSendMessage,
   onSendNote,
@@ -116,7 +114,7 @@ export function ReplyInput({
   const channelRef = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { uploadFile } = useInbox();
+  const { uploadFile,selectedChannel,channels,selectedConversation } = useInbox();
 
   const isNote = inputMode === 'note';
 
@@ -194,7 +192,7 @@ export function ReplyInput({
     const uploaded: AttachedFile[] = [];
     for (const file of Array.from(files)) {
       const previewUrl = URL.createObjectURL(file);
-      const uploadedUrl = await uploadFile(file, selectedConversation.id);
+      const uploadedUrl = await uploadFile(file, selectedConversation?.id);
       uploaded.push({ file, type: getAttachmentType(file), previewUrl, url: uploadedUrl || '' });
     }
     setAttachedFiles(prev => [...prev, ...uploaded]);
@@ -223,9 +221,13 @@ export function ReplyInput({
         channel: selectedChannel?.type,
         attachments: attachments.length > 0 ? attachments : undefined,
         // attach quoted context for BE
-        ...(replyContext?.type === 'chat' && replyContext.quotedMessage
-          ? { metadata: { replyTo: replyContext.quotedMessage } }
-          : {}),
+        metadata:{
+          contactIdentifier: selectedConversation?.contact?.identifier, // e.g. phone number or email or sessionId
+          ...(replyContext?.type === 'chat' && replyContext.quotedMessage
+            ? { replyTo: replyContext.quotedMessage   }
+            : {}),
+        },
+
 
       } as any);
     } else {
@@ -259,9 +261,20 @@ export function ReplyInput({
     setShowRecorder(false);
   };
 
-  const handleTemplateUse = (renderedText: string) => {
-    setMessage(renderedText);
-    setTimeout(() => textareaRef.current?.focus(), 50);
+  const handleTemplateUse = (template: Template) => {
+
+    onSendMessage({
+      
+      conversationId: selectedConversation?.id,
+      type: isNote ? 'comment' : 'reply',
+      author: 'You',
+      channel: selectedChannel,
+      metadata:{
+        template
+      }
+    } as any);
+
+    // setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
   const templateContextValues: Record<string, string> = {
@@ -274,11 +287,11 @@ export function ReplyInput({
   const replyBg = 'bg-white';
   const activeBg = isNote ? noteBg : replyBg;
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
-  const focusRing = isNote ? 'focus-within:ring-amber-300 focus-within:border-amber-400' : 'focus-within:ring-blue-400 focus-within:border-blue-400';
+  const focusRing = isNote ? 'focus-within:ring-amber-300 focus-within:border-amber-400' : 'focus-within:ring-indigo-400 focus-within:border-indigo-400';
 
   return (
-    <div className={`${activeBg} transition-colors duration-150`}>
-      <TemplateModal open={templateOpen} onClose={() => setTemplateOpen(false)} onUse={handleTemplateUse} contextValues={templateContextValues} />
+    <div className={`${activeBg} transition-colors duration-150 `}>
+      <TemplateModal open={templateOpen}  onClose={() => setTemplateOpen(false)} onUse={handleTemplateUse} contextValues={templateContextValues} />
 
       {/* ── Quoted reply banner ── */}
       {replyContext?.type === 'chat' && (
@@ -290,7 +303,7 @@ export function ReplyInput({
           <AudioRecorder onSend={handleAudioSend} onCancel={() => setShowRecorder(false)} />
         </div>
       ) : (
-        <div className={`mx-3 mb-2.5 border ${borderClr} rounded-xl focus-within:ring-2 ${focusRing} transition-shadow overflow-hidden`}>
+        <div className={`mx-3 mb-2.5 border ${borderClr} rounded-xl transition-shadow p-1`}>
 
           {/* Variable dropdown */}
           <div className="relative">
@@ -356,7 +369,7 @@ export function ReplyInput({
                       </button>
                     </div>
                   ) : (
-                    <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                    <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
                       {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
                       <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
                       <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
@@ -390,7 +403,7 @@ export function ReplyInput({
                           className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}>
                           <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="w-4 h-4" />
                           <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
-                          {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+                          {selectedChannel?.id === ch.id && <Check size={13} className="text-indigo-600 flex-shrink-0" />}
                         </button>
                       ))}
                     </div>
@@ -415,7 +428,7 @@ export function ReplyInput({
               <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button>
 
               {!isNote && (
-                <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
+                <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
                   <LayoutTemplate size={16} />
                 </button>
               )}
@@ -429,7 +442,7 @@ export function ReplyInput({
                 <button
                   onClick={() => onInputModeChange('reply')}
                   title="Reply to customer"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isNote ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
                   <MessageSquare size={11} />
@@ -449,7 +462,7 @@ export function ReplyInput({
               {/* Send button */}
               <button onClick={handleSend} disabled={!canSend}
                 className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${canSend
-                  ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}>
                 <Send size={14} />
@@ -460,9 +473,9 @@ export function ReplyInput({
         </div>
       )}
 
-      <input ref={imageRef} type="file" multiple accept="image/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-      <input ref={videoRef} type="file" multiple accept="video/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-      <input ref={fileRef} type="file" multiple className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={imageRef} type="file"  accept="image/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={videoRef} type="file"  accept="video/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={fileRef} type="file"  className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
     </div>
   );
 }

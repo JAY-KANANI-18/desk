@@ -20,6 +20,149 @@ interface ChatHeaderProps {
   msgSearchOpen: boolean;
   onToggleMsgSearch: () => void;
 }
+export type ConvStatus = "open" | "closed";
+export type ConvPriority = "low" | "normal" | "high" | "urgent";
+export type Direction = "incoming" | "outgoing";
+
+// ─── LifecycleSelector ────────────────────────────────────────────
+// Renders below the contact name as plain metadata text.
+// On hover a small chevron appears. On click a minimal dropdown opens.
+
+interface LifecycleStage {
+  id: string | number;
+  name: string;
+  emoji: string;
+  type: 'lifecycle' | 'lost';
+}
+
+interface LifecycleSelectorProps {
+  currentStageId: string | number | null | undefined;
+  lifecycles: LifecycleStage[];
+  onSelect: (stageId: string | number | null) => Promise<void>;
+}
+
+function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const current = lifecycles.find(l => String(l.id) === String(currentStageId));
+  const lifecycleStages = lifecycles.filter(l => l.type === 'lifecycle');
+  const lostStages = lifecycles.filter(l => l.type === 'lost');
+  console.log({current,lifecycles,currentStageId});
+  
+
+  return (
+    <div className="relative inline-flex" ref={ref}>
+      {/* Trigger — plain text appearance; chevron fades in on hover */}
+      <button
+        type="button"
+        onClick={() => setOpen(p => !p)}
+        className="group flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors leading-none"
+      >
+        {current ? (
+          <>
+            <span className="text-sm leading-none">{current.emoji}</span>
+            <span className={current.type === 'lost' ? 'text-orange-500' : 'text-indigo-500'}>
+              {current.name}
+            </span>
+          </>
+        ) : (
+          <span className="italic">Set stage</span>
+        )}
+        <ChevronDown
+          size={10}
+          className="opacity-0 group-hover:opacity-50 transition-opacity -mb-px"
+        />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+          {/* Clear option */}
+          <div className="p-1.5 border-b border-gray-100">
+            <button
+              type="button"
+              onClick={() => { onSelect(null); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors
+                ${!currentStageId ? 'bg-gray-100 text-gray-600' : 'text-gray-400 hover:bg-gray-50'}`}
+            >
+              <span className="w-4 text-center leading-none">—</span>
+              <span>No stage</span>
+              {!currentStageId && <CheckCircle2 size={11} className="ml-auto text-gray-500" />}
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {lifecycleStages.length > 0 && (
+              <div>
+                <p className="px-3 pt-2 pb-0.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                  Lifecycle
+                </p>
+                {lifecycleStages.map(stage => {
+                  const selected = String(stage.id) === String(currentStageId);
+                  return (
+                    <button
+                      key={stage.id}
+                      type="button"
+                      onClick={() => { onSelect(stage.id); setOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors
+                        ${selected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <span className="text-sm leading-none w-4 text-center">{stage.emoji}</span>
+                      <span className={`flex-1 text-left font-medium ${selected ? 'text-indigo-700' : 'text-gray-700'}`}>
+                        {stage.name}
+                      </span>
+                      {selected && <CheckCircle2 size={11} className="text-indigo-500 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {lostStages.length > 0 && (
+              <div className={lifecycleStages.length > 0 ? 'border-t border-gray-100 mt-1' : ''}>
+                <p className="px-3 pt-2 pb-0.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                  Lost
+                </p>
+                {lostStages.map(stage => {
+                  const selected = String(stage.id) === String(currentStageId);
+                  return (
+                    <button
+                      key={stage.id}
+                      type="button"
+                      onClick={() => { onSelect(stage.id); setOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors
+                        ${selected ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <span className="text-sm leading-none w-4 text-center">{stage.emoji}</span>
+                      <span className={`flex-1 text-left font-medium ${selected ? 'text-orange-700' : 'text-gray-700'}`}>
+                        {stage.name}
+                      </span>
+                      {selected && <CheckCircle2 size={11} className="text-orange-500 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {lifecycles.length === 0 && (
+              <p className="py-5 text-xs text-center text-gray-400">No stages configured</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ChatHeader ───────────────────────────────────────────────────
 
 export function ChatHeader({
   selectedConversation,
@@ -42,13 +185,16 @@ export function ChatHeader({
   const snoozeRef = useRef<HTMLDivElement>(null);
   const closeMenuRef = useRef<HTMLDivElement>(null);
 
-
-
   const ch = channelConfig[selectedConversation?.channel] ?? channelConfig['email'];
   const { workspaceUsers } = useWorkspace();
-  const { assignConv,unAssignConv } = useInbox();
+
+  const { assignUser, closeConversation, openConversation, lifecycles, fetchLifecycles } = useInbox();
 
   console.log({ workspaceUsers });
+
+  useEffect(() => {
+    fetchLifecycles();
+  }, [fetchLifecycles]);
 
   const filteredMembers = workspaceUsers?.filter(m => m.firstName.toLowerCase().includes(assignSearch.toLowerCase()) || m.lastName.toLowerCase().includes(assignSearch.toLowerCase())) || [];
   console.log({ filteredMembers });
@@ -56,7 +202,6 @@ export function ChatHeader({
   const filteredTeams = teams.filter(t => t.name.toLowerCase().includes(assignSearch.toLowerCase()));
 
   useEffect(() => {
-
     const handler = (e: MouseEvent) => {
       if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
         setAssignOpen(false); setAssignSearch('');
@@ -70,8 +215,10 @@ export function ChatHeader({
 
   useEffect(() => {
     if (!selectedConversation) return;
-    setChatStatus(selectedConversation?.status);
-  }, [selectedConversation]);
+    console.log({ssssssssssss:selectedConversation?.contact?.status});
+    
+    setChatStatus(selectedConversation?.contact?.status);
+  }, [selectedConversation,selectedConversation?.contact?.status]);
 
   useEffect(() => {
     if (!selectedConversation?.contact || !workspaceUsers) return;
@@ -84,37 +231,23 @@ export function ChatHeader({
     console.log({ user });
 
     setAssignee(user || null);
-
-
   }, [selectedConversation?.contact?.assigneeId, workspaceUsers]);
 
-  const onChatStatusChange = async (status: 'open' | 'closed') => {
-    await inboxApi.statusUpdate(selectedConversation.id, status);
-    setChatStatus(status);
-  }
-
-
-  const handleCloseChat = () => {
-    onChatStatusChange('closed');
-    setCloseMenuOpen(false);
-    setCloseCategory('');
-    setCloseSummary('');
+  const handleStatusAction = async (s: ConvStatus) => {
+    setChatStatus(false);
+    if (s === "closed") await closeConversation();
+    else if (s === "open") await openConversation();
   };
 
-  const handleAssign = async (assignee?: Assignee) => {
-
-    if (assignee) {
-    await assignConv( assignee?.id ?? null);
-    } else {
-      await unAssignConv();
-    }
-    setAssignee(assignee ?? null);
+  const handleAssign = async (userId: string | null) => {
     setAssignOpen(false);
-    setAssignSearch('');
+    setAssignSearch("");
+    await assignUser(userId);
+  };
 
-
-
-  }
+  const handleLifecycleChange = async (stageId: string | number | null) => {
+   await  inboxApi.updateContactLifecycle(String(selectedConversation!.contact!.id), String(stageId));
+  };
 
   return (
     <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
@@ -142,13 +275,18 @@ export function ChatHeader({
   </span> 
   */}
         </div>
-        <div>
-          <h3 className="font-semibold">{selectedConversation?.contact?.firstName} {selectedConversation?.contact?.lastName}</h3>
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            {/* <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white ${ch.bg}`}>{ch.icon}{ch.label}</span>
-            <span className="text-gray-400">·</span> */}
-            {selectedConversation?.contact?.tag}
-          </span>
+
+        {/* Name + lifecycle selector stacked vertically */}
+        <div className="flex flex-col gap-0.5">
+          <h3 className="font-semibold leading-tight">
+            {selectedConversation?.contact?.firstName} {selectedConversation?.contact?.lastName}
+          </h3>
+          {/* Lifecycle stage — looks like the tag line, reveals chevron on hover */}
+          <LifecycleSelector
+            currentStageId={selectedConversation?.contact?.lifecycleId}
+            lifecycles={lifecycles ?? []}
+            onSelect={handleLifecycleChange}
+          />
         </div>
       </div>
 
@@ -163,23 +301,23 @@ export function ChatHeader({
           >
             {assignee === null ? (
               <><UserCircle2 size={16} className="text-gray-400" /><span className="text-gray-500">Unassigned</span></>
-            ) : 
-            // assignee.kind === 'user' ? (
+            ) :
+              // assignee.kind === 'user' ? (
               <>
                 <div className="relative flex-shrink-0">
-                                              <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="w-5 h-5 rounded-full object-cover" />
+                  <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="w-5 h-5 rounded-full object-cover" />
 
-                  {/* <div className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-blue-700">{assignee?.firstName?.charAt(0) || assignee.lastName.charAt(0)}</div> */}
+                  {/* <div className="w-5 h-5 bg-indigo-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-indigo-700">{assignee?.firstName?.charAt(0) || assignee.lastName.charAt(0)}</div> */}
                   {assignee.activityStatus === 'online' && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />}
                 </div>
                 <span className="truncate max-w-[80px]">{assignee?.firstName?.split(' ')[0]} {assignee?.lastName?.split(' ')[0]}</span>
               </>
-            // ) : (
-            //   <>
-            //     <div className={`w-5 h-5 ${assignee.color} rounded flex items-center justify-center`}><Users size={10} className="text-white" /></div>
-            //     <span className="truncate max-w-[80px]">{assignee.name}</span>
-            //   </>
-            // )
+              // ) : (
+              //   <>
+              //     <div className={`w-5 h-5 ${assignee.color} rounded flex items-center justify-center`}><Users size={10} className="text-white" /></div>
+              //     <span className="truncate max-w-[80px]">{assignee.name}</span>
+              //   </>
+              // )
             }
             <ChevronDown size={14} className="text-black font-bold  flex-shrink-0" />
           </button>
@@ -191,45 +329,43 @@ export function ChatHeader({
                   <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input autoFocus type="text" value={assignSearch} onChange={e => setAssignSearch(e.target.value)}
                     placeholder="Search agents or teams…"
-                    className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
               <div className="max-h-72 overflow-y-auto">
                 {!assignSearch && (
                   <button onClick={() => { handleAssign(null); }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${assignee === null ? 'bg-blue-50' : ''}`}>
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${assignee === null ? 'bg-indigo-50' : ''}`}>
                     <UserCircle2 size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-500">Unassigned</span>
-                    {assignee === null && <CheckCircle2 size={14} className="text-blue-600 ml-auto" />}
+                    {assignee === null && <CheckCircle2 size={14} className="text-indigo-600 ml-auto" />}
                   </button>
                 )}
                 {filteredMembers.length > 0 && (
                   <>
                     <div className="px-3 pt-2 pb-1"><span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Agents</span></div>
                     {filteredMembers.map(member => {
-                      const isSelected = 
-                      // assignee?.kind === 'user' 
-                      // && 
-                      assignee?.id === member.id;
+                      const isSelected =
+                        // assignee?.kind === 'user' 
+                        // && 
+                        assignee?.id === member.id;
                       return (
                         <button key={member.id}
-                          onClick={() => { handleAssign({ 
-                            // kind: 'user',
-                             ...member }); }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                          onClick={() => { handleAssign(member.id); }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : ''}`}>
                           <div className="relative flex-shrink-0">
-                                  {member.avatarUrl ? (
-                                    <img src={member.avatarUrl} alt={`${member.firstName} ${member.lastName}`} className="w-7 h-7 rounded-full object-cover" />
-                                  ) : (
-                                    <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700">{member?.lastName?.charAt(0) || member?.firstName?.charAt(0)}</div>
-                                  )}
+                            {member.avatarUrl ? (
+                              <img src={member.avatarUrl} alt={`${member.firstName} ${member.lastName}`} className="w-7 h-7 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-semibold text-indigo-700">{member?.lastName?.charAt(0) || member?.firstName?.charAt(0)}</div>
+                            )}
                             <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${member?.activityStatus === 'online' ? 'bg-green-500' : 'bg-gray-300'}`} />
                           </div>
                           <div className="flex-1 min-w-0 text-left">
                             <p className="text-sm font-medium truncate">{member?.firstName} {member?.lastName}</p>
                             <p className={`text-xs ${member?.activityStatus === 'online' ? 'text-green-600' : 'text-gray-400'}`}>{member?.activityStatus === 'online' ? 'Online' : 'Offline'}</p>
                           </div>
-                          {isSelected && <CheckCircle2 size={14} className="text-blue-600 flex-shrink-0" />}
+                          {isSelected && <CheckCircle2 size={14} className="text-indigo-600 flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -243,10 +379,10 @@ export function ChatHeader({
                       return (
                         <button key={team.id}
                           onClick={() => { setAssignee({ kind: 'team', ...team }); setAssignOpen(false); setAssignSearch(''); }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : ''}`}>
                           <div className={`w-7 h-7 ${team.color} rounded-lg flex items-center justify-center flex-shrink-0`}><Users size={13} className="text-white" /></div>
                           <span className="text-sm font-medium flex-1 text-left">{team.name}</span>
-                          {isSelected && <CheckCircle2 size={14} className="text-blue-600 flex-shrink-0" />}
+                          {isSelected && <CheckCircle2 size={14} className="text-indigo-600 flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -263,7 +399,7 @@ export function ChatHeader({
         {/* Message search toggle */}
         <button
           onClick={onToggleMsgSearch}
-          className={`p-2 rounded-lg transition-colors ${msgSearchOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+          className={`p-2 rounded-lg transition-colors ${msgSearchOpen ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100'}`}
           title="Search messages"
         >
           <Search size={20} />
@@ -273,7 +409,7 @@ export function ChatHeader({
         {/* <div className="relative" ref={snoozeRef}>
           <button
             onClick={() => setSnoozeOpen(!snoozeOpen)}
-            className={`p-2 rounded-lg transition-colors relative ${snoozedUntil ? 'bg-amber-100 text-amber-600' : snoozeOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+            className={`p-2 rounded-lg transition-colors relative ${snoozedUntil ? 'bg-amber-100 text-amber-600' : snoozeOpen ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100'}`}
             title={snoozedUntil ? `Snoozed (${snoozedUntil})` : 'Snooze chat'}
           >
             {snoozedUntil ? <AlarmClock size={20} /> : <Clock size={20} />}
@@ -308,11 +444,11 @@ export function ChatHeader({
         {/* Open / Close */}
         <div className="relative" ref={closeMenuRef}>
           {chatStatus === 'closed' ? (
-            <button onClick={() => onChatStatusChange('open')} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <button onClick={() => handleStatusAction('open')} className="px-3 py-1.5 text-sm  rounded-lg border flex items-center gap-2">
               <LockOpen size={16} />Open
             </button>
           ) : (
-            <button onClick={() => onChatStatusChange('closed')} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+            <button onClick={() => handleStatusAction('closed')} className="px-3 py-1.5 text-sm  rounded-lg border flex items-center gap-2">
               <CheckCircle2 size={16} />Close
               {/* <ChevronDown size={14} className={`transition-transform ${closeMenuOpen ? 'rotate-180' : ''}`} /> */}
             </button>

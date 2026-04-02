@@ -33,7 +33,7 @@ const getPasswordStrength = (pw: string) => {
     return { label: "Fair", color: "bg-yellow-400", width: "50%" };
   if (/[A-Z]/.test(pw) && /[0-9]/.test(pw))
     return { label: "Strong", color: "bg-green-500", width: "100%" };
-  return { label: "Good", color: "bg-blue-400", width: "75%" };
+  return { label: "Good", color: "bg-indigo-400", width: "75%" };
 };
 
 // ─── Field wrapper ────────────────────────────────────────────
@@ -53,10 +53,10 @@ const Field = ({
 );
 
 const inputCls = (extra = "") =>
-  `w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${extra}`;
+  `w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${extra}`;
 
 const iconInputCls = (left = true) =>
-  `w-full ${left ? "pl-10" : "pl-3"} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`;
+  `w-full ${left ? "pl-10" : "pl-3"} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`;
 
 // ─── Main Component ───────────────────────────────────────────
 export const SignUp = () => {
@@ -125,25 +125,26 @@ export const SignUp = () => {
     };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
-            <MessageSquare className="text-white" size={24} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {"Create your account"}
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            {"Start your free trial today"}
-          </p>
-        </div>
-
+      
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           {
             <>
+              <div className="flex flex-col justify-center text-center mb-8">
+            {/* logo */}
+            <div className="flex items-center justify-center ">
+
+            <img
+              src="/axodesk-full.png"
+              alt="logo"
+              className={`w-32 h-24 `}
+              />
+              </div>
+            
+          </div>
               {/* Google SSO */}
               <button
                 type="button"
@@ -218,7 +219,7 @@ export const SignUp = () => {
                       value={account.password}
                       onChange={setAcc("password")}
                       placeholder="Min. 6 characters"
-                      className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                     <button
                       type="button"
@@ -255,7 +256,7 @@ export const SignUp = () => {
                       value={account.confirmPassword}
                       onChange={setAcc("confirmPassword")}
                       placeholder="Repeat your password"
-                      className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
                         account.confirmPassword &&
                         account.confirmPassword !== account.password
                           ? "border-red-300 bg-red-50"
@@ -282,11 +283,11 @@ export const SignUp = () => {
                 {/* Terms */}
                 <p className="text-xs text-gray-500">
                   By creating an account, you agree to our{" "}
-                  <span className="text-blue-600 cursor-pointer hover:underline">
+                  <span className="text-indigo-600 cursor-pointer hover:underline">
                     Terms of Service
                   </span>{" "}
                   and{" "}
-                  <span className="text-blue-600 cursor-pointer hover:underline">
+                  <span className="text-indigo-600 cursor-pointer hover:underline">
                     Privacy Policy
                   </span>
                   .
@@ -296,7 +297,7 @@ export const SignUp = () => {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   Register
                   <ChevronRight size={16} />
@@ -310,7 +311,7 @@ export const SignUp = () => {
           Already have an account?{" "}
           <Link
             to="/auth/login"
-            className="text-blue-600 hover:text-blue-700 font-semibold"
+            className="text-indigo-600 hover:text-indigo-700 font-semibold"
           >
             Sign in
           </Link>

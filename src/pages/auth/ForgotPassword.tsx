@@ -30,7 +30,7 @@ export const ForgotPassword = () => {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -40,13 +40,13 @@ export const ForgotPassword = () => {
             <p className="text-gray-500 text-sm mb-2">
               We've sent a password reset link to
             </p>
-            <p className="text-blue-600 font-semibold text-sm mb-6">{email}</p>
+            <p className="text-indigo-600 font-semibold text-sm mb-6">{email}</p>
             <p className="text-xs text-gray-400 mb-6">
               If you don't see it, check your spam folder. The link expires in 1 hour.
             </p>
             <button
               onClick={() => navigate('/auth/verify-email')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
             >
               Enter verification code
             </button>
@@ -63,15 +63,15 @@ export const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
+          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
-          </div>
+          </div> */}
           <h1 className="text-2xl font-bold text-gray-900">Forgot password?</h1>
-          <p className="text-gray-500 mt-1 text-sm">No worries, we'll send you reset instructions</p>
+          {/* <p className="text-gray-500 mt-1 text-sm">No worries, we'll send you reset instructions</p> */}
         </div>
 
         {/* Card */}
@@ -86,7 +86,7 @@ export const ForgotPassword = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -100,7 +100,7 @@ export const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

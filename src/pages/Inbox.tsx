@@ -30,7 +30,7 @@ export function InboxPage() {
     convList,
     selectedConversation,
     messages,
-    timelineItems,
+    timeline,
     selectedChannel,
     inputMode,
     snoozedUntil,
@@ -106,8 +106,8 @@ export function InboxPage() {
 
           <MessageArea
             selectedConversation={selectedConversation}
-            messages={messages[selectedConversation?.id] ?? []}
-            timelineItems={timelineItems}
+            // messages={messages[selectedConversation?.id] ?? []}
+            timelineItems={timeline}
             snoozedUntil={snoozedUntil}
             onUnsnooze={() => setSnoozedUntil(null)}
             msgSearchOpen={msgSearchOpen}

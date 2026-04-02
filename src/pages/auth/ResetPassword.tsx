@@ -19,7 +19,7 @@ export const ResetPassword = () => {
     if (pw.length < 6) return { label: 'Weak', color: 'bg-red-400', width: '25%' };
     if (pw.length < 8) return { label: 'Fair', color: 'bg-yellow-400', width: '50%' };
     if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return { label: 'Strong', color: 'bg-green-500', width: '100%' };
-    return { label: 'Good', color: 'bg-blue-400', width: '75%' };
+    return { label: 'Good', color: 'bg-indigo-400', width: '75%' };
   };
 
   const strength = getPasswordStrength(password);
@@ -58,7 +58,7 @@ export const ResetPassword = () => {
   if (success) {
     navigate('/dashboard');
     // return (
-    //   <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    //   <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
     //     <div className="w-full max-w-md">
     //       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
     //         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -70,7 +70,7 @@ export const ResetPassword = () => {
     //         </p>
     //         <button
     //           onClick={() => navigate('/auth/login')}
-    //           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+    //           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
     //         >
     //           Back to sign in
     //         </button>
@@ -81,11 +81,11 @@ export const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
+          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
           </div> */}
           <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
@@ -105,7 +105,7 @@ export const ResetPassword = () => {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Enter new password"
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
@@ -147,7 +147,7 @@ export const ResetPassword = () => {
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
                     confirmPassword && confirmPassword !== password ? 'border-red-300 bg-red-50' : 'border-gray-200'
                   }`}
                 />
@@ -170,7 +170,7 @@ export const ResetPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <>

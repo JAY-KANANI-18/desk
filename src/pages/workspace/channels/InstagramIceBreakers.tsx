@@ -89,9 +89,9 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
       </div>
 
       {/* Info box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
-        <Info size={15} className="text-blue-500 flex-shrink-0 mt-0.5"/>
-        <p className="text-xs text-blue-800">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+        <Info size={15} className="text-indigo-500 flex-shrink-0 mt-0.5"/>
+        <p className="text-xs text-indigo-800">
           Ice-breakers are shown to contacts <strong>before</strong> they send their first message. 
           You can add up to {MAX_ICEBREAKERS}. Changes are pushed live to Instagram when you save.
         </p>
@@ -127,7 +127,7 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
                 <input value={item.question} maxLength={MAX_QUESTION_LEN}
                   onChange={e => updateItem(i, 'question', e.target.value)}
                   placeholder="What are your business hours?"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-600 mb-1 block">
@@ -136,14 +136,14 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
                 <input value={item.payload} maxLength={MAX_PAYLOAD_LEN}
                   onChange={e => updateItem(i, 'payload', e.target.value)}
                   placeholder="business_hours_query"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             </div>
           ))}
 
           {items.length < MAX_ICEBREAKERS && (
             <button onClick={addItem}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
               <Plus size={15}/>Add ice-breaker ({items.length}/{MAX_ICEBREAKERS})
             </button>
           )}

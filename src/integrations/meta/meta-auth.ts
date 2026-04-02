@@ -19,11 +19,12 @@ export async function loginWithMeta(channel: "whatsapp" | "messenger" | "instagr
     }
 
     if (channel === "messenger") {
-      options.scope = "pages_show_list,pages_manage_metadata,pages_messaging";
+      options.scope = "business_management,email,pages_manage_metadata,pages_read_engagement,pages_messaging,pages_messaging_phone_number,public_profile,pages_utility_messaging";
     }
 
     if (channel === "instagram") {
-      options.scope = "instagram_basic,instagram_manage_messages,pages_show_list";
+      options.scope = 
+    "instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages";
     }
 
     FB.login((response: any) => {

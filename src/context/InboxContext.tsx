@@ -1,3 +1,20 @@
+/**
+ * InboxContext.tsx
+ * ─────────────────────────────────────────────────────────────────
+ * Central state for the inbox page.
+ *
+ * What's new vs the old version:
+ *  ✓ Server-driven conversation list (cursor pagination)
+ *  ✓ Full filter state: status, priority, direction, channel, assignee, unreplied
+ *  ✓ Server-side conversation search (contact name / phone / email)
+ *  ✓ Timeline API (merged messages + activities)
+ *  ✓ All conversation mutations wired to BE: close/open/pending, assign user/team, priority
+ *  ✓ Internal note sending via dedicated endpoint
+ *  ✓ Real-time: socket events upsert conversations + append messages
+ *  ✓ Presigned upload → direct R2 upload helper
+ *  ✓ Proper workspaceId threading (no more missing wsId bugs)
+ */
+
 import React, {
   createContext,
   useContext,
@@ -6,185 +23,121 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { conversations as initialConversations } from "../pages/inbox/data";
-import type { Conversation, Message } from "../pages/inbox/types";
 import { useNotifications } from "./NotificationContext";
-import { inboxApi } from "../lib/inboxApi";
 import { useSocket } from "../socket/socket-provider";
 import { useWorkspace } from "./WorkspaceContext";
-import { ChannelApi } from "../lib/channelApi";
 import { useOrganization } from "./OrganizationContext";
 import { contactsApi } from "../lib/contactApi";
+import { ChannelApi } from "../lib/channelApi";
+import {
+  inboxApi,
+  ApiConversation,
+  ApiMessage,
+  ApiTimelineItem,
+  ConversationFilters,
+  ConvStatus,
+  ConvPriority,
+} from "../lib/inboxApi";
+import { workspaceApi } from "../lib/workspaceApi";
 
-const DUMMY_MODE = false;
+/* ══════════════════════════════════════════════════════════════════
+   TYPES
+══════════════════════════════════════════════════════════════════ */
 
-const STORAGE_KEY = "inbox_messages_v1";
+export type { ApiConversation, ApiMessage, ApiTimelineItem };
 
-function loadMessages(): Record<number, Message[]> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+export interface InboxFilters extends ConversationFilters {
+  // extends the API filter type — status, priority, direction,
+  // channelType, assigneeId, teamId, unreplied, search, cursor, limit
 }
 
-function saveMessages(msgs: Record<number, Message[]>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
-  } catch { }
-}
+export interface InboxContextType {
+  /* Conversation list */
+  convList: ApiConversation[];
+  convLoading: boolean;
+  hasMoreConvs: boolean;
+  loadMoreConversations: () => void;
 
-const INCOMING_MESSAGES = [
-  "Hey, I have a quick question about my order",
-  "Can you help me with the pricing?",
-  "When will my package arrive?",
-  "I'd like to schedule a demo call",
-  "Thanks for the quick response!",
-  "Is this product still available?",
-  "I need to update my billing information",
-  "Can we reschedule our call to tomorrow?",
-  "Just checking in on my support request",
-  "Got your message, that sounds great!",
-  "Do you offer any discounts for annual plans?",
-  "I'm having trouble logging into my account",
-  "Can you send me the invoice again?",
-  "What's the refund policy?",
-  "I'd like to upgrade my plan",
-  "Are there any ongoing promotions?",
-  "I just placed an order, can you confirm?",
-];
+  /* Filters */
+  filters: InboxFilters;
+  setFilters: (f: Partial<InboxFilters>) => void;
+  resetFilters: () => void;
 
-const NEW_CONTACTS: Array<{
-  firstName: string;
-  lastName: string;
-  avatar: string;
-  channel: string;
-  tag: string;
-}> = [
-    {
-      firstName: "Alex",
-      lastName: "Turner",
-      avatar: "AT",
-      channel: "whatsapp",
-      tag: "New Lead",
-    },
-    {
-      firstName: "Emma",
-      lastName: "Wilson",
-      avatar: "EW",
-      channel: "email",
-      tag: "New Lead",
-    },
-    {
-      firstName: "Carlos",
-      lastName: "Ruiz",
-      avatar: "CR",
-      channel: "instagram",
-      tag: "Hot Lead",
-    },
-    {
-      firstName: "Nina",
-      lastName: "Patel",
-      avatar: "NP",
-      channel: "websitechat",
-      tag: "New Lead",
-    },
-    {
-      firstName: "James",
-      lastName: "Kim",
-      avatar: "JK",
-      channel: "messenger",
-      tag: "Customer",
-    },
-    {
-      firstName: "Olivia",
-      lastName: "Chen",
-      avatar: "OC",
-      channel: "whatsapp",
-      tag: "Hot Lead",
-    },
-    {
-      firstName: "Ryan",
-      lastName: "Foster",
-      avatar: "RF",
-      channel: "email",
-      tag: "New Lead",
-    },
-    {
-      firstName: "Zara",
-      lastName: "Ahmed",
-      avatar: "ZA",
-      channel: "instagram",
-      tag: "New Lead",
-    },
-    {
-      firstName: "Lucas",
-      lastName: "Mendes",
-      avatar: "LM",
-      channel: "websitechat",
-      tag: "Customer",
-    },
-  ];
+  /* Conversation search (by contact name / phone / email) */
+  convSearch: string;
+  setConvSearch: (q: string) => void;
 
-const AGENT_NAMES = [
-  "Alice Johnson",
-  "Bob Smith",
-  "Carol White",
-  "David Lee",
-  "Eva Martinez",
-];
+  /* Selected conversation */
+  selectedConversation: ApiConversation | null;
+  selectConversation: (conv: ApiConversation) => void;
 
-const MENTION_TEMPLATES = [
-  (agent: string, contact: string) =>
-    `${agent} mentioned you in ${contact}'s conversation`,
-  (agent: string, contact: string) =>
-    `${agent}: "@you please handle ${contact}'s request"`,
-  (agent: string, contact: string) =>
-    `${agent} tagged you in a note for ${contact}`,
-];
+  /* Timeline (messages + activities merged) */
+  timeline: ApiTimelineItem[];
+  timelineLoading: boolean;
+  hasMoreTimeline: boolean;
+  loadMoreTimeline: () => void;
 
-let _nextConvId = 100;
-let _nextMsgId = 1000;
-
-function getNow() {
-  return new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-interface InboxContextType {
-  convList: Conversation[];
-  selectedConversation: Conversation;
-  messages: Record<number, Message[]>;
-  // channelOverrides: Record<number, string>;
+  /* Channels */
+  channels: any[] | null;
   selectedChannel: any;
-  inputMode: "reply" | "comment";
-  snoozedUntil: string | null;
+  handleChannelChange: (channel: any) => void;
+
+  /* Contact detail */
+  selectedContact: any;
+  refreshContact: () => Promise<void>;
+
+  /* Input mode */
+  inputMode: "reply" | "note";
+  setInputMode: React.Dispatch<React.SetStateAction<"reply" | "note">>;
+lifecycles: any[];
+  /* Message search (within open conversation) */
   msgSearchOpen: boolean;
   msgSearch: string;
-  channels: any[] | null;
-  selectedContact: any;
-  timelineItems: any;
-  uploadFile: ( file: File,conversationId: number,) => Promise<void>;
-  unAssignConv: () => Promise<void>;
-  sendNote: (msg: Omit<Message, "id" | "time" | "status">) => Promise<void>;
-  selectConversation: (conv: Conversation) => void;
-  addMessage: (msg: Message) => void;
-  assignConv: ( userId: string | null) => Promise<void>;
-  refreshContact: () => Promise<void>;
-  handleChannelChange: (channel: string) => void;
-  setInputMode: React.Dispatch<React.SetStateAction<"reply" | "comment">>;
-  setSnoozedUntil: React.Dispatch<React.SetStateAction<string | null>>;
   toggleMsgSearch: () => void;
   setMsgSearch: React.Dispatch<React.SetStateAction<string>>;
-  sendMessage: (msg: Omit<Message, "id" | "time" | "status">) => Promise<void>;
+
+  /* Snooze */
+  snoozedUntil: string | null;
+  setSnoozedUntil: React.Dispatch<React.SetStateAction<string | null>>;
+
+  /* Actions */
+  sendMessage: (payload: {
+    text?: string;
+    attachments?: Array<{ type: string; url: string; name: string; mimeType?: string }>;
+    metadata?: Record<string, any>;
+  }) => Promise<void>;
+  fetchLifecycles: () => Promise<void>;
+  sendNote: (text: string, mentionedUserIds?: string[]) => Promise<void>;
+  closeConversation: () => Promise<void>;
+  openConversation: () => Promise<void>;
+  setPendingConversation: () => Promise<void>;
+  assignUser: (userId: string | null) => Promise<void>;
+  assignTeam: (teamId: string | null) => Promise<void>;
+  setPriority: (priority: ConvPriority) => Promise<void>;
+  uploadFile: (file: File, entityId: string) => Promise<string>;
+
+  /* Workspace users */
+  workspaceUsers: any[];
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   DEFAULT FILTERS
+══════════════════════════════════════════════════════════════════ */
+
+const DEFAULT_FILTERS: InboxFilters = {
+  // status: "open",
+  // priority: "all",
+  // direction: "all",
+  // // channelType: "all",
+  // assigneeId: undefined,
+  // teamId: undefined,
+  // unreplied: false,
+  limit: 25,
+};
+
+/* ══════════════════════════════════════════════════════════════════
+   CONTEXT
+══════════════════════════════════════════════════════════════════ */
 
 const InboxContext = createContext<InboxContextType | null>(null);
 
@@ -192,606 +145,580 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { notify } = useNotifications();
-
   const notifyRef = useRef(notify);
-  useEffect(() => {
-    notifyRef.current = notify;
-  }, [notify]);
-
-  const [convList, setConvList] = useState<any[]>([]
-
-    // () =>
-    // DUMMY_MODE ? [...initialConversations] : []
-  );
-
-  const [messages, setMessages] = useState<Record<number, Message[]>>(() =>
-    DUMMY_MODE ? loadMessages() : {}
-);
-// const [channelOverrides, setChannelOverrides] = useState<
-//   Record<number, string>
-// >({});
-const [timelineItems, setTimelineItems] = useState<any>({});
-  const [inputMode, setInputMode] = useState<"reply" | "comment">("reply");
-  const [snoozedUntil, setSnoozedUntil] = useState<string | null>(null);
-  const [msgSearchOpen, setMsgSearchOpen] = useState(false);
-  const [msgSearch, setMsgSearch] = useState("");
-  const [selectedContact, setSelectedContact] = useState<any>(null);
-
-  const [channels, setChannels] = useState<any[] | null>(null);
-  const [selectedChannel, setSelectedChannel] = useState(null);
-  const [selectedConversation, setSelectedConversation] =
-    useState<any>(
-      null
-      // () =>
-      // DUMMY_MODE ? initialConversations[0] : initialConversations[0]
-    );
-  const { refreshOrganizationsUsers } = useOrganization()
-
-  useEffect(() => {
-    refreshOrganizationsUsers();
-  }, [refreshOrganizationsUsers])
-
-
-
-
-
-  useEffect(() => {
-    if (!selectedConversation) return;
-
-    setSelectedChannel(selectedConversation.channel);
-  }, [selectedConversation]);
-  useEffect(() => {
-
-    refreshChannels();
-  }, []);
-
-  const refreshChannels = useCallback(async () => {
-    const result = await ChannelApi.getChannels();
-    setChannels(result);
-    if (selectedChannel == null && result.length > 0) {
-      setSelectedChannel(result[0]);
-    }
-
-  }, []);
-
-  const refreshContact = useCallback(async () => {
-    if (!selectedConversation?.contact?.id) return;
-    contactsApi.getContact(selectedConversation.contactId).then((details) => {
-
-      setSelectedContact(details);
-    })
-  }, [selectedConversation?.contact?.id]);
-
-  const selectedConvIdRef = useRef(selectedConversation?.id);
-  const convListRef = useRef(convList);
-
+  useEffect(() => { notifyRef.current = notify; }, [notify]);
 
   const socket = useSocket();
   const { activeWorkspace } = useWorkspace();
+  const { refreshOrganizationsUsers } = useOrganization();
 
-  const assignConv = async ( userId: string) => {
-    await inboxApi.assignConv(selectedConversation?.id, userId)
+  const wsId = activeWorkspace?.id as string | undefined;
 
-  }
-  const unAssignConv = async () => {
-    await inboxApi.unAssignConv(selectedConversation?.id)
-  }
+  /* ── Filters ── */
+  const [filters, _setFilters] = useState<InboxFilters>(DEFAULT_FILTERS);
+  const [convSearch, setConvSearch] = useState("");
+
+  const setFilters = useCallback((partial: Partial<InboxFilters>) => {
+    console.log({ partial });
+
+    _setFilters((prev) => {
+      console.log({ prev });
+      return { ...prev, ...partial, cursor: undefined };
+    });
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    _setFilters(DEFAULT_FILTERS);
+    setConvSearch("");
+  }, []);
+
+  /* ── Conversation list ── */
+  const [convList, setConvList] = useState<ApiConversation[]>([]);
+  const [convLoading, setConvLoading] = useState(false);
+  const [nextConvCursor, setNextConvCursor] = useState<string | undefined>();
+  const [hasMoreConvs, setHasMoreConvs] = useState(false);
+
+  /* ── Selected conversation ── */
+  const [selectedConversation, setSelectedConversation] =
+    useState<ApiConversation | null>(null);
+  const selectedConvIdRef = useRef<string | undefined>();
+
+  /* ── Timeline ── */
+  const [timeline, setTimeline] = useState<ApiTimelineItem[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [nextTimelineCursor, setNextTimelineCursor] = useState<string | undefined>();
+  const [hasMoreTimeline, setHasMoreTimeline] = useState(false);
+  const [lifecycles, setLifecycles] = useState<any[]>([]);
+
+  /* ── Channels ── */
+  const [channels, setChannels] = useState<any[] | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<any>(null);
+
+  /* ── Contact detail ── */
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+
+  /* ── UI state ── */
+  const [inputMode, setInputMode] = useState<"reply" | "note">("reply");
+  const [snoozedUntil, setSnoozedUntil] = useState<string | null>(null);
+  const [msgSearchOpen, setMsgSearchOpen] = useState(false);
+  const [msgSearch, setMsgSearch] = useState("");
+
+  /* ── Workspace users (for assignee picker) ── */
+  const [workspaceUsers, setWorkspaceUsers] = useState<any[]>([]);
+
+  /* ══════════════════════════════════════════════════════════════
+     BOOTSTRAP
+  ══════════════════════════════════════════════════════════════ */
 
   useEffect(() => {
-    refreshContact()
-  }, [selectedConversation?.contact?.id, refreshContact])
+    refreshOrganizationsUsers();
+  }, [refreshOrganizationsUsers]);
+
+  useEffect(() => {
+    if (!wsId) return;
+    ChannelApi.getChannels().then((result) => {
+      setChannels(result);
+      if (!selectedChannel && result.length > 0) setSelectedChannel(result[0]);
+    });
+  }, [wsId]);
+
+  useEffect(()=>{
+    console.log({convList});
+    
+   setSelectedConversation((prev) => {
+    if(prev){
+      const updatedConv = convList.find(c => c.id === prev.id);
+      return updatedConv || prev;
+    }
+    return prev;
+   });
+  },[convList])
+
+  /* ══════════════════════════════════════════════════════════════
+     LOAD CONVERSATIONS  (re-fetches when filters / search change)
+  ══════════════════════════════════════════════════════════════ */
+
+  const fetchConversations = useCallback(
+    async (replace: boolean) => {
+      if (!wsId) return;
+      setConvLoading(true);
+      try {
+        const result = await inboxApi.getConversations(wsId, {
+          ...filters,
+          search: convSearch || undefined,
+          cursor: replace ? undefined : nextConvCursor,
+        });
+        setConvList((prev) => replace ? result.data : [...prev, ...result.data]);
+        setNextConvCursor(result.nextCursor);
+        setHasMoreConvs(!!result.nextCursor);
+      } catch (err) {
+        console.error("[InboxContext] fetchConversations:", err);
+      } finally {
+        setConvLoading(false);
+      }
+    },
+    [wsId, filters, convSearch, nextConvCursor]
+  );
+
+  /* Initial load + re-load when filters change */
+  useEffect(() => {
+    fetchConversations(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsId, filters, convSearch]);
+
+  const loadMoreConversations = useCallback(() => {
+    if (!convLoading && hasMoreConvs) fetchConversations(false);
+  }, [convLoading, hasMoreConvs, fetchConversations]);
+
+  /* ══════════════════════════════════════════════════════════════
+     SELECT CONVERSATION → load timeline
+  ══════════════════════════════════════════════════════════════ */
+
+  const fetchTimeline = useCallback(
+    async (convId: string, replace: boolean, cursor?: string) => {
+      if (!wsId) return;
+      setTimelineLoading(true);
+      try {
+        const result = await inboxApi.getTimeline(wsId, convId, cursor);
+        // BE returns newest-first; we want oldest-first for display
+        const items = [...result.data].reverse();
+        setTimeline((prev) => replace ? items : [...items, ...prev]);
+        setNextTimelineCursor(result.nextCursor);
+        setHasMoreTimeline(!!result.nextCursor);
+      } catch (err) {
+        console.error("[InboxContext] fetchTimeline:", err);
+      } finally {
+        setTimelineLoading(false);
+      }
+    },
+    [wsId]
+  );
 
 
-  const upsertConversation = (conv: Conversation) => {
-    setConvList((prev) => {
-      const exists = prev.find((c) => c.id === conv.id);
+  const fetchLifecycles = useCallback(
+    async () => {
+      const result = await workspaceApi.getLifecycleStages();
+      setLifecycles(result);
 
-      if (!exists) {
-        return [conv, ...prev];
+    },
+    [activeWorkspace?.id]
+  );
+
+
+  const loadMoreTimeline = useCallback(async () => {
+    if (!timelineLoading && hasMoreTimeline && selectedConversation) {
+      await fetchTimeline(selectedConversation.id, false, nextTimelineCursor);
+    }
+  }, [timelineLoading, hasMoreTimeline, selectedConversation, nextTimelineCursor, fetchTimeline]);
+
+  /* ══════════════════════════════════════════════════════════════
+     REFRESH CONTACT
+  ══════════════════════════════════════════════════════════════ */
+
+  const refreshContact = useCallback(async () => {
+    if (!selectedConversation?.contactId) return;
+    try {
+      const detail = await contactsApi.getContact(selectedConversation.contactId);
+      setSelectedContact(detail);
+    } catch { }
+  }, [selectedConversation?.contactId]);
+
+  /* ══════════════════════════════════════════════════════════════
+     REAL-TIME SOCKET EVENTS
+  ══════════════════════════════════════════════════════════════ */
+
+  useEffect(() => {
+    if (!socket || !wsId) return;
+
+    const onMessage = (msg: ApiMessage & { conversationId: string }) => {
+      // Append to timeline if this conv is open
+      console.log({ msg });
+      let message = msg
+      if (message.conversationId === selectedConvIdRef.current) {
+        const item: ApiTimelineItem = {
+          id: message.id,
+          type: "message",
+          timestamp: message.createdAt,
+          message: message,
+        };
+
+        setTimeline((prev) => [...prev, item]);
       }
 
-      const rest = prev.filter((c) => c.id !== conv.id);
-
-      return [
-        {
-          ...exists,
-          ...conv,
-        },
-        ...rest,
-      ];
-    });
-  };
-
-  const appendMessage = (msg: Message) => {
-    setMessages((prev) => {
-      const list = prev[msg.conversationId] ?? [];
-
-      const already = list.some((m) => m.id === msg.id);
-      if (already) return prev;
-
-      return {
-        ...prev,
-        [msg.conversationId]: [...list, msg],
-      };
-    });
-  };
-
-
-
-  useEffect(() => {
-    if (!socket || !activeWorkspace) return;
-
-    const onMessage = (msg: Message) => {
-      console.log("NEW message", msg);
-
-      appendMessage(msg);
-
+      // Update conversation list
       setConvList((prev) => {
-        let conv = prev.find((c) => c.id === msg.conversationId);
+        const isSelected = message.conversationId === selectedConvIdRef.current;
+        const existing = prev.find((c) => c.id === message.conversationId);
 
-        const isSelected = selectedConvIdRef.current === msg.conversationId;
-
-        if (!conv) {
-          // conversation not loaded yet
-          const newConv: Conversation = {
-            id: msg.conversationId,
-            name: msg.author,
-            avatar: msg.initials,
-            channel: msg.channel,
-            message: msg.text || "Attachment",
-            time: msg.time,
-            unreadCount: isSelected ? 0 : 1,
-            tag: "",
-            direction: "incoming",
-          };
-
-          return [newConv, ...prev];
+        if (!existing) {
+          // Unknown conv — re-fetch list to pick it up
+          fetchConversations(true);
+          return prev;
         }
 
-        const rest = prev.filter((c) => c.id !== msg.conversationId);
-
+        const rest = prev.filter((c) => c.id !== message.conversationId);
         return [
           {
-            ...conv,
-            message: msg.text || "Attachment",
-            time: msg.time,
-            direction: "incoming",
-            unreadCount: isSelected ? 0 : conv.unreadCount + 1,
+            ...existing,
+            lastMessage: message as any,
+            lastMessageAt: message.createdAt,
+            unreadCount: isSelected ? 0 : existing.unreadCount + 1,
           },
           ...rest,
         ];
       });
 
-      notifyRef.current({
-        type: "new_message",
-        title: `New message`,
-        body: msg.text || "Attachment",
-        conversationId: msg.conversationId,
+      if (message.conversationId !== selectedConvIdRef.current) {
+        notifyRef.current({
+          type: "new_message",
+          title: "New message",
+          body: message.text || "Attachment",
+          conversationId: message.conversationId,
+        });
+      }
+    };
+
+    const onStatusUpdate = (data: {
+      conversationId: string;
+      messageId: string;
+      status: "delivered" | "read" | "failed";
+    }) => {
+
+      // Update timeline message
+      if (data.conversationId === selectedConvIdRef.current) {
+        setTimeline((prev) =>
+          prev.map((item) => {
+            if (item.type !== "message") return item;
+
+            if (item.message.id === data.messageId) {
+              return {
+                ...item,
+                message: {
+                  ...item.message,
+                  status: data.status,
+                },
+              };
+            }
+
+            return item;
+          })
+        );
+      }
+
+      // Update conversation list lastMessage status
+      // setConvList((prev) =>
+      //   prev.map((conv) => {
+      //     if (conv.id !== data.conversationId) return conv;
+
+      //     if (conv.lastMessage?.id !== data.messageId) return conv;
+
+      //     return {
+      //       ...conv,
+      //       lastMessage: {
+      //         ...conv.lastMessage,
+      //         status: data.status,
+      //       },
+      //     };
+      //   })
+      // );
+    };
+
+    const onConversation = (conv: ApiConversation) => {
+      setConvList((prev) => {
+        const exists = prev.find((c) => c.id === conv.id);
+        console.log({exists});
+        if (!exists) return [conv, ...prev];
+        
+        return prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c));
       });
     };
 
-    const onConversation = (conv: Conversation) => {
-      console.log("NEW conversation", conv);
-
-      upsertConversation(conv);
-
-      // notifyRef.current({
-      //   type: "new_message",
-      //   title: "New conversation",
-      //   body: `${conv?.contact?.firstName}: ${conv.lastMessage.text || "Attachment"}`,
-      //   conversationId: conv.id,
-      //   contactName: conv?.contact?.firstName,
-      // });
+    const onActivity = (item: ApiTimelineItem) => {
+      if (item.activity?.conversationId === selectedConvIdRef.current) {
+        setTimeline((prev) => [...prev, item]);
+      }
     };
 
+    const onActivityUpsert = (item: ApiTimelineItem) => {
+      if (item.activity?.conversationId === selectedConvIdRef.current) {
+        setTimeline((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, ...item } : i))
+        );
+      }
+    };
     socket.on("message.upsert", onMessage);
+    socket.on("message.status_updated", onStatusUpdate);
+    socket.on("activity.upsert", onActivityUpsert);
     socket.on("conversation.upsert", onConversation);
+    socket.on("activity", onActivity);
 
     return () => {
       socket.off("message.upsert", onMessage);
+      socket.off("message.status_updated", onStatusUpdate);
       socket.off("conversation.upsert", onConversation);
+      socket.off("activity", onActivity);
     };
-  }, [socket, activeWorkspace]);
-  useEffect(() => {
-    selectedConvIdRef.current = selectedConversation?.id;
+  }, [socket, wsId, fetchConversations]);
 
-  }, [selectedConversation?.id]);
-  useEffect(() => {
-    convListRef.current = convList;
-  }, [convList]);
-  useEffect(() => {
-  }, [convList]);
+  /* ══════════════════════════════════════════════════════════════
+     SEND MESSAGE
+  ══════════════════════════════════════════════════════════════ */
 
-  useEffect(() => {
-  }, []);
+  const sendMessage = useCallback(
+    async (msg: any) => {
 
-  useEffect(() => {
-    console.log("selectedConversation updated:dwdw ", selectedConversation);
-  }, [selectedConversation]);
-  useEffect(() => {
-    if (DUMMY_MODE) return;
+      const payload: any = {
+        ...(msg.text && { text: msg.text }),
+        ...(msg.attachments?.length && { attachments: msg.attachments }),
+        ...(msg.metadata && { metadata: msg.metadata }),
 
-    inboxApi
-      .getConversations()
-      .then((convs: any) => {
-        setConvList(convs);
-        if (convs.length > 0) setSelectedConversation(convs[0]);
-
-
-      })
-
-
-    const unsubscribe = inboxApi.subscribeToUpdates(
-      (msg) => {
-        setMessages((prev) => ({
-          ...prev,
-          [msg.conversationId]: [...(prev[msg.conversationId] ?? []), msg],
-        }));
-        setConvList((prev) => {
-          const target = prev.find((c) => c.id === msg.conversationId);
-          if (!target) return prev;
-          const isSelected = selectedConvIdRef.current === msg.conversationId;
-          const rest = prev.filter((c) => c.id !== msg.conversationId);
-          return [
-            {
-              ...target,
-              message: msg.text || "Attachment",
-              time: msg.time,
-              direction: "incoming" as const,
-              unreadCount: isSelected ? 0 : target.unreadCount + 1,
-            },
-            ...rest,
-          ];
-        });
-        notifyRef.current({
-          type: "new_message",
-          title: `New message`,
-          body: msg.text || "Attachment",
-          conversationId: msg.conversationId,
-        });
-      },
-      (conv) => {
-        setConvList((prev) => [conv, ...prev]);
-        notifyRef.current({
-          type: "new_message",
-          title: "New conversation",
-          body: `${conv.name}: ${conv.message}`,
-          conversationId: conv.id,
-          contactName: conv.name,
-        });
-      },
-      (evt) => {
-        notifyRef.current({
-          type: "assign",
-          title: "Conversation assigned to you",
-          body: `${evt.assignedBy} assigned ${evt.contactName}'s conversation to you`,
-          conversationId: evt.conversationId,
-          contactName: evt.contactName,
-        });
-      },
-      (evt) => {
-        notifyRef.current({
-          type: "mention",
-          title: `${evt.mentionedBy} mentioned you`,
-          body: evt.text,
-          conversationId: evt.conversationId,
-          contactName: evt.contactName,
-        });
-      }
-    );
-
-    return unsubscribe;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-
-
-  useEffect(() => {
-    if (!DUMMY_MODE) return;
-
-    const interval = setInterval(() => {
-      const candidates = convListRef.current.filter(
-        (c) => c.id !== selectedConvIdRef.current
-      );
-      if (candidates.length === 0) return;
-
-      const target = pickRandom(candidates);
-      const text = pickRandom(INCOMING_MESSAGES);
-      const timeStr = getNow();
-      const msgId = _nextMsgId++;
-      console.log({ target, text, timeStr, msgId });
-
-      setConvList((prev) => {
-        const t = prev.find((c) => c.id === target.id);
-        if (!t) return prev;
-        const rest = prev.filter((c) => c.id !== target.id);
-        return [
-          {
-            ...t,
-            message: text,
-            time: timeStr,
-            unreadCount: t.unreadCount + 1,
-            direction: "incoming" as const,
-          },
-          ...rest,
-        ];
-      });
-
-      setMessages((prev) => {
-        const updated = {
-          ...prev,
-          [target.id]: [
-            ...(prev[target.id] ?? []),
-            {
-              id: msgId,
-              conversationId: target.id,
-              type: "reply" as const,
-              text,
-              author: target.name,
-              initials: target.avatar,
-              time: timeStr,
-              channel: target.channel,
-            },
-          ],
-        };
-        saveMessages(updated);
-        return updated;
-      });
-
-      notifyRef.current({
-        type: "new_message",
-        title: `New message from ${target.name}`,
-        body: text,
-        conversationId: target.id,
-        contactName: target.name,
-      });
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!DUMMY_MODE) return;
-
-    const interval = setInterval(() => {
-      const contact = pickRandom(NEW_CONTACTS);
-      const text = pickRandom(INCOMING_MESSAGES);
-      const timeStr = getNow();
-      const newId = _nextConvId++;
-      const msgId = _nextMsgId++;
-
-      const newConv: Conversation = {
-        id: newId,
-        name: contact.name,
-        message: text,
-        time: timeStr,
-        unreadCount: 1,
-        tag: contact.tag,
-        avatar: contact.avatar,
-        channel: contact.channel,
-        direction: "incoming",
       };
 
-      setConvList((prev) => [newConv, ...prev]);
-
-      setMessages((prev) => {
-        const updated = {
-          ...prev,
-          [newId]: [
-            {
-              id: msgId,
-              conversationId: newId,
-              type: "reply" as const,
-              text,
-              author: contact.name,
-              initials: contact.avatar,
-              time: timeStr,
-              channel: contact.channel,
-            },
-          ],
+      if (msg.template) {
+        payload.metadata = {
+          template: msg.template
         };
-        saveMessages(updated);
-        return updated;
-      });
+      }
+      console.log({ payload, selectedConversation });
 
-      notifyRef.current({
-        type: "new_message",
-        title: "New conversation",
-        body: `${contact.name}: ${text}`,
-        conversationId: newId,
-        contactName: contact.name,
-      });
-    }, 25000);
+      const message = await inboxApi.sendMessage(
+        selectedConversation?.id!,
+        selectedChannel?.id,
+        payload
+      );
 
-    return () => clearInterval(interval);
-  }, []);
+      console.log({ message });
 
-  useEffect(() => {
-    if (!DUMMY_MODE) return;
-
-    const interval = setInterval(() => {
-      const list = convListRef.current;
-      if (list.length === 0) return;
-      const conv = pickRandom(list);
-      const agent = pickRandom(AGENT_NAMES);
-
-      notifyRef.current({
-        type: "assign",
-        title: "Conversation assigned to you",
-        body: `${agent} assigned ${conv.name}'s conversation to you`,
-        conversationId: conv.id,
-        contactName: conv.name,
-      });
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!DUMMY_MODE) return;
-
-    const interval = setInterval(() => {
-      const list = convListRef.current;
-      if (list.length === 0) return;
-      const conv = pickRandom(list);
-      const agent = pickRandom(AGENT_NAMES);
-      const template = pickRandom(MENTION_TEMPLATES);
-
-      notifyRef.current({
-        type: "mention",
-        title: `${agent} mentioned you`,
-        body: template(agent, conv.name),
-        conversationId: conv.id,
-        contactName: conv.name,
-      });
-    }, 45000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const updateMessageStatus = useCallback(
-    (msgId: number, conversationId: number, status: Message["status"]) => {
-      setMessages((prev) => {
-        const updated = {
-          ...prev,
-          [conversationId]: (prev[conversationId] ?? []).map((m) =>
-            m.id === msgId ? { ...m, status } : m
-          ),
-        };
-        if (DUMMY_MODE) saveMessages(updated);
-        return updated;
-      });
     },
-    []
+    [selectedChannel?.id, selectedConversation?.id]
   );
 
+  // const sendMessage = useCallback(
+  //   async (payload: {
+  //     text?: string;
+  //     attachments?: Array<{ type: string; url: string; name: string; mimeType?: string }>;
+  //     metadata?: Record<string, any>;
+  //   }) => {
+  //     if (!wsId || !selectedConversation || !selectedChannel) return;
 
-  const addMessage = useCallback(
-    (msg: Message) => {
-      if (msg.channel) {
-        // setChannelOverrides((prev) => ({
-        //   ...prev,
-        //   [msg.conversationId]: msg.channel!,
-        // }));
-        setChannels((prev: any) => ({
-          ...prev,
-          [msg.conversationId]: msg.channel!,
-        }));
-      }
+  //     // Optimistic: append a pending item
+  //     const tempId = `temp-${Date.now()}`;
+  //     const optimistic: ApiTimelineItem = {
+  //       id:        tempId,
+  //       type:      "message",
+  //       timestamp: new Date().toISOString(),
+  //       message: {
+  //         // id:             tempId,
+  //         // conversationId: selectedConversation.id,
+  //         channelId:      selectedChannel.id,
+  //         // type:           "text",
+  //         // direction:      "outgoing",
+  //         text:           payload.text,
+  //         // status:         "pending",
+  //         createdAt:      new Date().toISOString(),
+  //       } as any,
+  //     };
+  //     setTimeline((prev) => [...prev, optimistic]);
 
-      if (DUMMY_MODE) {
-        const pending: Message = { ...msg, status: "pending" };
+  //     try {
+  //       const saved = await inboxApi.sendMessage(
+  //         wsId,
+  //         selectedConversation.id,
+  //         selectedChannel.id,
+  //         payload
+  //       );
+  //       // Replace optimistic with real
+  //       setTimeline((prev) =>
+  //         prev.map((item) =>
+  //           item.id === tempId
+  //             ? { id: saved.id, type: "message", timestamp: saved.createdAt, message: saved }
+  //             : item
+  //         )
+  //       );
+  //     } catch (err) {
+  //       console.error("[InboxContext] sendMessage:", err);
+  //       // Mark failed
+  //       setTimeline((prev) =>
+  //         prev.map((item) =>
+  //           item.id === tempId
+  //             ? { ...item, message: { ...item.message!, status: "failed" } as any }
+  //             : item
+  //         )
+  //       );
+  //     }
+  //   },
+  //   [wsId, selectedConversation, selectedChannel]
+  // );
 
-        setMessages((prev) => {
-          const updated = {
-            ...prev,
-            [msg.conversationId]: [
-              ...(prev[msg.conversationId] ?? []),
-              pending,
-            ],
-          };
-          saveMessages(updated);
-          return updated;
-        });
+  /* ══════════════════════════════════════════════════════════════
+     SEND NOTE
+  ══════════════════════════════════════════════════════════════ */
 
-        setConvList((prev) => {
-          const target = prev.find((c) => c.id === msg.conversationId);
-          if (!target) return prev;
-          const rest = prev.filter((c) => c.id !== msg.conversationId);
-          return [
-            {
-              ...target,
-              message: msg.text || "Attachment",
-              time: msg.time,
-              direction: "outgoing" as const,
-            },
-            ...rest,
-          ];
-        });
-
-        setTimeout(
-          () => updateMessageStatus(msg.id, msg.conversationId, "sent"),
-          700
+  const sendNote = useCallback(
+    async (text: string, mentionedUserIds?: string[]) => {
+      if (!wsId || !selectedConversation) return;
+      try {
+        const activity = await inboxApi.sendNote(
+          wsId,
+          selectedConversation.id,
+          text,
+          mentionedUserIds
         );
-        setTimeout(
-          () => updateMessageStatus(msg.id, msg.conversationId, "delivered"),
-          1800
-        );
-        setTimeout(
-          () => updateMessageStatus(msg.id, msg.conversationId, "read"),
-          3500
-        );
-      } else {
-        const optimistic: Message = { ...msg, status: "pending" };
-        setMessages((prev) => ({
-          ...prev,
-          [msg.conversationId]: [
-            ...(prev[msg.conversationId] ?? []),
-            optimistic,
-          ],
-        }));
-
-        const { id: _id, status: _status, ...payload } = msg;
-        inboxApi
-          .sendMessage(payload)
-          .then((saved) => {
-            setMessages((prev) => ({
-              ...prev,
-              [msg.conversationId]: (prev[msg.conversationId] ?? []).map((m) =>
-                m.id === msg.id ? saved : m
-              ),
-            }));
-          })
-          .catch((err) => {
-            console.error("[InboxContext] sendMessage failed:", err);
-            updateMessageStatus(msg.id, msg.conversationId, "pending");
-          });
-
-        setConvList((prev) => {
-          const target = prev.find((c) => c.id === msg.conversationId);
-          if (!target) return prev;
-          const rest = prev.filter((c) => c.id !== msg.conversationId);
-          return [
-            {
-              ...target,
-              message: msg.text || "Attachment",
-              time: msg.time,
-              direction: "outgoing" as const,
-            },
-            ...rest,
-          ];
-        });
+        const item: ApiTimelineItem = {
+          id: activity.id,
+          type: "activity",
+          timestamp: activity.createdAt,
+          activity,
+        };
+        setTimeline((prev) => [...prev, item]);
+      } catch (err) {
+        console.error("[InboxContext] sendNote:", err);
       }
     },
-    [updateMessageStatus]
+    [wsId, selectedConversation]
   );
 
-  const getMessagesForConversation = useCallback(
-    (conversationId: number) => {
+  /* ══════════════════════════════════════════════════════════════
+     CONVERSATION MUTATIONS
+     Each mutation:
+      1. Calls BE
+      2. Updates selectedConversation local state
+      3. Updates convList
+  ══════════════════════════════════════════════════════════════ */
 
-      inboxApi.getMessages(conversationId).then((msgs) => {
-        setTimelineItems(msgs);
-        // setMessages((prev) => ({ ...prev, [conversationId]: msgs }));
-      })
-
-      return timelineItems[conversationId] ?? [];
-    },
-    [timelineItems]
-  );
-
-  const selectConversation = useCallback((conv: Conversation) => {
+  const updateSelectedConv = (patch: Partial<ApiConversation>) => {
+    setSelectedConversation((prev) => prev ? { ...prev, ...patch } : prev);
     setConvList((prev) =>
-      prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
+      prev.map((c) =>
+        c.id === selectedConversation?.id ? { ...c, ...patch } : c
+      )
     );
+  };
 
-    setSelectedConversation({ ...conv, unreadCount: 0 });
+  const closeConversation = useCallback(async () => {
+    if (!wsId || !selectedConversation) return;
+    await inboxApi.close(wsId, selectedConversation.id);
+    updateSelectedConv({ status: "closed" });
+  }, [wsId, selectedConversation]);
 
-    setMsgSearch("");
-    setMsgSearchOpen(false);
-    getMessagesForConversation(conv.id);
+  const openConversation = useCallback(async () => {
+    if (!wsId || !selectedConversation) return;
+    await inboxApi.open(wsId, selectedConversation.id);
+    updateSelectedConv({ status: "open" });
+  }, [wsId, selectedConversation]);
 
-    if (!DUMMY_MODE) {
-      inboxApi.markConversationRead(conv.id)
-    }
+  const setPendingConversation = useCallback(async () => {
+    if (!wsId || !selectedConversation) return;
+    await inboxApi.setPending(wsId, selectedConversation.id);
+    updateSelectedConv({ status: "pending" });
+  }, [wsId, selectedConversation]);
+
+  const assignUser = useCallback(
+    async (userId: string | null) => {
+      if (!wsId || !selectedConversation) return;
+      if (userId) {
+        await inboxApi.assignUser(wsId, selectedConversation.id, userId);
+        updateSelectedConv({ contact: { ...selectedConversation.contact, assigneeId: userId } });
+      } else {
+        await inboxApi.unassignUser(wsId, selectedConversation.id);
+        updateSelectedConv({ contact: { ...selectedConversation.contact, assigneeId: undefined } });
+      }
+    },
+    [wsId, selectedConversation]
+  );
+
+  const assignTeam = useCallback(
+    async (teamId: string | null) => {
+      if (!wsId || !selectedConversation) return;
+      if (teamId) {
+        await inboxApi.assignTeam(wsId, selectedConversation.id, teamId);
+        updateSelectedConv({ contact: { ...selectedConversation.contact, teamId } });
+      } else {
+        await inboxApi.unassignTeam(wsId, selectedConversation.id);
+        updateSelectedConv({ contact: { ...selectedConversation.contact, teamId: undefined } });
+      }
+    },
+    [wsId, selectedConversation]
+  );
+
+  const setPriority = useCallback(
+    async (priority: ConvPriority) => {
+      if (!wsId || !selectedConversation) return;
+      await inboxApi.setPriority(wsId, selectedConversation.id, priority);
+      updateSelectedConv({ priority });
+    },
+    [wsId, selectedConversation]
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     FILE UPLOAD  (presign → PUT directly to R2)
+  ══════════════════════════════════════════════════════════════ */
+
+  const uploadFile = useCallback(
+    async (file: File, entityId: string): Promise<string> => {
+      if (!wsId) throw new Error("No workspace");
+      const { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl( {
+        type: "message-attachment",
+        fileName: file.name,
+        contentType: file.type,
+        entityId,
+      });
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      return fileUrl;
+    },
+    [wsId]
+  );
+
+  const selectConversation = useCallback(
+    (conv: ApiConversation) => {
+      setSelectedConversation({ ...conv, unreadCount: 0 });
+      selectedConvIdRef.current = conv.id;
+
+      setTimeline([]);
+      setNextTimelineCursor(undefined);
+      setHasMoreTimeline(false);
+      setMsgSearch("");
+      setMsgSearchOpen(false);
+      setInputMode("reply");
+      console.log({ ApiConversation: conv });
+
+      setSelectedChannel(conv?.lastMessage?.channel ?? conv?.lastMessage?.contact?.contactChannels[0]?.channelId);
+
+      // Mark read
+      if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => { });
+
+      // Zero unread in list
+      setConvList((prev) =>
+        prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
+      );
+
+      // Load timeline
+      fetchTimeline(conv.id, true);
+
+      // Load contact detail
+      contactsApi.getContact(conv.contactId).then(setSelectedContact).catch(() => { });
+
+      // Auto-select channel matching the conversation's channel type
+      // if (conv.channelId) {
+      //   setChannels((prev: any[] | null) => {
+      //     if (!prev) return prev;
+      //     const match = prev.find((c) => c.id === conv.channelId);
+      //     if (match) setSelectedChannel(match);
+      //     return prev;
+      //   });
+      // }
+    },
+    [wsId, fetchTimeline]
+  );
+
+
+  /* ── Channel helpers ── */
+  const handleChannelChange = useCallback((channel: any) => {
+    setSelectedChannel(channel);
   }, []);
 
   const toggleMsgSearch = useCallback(() => {
@@ -800,108 +727,56 @@ const [timelineItems, setTimelineItems] = useState<any>({});
       return !prev;
     });
   }, []);
-  // let selectedChannel =  channels && channels[0]
-  //  (channels?.length && channels[selectedConversation?.id]) ?? selectedConversation?.channel;
-  // channelOverrides[selectedConversation?.id] ?? selectedConversation?.channel;
-
-  async function uploadFile(file: File, entityId: string) {
-
-    // 1 get presign
-    let { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl({ type: "message-attachment", fileName: file.name, contentType: file.type, entityId })
 
 
-    // 2 upload directly to R2
-    await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type
-      },
-      body: file
-    });
 
-    // 3 return final public url
-    return fileUrl;
-  }
-
- const sendMessage = useCallback(
-  async (msg: Omit<Message, "id" | "time" | "status"> & { template?: any }) => {
-
-    const payload: any = {
-      ...(msg.text && { text: msg.text }),
-      ...(msg.attachments?.length && { attachments: msg.attachments })
-    };
-
-    if (msg.template) {
-      payload.metadata = {
-        template: msg.template
-      };
-    }
-
-    const message = await inboxApi.sendMessage(
-      selectedChannel?.id,
-      String(selectedConversation?.id),
-      payload
-    );
-
-    console.log({ message });
-
-  },
-  [selectedChannel?.id, selectedConversation?.id]
-);
- const sendNote = useCallback(
-  async (msg: any) => {
-
-    
-
-    const message = await inboxApi.addInternalNote(
-      selectedConversation?.id!,
-      msg
-    );
-
-
-  },
-  [selectedChannel?.id, selectedConversation?.id]
-);
-  const handleChannelChange = useCallback(
-    (channel: any) => {
-      // selectedChannel = channel;
-      setSelectedChannel(channel)
-      // setChannelOverrides((prev) => ({
-      //   ...prev,
-      //   [selectedConversation?.id]: channel,
-      // }));
-    },
-    [selectedConversation?.id]
-  );
+  /* ══════════════════════════════════════════════════════════════
+     PROVIDE
+  ══════════════════════════════════════════════════════════════ */
 
   return (
     <InboxContext.Provider
       value={{
         convList,
+        convLoading,
+        hasMoreConvs,
+        loadMoreConversations,
+        filters,
+        lifecycles,
+        setFilters,
+        resetFilters,
+        convSearch,
+        setConvSearch,
         selectedConversation,
-        messages,
-        // channelOverrides,
+        selectConversation,
+        timeline,
+        timelineLoading,
+        hasMoreTimeline,
+        loadMoreTimeline,
+        channels,
         selectedChannel,
+        handleChannelChange,
+        selectedContact,
+        refreshContact,
+        fetchLifecycles,
         inputMode,
-        snoozedUntil,
+        setInputMode,
         msgSearchOpen,
         msgSearch,
-        channels,
-        selectedContact,
-        timelineItems,
-        sendNote,
-        unAssignConv,
-        uploadFile,
-        assignConv,
-        refreshContact,
-        selectConversation,
-        addMessage,
-        handleChannelChange,
-        setInputMode,
-        setSnoozedUntil,
         toggleMsgSearch,
         setMsgSearch,
+        snoozedUntil,
+        setSnoozedUntil,
         sendMessage,
+        sendNote,
+        closeConversation,
+        openConversation,
+        setPendingConversation,
+        assignUser,
+        assignTeam,
+        setPriority,
+        uploadFile,
+        workspaceUsers,
       }}
     >
       {children}

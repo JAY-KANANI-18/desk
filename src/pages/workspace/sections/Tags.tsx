@@ -55,12 +55,12 @@ export const Tags = () => {
           </button>
         </div>
         <div className="p-6 flex flex-wrap gap-3">
-          {tags.map(tag => (
+          {tags?.map(tag => (
             <div key={tag.id} className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 bg-white hover:shadow-sm transition-shadow group">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
-              <span className="text-sm font-medium text-gray-700">{tag.name}</span>
-              <span className="text-xs text-gray-400">{tag.count}</span>
-              <button onClick={() => handleDelete(tag.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 ml-1">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag?.color }} />
+              <span className="text-sm font-medium text-gray-700">{tag?.name}</span>
+              <span className="text-xs text-gray-400">{tag?.count}</span>
+              <button onClick={() => handleDelete(tag?.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 ml-1">
                 <X size={13} />
               </button>
             </div>

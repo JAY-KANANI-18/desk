@@ -4,27 +4,30 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 export default function InstagramCallback() {
-
   const [params] = useSearchParams();
 
   useEffect(() => {
-
     const code = params.get("code");
-    localStorage.setItem("instagram_oauth_code", code || "");
-    console.log({codeeeeeeeeeeeee:code});
-    
+    const error = params.get("error");
 
-    // if (!code) return;
+    if (window.opener) {
+      window.opener.postMessage(
+        {
+          type: "instagram_oauth",
+          code,
+          error
+        },
+        window.location.origin
+      );
+    }
 
-    // fetch("/api/meta/instagram/exchange", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json"
-    //   },
-    //   body: JSON.stringify({ code })
-    // });
-
+    // Close popup after sending message
+    window.close();
   }, []);
 
-  return <div>Connecting Instagram...</div>;
+  return (
+    <div style={{ padding: 20, textAlign: "center" }}>
+      Connecting Instagram...
+    </div>
+  );
 }

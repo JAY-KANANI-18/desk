@@ -21,7 +21,7 @@ function Field({ label, value, onChange, placeholder, hint, sensitive = false }:
       <div className="relative">
         <input type={sensitive && !show ? 'password' : 'text'} value={value} onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all" />
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all" />
         {sensitive && (
           <button type="button" onClick={() => setShow(s=>!s)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -98,9 +98,9 @@ export const InstagramConfiguration = ({
       </div>
 
       {/* Permissions notice */}
-      <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
-        <Instagram size={15} className="text-purple-500 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-purple-800">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+        <Instagram size={15} className="text-indigo-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-indigo-800">
           Instagram messaging requires your Facebook Page to be connected to an Instagram Professional account and the <strong>instagram_manage_messages</strong> permission must be granted.
         </p>
       </div>

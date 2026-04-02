@@ -65,7 +65,7 @@ function Field({ label, value, onChange, placeholder, hint, type = 'text', sensi
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
         />
         {sensitive && (
           <button type="button" onClick={() => setShow(s => !s)}
@@ -86,7 +86,7 @@ function UrlField({ label, value, hint }: { label: string; value: string; hint?:
       <label className="text-xs font-semibold text-slate-600">{label}</label>
       <div className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2">
         <span className="flex-1 text-sm text-slate-500 font-mono truncate">{value}</span>
-        <button onClick={copy} className="flex-shrink-0 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium">
+        <button onClick={copy} className="flex-shrink-0 flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-medium">
           {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
@@ -107,7 +107,7 @@ function SelectField({ label, value, onChange, options, hint }: {
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -160,7 +160,7 @@ export const WhatsAppConfiguration = ({
             <span className="text-sm font-semibold text-slate-800">Configuration</span>
           </div>
           <a href={chatLink} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700">
+            className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">
             <QrCode size={13} />Open chat link
           </a>
         </div>

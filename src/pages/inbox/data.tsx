@@ -221,7 +221,7 @@ export const channelConfig: Record<string, ChannelConfig> = {
     bg: "bg-blue-500",
     label: "Email",
   },
-  websitechat: {
+  webchat: {
     icon: "https://cdn.simpleicons.org/googlechat",
     bg: "bg-purple-500",
     label: "Website Chat",

@@ -1,0 +1,232 @@
+import React, { memo } from 'react';
+import { EdgeProps, getStraightPath, BaseEdge, EdgeLabelRenderer,getSmoothStepPath } from 'reactflow';
+import { Plus } from 'lucide-react';
+
+export const BRANCH_COLORS = [
+  '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6',
+  '#ef4444', '#06b6d4', '#f97316', '#ec4899',
+];
+export const ELSE_COLOR = '#9ca3af';
+
+// ─── 1. AddButtonEdge — straight line + mid + button (main chain / arm steps) ─
+
+export interface AddButtonEdgeData {
+  onAdd: () => void;
+  color?: string;
+  dashed?: boolean;
+}
+export const AddButtonEdge = memo(({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+}: EdgeProps<AddButtonEdgeData>) => {
+
+  const color  = data?.color ?? '#d1d5db';
+  const dashed = data?.dashed ?? false;
+
+  const [path, mx, my] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        style={{
+          stroke: color,
+          strokeWidth: 1.5,
+          strokeDasharray: dashed ? '5 4' : undefined,
+        }}
+      />
+
+      <EdgeLabelRenderer>
+        <div
+          className="nodrag nopan"
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${mx}px,${my}px)`,
+            pointerEvents: 'all',
+            zIndex: 10,
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              data?.onAdd?.();
+            }}
+            className="w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-gray-600 flex items-center justify-center shadow-sm group transition-colors"
+          >
+            <Plus size={10} className="text-gray-400 group-hover:text-gray-700" />
+          </button>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+});
+AddButtonEdge.displayName = 'AddButtonEdge';
+
+// ─── 2. PlainEdge — no button, no label (edge INTO branch node) ──────────────
+
+export const PlainEdge = memo(({ id, sourceX, sourceY, targetX, targetY }: EdgeProps) => {
+  const [path] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+  return <BaseEdge  id={id} path={path} style={{ stroke: '#d1d5db', strokeWidth: 1.5 }} />;
+});
+PlainEdge.displayName = 'PlainEdge';
+
+// ─── 3. ArmStepEdge — colored + mid button (between arm steps) ───────────────
+
+export interface ArmStepEdgeData { onAdd: () => void; color: string; dashed?: boolean; }
+
+export const ArmStepEdge = memo(({
+  id, sourceX, sourceY, targetX, targetY, data,
+}: EdgeProps<ArmStepEdgeData>) => {
+  const color  = data?.color  ?? ELSE_COLOR;
+  const dashed = data?.dashed ?? false;
+  const [path, mx, my] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+  return (
+    <>
+      <BaseEdge id={id} path={path} style={{ stroke: color, strokeWidth: 1.5, strokeDasharray: dashed ? '5 4' : undefined }} />
+      <EdgeLabelRenderer>
+        <div className="nodrag nopan" style={{ position: 'absolute', transform: `translate(-50%,-50%) translate(${mx}px,${my}px)`, pointerEvents: 'all', zIndex: 10 }}>
+          <button
+            onClick={e => { e.stopPropagation(); data?.onAdd?.(); }}
+            className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform group"
+            style={{ border: `1.5px solid ${color}` }}
+          >
+            <Plus size={10} style={{ color }} />
+          </button>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+});
+ArmStepEdge.displayName = 'ArmStepEdge';
+
+// ─── 4. BranchFanEdge — draws the entire orthogonal fan-out as ONE edge ───────
+//
+// This single edge is placed from the branch node to a virtual target at the
+// bottom-center of the fan-out area. It draws:
+//   • vertical stem down from branch box
+//   • horizontal bar spanning all arm columns
+//   • vertical drop + label pill for each arm
+//
+// All arm geometry is passed via `data`.
+
+export interface ArmInfo {
+  id: string;
+  name: string;
+  color: string;
+  centerX: number;       // graph-space X center of this arm
+}
+
+export interface BranchFanEdgeData {
+  arms: ArmInfo[];
+  hBarY: number;         // graph-space Y of horizontal bar
+  armDropY: number;      // graph-space Y where vertical drops end (top of arm nodes)
+}
+
+export const BranchFanEdge = memo(({
+  id, sourceX, sourceY, data,
+}: EdgeProps<BranchFanEdgeData>) => {
+  if (!data) return null;
+  const { arms, hBarY, armDropY } = data;
+  if (!arms || arms.length === 0) return null;
+
+  const leftX  = arms[0].centerX;
+  const rightX = arms[arms.length - 1].centerX;
+
+  // SVG path for the whole fan-out structure:
+  // 1. Vertical stem: sourceY → hBarY at sourceX
+  // 2. Horizontal bar: leftX → rightX at hBarY
+  // Per-arm: vertical drop from hBarY → armDropY at arm.centerX
+
+  const stemPath = `M ${sourceX} ${sourceY} L ${sourceX} ${hBarY}`;
+  const barPath  = `M ${leftX} ${hBarY} L ${rightX} ${hBarY}`;
+
+  return (
+    <>
+      {/* Stem */}
+      <path d={stemPath} stroke="#d1d5db" strokeWidth={1.5} fill="none" />
+      {/* Horizontal bar */}
+      <path d={barPath} stroke="#d1d5db" strokeWidth={1.5} fill="none" />
+
+      {/* Per-arm: vertical drop + label pill */}
+   {arms.map((arm) => {
+const dropPath = `M ${arm.centerX} ${hBarY} L ${arm.centerX} ${armDropY + 28}`;
+  const labelY = hBarY + (armDropY - hBarY) * 0.42;
+  const plusY = armDropY + 18;
+
+  const pillW = Math.max(arm.name.length * 7 + 20, 48);
+  const pillH = 20;
+
+  return (
+    <g key={arm.id}>
+      {/* vertical branch line */}
+      <path d={dropPath} stroke={arm.color} strokeWidth={1.5} fill="none" />
+
+      {/* label */}
+      <rect
+        x={arm.centerX - pillW / 2}
+        y={labelY - pillH / 2}
+        width={pillW}
+        height={pillH}
+        rx={pillH / 2}
+        fill={arm.color}
+      />
+
+      <text
+        x={arm.centerX}
+        y={labelY + 4}
+        textAnchor="middle"
+        fill="white"
+        fontSize={11}
+        fontWeight={600}
+        fontFamily="system-ui,sans-serif"
+      >
+        {arm.name}
+      </text>
+
+  
+    </g>
+  );
+})}
+    </>
+  );
+});
+BranchFanEdge.displayName = 'BranchFanEdge';
+
+
+
+export function StepEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd }: EdgeProps) {
+  const [edgePath] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+  return (
+    <path
+      id={id}
+      className="react-flow__edge-path"
+      d={edgePath}
+      markerEnd={markerEnd}
+      style={{ stroke: "#94a3b8", strokeWidth: 1.5, fill: "none" }}
+    />
+  );
+}
+
+// ─── Registry ─────────────────────────────────────────────────────────────────
+
+export const edgeTypes = {
+  addButtonEdge: AddButtonEdge,
+  plainEdge:     PlainEdge,
+  stepEdge:      StepEdge,
+  armStepEdge:   ArmStepEdge,
+  branchFanEdge: BranchFanEdge,
+};

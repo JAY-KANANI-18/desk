@@ -60,9 +60,7 @@ const formatButtons: (FormatBtn | 'sep')[] = [
 /* ─── EmailInput ─────────────────────────────────────────────────────────────── */
 
 export function EmailInput({
-  channels,
-  selectedConversation,
-  selectedChannel,
+  
   onChannelChange,
   onSendMessage,
   inputMode,
@@ -72,7 +70,9 @@ export function EmailInput({
 }: SharedInputProps) {
 
   const er = replyContext?.type === 'email' ? replyContext.emailReply : null;
-
+  const { uploadFile,channels,
+  selectedConversation,
+  selectedChannel } = useInbox();
   // header fields — pre-fill from replyContext when present
   const [to, setTo]               = useState(er?.to ?? selectedConversation?.contact?.email ?? '');
   const [cc, setCc]               = useState(er?.cc ?? '');
@@ -102,7 +102,7 @@ export function EmailInput({
 
   const emojiRef           = useRef<HTMLDivElement>(null);
 
-  const { uploadFile } = useInbox();
+
   const isNote = inputMode === 'note';
 
   const ch = channelConfig[selectedChannel?.type];
@@ -300,8 +300,8 @@ export function EmailInput({
           <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
             className="flex-1 text-sm text-gray-800 focus:outline-none placeholder-gray-400 bg-transparent font-medium" placeholder="Subject" />
                     <div className="flex items-center gap-1 flex-shrink-0">
-            {!showCc  && <button onClick={() => setShowCc(true)}  className="text-xs text-gray-400 hover:text-blue-600 px-1.5 py-0.5 rounded hover:bg-blue-50 transition-colors font-medium">Cc</button>}
-            {!showBcc && <button onClick={() => setShowBcc(true)} className="text-xs text-gray-400 hover:text-blue-600 px-1.5 py-0.5 rounded hover:bg-blue-50 transition-colors font-medium">Bcc</button>}
+            {!showCc  && <button onClick={() => setShowCc(true)}  className="text-xs text-gray-400 hover:text-indigo-600 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition-colors font-medium">Cc</button>}
+            {!showBcc && <button onClick={() => setShowBcc(true)} className="text-xs text-gray-400 hover:text-indigo-600 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition-colors font-medium">Bcc</button>}
           </div>
           {subject && <CircleX size={14} className="text-gray-300 hover:text-gray-500 cursor-pointer flex-shrink-0" onClick={() => setSubject('')} />}
         </div>
@@ -331,7 +331,7 @@ export function EmailInput({
           const isActive = activeFormats.has(btn.command);
           return (
             <button key={btn.command} onMouseDown={e => { e.preventDefault(); execFormat(btn.command, btn.value); }} title={btn.title}
-              className={`p-1.5 rounded transition-colors flex-shrink-0 ${isActive ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
+              className={`p-1.5 rounded transition-colors flex-shrink-0 ${isActive ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
               {btn.icon}
             </button>
           );
@@ -406,7 +406,7 @@ export function EmailInput({
             }
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSend(); }
           }}
-          className={`min-h-[80px] px-4 py-3 text-sm text-gray-800 focus:outline-none leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${activeBg}`}
+          className={`min-h-[80px] px-4 py-3 text-sm text-gray-800 focus:outline-none leading-relaxed [&_a]:text-indigo-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${activeBg}`}
           style={{ wordBreak: 'break-word' }}
         />
       </div>
@@ -425,7 +425,7 @@ export function EmailInput({
                   </button>
                 </div>
               ) : (
-                <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
                   {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
                   <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
                   <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
@@ -459,7 +459,7 @@ export function EmailInput({
                           className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}>
                           <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="w-4 h-4" />
                           <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
-                          {selectedChannel?.id === ch.id && <Check size={13} className="text-blue-600 flex-shrink-0" />}
+                          {selectedChannel?.id === ch.id && <Check size={13} className="text-indigo-600 flex-shrink-0" />}
                         </button>
                       ))}
                     </div>
@@ -495,7 +495,7 @@ export function EmailInput({
                   onClick={() => onInputModeChange('reply')}
                   title="Reply to customer"
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                    !isNote ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    !isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   <MessageSquare size={11} />
@@ -517,7 +517,7 @@ export function EmailInput({
               <button onClick={handleSend} disabled={!canSend}
                 className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${
                   canSend
-                    ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}>
                 <Send size={14} />

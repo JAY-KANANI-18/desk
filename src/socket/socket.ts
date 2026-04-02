@@ -6,7 +6,7 @@ export function connectSocket(token: string): Socket {
 
   if (socket) return socket;   // prevents duplicate connections
 
-  socket = io("http://localhost:3000", {
+  socket = io("http://localhost:3000/inbox", {
     auth: { token },
   });
 

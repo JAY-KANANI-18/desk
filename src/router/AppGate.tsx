@@ -12,6 +12,7 @@ import { Toaster } from "react-hot-toast";
 import { CallProvider } from "../context/CallContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { SocketProvider } from "../socket/socket-provider";
+import { WorkflowProvider } from "../pages/workflow/WorkflowContext";
 
 export const AppGate = () => {
   const { user, isLoading, passwordSet } = useAuth();
@@ -51,13 +52,17 @@ export const AppGate = () => {
     <NotificationProvider>
       <CallProvider>
         <ChannelContextProvider>
+
           <Toaster position="top-right" />
 
           <SocketProvider>
               <WorkspaceProvider>
-                <WorkspaceRouter />
-              </WorkspaceProvider>
+                      <WorkflowProvider>
 
+                <WorkspaceRouter />
+                </WorkflowProvider>
+              </WorkspaceProvider>
+      
           </SocketProvider>
         </ChannelContextProvider>
       </CallProvider>

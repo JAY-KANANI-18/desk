@@ -19,7 +19,7 @@ function Field({ label, value, onChange, placeholder, hint, sensitive = false, t
           onChange={e => onChange?.(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
-          className={`w-full rounded-lg border border-slate-200 px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all ${readOnly ? 'bg-slate-50 cursor-not-allowed text-slate-500' : 'bg-white'}`}
+          className={`w-full rounded-lg border border-slate-200 px-3 py-2 pr-10 text-sm text-slate-800 placeholder-slate-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all ${readOnly ? 'bg-slate-50 cursor-not-allowed text-slate-500' : 'bg-white'}`}
         />
         {sensitive && (
           <button type="button" onClick={() => setShow(s=>!s)}
@@ -41,7 +41,7 @@ function SelectField({ label, value, onChange, options, hint }: {
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-slate-600">{label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all">
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       {hint && <p className="text-xs text-slate-400">{hint}</p>}

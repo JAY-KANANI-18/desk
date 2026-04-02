@@ -34,7 +34,7 @@ const MenuItemRow = ({ item, onUpdate, onRemove }: {
         {ITEM_TYPE_OPTS.map(opt => (
           <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
             <div onClick={() => onUpdate({ type: opt.value })}
-              className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-colors ${item.type === opt.value ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}>
+              className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-colors ${item.type === opt.value ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}`}>
               {item.type === opt.value && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
             </div>
             <span className="flex items-center gap-1 text-xs text-gray-600">{opt.icon}{opt.label}</span>
@@ -51,7 +51,7 @@ const MenuItemRow = ({ item, onUpdate, onRemove }: {
         <label className="text-xs font-semibold text-slate-600">Button Title</label>
         <input value={item.title} onChange={e => onUpdate({ title: e.target.value })}
           placeholder="e.g. Contact Support" maxLength={30}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         <span className="text-[10px] text-gray-400">{item.title.length}/30 chars</span>
       </div>
       <div className="flex flex-col gap-1">
@@ -62,7 +62,7 @@ const MenuItemRow = ({ item, onUpdate, onRemove }: {
           value={item.type === 'postback' ? item.payload : item.url}
           onChange={e => onUpdate(item.type === 'postback' ? { payload: e.target.value } : { url: e.target.value })}
           placeholder={item.type === 'postback' ? 'CONTACT_SUPPORT' : 'https://yoursite.com/support'}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
     </div>
@@ -71,7 +71,7 @@ const MenuItemRow = ({ item, onUpdate, onRemove }: {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChannel }) => {
-  const { workspace } = useWorkspace();
+  const { activeWorkspace } = useWorkspace();
   const { saving, saved, error: saveError, save } = useSave();
 
   const [menuItems,    setMenuItems]    = useState<MenuItem[]>([]);
@@ -83,7 +83,7 @@ export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChanne
   const [dirty,        setDirty]        = useState(false);
   const [activeTab,    setActiveTab]    = useState<'menu' | 'get_started'>('menu');
 
-  const wid = workspace?.id ?? '';
+  const wid = activeWorkspace?.id ?? '';
 
   const load = async () => {
     setLoading(true);
@@ -175,7 +175,7 @@ export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChanne
       <div className="flex border-b border-gray-200">
         {([['menu','Persistent Menu'],['get_started','Get Started Button']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {label}
           </button>
         ))}
@@ -193,9 +193,9 @@ export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChanne
         </div>
       ) : activeTab === 'menu' ? (
         <div className="space-y-3">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
-            <Info size={15} className="text-blue-500 flex-shrink-0 mt-0.5"/>
-            <p className="text-xs text-blue-800">The persistent menu appears as a hamburger icon in Messenger. Add up to 5 buttons.</p>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+            <Info size={15} className="text-indigo-500 flex-shrink-0 mt-0.5"/>
+            <p className="text-xs text-indigo-800">The persistent menu appears as a hamburger icon in Messenger. Add up to 5 buttons.</p>
           </div>
 
           {menuItems.map(item => (
@@ -206,7 +206,7 @@ export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChanne
 
           {menuItems.length < 5 && (
             <button onClick={addItem}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
               <Plus size={15}/>Add button ({menuItems.length}/5)
             </button>
           )}
@@ -217,15 +217,15 @@ export const MessengerChatMenuSection = ({ channel }: { channel: ConnectedChanne
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
-            <Info size={15} className="text-blue-500 flex-shrink-0 mt-0.5"/>
-            <p className="text-xs text-blue-800">The Get Started button appears the first time someone opens a conversation with your page. The payload is sent to your webhook.</p>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+            <Info size={15} className="text-indigo-500 flex-shrink-0 mt-0.5"/>
+            <p className="text-xs text-indigo-800">The Get Started button appears the first time someone opens a conversation with your page. The payload is sent to your webhook.</p>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Get Started Payload</label>
             <input value={getStarted} onChange={e => { setGetStarted(e.target.value); setDirty(true); }}
               placeholder="GET_STARTED"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             <p className="text-xs text-gray-400">This string is sent as a postback when users tap "Get Started"</p>
           </div>
         </div>

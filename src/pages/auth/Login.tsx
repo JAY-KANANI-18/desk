@@ -53,26 +53,31 @@ export const Login = () => {
 
   const ROLE_COLORS: Record<string, string> = {
     owner: "bg-purple-100 text-purple-700",
-    admin: "bg-blue-100 text-blue-700",
+    admin: "bg-indigo-100 text-indigo-700",
     supervisor: "bg-amber-100 text-amber-700",
     agent: "bg-green-100 text-green-700",
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
-            <MessageSquare className="text-white" size={24} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
-        </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           {/* Google SSO */}
+          <div className="flex flex-col justify-center text-center mb-8">
+            {/* logo */}
+            <div className="flex items-center justify-center ">
+
+            <img
+              src="/axodesk-full.png"
+              alt="logo"
+              className={`w-32 h-24 `}
+              />
+              </div>
+            
+          </div>
           <button
             type="button"
             onClick={handleGoogle}
@@ -118,7 +123,7 @@ export const Login = () => {
                     setError("");
                   }}
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -131,7 +136,7 @@ export const Login = () => {
                 </label>
                 <Link
                   to="/auth/forgot-password"
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -149,7 +154,7 @@ export const Login = () => {
                     setError("");
                   }}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
@@ -172,7 +177,7 @@ export const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <>
@@ -260,7 +265,7 @@ export const Login = () => {
           Don't have an account?{" "}
           <Link
             to="/auth/signup"
-            className="text-blue-600 hover:text-blue-700 font-semibold"
+            className="text-indigo-600 hover:text-indigo-700 font-semibold"
           >
             Create one
           </Link>

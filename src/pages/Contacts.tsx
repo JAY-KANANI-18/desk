@@ -14,6 +14,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Pencil,
+  UserPlus,
+  UserPlus2,
 } from "lucide-react";
 import { contactsApi } from "../lib/contactApi";
 
@@ -48,7 +50,7 @@ interface Contact {
 // STATIC DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const lifecycleStages = [
-  { name: "New Lead", color: "bg-blue-500", count: 1 },
+  { name: "New Lead", color: "bg-indigo-500", count: 1 },
   { name: "Hot Lead", color: "bg-orange-500", count: 1 },
   { name: "Payment", color: "bg-green-500", count: 0 },
   { name: "Customer", color: "bg-purple-500", count: 0 },
@@ -628,9 +630,9 @@ export const Contacts = () => {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-full bg-gray-50 flex-col md:flex-row">
+    <div className="flex h-full bg-white flex-col md:flex-row">
       {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
-      <div className="hidden md:flex w-full md:w-64 bg-white border-r border-gray-200 flex-col">
+      {/* <div className="hidden md:flex w-full md:w-64 bg-white border-r border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold mb-4">Contacts</h2>
           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg">
@@ -638,17 +640,16 @@ export const Contacts = () => {
             <span>All</span>
             <span className="ml-auto text-gray-500">{contacts.length}</span>
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg mt-2">
+          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-indigo-600 bg-indigo-50 rounded-lg mt-2">
             <span className="text-xs">🤖</span>
             <span>Create AI Agent</span>
-            <span className="ml-auto text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
+            <span className="ml-auto text-xs bg-indigo-600 text-white px-2 py-0.5 rounded">
               Beta
             </span>
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Lifecycle */}
           <div className="mb-6">
             <button
               onClick={() => setLifecycleExpanded(!lifecycleExpanded)}
@@ -708,7 +709,6 @@ export const Contacts = () => {
             )}
           </div>
 
-          {/* Segments */}
           <div>
             <button
               onClick={() => setSegmentsExpanded(!segmentsExpanded)}
@@ -745,7 +745,7 @@ export const Contacts = () => {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -780,7 +780,7 @@ export const Contacts = () => {
                 placeholder="Search contacts…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               {searchQuery && (
                 <button
@@ -796,7 +796,7 @@ export const Contacts = () => {
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu((v) => !v)}
-                className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 transition-colors ${sortOption ? "border-blue-500 text-blue-600 bg-blue-50" : "border-gray-300 text-gray-700"}`}
+                className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 transition-colors ${sortOption ? "border-indigo-500 text-indigo-600 bg-indigo-50" : "border-gray-300 text-gray-700"}`}
               >
                 <ArrowUpDown size={15} />
                 <span>{sortOption ? sortOption.label : "Sort"}</span>
@@ -822,7 +822,7 @@ export const Contacts = () => {
                         setSortOption(opt);
                         setShowSortMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${sortOption?.label === opt.label ? "text-blue-600 font-medium" : "text-gray-700"}`}
+                      className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${sortOption?.label === opt.label ? "text-indigo-600 font-medium" : "text-gray-700"}`}
                     >
                       {opt.label}
                       {sortOption?.label === opt.label && <Check size={14} />}
@@ -863,7 +863,7 @@ export const Contacts = () => {
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-xs text-gray-500">Filters:</span>
               {selectedLifecycle && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full border border-indigo-200">
                   {selectedLifecycle}
                   <button onClick={() => setSelectedLifecycle(null)}>
                     <X size={11} />
@@ -887,7 +887,7 @@ export const Contacts = () => {
 
         {/* Bulk action bar */}
         {someSelected && (
-          <div className="bg-blue-600 text-white px-4 py-2 flex items-center gap-3 text-sm">
+          <div className="bg-indigo-600 text-white px-4 py-2 flex items-center gap-3 text-sm">
             <span className="font-medium">{selectedIds.size} selected</span>
             <button
               onClick={handleDeleteSelected}
@@ -898,7 +898,7 @@ export const Contacts = () => {
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="p-1 hover:bg-blue-500 rounded"
+              className="p-1 hover:bg-indigo-500 rounded"
               title="Clear selection"
             >
               <X size={15} />
@@ -915,7 +915,7 @@ export const Contacts = () => {
           ) : (
             <div className="min-w-[800px]">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                <thead className="border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     {/* Checkbox */}
                     <th className="text-left px-4 py-3 w-10">
@@ -942,7 +942,7 @@ export const Contacts = () => {
                           size={12}
                           className={
                             sortOption?.field === "name"
-                              ? "text-blue-500"
+                              ? "text-indigo-500"
                               : "text-gray-400"
                           }
                         />
@@ -963,7 +963,7 @@ export const Contacts = () => {
                           size={12}
                           className={
                             sortOption?.field === "lifecycle"
-                              ? "text-blue-500"
+                              ? "text-indigo-500"
                               : "text-gray-400"
                           }
                         />
@@ -980,7 +980,7 @@ export const Contacts = () => {
                           size={12}
                           className={
                             sortOption?.field === "email"
-                              ? "text-blue-500"
+                              ? "text-indigo-500"
                               : "text-gray-400"
                           }
                         />
@@ -997,7 +997,7 @@ export const Contacts = () => {
                           size={12}
                           className={
                             sortOption?.field === "phone"
-                              ? "text-blue-500"
+                              ? "text-indigo-500"
                               : "text-gray-400"
                           }
                         />
@@ -1026,7 +1026,7 @@ export const Contacts = () => {
                     paginatedContacts.map((contact) => (
                       <tr
                         key={contact.id}
-                        className={`group hover:bg-gray-50 transition-colors ${selectedIds.has(contact.id) ? "bg-blue-50" : ""}`}
+                        className={`group hover:bg-gray-50 transition-colors ${selectedIds.has(contact.id) ? "bg-indigo-50" : ""}`}
                       >
                         {/* Checkbox */}
                         <td className="px-4 py-3">
@@ -1055,7 +1055,7 @@ export const Contacts = () => {
                                   {contact?.tags?.map((tag) => (
                                     <span
                                       key={tag}
-                                      className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded"
+                                      className="text-xs px-1.5 py-0.5 bg-white text-gray-500 rounded"
                                     >
                                       {tag}
                                     </span>
@@ -1077,7 +1077,7 @@ export const Contacts = () => {
                               💬 WhatsApp
                             </span>
                           ) : contact.channel === "email" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full border border-indigo-200">
                               ✉️ Email
                             </span>
                           ) : (
@@ -1115,7 +1115,7 @@ export const Contacts = () => {
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => openEditModal(contact)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                               title="Edit contact"
                             >
                               <Pencil size={14} />
@@ -1179,7 +1179,7 @@ export const Contacts = () => {
                           <button
                             key={p}
                             onClick={() => setCurrentPage(p as number)}
-                            className={`w-8 h-8 text-xs rounded-lg border transition-colors ${safePage === p ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}
+                            className={`w-8 h-8 text-xs rounded-lg border transition-colors ${safePage === p ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 hover:bg-gray-50 text-gray-700"}`}
                           >
                             {p}
                           </button>
@@ -1208,8 +1208,8 @@ export const Contacts = () => {
           <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  👤
+                <div className="w-8 h-8  rounded-full flex items-center justify-center">
+                  <UserPlus2 size={24} className="text-indigo-600" />
                 </div>
                 <h2 className="text-xl font-semibold">New Contact</h2>
               </div>
@@ -1232,7 +1232,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setNewContact({ ...newContact, firstName: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -1246,7 +1246,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setNewContact({ ...newContact, lastName: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -1266,7 +1266,7 @@ export const Contacts = () => {
                     onChange={(e) =>
                       setNewContact({ ...newContact, phone: e.target.value })
                     }
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
                 </div>
               </div>
@@ -1281,7 +1281,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setNewContact({ ...newContact, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -1293,7 +1293,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setNewContact({ ...newContact, lifecycle: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 >
                   <option value="">Select Lifecycle</option>
                   <option value="New Lead">New Lead</option>
@@ -1313,7 +1313,7 @@ export const Contacts = () => {
               <button
                 onClick={handleCreateContact}
                 disabled={!newContact.firstName || !newContact.email}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 Create
               </button>
@@ -1329,8 +1329,8 @@ export const Contacts = () => {
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Upload size={18} className="text-blue-600" />
+                <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <Upload size={18} className="text-indigo-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-gray-900">
@@ -1359,7 +1359,7 @@ export const Contacts = () => {
                   </h3>
                   <button
                     onClick={handleDownloadSample}
-                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
                   >
                     <Download size={13} />
                     Download Sample CSV
@@ -1370,7 +1370,7 @@ export const Contacts = () => {
                 <div className="rounded-lg border border-gray-200 overflow-hidden text-xs">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-white border">
                         <tr>
                           {CSV_HEADERS.map((h) => (
                             <th
@@ -1418,7 +1418,7 @@ export const Contacts = () => {
                   {[
                     "First row must be the header row (exactly as shown above)",
                     "Lifecycle values: New Lead, Hot Lead, Payment, Customer, Cold Lead",
-                    "Channel values: email, whatsapp, instagram, messenger, websitechat",
+                    "Channel values: email, whatsapp, instagram, messenger, webchat",
                     "Multiple tags separated by semicolons (;) — e.g. VIP;Follow-up",
                   ].map((note) => (
                     <li
@@ -1446,18 +1446,18 @@ export const Contacts = () => {
                     onDragLeave={() => setImportDragging(false)}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${importDragging ? "border-blue-400 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"}`}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${importDragging ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"}`}
                   >
                     <Upload
                       size={28}
-                      className={`mx-auto mb-2 ${importDragging ? "text-blue-500" : "text-gray-400"}`}
+                      className={`mx-auto mb-2 ${importDragging ? "text-indigo-500" : "text-gray-400"}`}
                     />
                     <p className="text-sm font-medium text-gray-700">
                       Drag & drop your CSV file here
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
                       or{" "}
-                      <span className="text-blue-600 font-medium">
+                      <span className="text-indigo-600 font-medium">
                         click to browse
                       </span>
                     </p>
@@ -1561,7 +1561,7 @@ export const Contacts = () => {
                 <button
                   onClick={handleConfirmImport}
                   disabled={!importParsed}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
                 >
                   <Upload size={14} />
                   Import {importParsed ? `${importParsed.length} Contacts` : ""}
@@ -1614,7 +1614,7 @@ export const Contacts = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, firstName: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
                 </div>
                 <div>
@@ -1627,7 +1627,7 @@ export const Contacts = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, lastName: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   />
                 </div>
               </div>
@@ -1641,7 +1641,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -1654,7 +1654,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, phone: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -1666,7 +1666,7 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, lifecycle: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 >
                   <option value="New Lead">New Lead</option>
                   <option value="Hot Lead">Hot Lead</option>
@@ -1684,13 +1684,13 @@ export const Contacts = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, channel: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 >
                   <option value="email">Email</option>
                   <option value="whatsapp">WhatsApp</option>
                   <option value="instagram">Instagram</option>
                   <option value="messenger">Messenger</option>
-                  <option value="websitechat">Website Chat</option>
+                  <option value="webchat">Website Chat</option>
                 </select>
               </div>
               <div>
@@ -1710,7 +1710,7 @@ export const Contacts = () => {
                         .filter(Boolean),
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 /> */}
               </div>
             </div>
@@ -1726,7 +1726,7 @@ export const Contacts = () => {
               <button
                 onClick={handleUpdateContact}
                 disabled={!editForm.firstName || !editForm.email}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
               >
                 <Check size={14} />
                 Save Changes
@@ -1739,7 +1739,7 @@ export const Contacts = () => {
       {/* ── FAB ───────────────────────────────────────────────────────────── */}
       <button
         onClick={() => setShowNewContact(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center z-40"
+        className="fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center z-40"
       >
         <Plus size={24} />
       </button>

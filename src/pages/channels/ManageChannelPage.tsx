@@ -72,7 +72,7 @@ export const SaveButton = ({
     <button
       onClick={onClick}
       disabled={saving || disabled}
-      className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+      className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
     >
       {saving ? (
         <><Loader size={14} className="animate-spin" />Saving…</>
@@ -139,7 +139,7 @@ export const EditableField = ({ label, value, onChange, hint, placeholder, type 
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
     />
     {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
   </div>
@@ -237,7 +237,7 @@ export const CHANNEL_META: Record<string, {
   messenger: {
     label: 'Facebook Messenger',
     icon: 'https://cdn.simpleicons.org/messenger',
-    color: 'bg-blue-600',
+    color: 'bg-indigo-600',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
       { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
@@ -291,10 +291,10 @@ export const CHANNEL_META: Record<string, {
       { label: 'Help Center', href: '#' },
     ],
   },
-  website_chat: {
+  webchat: {
     label: 'Website Chat',
-    icon: 'https://cdn.simpleicons.org/chatbot',
-    color: 'bg-blue-800',
+    icon: 'https://cdn.simpleicons.org/googlechat',
+    color: 'bg-indigo-800',
     navItems: [
       { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
       { id: 'troubleshoot',  label: 'Troubleshoot',  icon: <Wrench size={14} /> },
@@ -314,7 +314,7 @@ export const CHANNEL_TYPE_TO_SLUG: Record<string, string> = {
   'Email':              'email',
   'Email (SMTP/IMAP)':  'email',
   'Gmail':              'gmail',
-  'Website Chat':       'website_chat',
+  'Website Chat':       'webchat',
 };
 
 // ─── Generic sections ─────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ const ProfileSection = ({ channel }: { channel: ConnectedChannel }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">About</label>
           <textarea value={about} onChange={e => setAbout(e.target.value)} rows={3}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         <EditableField label="Website" value={website} onChange={setWebsite} placeholder="https://yourcompany.com" />
         <EditableField label="Support Email" value={email} onChange={setEmail} placeholder="support@yourcompany.com" />
@@ -402,13 +402,13 @@ const CatalogSection = () => (
       <h2 className="text-lg font-semibold text-gray-900">Meta Product Catalog</h2>
       <p className="text-sm text-gray-500 mt-0.5">Connect your Meta product catalog to send product messages.</p>
     </div>
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
-      <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-        <ShoppingBag size={24} className="text-blue-600" />
+    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-8 text-center">
+      <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <ShoppingBag size={24} className="text-indigo-600" />
       </div>
-      <p className="text-sm font-semibold text-blue-900 mb-1">No catalog connected</p>
-      <p className="text-xs text-blue-700 mb-4">Connect your Meta product catalog to enable product messages and interactive shopping experiences.</p>
-      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Connect Catalog</button>
+      <p className="text-sm font-semibold text-indigo-900 mb-1">No catalog connected</p>
+      <p className="text-xs text-indigo-700 mb-4">Connect your Meta product catalog to enable product messages and interactive shopping experiences.</p>
+      <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Connect Catalog</button>
     </div>
   </div>
 );
@@ -429,7 +429,7 @@ const PrivateRepliesSection = () => {
         {(['all', 'specific'] as const).map(mode => (
           <label key={mode} className="flex items-center gap-3 cursor-pointer group">
             <div onClick={() => setTrackMode(mode)}
-              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${trackMode === mode ? 'border-blue-600 bg-blue-600' : 'border-gray-300 group-hover:border-blue-400'}`}>
+              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${trackMode === mode ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300 group-hover:border-indigo-400'}`}>
               {trackMode === mode && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
             </div>
             <span className="text-sm text-gray-700">
@@ -443,7 +443,7 @@ const PrivateRepliesSection = () => {
           <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
             No posts added yet
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700">
             <Plus size={15} />Add post
           </button>
         </div>
@@ -476,7 +476,7 @@ const SectionContent = ({
     case 'messenger':   return <MessengerConfiguration  channel={channel} onDisconnect={onDisconnect} />;
     case 'email':       return <EmailConfiguration      channel={channel} onDisconnect={onDisconnect} />;
     case 'gmail':       return <GmailConfiguration      channel={channel} onDisconnect={onDisconnect} />;
-    case 'website_chat':return <WebsiteChatConfiguration channel={channel} onDisconnect={onDisconnect} />;
+    case 'webchat':return <WebsiteChatConfiguration channel={channel} onDisconnect={onDisconnect} />;
     default:            return <WhatsAppConfiguration   channel={channel} onDisconnect={onDisconnect} />;
   }
 };
@@ -509,7 +509,7 @@ export const ManageChannelPage = () => {
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🔌</div>
           <p className="text-lg font-semibold text-gray-700">Channel not found</p>
           <p className="text-sm text-gray-400 mt-1">This channel may have been disconnected.</p>
-          <button onClick={() => navigate('/channels')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button onClick={() => navigate('/channels')} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
             Back to channels
           </button>
         </div>
@@ -525,7 +525,7 @@ export const ManageChannelPage = () => {
           <ArrowLeft size={18} />
         </button>
         <nav className="flex items-center gap-2 text-sm text-gray-400">
-          <button onClick={() => navigate('/channels')} className="hover:text-blue-600 transition-colors">Channels</button>
+          <button onClick={() => navigate('/channels')} className="hover:text-indigo-600 transition-colors">Channels</button>
           <span>/</span>
           <span className="text-gray-700 font-medium">{meta.label}</span>
           {channel.name && channel.name !== meta.label && (
@@ -570,10 +570,10 @@ export const ManageChannelPage = () => {
               <button key={item.id} onClick={() => setActiveSection(item.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5 ${
                   activeSection === item.id
-                    ? 'text-blue-600 font-medium bg-blue-50'
+                    ? 'text-indigo-600 font-medium bg-indigo-50'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}>
-                <span className={activeSection === item.id ? 'text-blue-500' : 'text-gray-400'}>{item.icon}</span>
+                <span className={activeSection === item.id ? 'text-indigo-500' : 'text-gray-400'}>{item.icon}</span>
                 <span className="flex-1 text-left">{item.label}</span>
                 {item.badge && (
                   <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded leading-none">
@@ -599,7 +599,7 @@ export const ManageChannelPage = () => {
               {meta.additionalResources.map(r => (
                 <li key={r.label}>
                   <a href={r.href} target="_blank" rel="noopener noreferrer"
-                    className="flex items-start gap-1.5 text-xs text-blue-600 hover:text-blue-800 hover:underline leading-relaxed">
+                    className="flex items-start gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 hover:underline leading-relaxed">
                     <span className="mt-0.5 flex-shrink-0">•</span>{r.label}
                   </a>
                 </li>

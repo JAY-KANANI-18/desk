@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Map,
+  Building,
 } from "lucide-react";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
@@ -29,10 +30,10 @@ const navItems = [
   { icon: MessageSquare, label: "Inbox", path: "/inbox" },
   { icon: Users, label: "Contacts", path: "/contacts" },
   // { icon: Radio, label: "Broadcast", path: "/broadcast" },
-  // { icon: Workflow, label: "Workflows", path: "/workflows" },
+  { icon: Workflow, label: "Workflows", path: "/workflows" },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Plug, label: "Channels", path: "/channels" },
-  
+
   // { icon: Building2, label: "Organization", path: "/organization" },
   // { icon: CreditCard, label: "Billing", path: "/billing" },
   // { icon: Map, label: "Sitemap", path: "/sitemap" },
@@ -50,8 +51,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-    const {activeOrganization} = useOrganization();
-    const {activeWorkspace} = useWorkspace();
+  const { activeOrganization } = useOrganization();
+  const { activeWorkspace } = useWorkspace();
 
   const handleNavClick = () => {
     if (onNavigate) onNavigate();
@@ -59,31 +60,30 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
   return (
     <div
-  className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4
+      className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4
   transition-all duration-300 ease-in-out
   ${isExpanded ? "w-56" : "w-16"} 
   h-screen`}
->
+    >
       {/* Toggle Button */}
-      <button
+      {/* <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-10"
+        className="absolute -right-5 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-10"
       >
         {isExpanded ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
-      </button>
+      </button> */}
 
       {/* Logo */}
       <div
-        className={`flex items-center gap-3 mb-8 px-3 w-full ${isExpanded ? "justify-start" : "justify-center"}`}
+        className={`flex flex-col items-center align-middle gap-1 mb-5  w-full ${isExpanded ? "justify-start" : "justify-center"}`}
       >
-        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-xl">M</span>
-        </div>
-        {isExpanded && (
-          <span className="font-bold text-gray-800 text-lg whitespace-nowrap overflow-hidden">
-            Meera
-          </span>
-        )}
+        <img
+          src={isExpanded ? "/axodesk-full.png" : "/axodesk-logo.png"}
+          alt="Organization Logo"
+          className={` ${isExpanded ? "w-18 h-14" : "w-16 h-9"}  flex-shrink-0`}
+        />
+
+        
       </div>
 
       {/* Main Nav */}
@@ -99,7 +99,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                 isExpanded ? "w-full" : "w-10 justify-center"
               } ${
                 isActive
-                  ? "bg-blue-50 text-blue-600"
+                  ? "bg-indigo-50 text-indigo-600"
                   : "text-gray-600 hover:bg-gray-100"
               }`
             }
@@ -178,7 +178,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                         Organization settings
                       </div>
                       <div className="text-xs text-gray-500">
-                        {activeOrganization?.name} (ID: {activeOrganization?.id})
+                        {activeOrganization?.name} (ID: {activeOrganization?.id}
+                        )
                       </div>
                     </div>
                   </NavLink>
@@ -187,7 +188,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                     onClick={() => setShowSettingsMenu(false)}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full"
                   >
-                    <Settings size={18} />
+                    <Building size={18} />
                     <div>
                       <div className="text-sm font-medium">
                         Workspace settings
@@ -197,7 +198,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       </div>
                     </div>
                   </NavLink>
-                  <NavLink
+                  {/* <NavLink
                     to="/user/settings"
                     onClick={() => setShowSettingsMenu(false)}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full"
@@ -210,14 +211,14 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                     <div className="text-xs font-semibold text-gray-500 mb-2">
                       Quick access
                     </div>
-                    {/* <NavLink
+                    <NavLink
                       to="/channels"
                       onClick={() => setShowSettingsMenu(false)}
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg"
                     >
                       <Plug size={18} />
                       <span className="text-sm">Channels</span>
-                    </NavLink> */}
+                    </NavLink>
                     <NavLink
                       to="/team"
                       onClick={() => setShowSettingsMenu(false)}
@@ -235,7 +236,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       <span className="text-sm">Billing & usage</span>
                     </NavLink>
                   </div>
-                  {/* <div className="border-t border-gray-200 mt-2 pt-2 px-3 pb-2">
+                  <div className="border-t border-gray-200 mt-2 pt-2 px-3 pb-2">
                     <div className="text-xs text-gray-500 mb-2">
                       Your current plan
                     </div>

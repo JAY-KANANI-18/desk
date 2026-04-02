@@ -48,7 +48,7 @@ export const WorkspaceModal = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Workspace name"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
 
           <div className="flex justify-end gap-2">
@@ -61,7 +61,7 @@ export const WorkspaceModal = ({
 
             <button
               onClick={() => onSubmit(name)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
             >
               Save
             </button>
@@ -148,7 +148,7 @@ export const WorkspacesManage = () => {
 
         <button
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
         >
           <Plus size={15} />
           New workspace
@@ -162,7 +162,7 @@ export const WorkspacesManage = () => {
             className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold text-sm">
+              <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-semibold text-sm">
                 {ws.name[0]}
               </div>
 

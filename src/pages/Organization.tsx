@@ -48,13 +48,13 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { id: "workspaces", label: "Workspaces", icon: LayoutGrid },
     ],
   },
-  {
-    label: "Billing",
-    items: [
-      { id: "whatsapp-fees", label: "WhatsApp fees", icon: WhatsAppIcon },
-      { id: "billing-usage", label: "Billing & usage", icon: CreditCard },
-    ],
-  },
+  // {
+  //   label: "Billing",
+  //   items: [
+  //     { id: "whatsapp-fees", label: "WhatsApp fees", icon: WhatsAppIcon },
+  //     { id: "billing-usage", label: "Billing & usage", icon: CreditCard },
+  //   ],
+  // },
 ];
 
 // ─── WhatsApp SVG icon ────────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ export const BillingUsageSection = () => {
           <div className="text-right">
             <p className="text-2xl font-bold text-gray-900">$99</p>
             <p className="text-xs text-gray-500">per month</p>
-            <button className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">
+            <button className="mt-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700">
               Upgrade now
             </button>
           </div>
@@ -428,7 +428,7 @@ export const BillingUsageSection = () => {
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full"
+              className="bg-indigo-600 h-2 rounded-full"
               style={{ width: "0.1%" }}
             />
           </div>
@@ -447,7 +447,7 @@ export const BillingUsageSection = () => {
               <p className="text-xs text-gray-500">Expires 12/2026</p>
             </div>
           </div>
-          <button className="text-sm text-blue-600 hover:underline">
+          <button className="text-sm text-indigo-600 hover:underline">
             Update payment method
           </button>
         </div>
@@ -527,7 +527,7 @@ export const Organization = () => {
                   className={({ isActive }) =>
                     `w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm ${
                       isActive
-                        ? "bg-blue-50 text-blue-700"
+                        ? "bg-indigo-50 text-indigo-700"
                         : "text-gray-600 hover:bg-gray-100"
                     }`
                   }

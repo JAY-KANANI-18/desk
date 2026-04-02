@@ -15,7 +15,7 @@ import { useInbox } from '../../context/InboxContext';
 const INITIAL_CONTACTS: any = [
   { id: 1, conversationId: 1, firstName: 'Jay', lastName: 'Kanani', email: 'jay@example.com', phone: '+1 234 567 8900', company: 'Acme Corp', avatar: '', tags: ['VIP', 'Priority'], channel: 'whatsapp', lifecycleStage: 'New Lead' },
   { id: 2, conversationId: 2, firstName: 'Sarah', lastName: 'Miller', email: 'sarah@example.com', phone: '+1 234 567 8901', company: 'TechStart', avatar: '', tags: ['Newsletter'], channel: 'email', lifecycleStage: 'Hot Lead' },
-  { id: 3, conversationId: 3, firstName: 'Mike', lastName: 'Johnson', email: 'mike@example.com', phone: '+1 234 567 8902', company: 'DevCo', avatar: '', tags: ['Enterprise'], channel: 'websitechat', lifecycleStage: 'Customer' },
+  { id: 3, conversationId: 3, firstName: 'Mike', lastName: 'Johnson', email: 'mike@example.com', phone: '+1 234 567 8902', company: 'DevCo', avatar: '', tags: ['Enterprise'], channel: 'webchat', lifecycleStage: 'Customer' },
   { id: 4, conversationId: 4, firstName: 'Priya', lastName: 'Sharma', email: 'priya@example.com', phone: '+1 234 567 8903', company: 'InnovateLabs', avatar: '', tags: ['Social'], channel: 'instagram', lifecycleStage: 'New Lead' },
   { id: 5, conversationId: 5, firstName: 'Tom', lastName: 'Bradley', email: 'tom@example.com', phone: '+1 234 567 8904', company: 'RetailPlus', avatar: '', tags: ['Returning'], channel: 'email', lifecycleStage: 'Customer' },
 ];
@@ -30,7 +30,7 @@ const _listeners = new Set<() => void>();
 const CHANNEL_META: Record<string, { icon: React.ReactNode; label: string; bg: string; fg: string }> = {
   whatsapp: { icon: <MessageCircle size={11} />, label: 'WhatsApp', bg: '#22c55e', fg: '#fff' },
   email: { icon: <Mail size={11} />, label: 'Email', bg: '#3b82f6', fg: '#fff' },
-  websitechat: { icon: <Globe size={11} />, label: 'Web Chat', bg: '#64748b', fg: '#fff' },
+  webchat: { icon: <Globe size={11} />, label: 'Web Chat', bg: '#64748b', fg: '#fff' },
   instagram: { icon: <Instagram size={11} />, label: 'Instagram', bg: '#ec4899', fg: '#fff' },
   twitter: { icon: <AtSign size={11} />, label: 'Twitter', bg: '#38bdf8', fg: '#fff' },
 };
@@ -521,7 +521,7 @@ export function ContactSidebar({ selectedConversation , contactDetails }: { sele
               />
             ) : (
               <div
-                className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700"
+                className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-semibold text-indigo-700"
               >
                 {initials(contactDetails?.firstName ?? '', contactDetails?.lastName ?? '')}
               </div>

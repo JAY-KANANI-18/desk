@@ -18,7 +18,7 @@ function Field({ label, value, onChange, placeholder, hint }: {
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-slate-600">{label}</label>
       <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all" />
+        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-300 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all" />
       {hint && <p className="text-xs text-slate-400">{hint}</p>}
     </div>
   );
@@ -44,7 +44,7 @@ export const WebsiteChatConfiguration = ({
       {/* Embed script */}
       <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-white">
-          <Code2 size={15} className="text-blue-500" />
+          <Code2 size={15} className="text-indigo-500" />
           <span className="text-sm font-semibold text-slate-800">Embed Script</span>
         </div>
         <div className="px-5 py-4">
@@ -72,7 +72,7 @@ export const WebsiteChatConfiguration = ({
               <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
                 className="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer p-1" />
               <input value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
@@ -81,7 +81,7 @@ export const WebsiteChatConfiguration = ({
               {(['bottom-right', 'bottom-left'] as const).map(pos => (
                 <label key={pos} className="flex items-center gap-2 cursor-pointer">
                   <div onClick={() => setPosition(pos)}
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${position === pos ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}>
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${position === pos ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}`}>
                     {position === pos && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </div>
                   <span className="text-sm text-gray-700 capitalize">{pos.replace('-', ' ')}</span>
@@ -104,12 +104,12 @@ export const WebsiteChatConfiguration = ({
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Welcome Message</label>
             <textarea value={welcomeMessage} onChange={e => setWelcomeMessage(e.target.value)} rows={2}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none" />
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Away Message</label>
             <textarea value={awayMessage} onChange={e => setAwayMessage(e.target.value)} rows={2}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none" />
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none" />
             <p className="text-xs text-slate-400">Shown when no agents are online</p>
           </div>
         </div>

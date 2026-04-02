@@ -165,7 +165,7 @@ const WorkspaceSwitcher = () => {
                       </div>
 
                       {activeWorkspace.id === ws.id && (
-                        <Check size={14} className="text-blue-600" />
+                        <Check size={14} className="text-indigo-600" />
                       )}
                     </button>
                   ))}
@@ -362,7 +362,7 @@ const NotificationPanel = ({
           {history.length > 0 && (
             <button
               onClick={clearHistory}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
             >
               Clear all
             </button>
@@ -620,7 +620,7 @@ useEffect(() => {
                         >
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color}`} />
                           <span className="text-sm text-gray-700 flex-1 text-left">{s.label}</span>
-                          {status.key === s.key && <Check size={13} className="text-blue-600" />}
+                          {status.key === s.key && <Check size={13} className="text-indigo-600" />}
                         </button>
                       ))}
                     </div>

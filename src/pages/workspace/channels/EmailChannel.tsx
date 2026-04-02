@@ -46,8 +46,8 @@ const COMMON_PROVIDERS = [
 export const EmailChannelSidebar = () => (
   <div className="flex flex-col gap-6 p-6 h-full">
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
-        <Mail size={15} className="text-white" />
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0">
+        <img src="https://cdn.simpleicons.org/maildotru" className="w-10 h-10" alt="Email" />
       </div>
       <div>
         <p className="text-xs font-semibold text-gray-900 leading-none">Email (SMTP / IMAP)</p>
@@ -130,7 +130,7 @@ const Field = ({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full text-[13px] border border-gray-200 rounded-lg px-3 py-2.5 outline-none bg-white text-gray-900 placeholder:text-gray-300 focus:border-gray-400 transition-colors pr-9 box-border"
+        className="w-full text-[13px] border border-gray-200 rounded-lg px-3 py-2.5 outline-none bg-white text-gray-900 placeholder:text-gray-300 focus:border-indigo-400 transition-colors pr-9 box-border"
       />
       {password && (
         <button
@@ -139,8 +139,8 @@ const Field = ({
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0 flex"
         >
           {shown
-            ? <EyeOff size={13} className="text-gray-300 hover:text-gray-500 transition-colors" />
-            : <Eye    size={13} className="text-gray-300 hover:text-gray-500 transition-colors" />}
+            ? <EyeOff size={13} className="text-indigo-600 hover:text-indigo-500 transition-colors" />
+            : <Eye    size={13} className="text-indigo-600 hover:text-indigo-500 transition-colors" />}
         </button>
       )}
     </div>
@@ -268,7 +268,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Connect Email</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Connect any mailbox using SMTP for sending and IMAP for receiving.
+          Connect any mailbox using SMTP for sending .
         </p>
       </div>
 
@@ -285,8 +285,8 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
                   onClick={() => applyPreset(label)}
                   className={`px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors cursor-pointer
                     ${selectedProvider === label
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900'}`}
+                      ? 'border-indigo-600 bg-indigo-600 text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-indigo-600'}`}
                 >
                   {label}
                 </button>
@@ -395,7 +395,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {connecting ? (
                 <>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { channelApi } from './channelApi';
 import { DUMMY_MODE } from '../api';
 import type { Channel } from '../types';
 
@@ -24,7 +23,7 @@ const PERMISSIONS = ['gmail.readonly', 'gmail.send', 'gmail.modify'];
 export const GmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  let channelApi: any;
   const handleGoogleLogin = async () => {
     setConnecting(true);
     setError(null);

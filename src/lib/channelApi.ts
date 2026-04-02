@@ -24,11 +24,24 @@ export const ChannelApi = {
             wabaId,
             webhookSecret
         }),
+    exchangeWhatsAppCode: (code: string, workspaceId: string, redirectUri: string) =>
+        api.post("/channels/whatsapp/auth/callback", { code, workspaceId, redirectUri }),
+    exchangeInstagramCode: (code: string, workspaceId: string, redirectUri: string) =>
+        api.post("/channels/instagram/auth/callback", { code, workspaceId, redirectUri }),
+    exchangeMessengerCode: (code: string, workspaceId: string, redirectUri: string) =>
+        api.post("/channels/messenger/auth/callback", { code, workspaceId, redirectUri }),
+    getWhatsAppAuthUrl: (workspaceId: string,redirectUri: string) =>
+        api.get(`/channels/whatsapp/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
+    getInstagramAuthUrl: (workspaceId: string, redirectUri: string) =>
+        api.get(`/channels/instagram/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
+    getMessengerAuthUrl: (workspaceId: string, redirectUri: string) =>
+        api.get(`/channels/messenger/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
+
     getChannels: () => api.get('/channels'),
     createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
         api.post(`/channels?workspaceId=${workspaceId}`, payload),
     deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),
-  
+
     startOauthWhatsapp: (workspaceId: string) =>
         api.get(`/channels/whatsapp/oauth?workspaceId=${workspaceId}`),
     updateWhatsAppChannel: (channelId: string, data: any) =>
@@ -41,28 +54,49 @@ export const ChannelApi = {
         api.put(`/channels/email/${channelId}`, data),
     updateGmailChannel: (channelId: string, data: any) =>
         api.put(`/channels/gmail/${channelId}`, data),
-    updateWebsiteChatChannel: (channelId: string, data: any) =>
-        api.put(`/channels/website-chat/${channelId}`, data),
 
     connectWhatsAppViaFB: (auth: any) =>
         api.post("/channels/whatsapp/connect-fb", {
             accessToken: auth.accessToken,
             userID: auth.userID,
-                email: auth.email,
-                name: auth.name,    
+            email: auth.email,
+            name: auth.name,
         }),
-    listWhatsAppTemplates : (channelId: string) =>
+    listWhatsAppTemplates: (channelId: string) =>
         api.get(`/channels/${channelId}/whatsapp/templates`),
-    previewTemplate : (channelId: string, templateName: string, language: string) =>
+    listMessengerMenu: (channelId: string) =>
+        api.get(`/channels/${channelId}/messenger/menu`),
+    syncMessengerMenu: (channelId: string, workspaceId: string) =>
+        api.post(`/channels/${channelId}/messenger/menu/sync?workspaceId=${workspaceId}`),
+    previewTemplate: (channelId: string, templateName: string, language: string) =>
         api.get(`/channels/whatsapp/${channelId}/templates/preview?name=${templateName}&language=${language}`),
-    syncWhatsAppTemplates : (channelId: string) =>
+    syncWhatsAppTemplates: (channelId: string) =>
         api.post(`/channels/${channelId}/whatsapp/templates/sync`),
-    listIceBreakers : (channelId: string, workspaceId: string) =>
+    listIceBreakers: (channelId: string, workspaceId: string) =>
         api.get(`/channels/${channelId}/instagram/icebreakers?workspaceId=${workspaceId}`),
-    syncIceBreakers : (channelId: string, workspaceId: string) =>
+    syncIceBreakers: (channelId: string, workspaceId: string) =>
         api.post(`/channels/${channelId}/instagram/icebreakers/sync?workspaceId=${workspaceId}`),
 
 
+    // Add inside ChannelApi object:
+
+createWebchatChannel: (workspaceId: string, data: {
+    name: string;
+    welcomeMessage?: string;
+    primaryColor?: string;
+    agentName?: string;
+    allowedOrigins?: string[];
+}) =>
+    api.post(`/channels/webchat`, data),
+
+rotateWebchatToken: (workspaceId: string, channelId: string) =>
+    api.post(`/channels/webchat/${channelId}/rotate-token`),
+
+// updateWebsiteChatChannel already exists in your file — just fix the URL to match your BE:
+// Change: api.put(`/channels/website-chat/${channelId}`, data)
+// To:
+updateWebsiteChatChannel: ( channelId: string, data: any) =>
+    api.patch(`/channels/webchat/${channelId}`, data),
 
 
 
