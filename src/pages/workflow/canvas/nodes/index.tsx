@@ -217,7 +217,7 @@ export const AddStepNode = memo(({ data }: NodeProps<AddStepNodeData>) => {
   return (
     <div
       onClick={data.onAdd}
-      style={{ width: NODE_W_ADD, height: NODE_W_ADD }} // ← use constant, not w-8 h-8
+      // style={{ width: NODE_W_ADD, height: NODE_W_ADD }} // ← use constant, not w-8 h-8
       className="rounded-full bg-white flex items-center justify-center cursor-pointer transition-all hover:scale-110 group"
       style={{ border: `1.5px dashed ${c}`, width: NODE_W_ADD, height: NODE_W_ADD }}
     >

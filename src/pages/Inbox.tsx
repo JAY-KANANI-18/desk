@@ -83,7 +83,7 @@ export function InboxPage() {
   }, [selectConversation, navigate]);
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
+    <div className="flex h-full flex-col md:flex-row bg-white">
       <SubSidebar />
 
       <ConversationList

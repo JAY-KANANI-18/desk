@@ -18,6 +18,11 @@ import {
   EyeOff,
   Download,
   CheckCircle,
+  UsersRound,
+  UserCircle,
+  Building,
+  Building2Icon,
+  Users2,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -42,10 +47,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Account",
     items: [
-      { id: "account-info", label: "Account info", icon: Info },
-      { id: "users-settings", label: "Users settings", icon: ShieldCheck },
+      { id: "account-info", label: "Account info", icon: Building2Icon },
+      { id: "users-settings", label: "Organization users", icon: Users2 },
       // { id: "security", label: "Security", icon: Lock },
-      { id: "workspaces", label: "Workspaces", icon: LayoutGrid },
+      { id: "workspaces", label: "Workspaces", icon: Building },
     ],
   },
   // {

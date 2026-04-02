@@ -18,6 +18,7 @@ import {
   Search, X, ArrowDownLeft, ArrowUpRight,
   ChevronDown, SlidersHorizontal, Users,
   UserCircle2,
+  Filter,
 } from "lucide-react";
 import { channelConfig } from "./data";
 import { useInbox } from "../../context/InboxContext";
@@ -188,7 +189,7 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
             className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
               ${searchOpen ? "bg-indigo-100 text-indigo-600" : "text-gray-500 hover:bg-gray-100"}`}
           >
-            <Search size={15} />
+            <Search size={18} />
           </button>
           <div className="relative" ref={filterRef}>
             <button
@@ -198,7 +199,7 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
                   ? "bg-indigo-100 text-indigo-600"
                   : "text-gray-500 hover:bg-gray-100"}`}
             >
-              <SlidersHorizontal size={15} />
+              <Filter size={18} />
               {activePills.length > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-indigo-600
                   text-white text-[8px] font-bold rounded-full flex items-center justify-center">

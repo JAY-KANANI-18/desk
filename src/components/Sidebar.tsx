@@ -18,6 +18,11 @@ import {
   ChevronLeft,
   Map,
   Building,
+  UserRound,
+  SquareUserRound,
+  ChartColumnBig,
+  ContactRound,
+  MessageCircleMore,
 } from "lucide-react";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
@@ -27,11 +32,11 @@ import { useWorkspace } from "../context/WorkspaceContext";
 // ─────────────────────────────────────────────────────────────────────────────
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: MessageSquare, label: "Inbox", path: "/inbox" },
-  { icon: Users, label: "Contacts", path: "/contacts" },
+  { icon: MessageCircleMore, label: "Inbox", path: "/inbox" },
+  { icon: ContactRound, label: "Contacts", path: "/contacts" },
   // { icon: Radio, label: "Broadcast", path: "/broadcast" },
   { icon: Workflow, label: "Workflows", path: "/workflows" },
-  { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: ChartColumnBig, label: "Reports", path: "/reports" },
   { icon: Plug, label: "Channels", path: "/channels" },
 
   // { icon: Building2, label: "Organization", path: "/organization" },

@@ -73,11 +73,11 @@ const ConnectedChannelsView = ({
             </div>
             <div>
               <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                Channel Catalog
+                Connected Channels
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              {/* <p className="text-sm text-gray-500 mt-0.5">
                 Discover and connect new messaging channels to your workspace.
-              </p>
+              </p> */}
             </div>
           </div>
           <div className="flex justify-end">

@@ -20,6 +20,9 @@ import {
   MessageSquareDot, UserCircle2, Users2,
   Bell,
   UserMinus,
+  PanelRightOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useInbox } from "../../context/InboxContext";
 import type { ConvStatus } from "../../lib/inboxApi";
@@ -309,11 +312,11 @@ export function SubSidebar() {
         <button
           type="button"
           onClick={() => setCollapsed(c => !c)}
-          className="w-6 h-6 flex items-center justify-center rounded-md
+          className="w-10 h-10 flex items-center justify-center rounded-md
             text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {collapsed ? <  PanelLeftOpen size={18} /> : <PanelRightOpen size={18} />}
         </button>
       </div>
 

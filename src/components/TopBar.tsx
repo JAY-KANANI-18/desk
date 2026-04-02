@@ -23,6 +23,7 @@ import {
   Check,
   Plus,
   Key,
+  CircleUserRound,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -634,7 +635,7 @@ useEffect(() => {
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
                   >
-                    <User size={16} className="text-gray-400" />
+                    <CircleUserRound size={16} className="text-gray-400" />
                     Profile
                   </button>
                   <button

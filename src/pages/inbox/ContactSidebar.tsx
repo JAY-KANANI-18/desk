@@ -420,7 +420,7 @@ function getDefault(conv: any): any {
   return {
     id: conv?.id, conversationId: conv?.id,
     firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') ?? '',
-    email: '', phone: '', company: '', avatar: '',
+    email: '', phone: '', company: '',
     tags: [], avatar: conv?.avatar, channel: conv?.channel,
     name: conv?.name, lifecycleStage: conv?.tag,
   };

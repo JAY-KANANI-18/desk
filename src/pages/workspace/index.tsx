@@ -67,7 +67,7 @@ const SettingsSidebar = () => {
                       className={`w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <span className={isActive ? 'text-indigo-600' : 'text-gray-400'}>{item.icon}</span>
+                        <span className={isActive ? 'text-indigo-600' : 'text-gray-500'}>{item.icon}</span>
                         <span>{item.name}</span>
                       </div>
                       {item.badge && (

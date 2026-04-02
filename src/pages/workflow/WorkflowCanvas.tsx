@@ -370,7 +370,6 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
         timeoutUnit: "days",
       };
     case "branch":
-    case "branch":
       const id = Date.now();
 
       return {
