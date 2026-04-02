@@ -23,13 +23,13 @@ import { useWorkflow } from '../../WorkflowContext';
 
 export { SendMessageConfig } from './sendMessageConfig';
 export { AskQuestionConfig } from './askQuestionConfig';
-export { AssignToConfig } from './AssignToConfig';
+export { AssignToConfig } from './assignToConfig';
 export { BranchConfig } from './branchConfig';
 export { UpdateContactTagConfig } from './updateContactTagConfig';
 export { UpdateContactFieldConfig } from './updateContactFieldConfig';
 export { OpenConversationConfig } from './openConversationConfig';
 export { CloseConversationConfig } from './CloseConversationConfig';
-export { AddCommentConfig } from './AddCommentConfig';
+export { AddCommentConfig } from './addCommentConfig';
 
 export { JumpToConfig } from './jumpToConfig';
 export { TriggerAnotherWorkflowConfig } from './triggerAnotherWorkflowConfig';
