@@ -491,7 +491,7 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect, workspace
         </div>
 
         {/* Setup guide */}
-        <SetupGuide />
+        {/* <SetupGuide /> */}
       </div>
 
       <p className="text-[11px] text-gray-400 text-center">
