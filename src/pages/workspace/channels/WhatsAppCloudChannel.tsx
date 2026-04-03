@@ -331,12 +331,12 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
             {tab === 'meta' && (
               <div className="space-y-5">
                 {/* Info box */}
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                {/* <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <p className="text-xs font-semibold text-gray-700 mb-0.5">One-click authorization</p>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
                     Authorize via Meta's official OAuth. We'll automatically detect your WhatsApp Business Account and phone numbers — no manual credentials needed.
                   </p>
-                </div>
+                </div> */}
 
                 {/* Permissions */}
                 <div>

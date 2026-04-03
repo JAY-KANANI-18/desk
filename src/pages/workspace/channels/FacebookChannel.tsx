@@ -362,12 +362,12 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
             {tab === 'meta' && (
               <div className="space-y-5">
                 {/* Info */}
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                {/* <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <p className="text-xs font-semibold text-gray-700 mb-0.5">One-click authorization</p>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
                     Authorize via Meta's official OAuth. We'll automatically retrieve all your Facebook Pages and connect them — no manual token generation needed.
                   </p>
-                </div>
+                </div> */}
 
                 {/* Permissions */}
                 <div>

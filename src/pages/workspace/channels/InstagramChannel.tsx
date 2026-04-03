@@ -359,12 +359,12 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect, workspace
             {tab === 'meta' && (
               <div className="space-y-5">
                 {/* Info */}
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                {/* <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <p className="text-xs font-semibold text-gray-700 mb-0.5">One-click authorization</p>
                   <p className="text-[11px] text-gray-400 leading-relaxed">
                     Authorize via Instagram's official OAuth. We'll automatically connect your Instagram Business account — no manual IDs needed.
                   </p>
-                </div>
+                </div> */}
 
                 {/* Permissions */}
                 <div>
