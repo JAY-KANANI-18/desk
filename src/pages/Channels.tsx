@@ -121,7 +121,7 @@ const ConnectedChannelsView = ({
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center flex-shrink-0">
                       <img
-                        src={channelConfig[ch.type].icon}
+                        src={channelConfig[ch.type]?.icon}
                         className="w-10 h-10 object-contain"
                         onError={(e) => {
                           e.target.style.display = "none";
@@ -133,7 +133,7 @@ const ConnectedChannelsView = ({
                         {ch.name}
                       </p>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
-                        {channelConfig[ch.type].label} · {ch.identifier}
+                        {channelConfig[ch.type]?.label} · {ch.identifier}
                       </p>
                     </div>
                   </div>

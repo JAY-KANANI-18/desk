@@ -77,9 +77,9 @@ const StepIndicator = ({
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
               done
-                ? "bg-blue-600 text-white"
+                ? "bg-indigo-600 text-white"
                 : active
-                  ? "bg-blue-600 text-white ring-4 ring-blue-100"
+                  ? "bg-indigo-600 text-white ring-4 ring-indigo-100"
                   : "bg-gray-100 text-gray-400"
             }`}
           >
@@ -103,7 +103,7 @@ const StepIndicator = ({
           </div>
           {i < total - 1 && (
             <div
-              className={`w-16 h-0.5 mx-1 transition-all ${done ? "bg-blue-600" : "bg-gray-200"}`}
+              className={`w-16 h-0.5 mx-1 transition-all ${done ? "bg-indigo-600" : "bg-gray-200"}`}
             />
           )}
         </div>
@@ -121,7 +121,7 @@ const getPasswordStrength = (pw: string) => {
     return { label: "Fair", color: "bg-yellow-400", width: "50%" };
   if (/[A-Z]/.test(pw) && /[0-9]/.test(pw))
     return { label: "Strong", color: "bg-green-500", width: "100%" };
-  return { label: "Good", color: "bg-blue-400", width: "75%" };
+  return { label: "Good", color: "bg-indigo-400", width: "75%" };
 };
 
 // ─── Field wrapper ────────────────────────────────────────────
@@ -141,10 +141,10 @@ const Field = ({
 );
 
 const inputCls = (extra = "") =>
-  `w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${extra}`;
+  `w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${extra}`;
 
 const iconInputCls = (left = true) =>
-  `w-full ${left ? "pl-10" : "pl-3"} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`;
+  `w-full ${left ? "pl-10" : "pl-3"} pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`;
 
 export const Onboarding = () => {
   const navigate = useNavigate();
@@ -200,11 +200,11 @@ export const Onboarding = () => {
     };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -247,7 +247,7 @@ export const Onboarding = () => {
                   <select
                     value={org.role}
                     onChange={setOrgField("role")}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
                   >
                     <option value="">Select your role…</option>
                     {ROLES.map((r) => (
@@ -269,7 +269,7 @@ export const Onboarding = () => {
                   <select
                     value={org.companySize}
                     onChange={setOrgField("companySize")}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
                   >
                     <option value="">Select team size…</option>
                     {COMPANY_SIZES.map((s) => (
@@ -291,7 +291,7 @@ export const Onboarding = () => {
                   <select
                     value={org.industry}
                     onChange={setOrgField("industry")}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none bg-white text-gray-700"
                   >
                     <option value="">Select industry…</option>
                     {INDUSTRIES.map((ind) => (
@@ -332,7 +332,7 @@ export const Onboarding = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -352,7 +352,7 @@ export const Onboarding = () => {
           Going back to{" "}
           <Link
             to="/auth/login"
-            className="text-blue-600 hover:text-blue-700 font-semibold"
+            className="text-indigo-600 hover:text-indigo-700 font-semibold"
           >
             Sign in
           </Link>
