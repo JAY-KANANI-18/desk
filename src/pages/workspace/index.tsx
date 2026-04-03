@@ -4,7 +4,6 @@ import { GeneralInfo }      from './sections/GeneralInfo';
 import { UserSettings }     from './sections/UserSettings';
 import { TeamSettings }     from './sections/TeamSettings';
 import { Teams }            from './sections/Teams';
-import { ChannelsSettings } from './sections/ChannelsSettings';
 import { Integrations }     from './sections/Integrations';
 import { GrowthWidgets }    from './sections/GrowthWidgets';
 import { ContactFields }    from './sections/ContactFields';
@@ -27,7 +26,6 @@ const SectionContent = () => {
     // case 'Personal Settings': return <UserSettings />;
     case 'User settings':     return <TeamSettings />;
     case 'Teams':             return <Teams />;
-    case 'Channels':       return <ChannelsSettings />;
     case 'Integrations':   return <Integrations />;
     case 'Growth widgets': return <GrowthWidgets />;
     case 'Contact fields': return <ContactFields />;

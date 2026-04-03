@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, GripVertical, X } from 'lucide-react';
 import { Toggle } from '../components/Toggle';
-import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import type { ContactField } from '../types';
+import { DataLoader } from '../../Loader';
 
 const typeColors: Record<string, string> = {
   Text: 'bg-blue-50 text-blue-600', Email: 'bg-purple-50 text-purple-600',
@@ -53,7 +53,7 @@ export const ContactFields = () => {
     catch { load(); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"fields"} />;
   if (error && fields.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (

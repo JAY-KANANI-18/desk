@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { ConversationTag } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const Tags = () => {
   const [tags, setTags]       = useState<ConversationTag[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newTag, setNewTag]   = useState({ name: '', color: '#6366f1' });
@@ -17,6 +18,7 @@ export const Tags = () => {
     // setLoading(true); 
     setError(null);
    setTags(await workspaceApi.getTags()); 
+   setLoading(false);
     
   }, []);
 
@@ -39,7 +41,7 @@ export const Tags = () => {
    
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"tags"} />;
   if (error && tags.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (

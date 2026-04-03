@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wand2 } from 'lucide-react';
 import { Toggle } from '../components/Toggle';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { AISettings } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const AIAssist = () => {
   const [settings, setSettings] = useState<AISettings | null>(null);
@@ -28,7 +29,7 @@ export const AIAssist = () => {
     catch { load(); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"AI details"} />;
   if (error || !settings) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (

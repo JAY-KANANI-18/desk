@@ -123,6 +123,11 @@ export const WorkspacesManage = () => {
   const { activeOrganization } = useOrganization();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteWs, setDeleteWs] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+   useEffect(() => {
+     if (workspaces) setLoading(false);
+   }, [workspaces]);
 
   const handleCreate = (name: string) => {
     console.log("create workspace", name);

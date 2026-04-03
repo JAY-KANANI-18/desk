@@ -1,36 +1,50 @@
+import { Loader2 } from "lucide-react";
 
 // Progress ring
-export function RingSpinner({ size = 44, color = "#4f46e5", strokeWidth = 2.5 }) {
+export function RingSpinner({
+  size = 44,
+  color = "#4f46e5",
+  strokeWidth = 2.5,
+}) {
   const r = (size - strokeWidth * 2) / 2;
   const circ = 2 * Math.PI * r;
   return (
     <div className="flex items-center justify-center  h-screen">
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke="#e5e7eb"
-        strokeWidth={strokeWidth}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="#e5e7eb"
+          strokeWidth={strokeWidth}
         />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={circ * 0.25}
-        style={{
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * 0.25}
+          style={{
             transformOrigin: "center",
             animation: "ringSpin 1s linear infinite",
-        }}
+          }}
         />
-      <style>{`@keyframes ringSpin { to { transform: rotate(360deg); } }`}</style>
-    </svg>
-        </div>
+        <style>{`@keyframes ringSpin { to { transform: rotate(360deg); } }`}</style>
+      </svg>
+    </div>
+  );
+}
+
+export const DataLoader = ({ type }: { type: string }) => {
+  return (
+    <div className="flex items-center justify-center py-20 text-gray-500">
+      <Loader2 className="animate-spin mr-2" size={18} />
+      Loading {type}...
+    </div>
   );
 }

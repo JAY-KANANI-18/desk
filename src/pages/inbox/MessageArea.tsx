@@ -73,17 +73,36 @@ export interface MediaAttachment {
 }
 
 export type ConversationEventType =
-  | "assigned" | "unassigned" | "contact_changed" | "opened" | "closed"
-  | "snoozed" | "unsnoozed" | "label_added" | "label_removed"
-  | "channel_changed" | "call_started" | "call_ended" | "bot_handoff";
+  | "assigned"
+  | "unassigned"
+  | "contact_changed"
+  | "opened"
+  | "closed"
+  | "snoozed"
+  | "unsnoozed"
+  | "label_added"
+  | "label_removed"
+  | "channel_changed"
+  | "call_started"
+  | "call_ended"
+  | "bot_handoff";
 
 export type ActivityEventType =
-  | "open" | "close" | "reopen" | "pending"
-  | "assign_user" | "unassign_user" | "assign_team" | "unassign_team"
-  | "merge_contact" | "channel_added"
+  | "open"
+  | "close"
+  | "reopen"
+  | "pending"
+  | "assign_user"
+  | "unassign_user"
+  | "assign_team"
+  | "unassign_team"
+  | "merge_contact"
+  | "channel_added"
   | "note"
-  | "label_added" | "label_removed"
-  | "priority_changed" | "sla_breached";
+  | "label_added"
+  | "label_removed"
+  | "priority_changed"
+  | "sla_breached";
 
 export interface ActivityResponse {
   id: string;
@@ -123,21 +142,37 @@ export interface Message {
   direction?: "incoming" | "outgoing";
   metadata?: {
     email?: {
-      subject?: string; htmlBody?: string; from?: string;
-      to?: string; cc?: string; messageId?: string; threadId?: string;
+      subject?: string;
+      htmlBody?: string;
+      from?: string;
+      to?: string;
+      cc?: string;
+      messageId?: string;
+      threadId?: string;
     };
     whatsapp?: {
       templateName?: string;
       headerType?: "image" | "video" | "document" | "text";
       headerUrl?: string;
       footer?: string;
-      buttons?: Array<{ type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER"; text: string }>;
+      buttons?: Array<{
+        type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+        text: string;
+      }>;
     };
     sender?: { userId?: string };
-    event?: { type: ConversationEventType; actorName?: string; targetName?: string; detail?: string };
+    event?: {
+      type: ConversationEventType;
+      actorName?: string;
+      targetName?: string;
+      detail?: string;
+    };
     quotedMessage?: {
-      id?: number; text?: string; author?: string;
-      attachmentType?: MediaAttachment["type"]; attachmentUrl?: string;
+      id?: number;
+      text?: string;
+      author?: string;
+      attachmentType?: MediaAttachment["type"];
+      attachmentUrl?: string;
     };
   };
   attachments?: MediaAttachment[];
@@ -147,12 +182,18 @@ export interface Message {
 export interface ReplyContext {
   type: "chat" | "email";
   quotedMessage?: {
-    id: number; text: string; author: string;
-    attachmentType?: "image" | "video" | "audio" | "file"; attachmentUrl?: string;
+    id: number;
+    text: string;
+    author: string;
+    attachmentType?: "image" | "video" | "audio" | "file";
+    attachmentUrl?: string;
   };
   emailReply?: {
-    to: string; subject: string;
-    threadId?: string; messageId?: string; cc?: string;
+    to: string;
+    subject: string;
+    threadId?: string;
+    messageId?: string;
+    cc?: string;
   };
 }
 
@@ -192,7 +233,7 @@ function formatMsgTime(createdAt?: string | Date, fallback?: string): string {
       const d = new Date(createdAt);
       if (!isNaN(d.getTime()))
         return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } catch { }
+    } catch {}
   }
   return fallback ?? "";
 }
@@ -217,9 +258,16 @@ function highlightText(text: string, term: string): React.ReactNode {
   return (
     <>
       {parts.map((part, i) =>
-        regex.test(part)
-          ? <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">{part}</mark>
-          : part
+        regex.test(part) ? (
+          <mark
+            key={i}
+            className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5"
+          >
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
       )}
     </>
   );
@@ -230,9 +278,12 @@ function highlightText(text: string, term: string): React.ReactNode {
 ═══════════════════════════════════════════════════════════════════ */
 
 function MsgStatusIcon({ status }: { status?: MessageStatus }) {
-  if (!status || status === "pending") return <Clock size={14} className="text-gray-400 flex-shrink-0" />;
-  if (status === "sent") return <Check size={14} className="text-gray-400 flex-shrink-0" />;
-  if (status === "delivered") return <CheckCheck size={14} className="text-gray-400 flex-shrink-0" />;
+  if (!status || status === "pending")
+    return <Clock size={14} className="text-gray-400 flex-shrink-0" />;
+  if (status === "sent")
+    return <Check size={14} className="text-gray-400 flex-shrink-0" />;
+  if (status === "delivered")
+    return <CheckCheck size={14} className="text-gray-400 flex-shrink-0" />;
   return <CheckCheck size={14} className="text-indigo-500 flex-shrink-0" />;
 }
 
@@ -241,10 +292,16 @@ function MsgStatusIcon({ status }: { status?: MessageStatus }) {
 ═══════════════════════════════════════════════════════════════════ */
 
 function QuotedPreview({
-  text, author, attachmentType, attachmentUrl, isOutgoing,
+  text,
+  author,
+  attachmentType,
+  attachmentUrl,
+  isOutgoing,
 }: {
-  text?: string; author?: string;
-  attachmentType?: MediaAttachment["type"]; attachmentUrl?: string;
+  text?: string;
+  author?: string;
+  attachmentType?: MediaAttachment["type"];
+  attachmentUrl?: string;
   isOutgoing: boolean;
 }) {
   if (!author && !text && !attachmentType) return null;
@@ -256,14 +313,25 @@ function QuotedPreview({
     <div className={`flex gap-1.5 rounded-lg overflow-hidden ${bg} mx-2 mt-2`}>
       <div className={`w-0.5 flex-shrink-0 ${bar}`} />
       <div className="py-1.5 pr-2 flex-1 min-w-0">
-        {author && <p className={`text-[10px] font-semibold mb-0.5 ${actor}`}>{author}</p>}
+        {author && (
+          <p className={`text-[10px] font-semibold mb-0.5 ${actor}`}>
+            {author}
+          </p>
+        )}
         {attachmentType === "image" && attachmentUrl && (
-          <img src={attachmentUrl} alt="" className="w-10 h-10 object-cover rounded mb-0.5" />
+          <img
+            src={attachmentUrl}
+            alt=""
+            className="w-10 h-10 object-cover rounded mb-0.5"
+          />
         )}
         {attachmentType && attachmentType !== "image" && (
           <p className={`text-[11px] italic ${clr}`}>
-            {attachmentType === "audio" ? "🎵 Voice message"
-              : attachmentType === "video" ? "🎬 Video" : "📎 File"}
+            {attachmentType === "audio"
+              ? "🎵 Voice message"
+              : attachmentType === "video"
+                ? "🎬 Video"
+                : "📎 File"}
           </p>
         )}
         {text && <p className={`text-[11px] ${clr} line-clamp-2`}>{text}</p>}
@@ -276,7 +344,12 @@ function QuotedPreview({
    QUICK ACTIONS
 ═══════════════════════════════════════════════════════════════════ */
 
-type ActionDef = { id: string; icon: React.ElementType; label: string; danger?: boolean };
+type ActionDef = {
+  id: string;
+  icon: React.ElementType;
+  label: string;
+  danger?: boolean;
+};
 
 const CHANNEL_ACTIONS: Record<string, ActionDef[]> = {
   whatsapp: [
@@ -318,16 +391,26 @@ const CHANNEL_ACTIONS: Record<string, ActionDef[]> = {
 };
 
 function QuickActions({
-  channel, isOutgoing, msg, visible, onReply,
+  channel,
+  isOutgoing,
+  msg,
+  visible,
+  onReply,
 }: {
-  channel: string; isOutgoing: boolean; msg: Message;
-  visible: boolean; onReply: (ctx: ReplyContext) => void;
+  channel: string;
+  isOutgoing: boolean;
+  msg: Message;
+  visible: boolean;
+  onReply: (ctx: ReplyContext) => void;
 }) {
   const [tooltip, setTooltip] = useState<string | null>(null);
   const actions = CHANNEL_ACTIONS[channel] ?? CHANNEL_ACTIONS.webchat;
 
   const handleAction = (id: string) => {
-    if (id === "copy") { navigator.clipboard.writeText(msg.text ?? ""); return; }
+    if (id === "copy") {
+      navigator.clipboard.writeText(msg.text ?? "");
+      return;
+    }
     if (id === "reply") {
       if (channel === "email") {
         onReply({
@@ -361,10 +444,12 @@ function QuickActions({
 
   const posClass = isOutgoing ? "right-full mr-2" : "left-full ml-2";
   return (
-    <div className={`absolute ${posClass} top-1/2 -translate-y-1/2 flex items-center gap-0.5
+    <div
+      className={`absolute ${posClass} top-1/2 -translate-y-1/2 flex items-center gap-0.5
       bg-white border border-gray-200 rounded-full shadow-lg px-1.5 py-1 z-20
       transition-all duration-150
-      ${visible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
+      ${visible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+    >
       {actions.map((action) => (
         <div key={action.id} className="relative">
           <button
@@ -372,15 +457,19 @@ function QuickActions({
             onMouseEnter={() => setTooltip(action.label)}
             onMouseLeave={() => setTooltip(null)}
             className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors
-              ${action.danger
-                ? "hover:bg-red-50 text-gray-400 hover:text-red-500"
-                : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"}`}
+              ${
+                action.danger
+                  ? "hover:bg-red-50 text-gray-400 hover:text-red-500"
+                  : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+              }`}
           >
             <action.icon size={13} />
           </button>
           {tooltip === action.label && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5
-              bg-gray-800 text-white text-[10px] rounded whitespace-nowrap pointer-events-none z-30">
+            <div
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-0.5
+              bg-gray-800 text-white text-[10px] rounded whitespace-nowrap pointer-events-none z-30"
+            >
               {action.label}
             </div>
           )}
@@ -394,7 +483,15 @@ function QuickActions({
    AUDIO PLAYER
 ═══════════════════════════════════════════════════════════════════ */
 
-function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolean; dark?: boolean }) {
+function MiniAudioPlayer({
+  url,
+  isVoice,
+  dark,
+}: {
+  url: string;
+  isVoice?: boolean;
+  dark?: boolean;
+}) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -402,8 +499,13 @@ function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolea
 
   const toggle = () => {
     if (!audioRef.current) return;
-    if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else { audioRef.current.play().catch(() => { }); setPlaying(true); }
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setPlaying(true);
+    }
   };
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!audioRef.current || !duration) return;
@@ -415,31 +517,60 @@ function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolea
 
   const trackBg = dark ? "bg-white/30" : "bg-gray-200";
   const fill = dark ? "bg-white" : "bg-indigo-500";
-  const btn = dark ? "bg-white text-indigo-600 hover:bg-indigo-50" : "bg-indigo-600 text-white hover:bg-indigo-700";
+  const btn = dark
+    ? "bg-white text-indigo-600 hover:bg-indigo-50"
+    : "bg-indigo-600 text-white hover:bg-indigo-700";
   const labelClr = dark ? "text-white/80" : "text-gray-500";
   const timeClr = dark ? "text-white/70" : "text-gray-400";
   const wrapBg = dark ? "bg-indigo-600" : "bg-gray-100";
 
   return (
-    <div className={`flex items-center gap-2.5 ${wrapBg} rounded-2xl px-3 py-2.5 min-w-[200px] max-w-[260px] shadow-sm`}>
-      <button onClick={toggle}
-        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-colors ${btn}`}>
+    <div
+      className={`flex items-center gap-2.5 ${wrapBg} rounded-2xl px-3 py-2.5 min-w-[200px] max-w-[260px] shadow-sm`}
+    >
+      <button
+        onClick={toggle}
+        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-colors ${btn}`}
+      >
         {playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
-        {isVoice && <p className={`text-[10px] font-medium mb-1 ${labelClr}`}>Voice message</p>}
-        <div className={`h-1.5 ${trackBg} rounded-full cursor-pointer`} onClick={handleSeek}>
-          <div className={`h-full ${fill} rounded-full transition-all duration-100`} style={{ width: `${progress}%` }} />
+        {isVoice && (
+          <p className={`text-[10px] font-medium mb-1 ${labelClr}`}>
+            Voice message
+          </p>
+        )}
+        <div
+          className={`h-1.5 ${trackBg} rounded-full cursor-pointer`}
+          onClick={handleSeek}
+        >
+          <div
+            className={`h-full ${fill} rounded-full transition-all duration-100`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
         <div className={`flex justify-between text-[10px] mt-0.5 ${timeClr}`}>
-          <span>{formatAudioTime(Math.floor((progress / 100) * duration))}</span>
+          <span>
+            {formatAudioTime(Math.floor((progress / 100) * duration))}
+          </span>
           <span>{formatAudioTime(Math.floor(duration))}</span>
         </div>
       </div>
-      <audio ref={audioRef} src={url}
-        onTimeUpdate={() => { if (audioRef.current && duration) setProgress((audioRef.current.currentTime / duration) * 100); }}
-        onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
-        onEnded={() => { setPlaying(false); setProgress(0); if (audioRef.current) audioRef.current.currentTime = 0; }}
+      <audio
+        ref={audioRef}
+        src={url}
+        onTimeUpdate={() => {
+          if (audioRef.current && duration)
+            setProgress((audioRef.current.currentTime / duration) * 100);
+        }}
+        onLoadedMetadata={() => {
+          if (audioRef.current) setDuration(audioRef.current.duration);
+        }}
+        onEnded={() => {
+          setPlaying(false);
+          setProgress(0);
+          if (audioRef.current) audioRef.current.currentTime = 0;
+        }}
       />
     </div>
   );
@@ -449,19 +580,47 @@ function MiniAudioPlayer({ url, isVoice, dark }: { url: string; isVoice?: boolea
    ATTACHMENT ITEM
 ═══════════════════════════════════════════════════════════════════ */
 
-function AttachmentItem({ att, isOutgoing }: { att: MediaAttachment; isOutgoing?: boolean }) {
+function AttachmentItem({
+  att,
+  isOutgoing,
+}: {
+  att: MediaAttachment;
+  isOutgoing?: boolean;
+}) {
   if (att.type === "image") {
     return (
-      <a href={att.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden">
-        <img src={att.url} alt={att.name} className="w-full max-h-[220px] object-cover" />
+      <a
+        href={att.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-full overflow-hidden"
+      >
+        <img
+          src={att.url}
+          alt={att.name}
+          className="w-full max-h-[220px] object-cover"
+        />
         <div className="flex items-center gap-2 px-3 py-1.5 border-t border-black/5">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            className={isOutgoing ? "text-white/60" : "text-indigo-500"}>
-            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={isOutgoing ? "text-white/60" : "text-indigo-500"}
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          <p className={`text-[11px] font-medium truncate flex-1 ${isOutgoing ? "text-white/80" : "text-gray-600"}`}>{att.name}</p>
+          <p
+            className={`text-[11px] font-medium truncate flex-1 ${isOutgoing ? "text-white/80" : "text-gray-600"}`}
+          >
+            {att.name}
+          </p>
         </div>
       </a>
     );
@@ -469,37 +628,74 @@ function AttachmentItem({ att, isOutgoing }: { att: MediaAttachment; isOutgoing?
   if (att.type === "video") {
     return (
       <div className="w-full overflow-hidden">
-        <video controls src={att.url} className="w-full max-h-[200px] bg-black block" />
+        <video
+          controls
+          src={att.url}
+          className="w-full max-h-[200px] bg-black block"
+        />
         <div className="flex items-center gap-2 px-3 py-1.5 border-t border-black/5">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            className={isOutgoing ? "text-white/60" : "text-purple-500"}>
-            <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={isOutgoing ? "text-white/60" : "text-purple-500"}
+          >
+            <polygon points="23 7 16 12 23 17 23 7" />
+            <rect x="1" y="5" width="15" height="14" rx="2" />
           </svg>
-          <p className={`text-[11px] font-medium truncate flex-1 ${isOutgoing ? "text-white/80" : "text-gray-600"}`}>{att.name}</p>
+          <p
+            className={`text-[11px] font-medium truncate flex-1 ${isOutgoing ? "text-white/80" : "text-gray-600"}`}
+          >
+            {att.name}
+          </p>
         </div>
       </div>
     );
   }
-  if (att.type === "audio") return <MiniAudioPlayer url={att.url} isVoice dark={isOutgoing} />;
+  if (att.type === "audio")
+    return <MiniAudioPlayer url={att.url} isVoice dark={isOutgoing} />;
   return (
-    <a href={att.url} download={att.name}
-      className={`flex items-center gap-2.5 px-3 py-2.5 ${isOutgoing ? "text-white" : "text-gray-700"}`}>
-      <FileText size={16} className={isOutgoing ? "text-white/80" : "text-indigo-500"} />
+    <a
+      href={att.url}
+      download={att.name}
+      className={`flex items-center gap-2.5 px-3 py-2.5 ${isOutgoing ? "text-white" : "text-gray-700"}`}
+    >
+      <FileText
+        size={16}
+        className={isOutgoing ? "text-white/80" : "text-indigo-500"}
+      />
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-medium truncate ${isOutgoing ? "text-white" : "text-gray-800"}`}>{att.name}</p>
-        {att.size && <p className={`text-[10px] ${isOutgoing ? "text-white/60" : "text-gray-400"}`}>{formatFileSize(att.size)}</p>}
+        <p
+          className={`text-xs font-medium truncate ${isOutgoing ? "text-white" : "text-gray-800"}`}
+        >
+          {att.name}
+        </p>
+        {att.size && (
+          <p
+            className={`text-[10px] ${isOutgoing ? "text-white/60" : "text-gray-400"}`}
+          >
+            {formatFileSize(att.size)}
+          </p>
+        )}
       </div>
-      <Download size={13} className={isOutgoing ? "text-white/70" : "text-gray-400"} />
+      <Download
+        size={13}
+        className={isOutgoing ? "text-white/70" : "text-gray-400"}
+      />
     </a>
   );
 }
 function formatWaBody(text: string): string {
   return text
-    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')   // *bold*
-    .replace(/_(.*?)_/g, '<em>$1</em>')              // _italic_
-    .replace(/~(.*?)~/g, '<s>$1</s>')                // ~strikethrough~
-    .replace(/```(.*?)```/gs, '<code>$1</code>');    // ```mono```
+    .replace(/\*(.*?)\*/g, "<strong>$1</strong>") // *bold*
+    .replace(/_(.*?)_/g, "<em>$1</em>") // _italic_
+    .replace(/~(.*?)~/g, "<s>$1</s>") // ~strikethrough~
+    .replace(/```(.*?)```/gs, "<code>$1</code>"); // ```mono```
 }
 
 function WaCarouselBubble({
@@ -508,20 +704,37 @@ function WaCarouselBubble({
   createdAt,
 }: {
   body?: string;
-  cards: Array<{ components: Array<{ type: string; format?: string; text?: string; example?: any; buttons?: any[] }> }>;
+  cards: Array<{
+    components: Array<{
+      type: string;
+      format?: string;
+      text?: string;
+      example?: any;
+      buttons?: any[];
+    }>;
+  }>;
   createdAt: string;
 }) {
   const [cardIdx, setCardIdx] = useState(0);
   const CARD_W = 230;
 
   return (
-    <div style={{ maxWidth: 300, fontFamily: '-apple-system, "Segoe UI", sans-serif' }}>
-
+    <div
+      style={{
+        maxWidth: 300,
+        fontFamily: '-apple-system, "Segoe UI", sans-serif',
+      }}
+    >
       {/* Intro body text bubble */}
       {body && (
         <div
           className="shadow-sm mb-1.5"
-          style={{ background: '#fff', borderRadius: 14, borderBottomLeftRadius: 4, maxWidth: 280 }}
+          style={{
+            background: "#fff",
+            borderRadius: 14,
+            borderBottomLeftRadius: 4,
+            maxWidth: 280,
+          }}
         >
           <div className="px-3 pt-2.5 pb-1">
             <p className="text-[12.5px] text-[#303030] leading-snug whitespace-pre-wrap">
@@ -529,7 +742,9 @@ function WaCarouselBubble({
             </p>
           </div>
           <div className="px-3 pb-2 flex justify-end">
-            <span className="text-[10px] text-[#8a8a8a]">{formatTime(createdAt)} ✓✓</span>
+            <span className="text-[10px] text-[#8a8a8a]">
+              {formatTime(createdAt)} ✓✓
+            </span>
           </div>
         </div>
       )}
@@ -537,7 +752,7 @@ function WaCarouselBubble({
       {/* Carousel track */}
       <div
         className="overflow-hidden shadow-sm"
-        style={{ background: '#fff', borderRadius: 14, width: CARD_W }}
+        style={{ background: "#fff", borderRadius: 14, width: CARD_W }}
       >
         {/* Sliding track */}
         <div className="overflow-hidden">
@@ -549,34 +764,42 @@ function WaCarouselBubble({
             }}
           >
             {cards.map((card, i) => {
-              const cHeader  = card.components.find(c => c.type === 'HEADER');
-              const cBody    = card.components.find(c => c.type === 'BODY');
+              const cHeader = card.components.find((c) => c.type === "HEADER");
+              const cBody = card.components.find((c) => c.type === "BODY");
               const cButtons = card.components
-                .filter(c => c.type === 'BUTTONS')
-                .flatMap(c => c.buttons ?? []);
+                .filter((c) => c.type === "BUTTONS")
+                .flatMap((c) => c.buttons ?? []);
 
               return (
                 <div key={i} style={{ width: CARD_W, flexShrink: 0 }}>
                   {/* Card image */}
-                  {cHeader?.format === 'IMAGE' && (
-                    cHeader.example?.header_handle?.[0]
-                      ? <img
-                          src={cHeader.example.header_handle[0]}
-                          alt=""
-                          className="w-full object-cover"
-                          style={{ height: 130 }}
-                        />
-                      : <div className="w-full bg-[#f0f4f8] flex items-center justify-center" style={{ height: 130 }}>
-                          <ImageIcon size={24} className="text-gray-400" />
-                        </div>
-                  )}
-                  {cHeader?.format === 'VIDEO' && (
+                  {cHeader?.format === "IMAGE" &&
+                    (cHeader.example?.header_handle?.[0] ? (
+                      <img
+                        src={cHeader.example.header_handle[0]}
+                        alt=""
+                        className="w-full object-cover"
+                        style={{ height: 130 }}
+                      />
+                    ) : (
+                      <div
+                        className="w-full bg-[#f0f4f8] flex items-center justify-center"
+                        style={{ height: 130 }}
+                      >
+                        <ImageIcon size={24} className="text-gray-400" />
+                      </div>
+                    ))}
+                  {cHeader?.format === "VIDEO" && (
                     <div
                       className="w-full bg-gray-900 flex items-center justify-center relative"
                       style={{ height: 130 }}
                     >
                       <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-                        <Play size={16} className="text-white ml-0.5" fill="white" />
+                        <Play
+                          size={16}
+                          className="text-white ml-0.5"
+                          fill="white"
+                        />
                       </div>
                     </div>
                   )}
@@ -594,11 +817,11 @@ function WaCarouselBubble({
                   {cButtons.map((btn, bi) => (
                     <div
                       key={bi}
-                      className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors ${bi === 0 ? 'border-t border-[#e9edef]' : 'border-t border-[#e9edef]'}`}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors ${bi === 0 ? "border-t border-[#e9edef]" : "border-t border-[#e9edef]"}`}
                     >
-                      {btn.type === 'URL'          && <ExternalLink size={12} />}
-                      {btn.type === 'PHONE_NUMBER' && <Phone size={12} />}
-                      {btn.type === 'QUICK_REPLY'  && <CornerUpLeft size={12} />}
+                      {btn.type === "URL" && <ExternalLink size={12} />}
+                      {btn.type === "PHONE_NUMBER" && <Phone size={12} />}
+                      {btn.type === "QUICK_REPLY" && <CornerUpLeft size={12} />}
                       <span>{btn.text}</span>
                     </div>
                   ))}
@@ -612,7 +835,7 @@ function WaCarouselBubble({
         {cards.length > 1 && (
           <div className="flex items-center justify-center gap-3 py-2 border-t border-[#e9edef]">
             <button
-              onClick={() => setCardIdx(i => Math.max(0, i - 1))}
+              onClick={() => setCardIdx((i) => Math.max(0, i - 1))}
               disabled={cardIdx === 0}
               className="p-0.5 disabled:opacity-30 text-[#8a8a8a] hover:text-[#303030]"
             >
@@ -627,13 +850,15 @@ function WaCarouselBubble({
                   style={{
                     width: i === cardIdx ? 16 : 6,
                     height: 6,
-                    background: i === cardIdx ? '#00a884' : '#d1d5db',
+                    background: i === cardIdx ? "#00a884" : "#d1d5db",
                   }}
                 />
               ))}
             </div>
             <button
-              onClick={() => setCardIdx(i => Math.min(cards.length - 1, i + 1))}
+              onClick={() =>
+                setCardIdx((i) => Math.min(cards.length - 1, i + 1))
+              }
               disabled={cardIdx === cards.length - 1}
               className="p-0.5 disabled:opacity-30 text-[#8a8a8a] hover:text-[#303030]"
             >
@@ -650,13 +875,27 @@ function WaCarouselBubble({
 ═══════════════════════════════════════════════════════════════════ */
 
 function MessageBubble({
-  msg, isOutgoing, bubbleColor, isEmail, isWaTemplate,
-  isExpanded, onToggleExpand, onOpenEmailModal, previewLength, searchTerm,
+  msg,
+  isOutgoing,
+  bubbleColor,
+  isEmail,
+  isWaTemplate,
+  isExpanded,
+  onToggleExpand,
+  onOpenEmailModal,
+  previewLength,
+  searchTerm,
 }: {
-  msg: Message; isOutgoing: boolean; bubbleColor: string;
-  isEmail: boolean; isWaTemplate: boolean; isExpanded: boolean;
-  onToggleExpand: () => void; onOpenEmailModal: () => void;
-  previewLength: number; searchTerm?: string;
+  msg: Message;
+  isOutgoing: boolean;
+  bubbleColor: string;
+  isEmail: boolean;
+  isWaTemplate: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onOpenEmailModal: () => void;
+  previewLength: number;
+  searchTerm?: string;
 }) {
   const atts = msg.messageAttachments ?? msg.attachments ?? [];
   const images = atts.filter((a) => a.type === "image");
@@ -670,27 +909,46 @@ function MessageBubble({
   const renderText = (t: string) =>
     searchTerm ? highlightText(t, searchTerm) : t;
 
-  const expandBtn = (outgoing: boolean) => needsExpand && (
-    <button onClick={onToggleExpand}
-      className={`mt-1.5 flex items-center gap-1 text-xs font-medium opacity-70 hover:opacity-100 transition-opacity
-        ${outgoing ? "text-indigo-200" : "text-indigo-500"}`}>
-      {isExpanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Show more</>}
-    </button>
-  );
+  const expandBtn = (outgoing: boolean) =>
+    needsExpand && (
+      <button
+        onClick={onToggleExpand}
+        className={`mt-1.5 flex items-center gap-1 text-xs font-medium opacity-70 hover:opacity-100 transition-opacity
+        ${outgoing ? "text-indigo-200" : "text-indigo-500"}`}
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp size={12} /> Show less
+          </>
+        ) : (
+          <>
+            <ChevronDown size={12} /> Show more
+          </>
+        )}
+      </button>
+    );
 
   /* WA template */
   if (isWaTemplate) {
     const components = msg.metadata?.template?.components ?? [];
 
-    const header = components.find(c => c.type === 'HEADER');
-    const body = components.find(c => c.type === 'BODY');
-    const footer = components.find(c => c.type === 'FOOTER');
-    const buttons = components.filter(c => c.type === 'BUTTONS').flatMap(c => c.buttons ?? []);
-    const carousel = components.find(c => c.type === 'CAROUSEL');
+    const header = components.find((c) => c.type === "HEADER");
+    const body = components.find((c) => c.type === "BODY");
+    const footer = components.find((c) => c.type === "FOOTER");
+    const buttons = components
+      .filter((c) => c.type === "BUTTONS")
+      .flatMap((c) => c.buttons ?? []);
+    const carousel = components.find((c) => c.type === "CAROUSEL");
 
     // ── Carousel ──────────────────────────────────────────────────────────────
     if (carousel?.cards?.length) {
-      return <WaCarouselBubble body={body?.text} cards={carousel.cards} createdAt={msg.createdAt} />;
+      return (
+        <WaCarouselBubble
+          body={body?.text}
+          cards={carousel.cards}
+          createdAt={msg.createdAt}
+        />
+      );
     }
 
     // ── Standard bubble (your existing code) ──────────────────────────────────
@@ -698,7 +956,7 @@ function MessageBubble({
       <div
         className="overflow-hidden shadow-sm"
         style={{
-          background: '#fff',
+          background: "#fff",
           borderRadius: 14,
           borderBottomLeftRadius: 4,
           maxWidth: 300,
@@ -706,7 +964,7 @@ function MessageBubble({
         }}
       >
         {/* Header */}
-        {header?.format === 'IMAGE' && header.example?.header_handle?.[0] && (
+        {header?.format === "IMAGE" && header.example?.header_handle?.[0] && (
           <img
             src={header.example.header_handle[0]}
             alt=""
@@ -714,14 +972,14 @@ function MessageBubble({
             style={{ maxHeight: 170 }}
           />
         )}
-        {header?.format === 'VIDEO' && (
+        {header?.format === "VIDEO" && (
           <div className="relative w-full h-32 bg-gray-900 flex items-center justify-center">
             <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
               <Play size={16} className="text-white ml-0.5" fill="white" />
             </div>
           </div>
         )}
-        {header?.format === 'DOCUMENT' && (
+        {header?.format === "DOCUMENT" && (
           <div className="flex items-center gap-2.5 px-3 py-2.5 bg-[#f0f4f8] border-b border-[#e9edef]">
             <div className="w-9 h-11 bg-white rounded border border-gray-200 flex flex-col items-center justify-center gap-0.5 shadow-sm flex-shrink-0">
               <FileText size={16} className="text-[#e53935]" />
@@ -729,27 +987,31 @@ function MessageBubble({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11.5px] font-semibold text-[#303030] truncate">
-                {header.text || 'document.pdf'}
+                {header.text || "document.pdf"}
               </p>
               <p className="text-[10px] text-[#8a8a8a]">PDF · 1 page</p>
             </div>
           </div>
         )}
-        {header?.format === 'TEXT' && header.text && (
+        {header?.format === "TEXT" && header.text && (
           <div className="px-3 pt-2.5 pb-0.5">
-            <p className="text-[13px] font-bold text-[#303030] leading-snug">{header.text}</p>
+            <p className="text-[13px] font-bold text-[#303030] leading-snug">
+              {header.text}
+            </p>
           </div>
         )}
         {/* no explicit format = plain text header */}
         {!header?.format && header?.text && (
           <div className="px-3 pt-2.5 pb-0.5">
-            <p className="text-[13px] font-bold text-[#303030] leading-snug">{header.text}</p>
+            <p className="text-[13px] font-bold text-[#303030] leading-snug">
+              {header.text}
+            </p>
           </div>
         )}
 
         {/* Body */}
         {body?.text && (
-          <div className={`px-3 pb-1 ${header ? 'pt-1' : 'pt-2.5'}`}>
+          <div className={`px-3 pb-1 ${header ? "pt-1" : "pt-2.5"}`}>
             <p
               className="text-[12.5px] text-[#303030] leading-snug whitespace-pre-wrap"
               dangerouslySetInnerHTML={{ __html: formatWaBody(body.text) }}
@@ -760,7 +1022,9 @@ function MessageBubble({
         {/* Footer */}
         {footer?.text && (
           <div className="px-3 pb-1.5">
-            <p className="text-[10.5px] text-[#8a8a8a] leading-snug">{footer.text}</p>
+            <p className="text-[10.5px] text-[#8a8a8a] leading-snug">
+              {footer.text}
+            </p>
           </div>
         )}
 
@@ -778,11 +1042,11 @@ function MessageBubble({
             {buttons.map((btn, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] active:bg-[#ebebeb] transition-colors ${i > 0 ? 'border-t border-[#e9edef]' : ''}`}
+                className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] active:bg-[#ebebeb] transition-colors ${i > 0 ? "border-t border-[#e9edef]" : ""}`}
               >
-                {btn.type === 'URL' && <ExternalLink size={12} />}
-                {btn.type === 'PHONE_NUMBER' && <Phone size={12} />}
-                {btn.type === 'QUICK_REPLY' && <CornerUpLeft size={12} />}
+                {btn.type === "URL" && <ExternalLink size={12} />}
+                {btn.type === "PHONE_NUMBER" && <Phone size={12} />}
+                {btn.type === "QUICK_REPLY" && <CornerUpLeft size={12} />}
                 <span>{btn.text}</span>
               </div>
             ))}
@@ -795,11 +1059,17 @@ function MessageBubble({
   /* Email */
   if (isEmail) {
     return (
-      <div className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor} max-w-sm`}>
+      <div
+        className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor} max-w-sm`}
+      >
         {msg.metadata?.email?.subject && (
-          <div className={`flex items-center gap-1.5 px-4 pt-3 pb-2 border-b ${isOutgoing ? "border-white/10" : "border-gray-100"}`}>
+          <div
+            className={`flex items-center gap-1.5 px-4 pt-3 pb-2 border-b ${isOutgoing ? "border-white/10" : "border-gray-100"}`}
+          >
             <Mail size={11} className="flex-shrink-0 opacity-50" />
-            <span className={`text-xs font-semibold truncate max-w-[240px] ${isOutgoing ? "text-white/90" : "text-gray-700"}`}>
+            <span
+              className={`text-xs font-semibold truncate max-w-[240px] ${isOutgoing ? "text-white/90" : "text-gray-700"}`}
+            >
               {msg.metadata.email.subject}
             </span>
           </div>
@@ -808,7 +1078,8 @@ function MessageBubble({
         {hasText && (
           <div className="px-4 pt-2.5 pb-1">
             <p className="text-sm whitespace-pre-wrap">
-              {renderText(displayText)}{!isExpanded && needsExpand && "…"}
+              {renderText(displayText)}
+              {!isExpanded && needsExpand && "…"}
             </p>
             {expandBtn(isOutgoing)}
           </div>
@@ -816,30 +1087,51 @@ function MessageBubble({
         {atts.length > 0 && (
           <div className={hasText ? "border-t border-black/5 mt-1" : ""}>
             {images.length > 0 && (
-              <div className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+              <div
+                className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+              >
                 {images.map((att, i) => (
-                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden">
-                    <img src={att.url} alt={att.name} className="w-full object-cover"
-                      style={{ maxHeight: images.length === 1 ? 200 : 120 }} />
+                  <a
+                    key={i}
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block overflow-hidden"
+                  >
+                    <img
+                      src={att.url}
+                      alt={att.name}
+                      className="w-full object-cover"
+                      style={{ maxHeight: images.length === 1 ? 200 : 120 }}
+                    />
                   </a>
                 ))}
               </div>
             )}
             {others.map((att, i) => (
-              <div key={i} className={i > 0 || images.length > 0 ? "border-t border-black/5" : ""}>
+              <div
+                key={i}
+                className={
+                  i > 0 || images.length > 0 ? "border-t border-black/5" : ""
+                }
+              >
                 <AttachmentItem att={att} isOutgoing={isOutgoing} />
               </div>
             ))}
           </div>
         )}
         <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button onClick={onOpenEmailModal}
+          <button
+            onClick={onOpenEmailModal}
             className={`flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity
-              ${isOutgoing ? "text-white" : "text-gray-600"}`}>
+              ${isOutgoing ? "text-white" : "text-gray-600"}`}
+          >
             <Eye size={11} />
           </button>
-          <button className={`flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity
-              ${isOutgoing ? "text-white" : "text-gray-600"}`}>
+          <button
+            className={`flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity
+              ${isOutgoing ? "text-white" : "text-gray-600"}`}
+          >
             <Reply size={11} />
           </button>
         </div>
@@ -849,14 +1141,28 @@ function MessageBubble({
 
   /* Regular chat */
   return (
-    <div className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor} max-w-sm`}>
+    <div
+      className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor} max-w-sm`}
+    >
       {quoted && <QuotedPreview {...quoted} isOutgoing={isOutgoing} />}
       {images.length > 0 && (
-        <div className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        <div
+          className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+        >
           {images.map((att, i) => (
-            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden">
-              <img src={att.url} alt={att.name} className="w-full object-cover"
-                style={{ maxHeight: images.length === 1 ? 200 : 120 }} />
+            <a
+              key={i}
+              href={att.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden"
+            >
+              <img
+                src={att.url}
+                alt={att.name}
+                className="w-full object-cover"
+                style={{ maxHeight: images.length === 1 ? 200 : 120 }}
+              />
             </a>
           ))}
         </div>
@@ -871,9 +1177,12 @@ function MessageBubble({
         </div>
       )}
       {hasText && (
-        <div className={`px-4 py-3 ${atts.length > 0 || quoted ? "border-t border-black/5" : ""}`}>
+        <div
+          className={`px-4 py-3 ${atts.length > 0 || quoted ? "border-t border-black/5" : ""}`}
+        >
           <p className="text-sm whitespace-pre-wrap">
-            {renderText(displayText)}{!isExpanded && needsExpand && "..."}
+            {renderText(displayText)}
+            {!isExpanded && needsExpand && "..."}
           </p>
           {expandBtn(isOutgoing)}
         </div>
@@ -888,9 +1197,14 @@ function MessageBubble({
 
 function DateBadge({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center py-2 z-10" style={{ position: "sticky", top: 0 }}>
-      <span className="px-3 py-1 text-[11px] font-semibold text-gray-500 bg-white
-        border border-gray-200 rounded-full shadow-sm select-none">
+    <div
+      className="flex items-center justify-center py-2 z-10"
+      style={{ position: "sticky", top: 0 }}
+    >
+      <span
+        className="px-3 py-1 text-[11px] font-semibold text-gray-500 bg-white
+        border border-gray-200 rounded-full shadow-sm select-none"
+      >
         {label}
       </span>
     </div>
@@ -903,21 +1217,80 @@ function DateBadge({ label }: { label: string }) {
 
 const LEGACY_EVENT_CONFIG: Record<
   ConversationEventType,
-  { icon: React.ElementType; color: string; label: (e?: Message["metadata"]["event"]) => string }
+  {
+    icon: React.ElementType;
+    color: string;
+    label: (e?: Message["metadata"]["event"]) => string;
+  }
 > = {
-  assigned: { icon: UserCheck, color: "text-emerald-600 bg-emerald-50 border-emerald-200", label: e => `Assigned to ${e?.targetName ?? "agent"}${e?.actorName ? ` by ${e.actorName}` : ""}` },
-  unassigned: { icon: UserMinus, color: "text-gray-500 bg-gray-50 border-gray-200", label: e => `Unassigned${e?.actorName ? ` by ${e.actorName}` : ""}` },
-  contact_changed: { icon: ArrowRightLeft, color: "text-violet-600 bg-violet-50 border-violet-200", label: e => `Contact changed to ${e?.targetName ?? "unknown"}` },
-  opened: { icon: RefreshCw, color: "text-indigo-600 bg-indigo-50 border-indigo-200", label: e => `Conversation reopened${e?.actorName ? ` by ${e.actorName}` : ""}` },
-  closed: { icon: Archive, color: "text-gray-600 bg-gray-50 border-gray-200", label: e => `Conversation closed${e?.actorName ? ` by ${e.actorName}` : ""}` },
-  snoozed: { icon: BellOff, color: "text-amber-600 bg-amber-50 border-amber-200", label: e => `Snoozed${e?.detail ? ` until ${e.detail}` : ""}` },
-  unsnoozed: { icon: AlarmClock, color: "text-amber-600 bg-amber-50 border-amber-200", label: () => "Snooze removed" },
-  label_added: { icon: Tag, color: "text-indigo-600 bg-indigo-50 border-indigo-200", label: e => `Label "${e?.detail ?? ""}" added` },
-  label_removed: { icon: Tag, color: "text-gray-500 bg-gray-50 border-gray-200", label: e => `Label "${e?.detail ?? ""}" removed` },
-  channel_changed: { icon: RefreshCw, color: "text-teal-600 bg-teal-50 border-teal-200", label: e => `Channel changed to ${e?.detail ?? "unknown"}` },
-  call_started: { icon: PhoneCall, color: "text-green-600 bg-green-50 border-green-200", label: () => "Call started" },
-  call_ended: { icon: PhoneCall, color: "text-red-500 bg-red-50 border-red-200", label: e => `Call ended${e?.detail ? ` · ${e.detail}` : ""}` },
-  bot_handoff: { icon: UserPlus, color: "text-purple-600 bg-purple-50 border-purple-200", label: () => "Handed off to agent" },
+  assigned: {
+    icon: UserCheck,
+    color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+    label: (e) =>
+      `Assigned to ${e?.targetName ?? "agent"}${e?.actorName ? ` by ${e.actorName}` : ""}`,
+  },
+  unassigned: {
+    icon: UserMinus,
+    color: "text-gray-500 bg-gray-50 border-gray-200",
+    label: (e) => `Unassigned${e?.actorName ? ` by ${e.actorName}` : ""}`,
+  },
+  contact_changed: {
+    icon: ArrowRightLeft,
+    color: "text-violet-600 bg-violet-50 border-violet-200",
+    label: (e) => `Contact changed to ${e?.targetName ?? "unknown"}`,
+  },
+  opened: {
+    icon: RefreshCw,
+    color: "text-indigo-600 bg-indigo-50 border-indigo-200",
+    label: (e) =>
+      `Conversation reopened${e?.actorName ? ` by ${e.actorName}` : ""}`,
+  },
+  closed: {
+    icon: Archive,
+    color: "text-gray-600 bg-gray-50 border-gray-200",
+    label: (e) =>
+      `Conversation closed${e?.actorName ? ` by ${e.actorName}` : ""}`,
+  },
+  snoozed: {
+    icon: BellOff,
+    color: "text-amber-600 bg-amber-50 border-amber-200",
+    label: (e) => `Snoozed${e?.detail ? ` until ${e.detail}` : ""}`,
+  },
+  unsnoozed: {
+    icon: AlarmClock,
+    color: "text-amber-600 bg-amber-50 border-amber-200",
+    label: () => "Snooze removed",
+  },
+  label_added: {
+    icon: Tag,
+    color: "text-indigo-600 bg-indigo-50 border-indigo-200",
+    label: (e) => `Label "${e?.detail ?? ""}" added`,
+  },
+  label_removed: {
+    icon: Tag,
+    color: "text-gray-500 bg-gray-50 border-gray-200",
+    label: (e) => `Label "${e?.detail ?? ""}" removed`,
+  },
+  channel_changed: {
+    icon: RefreshCw,
+    color: "text-teal-600 bg-teal-50 border-teal-200",
+    label: (e) => `Channel changed to ${e?.detail ?? "unknown"}`,
+  },
+  call_started: {
+    icon: PhoneCall,
+    color: "text-green-600 bg-green-50 border-green-200",
+    label: () => "Call started",
+  },
+  call_ended: {
+    icon: PhoneCall,
+    color: "text-red-500 bg-red-50 border-red-200",
+    label: (e) => `Call ended${e?.detail ? ` · ${e.detail}` : ""}`,
+  },
+  bot_handoff: {
+    icon: UserPlus,
+    color: "text-purple-600 bg-purple-50 border-purple-200",
+    label: () => "Handed off to agent",
+  },
 };
 
 function LegacyEventRow({ msg }: { msg: Message }) {
@@ -929,7 +1302,8 @@ function LegacyEventRow({ msg }: { msg: Message }) {
     return (
       <div className="flex justify-center my-3">
         <span className="text-[11px] text-gray-400 bg-gray-50 border border-gray-200 px-3 py-1 rounded-full">
-          {msg.text}{time && <span className="ml-1.5 opacity-60">{time}</span>}
+          {msg.text}
+          {time && <span className="ml-1.5 opacity-60">{time}</span>}
         </span>
       </div>
     );
@@ -937,7 +1311,9 @@ function LegacyEventRow({ msg }: { msg: Message }) {
   const Icon = cfg.icon;
   return (
     <div className="flex items-center justify-center my-3 px-4">
-      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-medium ${cfg.color}`}>
+      <div
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-medium ${cfg.color}`}
+      >
         <Icon size={11} />
         <span>{cfg.label(ev)}</span>
         {time && <span className="opacity-50 font-normal ml-1">{time}</span>}
@@ -953,9 +1329,8 @@ function LegacyEventRow({ msg }: { msg: Message }) {
 interface ActivityConfig {
   icon: React.ElementType;
   pill: string;
-  label: ((a: ActivityResponse, isYou: boolean) => string);
+  label: (a: ActivityResponse, isYou: boolean) => string;
   noteCard?: boolean;
-
 }
 const ACTIVITY_CONFIG: Record<
   ActivityEventType,
@@ -966,26 +1341,32 @@ const ACTIVITY_CONFIG: Record<
   open: {
     icon: RefreshCw,
     pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
-    label: (a, currentUser) => `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} opened the conversation`,
+    label: (a, currentUser) =>
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} opened the conversation`,
   },
 
   close: {
     icon: Archive,
     pill: "text-gray-600 bg-gray-50 border-gray-200",
-    label: (a, currentUser) => `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} closed the conversation`,
+    label: (a, currentUser) =>
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} closed the conversation`,
   },
 
   reopen: {
     icon: RefreshCw,
     pill: "text-indigo-600 bg-indigo-50 border-indigo-200",
-    label: (a, currentUser) => `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} reopened the conversation`,
+    label: (a, currentUser) =>
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} reopened the conversation`,
   },
 
   assign_user: {
     icon: UserCheck,
     pill: "text-emerald-700 bg-emerald-50 border-emerald-200",
     label: (a, currentUser) =>
-      `conversation assigned   to ${a.metadata?.newUserId === a.actor?.id ? "You" : a.actor?.name ?? "System"
+      `conversation assigned   to ${
+        a.metadata?.newUserId === a.actor?.id
+          ? "You"
+          : (a.actor?.name ?? "System")
       }`,
   },
 
@@ -993,14 +1374,15 @@ const ACTIVITY_CONFIG: Record<
     icon: UserMinus,
     pill: "text-gray-500 bg-gray-50 border-gray-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} unassigned the conversation`,
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} unassigned the conversation`,
   },
 
   assign_team: {
     icon: Users,
     pill: "text-violet-700 bg-violet-50 border-violet-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} assigned team ${a.metadata?.teamName ?? ""
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} assigned team ${
+        a.metadata?.teamName ?? ""
       }`,
   },
 
@@ -1008,14 +1390,15 @@ const ACTIVITY_CONFIG: Record<
     icon: GitMerge,
     pill: "text-orange-600 bg-orange-50 border-orange-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} merged contact`,
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} merged contact`,
   },
 
   label_added: {
     icon: Tag,
     pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} added label "${a.metadata?.label ?? ""
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} added label "${
+        a.metadata?.label ?? ""
       }"`,
   },
 
@@ -1023,7 +1406,8 @@ const ACTIVITY_CONFIG: Record<
     icon: Tag,
     pill: "text-gray-500 bg-gray-50 border-gray-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} removed label "${a.metadata?.label ?? ""
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} removed label "${
+        a.metadata?.label ?? ""
       }"`,
   },
 
@@ -1031,7 +1415,8 @@ const ACTIVITY_CONFIG: Record<
     icon: TrendingUp,
     pill: "text-rose-600 bg-rose-50 border-rose-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} changed priority to ${a.metadata?.priority ?? ""
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} changed priority to ${
+        a.metadata?.priority ?? ""
       }`,
   },
 
@@ -1051,34 +1436,60 @@ const ACTIVITY_CONFIG: Record<
     icon: Hash,
     pill: "text-teal-700 bg-teal-50 border-teal-200",
     label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : a.actor?.name ?? "System"} added channel ${a.metadata?.channel ?? ""
+      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} added channel ${
+        a.metadata?.channel ?? ""
       }`,
   },
 };
 
-function ActorAvatar({ actor, size = "sm" }: {
-  actor?: ActivityResponse["actor"]; size?: "sm" | "xs";
+function ActorAvatar({
+  actor,
+  size = "sm",
+}: {
+  actor?: ActivityResponse["actor"];
+  size?: "sm" | "xs";
 }) {
   const dim = size === "xs" ? "w-5 h-5 text-[9px]" : "w-7 h-7 text-[11px]";
   if (!actor) {
     return (
-      <div className={`${dim} bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0`}>
+      <div
+        className={`${dim} bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0`}
+      >
         <Zap size={size === "xs" ? 9 : 11} className="text-gray-500" />
       </div>
     );
   }
   if (actor.avatarUrl) {
-    return <img src={actor.avatarUrl} alt={actor.name} className={`${dim} rounded-full object-cover flex-shrink-0`} />;
+    return (
+      <img
+        src={actor.avatarUrl}
+        alt={actor.name}
+        className={`${dim} rounded-full object-cover flex-shrink-0`}
+      />
+    );
   }
   return (
-    <div className={`${dim} bg-indigo-100 text-indigo-700 font-semibold rounded-full flex items-center justify-center flex-shrink-0`}>
+    <div
+      className={`${dim} bg-indigo-100 text-indigo-700 font-semibold rounded-full flex items-center justify-center flex-shrink-0`}
+    >
       {actor.name.charAt(0).toUpperCase()}
     </div>
   );
 }
 
-function ActivityRow({ activity, searchTerm, currentUser }: { activity: ActivityResponse; searchTerm?: string; currentUser: any }) {
-  const cfg = ACTIVITY_CONFIG[activity.eventType] ?? { icon: RefreshCw, pill: "text-gray-500 bg-gray-50 border-gray-200" };
+function ActivityRow({
+  activity,
+  searchTerm,
+  currentUser,
+}: {
+  activity: ActivityResponse;
+  searchTerm?: string;
+  currentUser: any;
+}) {
+  const cfg = ACTIVITY_CONFIG[activity.eventType] ?? {
+    icon: RefreshCw,
+    pill: "text-gray-500 bg-gray-50 border-gray-200",
+  };
   const Icon = cfg.icon;
   const time = formatMsgTime(activity.createdAt);
 
@@ -1091,10 +1502,18 @@ function ActivityRow({ activity, searchTerm, currentUser }: { activity: Activity
         <div className="w-full max-w-md bg-amber-50 border border-amber-200 rounded-xl overflow-hidden shadow-sm">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200/60">
             <MessageSquare size={11} className="text-amber-600 flex-shrink-0" />
-            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">Internal Note</span>
+            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
+              Internal Note
+            </span>
             <div className="flex items-center gap-1.5 ml-auto">
               {/* <ActorAvatar actor={activity.actor} size="xs" /> */}
-              {activity.actor && <span className="text-[11px] font-medium text-amber-800">{currentUser.id === activity.actor.id ? "You" : activity.actor.name}</span>}
+              {activity.actor && (
+                <span className="text-[11px] font-medium text-amber-800">
+                  {currentUser.id === activity.actor.id
+                    ? "You"
+                    : activity.actor.name}
+                </span>
+              )}
               <span className="text-[10px] text-amber-600/70 ml-1">{time}</span>
             </div>
           </div>
@@ -1109,7 +1528,12 @@ function ActivityRow({ activity, searchTerm, currentUser }: { activity: Activity
             <div className="px-3 pb-2 flex items-center gap-1 flex-wrap">
               <span className="text-[10px] text-amber-600/70">Mentioned:</span>
               {mentionIds.map((uid) => (
-                <span key={uid} className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">@{uid}</span>
+                <span
+                  key={uid}
+                  className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full"
+                >
+                  @{uid}
+                </span>
               ))}
             </div>
           )}
@@ -1128,13 +1552,19 @@ function ActivityRow({ activity, searchTerm, currentUser }: { activity: Activity
 
   return (
     <div className="flex items-center justify-center my-3 px-4">
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-medium
-        ${cfg.pill} max-w-[90%]`}>
+      <div
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-medium
+        ${cfg.pill} max-w-[90%]`}
+      >
         {/* {activity.actor && activity.actorType === "user"
           ? <ActorAvatar actor={activity.actor} size="xs" />
           : <Icon size={11} className="flex-shrink-0 opacity-80" />} */}
         <span className="truncate">{descNode}</span>
-        {time && <span className="opacity-50 font-normal ml-1 flex-shrink-0">{time}</span>}
+        {time && (
+          <span className="opacity-50 font-normal ml-1 flex-shrink-0">
+            {time}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -1145,18 +1575,34 @@ function ActivityRow({ activity, searchTerm, currentUser }: { activity: Activity
 ═══════════════════════════════════════════════════════════════════ */
 
 function SearchBar({
-  value, onChange, onClose, matchCount, matchIndex, onPrev, onNext,
+  value,
+  onChange,
+  onClose,
+  matchCount,
+  matchIndex,
+  onPrev,
+  onNext,
 }: {
-  value: string; onChange: (v: string) => void; onClose: () => void;
-  matchCount: number; matchIndex: number; onPrev: () => void; onNext: () => void;
+  value: string;
+  onChange: (v: string) => void;
+  onClose: () => void;
+  matchCount: number;
+  matchIndex: number;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <div className="px-4 py-2.5 bg-white border-b flex items-center gap-2">
       <div className="relative flex-1">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
         <input
           ref={inputRef}
           value={value}
@@ -1168,28 +1614,39 @@ function SearchBar({
       </div>
       {value && (
         <span className="text-xs text-gray-500 whitespace-nowrap shrink-0 min-w-[60px] text-center">
-          {matchCount === 0 ? "No results" : `${matchIndex + 1} / ${matchCount}`}
+          {matchCount === 0
+            ? "No results"
+            : `${matchIndex + 1} / ${matchCount}`}
         </span>
       )}
       {value && matchCount > 0 && (
         <div className="flex items-center gap-0.5 shrink-0">
-          <button onClick={onPrev}
-            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 transition-colors">
+          <button
+            onClick={onPrev}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 transition-colors"
+          >
             <ChevronUp size={14} />
           </button>
-          <button onClick={onNext}
-            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 transition-colors">
+          <button
+            onClick={onNext}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 transition-colors"
+          >
             <ChevronDown size={14} />
           </button>
         </div>
       )}
       {value && (
-        <button onClick={() => onChange("")}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 shrink-0">
+        <button
+          onClick={() => onChange("")}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 shrink-0"
+        >
           <X size={13} />
         </button>
       )}
-      <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 shrink-0 px-1">
+      <button
+        onClick={onClose}
+        className="text-xs text-gray-500 hover:text-gray-700 shrink-0 px-1"
+      >
         Cancel
       </button>
     </div>
@@ -1232,13 +1689,13 @@ export function MessageArea({
   ══════════════════════════════════════════════════════════════ */
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const prevScrollHeightRef = useRef(0);       // snapshot before prepend
-  const prevScrollTopRef = useRef(0);        // snapshot before prepend
+  const prevScrollHeightRef = useRef(0); // snapshot before prepend
+  const prevScrollTopRef = useRef(0); // snapshot before prepend
   const prevConvIdRef = useRef(selectedConversation?.id);
   const prevItemLenRef = useRef(0);
   const isFirstRenderRef = useRef(true);
-  const isRestoringScrollRef = useRef(false);   // blocks handleScroll during restore
-  const pendingJumpRef = useRef(true);    // true = must jump to bottom before showing
+  const isRestoringScrollRef = useRef(false); // blocks handleScroll during restore
+  const pendingJumpRef = useRef(true); // true = must jump to bottom before showing
   const itemRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
 
   /* ══════════════════════════════════════════════════════════════
@@ -1250,12 +1707,19 @@ export function MessageArea({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [emailModalMsg, setEmailModalMsg] = useState<Message | null>(null);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
+  const [loadingTimeline, setLoadingTimeline] = useState(true);
 
   const { channels } = useChannel();
   const { workspaceUsers } = useWorkspace();
   const { user: currentUser } = useAuth();
   const { loadMoreTimeline } = useInbox();
   const previewLength = 220;
+
+  useEffect(() => {
+    if (timelineItems !== undefined) {
+      setLoadingTimeline(false);
+    }
+  }, [timelineItems]);
 
   /* ══════════════════════════════════════════════════════════════
      NORMALISE → RenderItem[]
@@ -1265,16 +1729,28 @@ export function MessageArea({
       return timelineItems.map((item): RenderItem => {
         const ts = new Date(item.timestamp);
         if (item.type === "activity" && item.activity)
-          return { kind: "activity", key: item.id, timestamp: ts, act: item.activity };
-        return { kind: "message", key: item.id, timestamp: ts, msg: item.message! };
+          return {
+            kind: "activity",
+            key: item.id,
+            timestamp: ts,
+            act: item.activity,
+          };
+        return {
+          kind: "message",
+          key: item.id,
+          timestamp: ts,
+          msg: item.message!,
+        };
       });
     }
-    return messages.map((m): RenderItem => ({
-      kind: "message",
-      key: String(m.id),
-      timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
-      msg: m,
-    }));
+    return messages.map(
+      (m): RenderItem => ({
+        kind: "message",
+        key: String(m.id),
+        timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
+        msg: m,
+      }),
+    );
   }, [timelineItems, messages]);
 
   /* ══════════════════════════════════════════════════════════════
@@ -1287,7 +1763,9 @@ export function MessageArea({
       .filter((item) => {
         if (item.kind === "activity") {
           const desc = (item.act.description ?? "").toLowerCase();
-          const note = ((item.act.metadata?.text as string) ?? "").toLowerCase();
+          const note = (
+            (item.act.metadata?.text as string) ?? ""
+          ).toLowerCase();
           return desc.includes(term) || note.includes(term);
         }
         return (item.msg.text ?? "").toLowerCase().includes(term);
@@ -1359,7 +1837,10 @@ export function MessageArea({
   useEffect(() => {
     if (!msgSearchOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Enter") { e.preventDefault(); e.shiftKey ? handleSearchPrev() : handleSearchNext(); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.shiftKey ? handleSearchPrev() : handleSearchNext();
+      }
       if (e.key === "Escape") onCloseMsgSearch();
     };
     window.addEventListener("keydown", handler);
@@ -1370,7 +1851,9 @@ export function MessageArea({
      PAGINATION
   ══════════════════════════════════════════════════════════════ */
   const hasMore = allItems.length > visibleCount;
-  const visibleItems = allItems.slice(Math.max(0, allItems.length - visibleCount));
+  const visibleItems = allItems.slice(
+    Math.max(0, allItems.length - visibleCount),
+  );
 
   /* ══════════════════════════════════════════════════════════════
      CONVERSATION CHANGE DETECTOR
@@ -1387,7 +1870,7 @@ export function MessageArea({
       isFirstRenderRef.current = false;
       prevConvIdRef.current = selectedConversation?.id;
       prevItemLenRef.current = totalLen;
-      pendingJumpRef.current = true;   // signal the layout effect to jump
+      pendingJumpRef.current = true; // signal the layout effect to jump
       setVisibleCount(PAGE_SIZE);
       setExpanded({});
       // Keep container invisible until layout effect fires
@@ -1405,7 +1888,7 @@ export function MessageArea({
         if (distFromBottom < 120) {
           el.scrollTo({
             top: el.scrollHeight,
-            behavior: "auto"
+            behavior: "auto",
           });
         }
       }
@@ -1432,8 +1915,9 @@ export function MessageArea({
       pendingJumpRef.current = false;
       el.scrollTo({
         top: el.scrollHeight,
-        behavior: "auto"
-      }); el.style.visibility = "visible";
+        behavior: "auto",
+      });
+      el.style.visibility = "visible";
       return;
     }
 
@@ -1441,13 +1925,12 @@ export function MessageArea({
     if (totalLen > prevItemLenRef.current) {
       prevItemLenRef.current = totalLen;
 
-      const distFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight;
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 
       if (distFromBottom < 120) {
         el.scrollTo({
           top: el.scrollHeight,
-          behavior: "auto"
+          behavior: "auto",
         });
       }
 
@@ -1482,7 +1965,7 @@ export function MessageArea({
 
       setLoadingMore(true);
 
-      loadMoreTimeline()
+      loadMoreTimeline();
 
       setTimeout(() => {
         // flushSync batches both updates into ONE render so the DOM
@@ -1505,8 +1988,7 @@ export function MessageArea({
       const dk = item.timestamp.toISOString().slice(0, 10);
       if (!groups.length || groups[groups.length - 1].dateKey !== dk)
         groups.push({ dateKey: dk, items: [item] });
-      else
-        groups[groups.length - 1].items.push(item);
+      else groups[groups.length - 1].items.push(item);
     }
     return groups;
   }, [visibleItems]);
@@ -1522,7 +2004,8 @@ export function MessageArea({
   /* ══════════════════════════════════════════════════════════════
      SEARCH MATCH RING HELPERS
   ══════════════════════════════════════════════════════════════ */
-  const isCurrentMatch = (key: string) => !!msgSearch && matchingKeys[searchMatchIndex] === key;
+  const isCurrentMatch = (key: string) =>
+    !!msgSearch && matchingKeys[searchMatchIndex] === key;
   const isAnyMatch = (key: string) => !!msgSearch && matchingKeys.includes(key);
 
   const matchRingClass = (key: string) =>
@@ -1584,7 +2067,7 @@ export function MessageArea({
           <div className="absolute top-5 left-1/2 -translate-x-1/2 flex justify-center mb-5">
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <RefreshCw size={12} className="animate-spin" />
-              Loading  messages…
+              Loading messages…
             </div>
           </div>
         )}
@@ -1610,166 +2093,205 @@ export function MessageArea({
         )}
 
         {/* ── Date groups ── */}
-        {dateGroups.map(({ dateKey, items }) => (
-          <div key={dateKey}>
-            <DateBadge label={dateBadgeLabel(dateKey)} />
+    {loadingTimeline ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500 justify-center py-10">
+            <RefreshCw size={14} className="animate-spin" />
+            Loading conversation…
+          </div>
+        ) : (
+        <>
+          {dateGroups.map(({ dateKey, items }) => (
+            <div key={dateKey}>
+              <DateBadge label={dateBadgeLabel(dateKey)} />
 
-            {items.map((item) => {
+              {items.map((item) => {
+                /* ── ACTIVITY ROW ── */
+                if (item.kind === "activity") {
+                  return (
+                    <div
+                      key={item.key}
+                      ref={(el) => setItemRef(item.key, el)}
+                      className={matchRingClass(item.key)}
+                    >
+                      <ActivityRow
+                        activity={item.act}
+                        searchTerm={msgSearch || undefined}
+                        currentUser={currentUser}
+                      />
+                    </div>
+                  );
+                }
 
-              /* ── ACTIVITY ROW ── */
-              if (item.kind === "activity") {
-                return (
-                  <div
-                    key={item.key}
-                    ref={(el) => setItemRef(item.key, el)}
-                    className={matchRingClass(item.key)}
-                  >
-                    <ActivityRow
-                      activity={item.act}
-                      searchTerm={msgSearch || undefined}
-                      currentUser={currentUser}
-                    />
-                  </div>
+                /* ── MESSAGE ── */
+                const msg = item.msg;
+                const isOutgoing = msg.direction === "outgoing";
+                const isEvent = msg.type === "event" || msg.type === "system";
+                const isComment = msg.type === "comment";
+                const isWaTemplate = msg.type === "template";
+                const channelType = channels?.find(
+                  (c) => c?.id === msg?.channelId,
+                )?.type;
+                const isEmail = channelType === "email";
+                const displayTime = formatMsgTime(msg.createdAt, msg.time);
+                const hoverKey = `msg-${msg.id}`;
+                const isExpanded = !!expanded[msg.id];
+                const OutgoingSender = workspaceUsers?.find(
+                  (u) => u.id === msg?.metadata?.sender?.userId,
                 );
-              }
+                const bubbleColor = isOutgoing
+                  ? "bg-indigo-500 text-white rounded-br-sm"
+                  : "bg-gray-100 text-gray-900 rounded-bl-sm";
 
-              /* ── MESSAGE ── */
-              const msg = item.msg;
-              const isOutgoing = msg.direction === "outgoing";
-              const isEvent = msg.type === "event" || msg.type === "system";
-              const isComment = msg.type === "comment";
-              const isWaTemplate = msg.type === "template";
-              const channelType = channels?.find((c) => c?.id === msg?.channelId)?.type;
-              const isEmail = channelType === "email";
-              const displayTime = formatMsgTime(msg.createdAt, msg.time);
-              const hoverKey = `msg-${msg.id}`;
-              const isExpanded = !!expanded[msg.id];
-              const OutgoingSender = workspaceUsers?.find(
-                (u) => u.id === msg?.metadata?.sender?.userId
-              );
-              const bubbleColor = isOutgoing
-                ? "bg-indigo-500 text-white rounded-br-sm"
-                : "bg-gray-100 text-gray-900 rounded-bl-sm";
+                /* Legacy event pill */
+                if (isEvent) {
+                  return (
+                    <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
+                      <LegacyEventRow msg={msg} />
+                    </div>
+                  );
+                }
 
-              /* Legacy event pill */
-              if (isEvent) {
-                return (
-                  <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
-                    <LegacyEventRow msg={msg} />
-                  </div>
-                );
-              }
+                /* Internal note */
+                if (isComment) {
+                  return (
+                    <div
+                      key={msg.id}
+                      ref={(el) => setItemRef(item.key, el)}
+                      className={matchRingClass(item.key)}
+                    >
+                      <div className="flex justify-center my-4 px-4">
+                        <div
+                          className="w-full max-w-md bg-amber-50 border border-amber-200
+                        rounded-xl overflow-hidden shadow-sm"
+                        >
+                          <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200/60">
+                            <MessageSquare
+                              size={11}
+                              className="text-amber-600 flex-shrink-0"
+                            />
+                            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
+                              Internal Note
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <div
+                                className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center
+                              text-[9px] font-bold text-amber-800"
+                              >
+                                {msg.initials}
+                              </div>
+                              <span className="text-[11px] font-medium text-amber-800">
+                                {msg.author}
+                              </span>
+                              <span className="text-[10px] text-amber-600/70 ml-1">
+                                {displayTime}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="px-3 py-2.5">
+                            <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
+                              {msgSearch
+                                ? highlightText(msg.text ?? "", msgSearch)
+                                : msg.text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
-              /* Internal note */
-              if (isComment) {
+                /* Regular message bubble */
                 return (
                   <div
                     key={msg.id}
                     ref={(el) => setItemRef(item.key, el)}
-                    className={matchRingClass(item.key)}
+                    className={`flex items-end gap-3 mb-4 ${isOutgoing ? "justify-end" : "justify-start"}
+                    ${matchRingClass(item.key)}`}
+                    onMouseEnter={() => setHoveredMsgId(hoverKey)}
+                    onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    <div className="flex justify-center my-4 px-4">
-                      <div className="w-full max-w-md bg-amber-50 border border-amber-200
-                        rounded-xl overflow-hidden shadow-sm">
-                        <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200/60">
-                          <MessageSquare size={11} className="text-amber-600 flex-shrink-0" />
-                          <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
-                            Internal Note
+                    {/* Incoming avatar */}
+                    {!isOutgoing && (
+                      <div
+                        className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
+                      text-xs flex-shrink-0 overflow-hidden"
+                      >
+                        {selectedConversation?.contact?.avatarUrl ? (
+                          <img
+                            src={selectedConversation.contact.avatarUrl}
+                            alt={selectedConversation.contact.firstName || "C"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>
+                            {selectedConversation?.contact?.firstName
+                              ?.charAt(0)
+                              ?.toUpperCase() || "C"}
                           </span>
-                          <div className="flex items-center gap-1.5 ml-auto">
-                            <div className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center
-                              text-[9px] font-bold text-amber-800">
-                              {msg.initials}
-                            </div>
-                            <span className="text-[11px] font-medium text-amber-800">{msg.author}</span>
-                            <span className="text-[10px] text-amber-600/70 ml-1">{displayTime}</span>
-                          </div>
-                        </div>
-                        <div className="px-3 py-2.5">
-                          <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
-                            {msgSearch ? highlightText(msg.text ?? "", msgSearch) : msg.text}
-                          </p>
-                        </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="relative flex flex-col max-w-sm">
+                      <QuickActions
+                        channel={
+                          channelType ??
+                          msg.channel ??
+                          selectedConversation?.channel ??
+                          "webchat"
+                        }
+                        isOutgoing={isOutgoing}
+                        msg={msg}
+                        visible={hoveredMsgId === hoverKey}
+                        onReply={(ctx) => onReply?.(ctx)}
+                      />
+                      <MessageBubble
+                        msg={msg}
+                        isOutgoing={isOutgoing}
+                        bubbleColor={bubbleColor}
+                        isEmail={isEmail}
+                        isWaTemplate={isWaTemplate}
+                        isExpanded={isExpanded}
+                        onToggleExpand={() =>
+                          setExpanded((s) => ({ ...s, [msg.id]: !isExpanded }))
+                        }
+                        onOpenEmailModal={() => setEmailModalMsg(msg)}
+                        previewLength={previewLength}
+                        searchTerm={msgSearch || undefined}
+                      />
+                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                        <span>{displayTime}</span>
+                        {isOutgoing && <MsgStatusIcon status={msg.status} />}
                       </div>
                     </div>
+
+                    {/* Outgoing avatar */}
+                    {isOutgoing && (
+                      <div
+                        className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
+                      text-xs flex-shrink-0 overflow-hidden"
+                      >
+                        {OutgoingSender?.avatarUrl ? (
+                          <img
+                            src={OutgoingSender.avatarUrl}
+                            alt={OutgoingSender.firstName || "U"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>
+                            {OutgoingSender?.firstName
+                              ?.charAt(0)
+                              ?.toUpperCase() || "U"}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
-              }
-
-              /* Regular message bubble */
-              return (
-                <div
-                  key={msg.id}
-                  ref={(el) => setItemRef(item.key, el)}
-                  className={`flex items-end gap-3 mb-4 ${isOutgoing ? "justify-end" : "justify-start"}
-                    ${matchRingClass(item.key)}`}
-                  onMouseEnter={() => setHoveredMsgId(hoverKey)}
-                  onMouseLeave={() => setHoveredMsgId(null)}
-                >
-                  {/* Incoming avatar */}
-                  {!isOutgoing && (
-                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden">
-                      {selectedConversation?.contact?.avatarUrl
-                        ? <img
-                          src={selectedConversation.contact.avatarUrl}
-                          alt={selectedConversation.contact.firstName || "C"}
-                          className="w-full h-full object-cover"
-                        />
-                        : <span>
-                          {selectedConversation?.contact?.firstName?.charAt(0)?.toUpperCase() || "C"}
-                        </span>
-                      }
-                    </div>
-                  )}
-
-                  <div className="relative flex flex-col max-w-sm">
-                    <QuickActions
-                      channel={channelType ?? msg.channel ?? selectedConversation?.channel ?? "webchat"}
-                      isOutgoing={isOutgoing}
-                      msg={msg}
-                      visible={hoveredMsgId === hoverKey}
-                      onReply={(ctx) => onReply?.(ctx)}
-                    />
-                    <MessageBubble
-                      msg={msg}
-                      isOutgoing={isOutgoing}
-                      bubbleColor={bubbleColor}
-                      isEmail={isEmail}
-                      isWaTemplate={isWaTemplate}
-                      isExpanded={isExpanded}
-                      onToggleExpand={() => setExpanded((s) => ({ ...s, [msg.id]: !isExpanded }))}
-                      onOpenEmailModal={() => setEmailModalMsg(msg)}
-                      previewLength={previewLength}
-                      searchTerm={msgSearch || undefined}
-                    />
-                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                      <span>{displayTime}</span>
-                      {isOutgoing && <MsgStatusIcon status={msg.status} />}
-                    </div>
-                  </div>
-
-                  {/* Outgoing avatar */}
-                  {isOutgoing && (
-                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden">
-                      {OutgoingSender?.avatarUrl
-                        ? <img
-                          src={OutgoingSender.avatarUrl}
-                          alt={OutgoingSender.firstName || "U"}
-                          className="w-full h-full object-cover"
-                        />
-                        : <span>
-                          {OutgoingSender?.firstName?.charAt(0)?.toUpperCase() || "U"}
-                        </span>
-                      }
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+              })}
+            </div>
+          ))}
+        </>)}
 
         {/* Anchor – kept as a lightweight fallback reference */}
         <div ref={messagesEndRef} />
@@ -1779,7 +2301,9 @@ export function MessageArea({
       {emailModalMsg && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-          onClick={(e) => { if (e.target === e.currentTarget) setEmailModalMsg(null); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEmailModalMsg(null);
+          }}
         >
           <div className="bg-white w-[750px] max-h-[80vh] rounded-xl shadow-xl flex flex-col">
             <div className="border-b px-5 py-3.5 flex items-start gap-3">
@@ -1795,7 +2319,8 @@ export function MessageArea({
                 {emailModalMsg.metadata?.email?.to && (
                   <p className="text-xs text-gray-500">
                     To: {emailModalMsg.metadata.email.to}
-                    {emailModalMsg.metadata.email.cc && `, CC: ${emailModalMsg.metadata.email.cc}`}
+                    {emailModalMsg.metadata.email.cc &&
+                      `, CC: ${emailModalMsg.metadata.email.cc}`}
                   </p>
                 )}
               </div>
@@ -1807,16 +2332,19 @@ export function MessageArea({
               </button>
             </div>
             <div className="overflow-y-auto p-5">
-              {emailModalMsg.metadata?.email?.htmlBody
-                ? <div
+              {emailModalMsg.metadata?.email?.htmlBody ? (
+                <div
                   dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(emailModalMsg.metadata.email.htmlBody),
+                    __html: DOMPurify.sanitize(
+                      emailModalMsg.metadata.email.htmlBody,
+                    ),
                   }}
                 />
-                : <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              ) : (
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
                   {emailModalMsg.text}
                 </p>
-              }
+              )}
             </div>
           </div>
         </div>

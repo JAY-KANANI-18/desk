@@ -11,7 +11,7 @@ export const GeneralOrgInfo = () => {
 
       <div className="space-y-6 max-w-2xl">
         {/* Logo */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Organization logo
           </label>
@@ -24,7 +24,7 @@ export const GeneralOrgInfo = () => {
               Upload logo
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* Org name */}
         <div>

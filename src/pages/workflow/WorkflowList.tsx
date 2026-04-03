@@ -137,9 +137,10 @@ export function WorkflowList() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 size={20} className="animate-spin text-gray-300" />
-          </div>
+           <div className="flex items-center justify-center py-20 text-gray-500">
+              <Loader2 className="animate-spin mr-2" size={18} />
+              Loading workflows...
+            </div>
         ) : filtered.length === 0 ? (
           <EmptyState hasSearch={!!search || filter !== 'all'} onCreateNew={handleCreateNew} />
         ) : (
@@ -298,7 +299,7 @@ function EmptyState({ hasSearch, onCreateNew }: { hasSearch: boolean; onCreateNe
       </p>
       <button
         onClick={onCreateNew}
-        className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+        className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
       >
         <Plus size={14} /> New Workflow
       </button>

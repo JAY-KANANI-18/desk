@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, X, Search } from 'lucide-react';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { Snippet } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const Snippets = () => {
   const [snippets, setSnippets]           = useState<Snippet[]>([]);
@@ -55,7 +56,7 @@ export const Snippets = () => {
     setShowAdd(true);
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"snippets"} />;
   if (error && snippets.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (

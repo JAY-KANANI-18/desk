@@ -16,8 +16,10 @@ import {
   Pencil,
   UserPlus,
   UserPlus2,
+  Loader2,
 } from "lucide-react";
 import { contactsApi } from "../lib/contactApi";
+import { DataLoader } from "./Loader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DUMMY MODE
@@ -909,9 +911,7 @@ export const Contacts = () => {
         {/* Table */}
         <div className="flex-1 overflow-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
-              Loading contacts…
-            </div>
+            <DataLoader type={"contacts"} />
           ) : (
             <div className="min-w-[800px]">
               <table className="w-full">

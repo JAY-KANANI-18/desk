@@ -115,10 +115,12 @@ const WorkspaceSwitcher = () => {
       >
         {/* Workspace avatar */}
         <div
-          className={`w-6 h-6 rounded-md bg-gradient-to-br  ${activeWorkspace?.color || "from-blue-500 to-indigo-600"} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}
+          className={`w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold flex-shrink-0`}
         >
-          {activeWorkspace?.initial || activeWorkspace?.name?.slice(0, 2)}
+          {activeWorkspace?.initial || activeWorkspace?.name?.slice(0, 1)}
         </div>
+
+    
         <span className="text-sm font-semibold text-gray-800 max-w-[140px] truncate hidden sm:block">
           {activeWorkspace?.name}
         </span>

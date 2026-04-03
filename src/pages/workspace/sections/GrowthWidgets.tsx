@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Save, Check, Copy } from 'lucide-react';
 import {  MOCK_DATA } from '../api';
 import { Toggle } from '../components/Toggle';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { WidgetConfig } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const GrowthWidgets = () => {
   const [config, setConfig]   = useState<WidgetConfig | null>(null);
@@ -35,7 +36,7 @@ export const GrowthWidgets = () => {
     finally { setSaving(false); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"widget"} />;
   if (error || !config) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   const embedCode = `<script>

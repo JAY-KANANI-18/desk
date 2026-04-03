@@ -9,6 +9,7 @@ import React, {
 import { workspaceApi } from "../lib/workspaceApi";
 import { useOrganization } from "./OrganizationContext";
 import { useSocket } from "../socket/socket-provider";
+import { inboxApi } from "../lib/inboxApi";
 
 export interface Workspace {
   id: string;
@@ -28,6 +29,7 @@ interface WorkspaceContextType {
   workspaces: Workspace[] | null;
   activeWorkspace: Workspace | null;
   workspaceUsers: User[] | null;
+  uploadFile: (file: File, entityId: string) => Promise<string>;
   createWorkspace: (ws: WorkspaceCreate) => void;
   deleteWorkspace: (ws: Workspace) => void;
   setWorkspaces: (ws: Workspace[]) => void;
@@ -136,6 +138,25 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+    const uploadFile = useCallback(
+      async (file: File, entityId: string): Promise<string> => {
+        if (!activeWorkspace) throw new Error("No workspace");
+        const { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl( {
+          type: "user-avatar",
+          fileName: file.name,
+          contentType: file.type,
+          entityId,
+        });
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        return fileUrl;
+      },
+      [activeWorkspace]
+    );
+
   return (
     <WorkspaceContext.Provider
       value={{
@@ -143,6 +164,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveWorkspaceFunc,
         activeWorkspace,
         workspaceUsers,
+        uploadFile,
         setWorkspaces,
         createWorkspace,
         deleteWorkspace,

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, X, Info } from 'lucide-react';
 import { Toggle } from '../components/Toggle';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { ClosingNoteSettings } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const ClosingNotes = () => {
   const [settings, setSettings] = useState<ClosingNoteSettings | null>(null);
@@ -49,7 +50,7 @@ export const ClosingNotes = () => {
     catch { load(); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"closing notes"} />;
   if (error || !settings) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (

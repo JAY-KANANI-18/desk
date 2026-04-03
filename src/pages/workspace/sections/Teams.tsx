@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, X, Pencil, Users } from 'lucide-react';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { Team, TeamMember } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 // ─── Team modal ───────────────────────────────────────────────────────────────
 interface TeamModalProps {
@@ -170,7 +171,7 @@ export const Teams = () => {
 
   const getMemberById = (id: string) => members.find(m => m.id === id);
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"AI details"} />;
   if (error && teams.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (

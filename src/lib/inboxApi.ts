@@ -384,7 +384,7 @@ export const inboxApi = {
    */
   getPresignedUploadUrl(
     opts: {
-      type: "message-attachment";
+      type: "message-attachment" | "user-avatar";
       fileName: string;
       contentType: string;
       entityId: string;

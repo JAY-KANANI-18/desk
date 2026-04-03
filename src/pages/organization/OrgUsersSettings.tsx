@@ -3,6 +3,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
 import { organizationApi } from "../../lib/organizationApi";
+import { DataLoader } from "../Loader";
 
 const mock_org_roles = [
   { id: "owner", name: "ORG O wner" },
@@ -171,6 +172,7 @@ export const OrgUsersSettings = () => {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
     const { activeOrganization, inviteUser } = useOrganization();
 
@@ -195,6 +197,7 @@ export const OrgUsersSettings = () => {
   useEffect(() => {
     if(activeOrganization){
       refreshOrganizationsUsers();
+      setLoading(false);
     }
   }, [activeOrganization]);
 
@@ -230,6 +233,11 @@ export const OrgUsersSettings = () => {
         </button>
       </div>
 
+    { loading ? (
+      <div className="space-y-3 max-w-3xl">
+        <DataLoader type="users" />
+      </div>
+    ) : (
       <div className="space-y-3 max-w-3xl">
         {orgUsers?.map((user) => (
           <div
@@ -265,7 +273,7 @@ export const OrgUsersSettings = () => {
             </div>
           </div>
         ))}
-      </div>
+      </div>)}
 
       <InviteUserModal
         open={inviteOpen}

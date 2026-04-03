@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, Copy, Save, Check } from 'lucide-react';
-import { SectionLoader } from '../components/SectionLoader';
 import { SectionError } from '../components/SectionError';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { useWorkspace, Workspace } from '../../../context/WorkspaceContext';
+import { DataLoader } from '../../Loader';
 
 export const GeneralInfo = () => {
 
@@ -85,7 +85,7 @@ export const GeneralInfo = () => {
   };
 
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"workspace"} />;
 
   if (error || !form) return <SectionError message={error ?? 'Unknown error'} />;
 
@@ -97,14 +97,14 @@ export const GeneralInfo = () => {
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
 
-        <h2 className="text-base font-semibold text-gray-900 mb-5">
+        {/* <h2 className="text-base font-semibold text-gray-900 mb-5">
           Workspace identity
-        </h2>
+        </h2> */}
 
 
         <div className="flex items-start gap-6 mb-6">
 
-          <div className="flex flex-col items-center gap-2">
+          {/* <div className="flex flex-col items-center gap-2">
 
             <div className="w-20 h-20 rounded-xl overflow-hidden bg-indigo-600 flex items-center justify-center text-white text-3xl font-bold">
 
@@ -131,7 +131,7 @@ export const GeneralInfo = () => {
               className="hidden"
             />
 
-          </div>
+          </div> */}
 
 
           <div className="flex-1 space-y-4">

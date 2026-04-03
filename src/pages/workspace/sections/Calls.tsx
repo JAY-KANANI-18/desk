@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Phone, Save, Check } from 'lucide-react';
 import { Toggle } from '../components/Toggle';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { CallSettings } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
@@ -33,7 +33,7 @@ export const Calls = () => {
     finally { setSaving(false); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"call settings"} />;
   if (error || !settings) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (

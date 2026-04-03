@@ -5,6 +5,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { workspaceApi } from "../../../lib/workspaceApi";
+import { DataLoader } from "../../Loader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -719,12 +720,7 @@ export const Lifecycle = () => {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-64">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 size={28} className="animate-spin text-indigo-500" />
-        <p className="text-sm text-gray-400">Loading stages…</p>
-      </div>
-    </div>
+    <DataLoader type={"stages"} />
   );
 
   if (loadError) return (

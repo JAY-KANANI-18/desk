@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, X, Sparkles } from 'lucide-react';
-import { SectionLoader } from '../components/SectionLoader';
+
 import { SectionError } from '../components/SectionError';
 import type { AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
+import { DataLoader } from '../../Loader';
 
 export const AIPrompts = () => {
   const [prompts, setPrompts]         = useState<AIPrompt[]>([]);
@@ -52,7 +53,7 @@ export const AIPrompts = () => {
     catch { load(); }
   };
 
-  if (loading) return <SectionLoader />;
+  if (loading) return <DataLoader type={"prompts"} />;
   if (error && prompts.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
