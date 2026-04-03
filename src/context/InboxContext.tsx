@@ -150,7 +150,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const socket = useSocket();
   const { activeWorkspace } = useWorkspace();
-  const { refreshOrganizationsUsers } = useOrganization();
+  const { refreshWorkspaceUsers } = useWorkspace();
 
   const wsId = activeWorkspace?.id as string | undefined;
 
@@ -211,8 +211,8 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   ══════════════════════════════════════════════════════════════ */
 
   useEffect(() => {
-    refreshOrganizationsUsers();
-  }, [refreshOrganizationsUsers]);
+    refreshWorkspaceUsers();
+  }, [refreshWorkspaceUsers]);
 
   useEffect(() => {
     if (!wsId) return;

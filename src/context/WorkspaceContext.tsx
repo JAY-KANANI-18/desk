@@ -34,6 +34,7 @@ interface WorkspaceContextType {
   deleteWorkspace: (ws: Workspace) => void;
   setWorkspaces: (ws: Workspace[]) => void;
   setActiveWorkspaceFunc: (ws: Workspace) => void;
+  refreshWorkspaceUsers:() => void
 }
 
 interface User {
@@ -110,6 +111,25 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     loadUsers();
   }, [activeOrganization, activeWorkspace]);
 
+
+    const refreshWorkspaceUsers = useCallback(async () => {
+      const users = await workspaceApi.users();
+      const activityStatus = await workspaceApi.getAvailability();
+
+     const statusMap = new Map(
+          activityStatus.map((s: any) => [s.userId, s.activityStatus])
+        );
+
+        const usersWithStatus = users.map((u: User) => ({
+          ...u,
+          activityStatus: statusMap.get(u.id) ,
+        }));
+
+        setWorkspaceUsers(usersWithStatus);
+      
+    }, [activeOrganization,activeWorkspace]);
+  
+
   useEffect(() => {
     if (!activeWorkspace && organizations?.length) {
       setActiveWorkspaceFunc(organizations[0].workspaces[0]);
@@ -162,6 +182,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         workspaces,
         setActiveWorkspaceFunc,
+        refreshWorkspaceUsers,
         activeWorkspace,
         workspaceUsers,
         uploadFile,

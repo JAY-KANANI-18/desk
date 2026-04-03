@@ -22,6 +22,9 @@ import { contactsApi } from "../lib/contactApi";
 import { DataLoader } from "./Loader";
 import { workspaceApi } from "../lib/workspaceApi";
 import { LifecycleStage } from "./workspace/types";
+import { CHANNEL_META } from "./channels/ManageChannelPage";
+import { Tooltip } from "../components/ui/Tooltip";
+import { channelConfig } from "./inbox/data";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DUMMY MODE
@@ -1109,20 +1112,30 @@ export const Contacts = () => {
 
                           {/* Channel */}
                           <td className="px-4 py-3">
-                            {contact.channel === "instagram" ? (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 text-xs rounded-full border border-purple-200">
-                                📷 Instagram
-                              </span>
-                            ) : contact.channel === "whatsapp" ? (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full border border-green-200">
-                                💬 WhatsApp
-                              </span>
-                            ) : contact.channel === "email" ? (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full border border-indigo-200">
-                                ✉️ Email
-                              </span>
+                            {contact.contactChannels?.length ? (
+                              <div className="flex items-center gap-2">
+                                {contact.contactChannels.map(
+                                  (channel, index) => {
+                                    const icon =
+                                      channelConfig[channel?.channelType]?.icon;
+
+                                    return icon ? (
+                                      <Tooltip
+                                        key={`${channel?.channelType}-${index}`}
+                                        content={channel?.channelType + " : " + channel?.channelId}
+                                      >
+                                        <img
+                                          src={icon}
+                                          alt={channel?.channelType}
+                                          className="w-7 h-7 p-1  cursor-pointer"
+                                        />
+                                      </Tooltip>
+                                    ) : null;
+                                  },
+                                )}
+                              </div>
                             ) : (
-                              <span className="text-gray-400 text-sm">—</span>
+                              <span>-</span>
                             )}
                           </td>
 

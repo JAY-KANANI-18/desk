@@ -172,7 +172,7 @@ export const TeamSettings = () => {
     orgUsers,
     activeOrganization,
     inviteUser,
-    refreshOrganizationsUsers,
+    refreshWorkspaceUsers,
     
   } = useOrganization();
 
@@ -183,7 +183,7 @@ export const TeamSettings = () => {
 
   useEffect(() => {
     if (activeOrganization) {
-      refreshOrganizationsUsers();
+      refreshWorkspaceUsers();
     }
   }, [activeOrganization]);
 
@@ -194,12 +194,12 @@ export const TeamSettings = () => {
       user.workspaceAccess
     );
 
-    refreshOrganizationsUsers();
+    refreshWorkspaceUsers();
   };
 
   const handleDelete = async (userId) => {
     await organizationApi.deleteUser(userId);
-    refreshOrganizationsUsers();
+    refreshWorkspaceUsers();
   };
 
   return (

@@ -24,7 +24,7 @@ const SectionContent = () => {
   switch (activeItem) {
     case 'General info':      return <GeneralInfo />;
     // case 'Personal Settings': return <UserSettings />;
-    case 'User settings':     return <TeamSettings />;
+    case 'Workspace users':     return <TeamSettings />;
     case 'Teams':             return <Teams />;
     case 'Integrations':   return <Integrations />;
     case 'Growth widgets': return <GrowthWidgets />;

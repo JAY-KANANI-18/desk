@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { Tooltip } from "./ui/Tooltip";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nav items
@@ -66,7 +67,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   return (
     <div
       className={`relative bg-white border-r border-gray-200 flex flex-col items-center py-4
-  transition-all duration-300 ease-in-out
+  transition-all duration-300 ease-in-out overflow-visible
   ${isExpanded ? "w-56" : "w-16"} 
   h-screen`}
     >
@@ -87,36 +88,43 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
           alt="Organization Logo"
           className={` ${isExpanded ? "w-18 h-14" : "w-16 h-9"}  flex-shrink-0`}
         />
-
-        
       </div>
 
       {/* Main Nav */}
-      <nav className="flex flex-col gap-1 w-full px-2 overflow-hidden">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={handleNavClick}
-            title={!isExpanded ? item.label : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 h-10 rounded-lg transition-colors px-3 ${
-                isExpanded ? "w-full" : "w-10 justify-center"
-              } ${
-                isActive
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`
-            }
-          >
-            <item.icon size={20} className="flex-shrink-0" />
-            {isExpanded && (
-              <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
-                {item.label}
-              </span>
-            )}
-          </NavLink>
-        ))}
+      <nav className="flex flex-col gap-1 w-full px-2 overflow-visible">
+        {navItems.map((item) => {
+          const navLink = (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center gap-3 h-10 rounded-lg transition-colors px-3 ${
+                  isExpanded ? "w-full" : "w-10 justify-center"
+                } ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`
+              }
+            >
+              <item.icon size={20} className="flex-shrink-0" />
+              {isExpanded && (
+                <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
+                  {item.label}
+                </span>
+              )}
+            </NavLink>
+          );
+
+          return !isExpanded ? (
+            <Tooltip key={item.path} content={item.label}>
+              {navLink}
+            </Tooltip>
+          ) : (
+            <div key={item.path}>{navLink}</div>
+          );
+        })}
       </nav>
 
       {/* Bottom Items */}
@@ -134,18 +142,33 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
         {/* Settings */}
         <div className="relative">
-          <button
-            onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-            title={!isExpanded ? "Settings" : undefined}
-            className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
-              isExpanded ? "w-full" : "w-10 justify-center"
-            }`}
-          >
-            <Settings size={20} className="flex-shrink-0" />
-            {isExpanded && (
-              <span className="text-sm font-medium">Settings</span>
-            )}
-          </button>
+          {!isExpanded ? (
+            <Tooltip content="Settings">
+              <button
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
+                  isExpanded ? "w-full" : "w-10 justify-center"
+                }`}
+              >
+                <Settings size={20} className="flex-shrink-0" />
+                {isExpanded && (
+                  <span className="text-sm font-medium">Settings</span>
+                )}
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+              className={`flex items-center gap-3 h-10 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 px-3 ${
+                isExpanded ? "w-full" : "w-10 justify-center"
+              }`}
+            >
+              <Settings size={20} className="flex-shrink-0" />
+              {isExpanded && (
+                <span className="text-sm font-medium">Settings</span>
+              )}
+            </button>
+          )}
 
           {showSettingsMenu && (
             <>
