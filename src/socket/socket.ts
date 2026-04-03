@@ -2,11 +2,13 @@ import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 
+const SOCKET_BASE =  import.meta.env.VITE_SOCKET_URL || "http://localhost:3000/api";
+
 export function connectSocket(token: string): Socket {
 
   if (socket) return socket;   // prevents duplicate connections
 
-  socket = io("http://localhost:3000/inbox", {
+  socket = io(`${SOCKET_BASE}/inbox`, {
     auth: { token },
   });
 
