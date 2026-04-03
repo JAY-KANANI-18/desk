@@ -204,15 +204,13 @@ export const Onboarding = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
-            <MessageSquare className="text-white" size={24} />
-          </div>
+          
           <h1 className="text-2xl font-bold text-gray-900">
-            {"Set up your workspace"}
+            {"Set up your organization"}
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          {/* <p className="text-gray-500 mt-1 text-sm">
             {"Tell us a bit about your organization"}
-          </p>
+          </p> */}
         </div>
 
         {/* Card */}
