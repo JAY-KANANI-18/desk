@@ -354,7 +354,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
           <div className="h-px bg-gray-100" />
 
           {/* IMAP */}
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
               Incoming mail — IMAP
             </p>
@@ -380,7 +380,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
               onChange={set('imapSecure')}
               options={SECURE_OPTIONS}
             />
-          </div>
+          </div> */}
 
           {error && (
             <div className="flex items-center gap-2 text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">

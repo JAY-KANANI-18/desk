@@ -12,8 +12,8 @@ import { ChannelApi } from '../../../lib/channelApi';
 export const WebsiteChatChannelSidebar = () => (
   <div className="flex flex-col gap-6 p-6 h-full">
     <div className="flex items-center gap-2.5">
-      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-        <MessageSquare size={20} className="text-blue-600" />
+       <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0">
+        <img src="https://cdn.simpleicons.org/googlechat" className="w-10 h-10" alt="Website Chat" />
       </div>
       <div>
         <p className="text-xs font-semibold text-gray-900 leading-none">Website Chat</p>
@@ -423,3 +423,4 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
     </div>
   );
 };
+

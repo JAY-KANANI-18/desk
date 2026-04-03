@@ -5,7 +5,7 @@ import { FacebookChannel, FacebookChannelSidebar } from '../workspace/channels/F
 import { InstagramChannel, InstagramChannelSidebar } from '../workspace/channels/InstagramChannel';
 import { EmailChannel, EmailChannelSidebar } from '../workspace/channels/EmailChannel';
 import { GmailChannel } from '../workspace/channels/GmailChannel';
-import { WebsiteChatChannel } from '../workspace/channels/WebsiteChatChannel';
+import { WebsiteChatChannel, WebsiteChatChannelSidebar } from '../workspace/channels/WebsiteChatChannel';
 import type { Channel as WsChannel } from '../workspace/types';
 import { useWorkspace } from '../../context/WorkspaceContext';
 
@@ -56,8 +56,10 @@ const CHANNEL_META: Record<string, {
   website_chat: {
     name: 'Website Chat',
     description: 'Add a chat widget to your website.',
-    icon: 'webchat',
+    icon: 'googlechat',
     color: 'bg-blue-800',
+    SidebarContent: WebsiteChatChannelSidebar,
+
   },
 };
 
