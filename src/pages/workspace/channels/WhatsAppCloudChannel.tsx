@@ -481,7 +481,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
         </div>
 
         {/* Setup guide */}
-        <SetupGuide />
+        {/* <SetupGuide /> */}
       </div>
 
       <p className="text-[11px] text-gray-400 text-center">
