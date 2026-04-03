@@ -92,7 +92,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       </div>
 
       {/* Main Nav */}
-      <nav className="flex-1 flex flex-col gap-1 w-full px-2 overflow-hidden">
+      <nav className="flex flex-col gap-1 w-full px-2 overflow-hidden">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -120,7 +120,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       </nav>
 
       {/* Bottom Items */}
-      <div className="flex flex-col gap-1 w-full px-2 mt-auto">
+      <div className="flex flex-col gap-1 w-full px-2 ">
         {/* Tasks */}
         {/* <button
           title={!isExpanded ? "Tasks" : undefined}
@@ -153,7 +153,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                 className="fixed inset-0 z-10"
                 onClick={() => setShowSettingsMenu(false)}
               />
-              <div className="absolute left-full bottom-0 ml-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+              <div className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                 <div className="p-2">
                   {/* <NavLink
                     to="/channels"
