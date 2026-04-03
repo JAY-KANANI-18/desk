@@ -218,8 +218,7 @@ export const contactsApi = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(contact),
         });
-        if (!res.ok) throw new Error("Failed to create contact");
-        return res.json();
+        return res;
     },
 
     /** PUT /contacts/:id — updates a contact */

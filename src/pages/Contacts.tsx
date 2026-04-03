@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { contactsApi } from "../lib/contactApi";
 import { DataLoader } from "./Loader";
+import { workspaceApi } from "../lib/workspaceApi";
+import { LifecycleStage } from "./workspace/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DUMMY MODE
@@ -135,7 +137,7 @@ function contactsToCSV(contacts: Contact[]): string {
       // c.tags.join(";"),
     ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",")
+      .join(","),
   );
   return [CSV_HEADERS.join(","), ...rows].join("\n");
 }
@@ -152,7 +154,7 @@ function sampleToCSV(): string {
       // c.tags.join(";"),
     ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",")
+      .join(","),
   );
   return [CSV_HEADERS.join(","), ...rows].join("\n");
 }
@@ -207,7 +209,7 @@ const SEED_CONTACTS: Contact[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 export const Contacts = () => {
   const [contacts, setContacts] = useState<Contact[]>(
-    DUMMY_MODE ? SEED_CONTACTS : []
+    DUMMY_MODE ? SEED_CONTACTS : [],
   );
   const [loading, setLoading] = useState(!DUMMY_MODE);
 
@@ -227,7 +229,7 @@ export const Contacts = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLifecycle, setSelectedLifecycle] = useState<string | null>(
-    null
+    null,
   );
   const [lifecycleExpanded, setLifecycleExpanded] = useState(true);
   const [segmentsExpanded, setSegmentsExpanded] = useState(true);
@@ -240,6 +242,9 @@ export const Contacts = () => {
     msg: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [stages, setStages] = useState<
+    { name: string; color: string; count: number }[]
+  >([]);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [editForm, setEditForm] = useState<
     Omit<Contact, "id"> & { id: number }
@@ -253,6 +258,27 @@ export const Contacts = () => {
     channel: "email",
     tags: [],
   });
+
+  const loadRef = useRef<() => Promise<void>>();
+
+  // ── Load ─────────────────────────────────────────────────────────────────
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data: LifecycleStage[] = await workspaceApi.getLifecycleStages();
+      setStages(data);
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  loadRef.current = load;
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // Import modal state
   const [importDragging, setImportDragging] = useState(false);
@@ -329,12 +355,12 @@ export const Contacts = () => {
   // ── Pagination ────────────────────────────────────────────────────────────
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredContacts.length / PAGE_SIZE)
+    Math.ceil(filteredContacts.length / PAGE_SIZE),
   );
   const safePage = Math.min(currentPage, totalPages);
   const paginatedContacts = filteredContacts.slice(
     (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE
+    safePage * PAGE_SIZE,
   );
   console.log({ paginatedContacts });
 
@@ -376,7 +402,7 @@ export const Contacts = () => {
       setSelectedIds(new Set());
       showToast(
         "success",
-        `${ids.length} contact${ids.length > 1 ? "s" : ""} deleted.`
+        `${ids.length} contact${ids.length > 1 ? "s" : ""} deleted.`,
       );
     } else {
       try {
@@ -385,7 +411,7 @@ export const Contacts = () => {
         setSelectedIds(new Set());
         showToast(
           "success",
-          `${ids.length} contact${ids.length > 1 ? "s" : ""} deleted.`
+          `${ids.length} contact${ids.length > 1 ? "s" : ""} deleted.`,
         );
       } catch {
         showToast("error", "Failed to delete contacts.");
@@ -431,6 +457,7 @@ export const Contacts = () => {
       lastName: editForm.lastName,
       email: editForm.email,
       phone: editForm.phone,
+      lifecycleId: editForm.lifecycle,
       // lifecycle: editForm.lifecycle || "New Lead",
       // channel: editForm.channel,
       // tags: editForm?.tags,
@@ -438,7 +465,9 @@ export const Contacts = () => {
 
     if (DUMMY_MODE) {
       setContacts((prev) =>
-        prev.map((c) => (c.id === editingContact.id ? { ...c, ...updates } : c))
+        prev.map((c) =>
+          c.id === editingContact.id ? { ...c, ...updates } : c,
+        ),
       );
       setEditingContact(null);
       showToast("success", "Contact updated.");
@@ -446,10 +475,10 @@ export const Contacts = () => {
       try {
         const updated = await contactsApi.updateContact(
           editingContact.id,
-          updates
+          updates,
         );
         setContacts((prev) =>
-          prev.map((c) => (c.id === editingContact.id ? updated : c))
+          prev.map((c) => (c.id === editingContact.id ? updated : c)),
         );
         setEditingContact(null);
         showToast("success", "Contact updated.");
@@ -466,7 +495,7 @@ export const Contacts = () => {
       lastName: newContact.lastName,
       email: newContact.email,
       phone: newContact.phone,
-      // lifecycle: newContact.lifecycle || "New Lead",
+      lifecycleId: newContact.lifecycle,
       // channel: "email",
       // tags: newContact.tags,
     };
@@ -595,7 +624,7 @@ export const Contacts = () => {
       setShowImportModal(false);
       showToast(
         "success",
-        `${newContacts.length} contact${newContacts.length > 1 ? "s" : ""} imported.`
+        `${newContacts.length} contact${newContacts.length > 1 ? "s" : ""} imported.`,
       );
     } else {
       try {
@@ -604,7 +633,7 @@ export const Contacts = () => {
         setShowImportModal(false);
         showToast(
           "success",
-          `${created.length} contact${created.length > 1 ? "s" : ""} imported.`
+          `${created.length} contact${created.length > 1 ? "s" : ""} imported.`,
         );
       } catch {
         showToast("error", "Import failed. Please try again.");
@@ -612,19 +641,13 @@ export const Contacts = () => {
     }
   };
 
-  // ── Lifecycle color ───────────────────────────────────────────────────────
-  const getLifecycleColor = (lifecycle: string) => {
-    const stage = lifecycleStages.find((s) => s.name === lifecycle);
-    return stage?.color || "bg-gray-500";
-  };
-
   // ── Column sort click helper ──────────────────────────────────────────────
   const handleColSort = (field: SortField, defaultIdx: number) => {
     const cur = sortOption?.field === field ? sortOption.dir : null;
     setSortOption(
       SORT_OPTIONS.find(
-        (o) => o.field === field && o.dir === (cur === "asc" ? "desc" : "asc")
-      ) || SORT_OPTIONS[defaultIdx]
+        (o) => o.field === field && o.dir === (cur === "asc" ? "desc" : "asc"),
+      ) || SORT_OPTIONS[defaultIdx],
     );
   };
 
@@ -1023,114 +1046,129 @@ export const Contacts = () => {
                       </td>
                     </tr>
                   ) : (
-                    paginatedContacts.map((contact) => (
-                      <tr
-                        key={contact.id}
-                        className={`group hover:bg-gray-50 transition-colors ${selectedIds.has(contact.id) ? "bg-indigo-50" : ""}`}
-                      >
-                        {/* Checkbox */}
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            className="rounded cursor-pointer"
-                            checked={selectedIds.has(contact.id)}
-                            onChange={() => toggleSelectOne(contact.id)}
-                          />
-                        </td>
+                    paginatedContacts.map((contact) => {
+                      const stage = stages.find(
+                        (s) => s.id === contact.lifecycleId,
+                      );
 
-                        {/* Name */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white flex-shrink-0 ${contact.lifecycle === "Hot Lead" ? "bg-red-500" : "bg-gray-700"}`}
-                            >
-                              {contact.firstName[0]?.toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900 text-sm">
-                                {contact.firstName} {contact.lastName}
+                      return (
+                        <tr
+                          key={contact.id}
+                          className={`group hover:bg-gray-50 transition-colors ${selectedIds.has(contact.id) ? "bg-indigo-50" : ""}`}
+                        >
+                          {/* Checkbox */}
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              className="rounded cursor-pointer"
+                              checked={selectedIds.has(contact.id)}
+                              onChange={() => toggleSelectOne(contact.id)}
+                            />
+                          </td>
+
+                          {/* Name */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center
+                    text-sm font-semibold bg-gray-200`}
+                              >
+                                {contact?.avatarUrl ? (
+                                  <img
+                                    src={contact.avatarUrl}
+                                    alt={contact.firstName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span>
+                                    {contact?.firstName
+                                      ?.charAt(0)
+                                      ?.toUpperCase() ?? "?"}
+                                  </span>
+                                )}
                               </div>
-                              {contact?.tags?.length > 0 && (
-                                <div className="flex gap-1 mt-0.5">
-                                  {contact?.tags?.map((tag) => (
-                                    <span
-                                      key={tag}
-                                      className="text-xs px-1.5 py-0.5 bg-white text-gray-500 rounded"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
+                              <div>
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {contact.firstName} {contact.lastName}
                                 </div>
-                              )}
+                                {contact?.tags?.length > 0 && (
+                                  <div className="flex gap-1 mt-0.5">
+                                    {contact?.tags?.map((tag) => (
+                                      <span
+                                        key={tag}
+                                        className="text-xs px-1.5 py-0.5 bg-white text-gray-500 rounded"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Channel */}
-                        <td className="px-4 py-3">
-                          {contact.channel === "instagram" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 text-xs rounded-full border border-purple-200">
-                              📷 Instagram
+                          {/* Channel */}
+                          <td className="px-4 py-3">
+                            {contact.channel === "instagram" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 text-xs rounded-full border border-purple-200">
+                                📷 Instagram
+                              </span>
+                            ) : contact.channel === "whatsapp" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full border border-green-200">
+                                💬 WhatsApp
+                              </span>
+                            ) : contact.channel === "email" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full border border-indigo-200">
+                                ✉️ Email
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-sm">—</span>
+                            )}
+                          </td>
+
+                          {/* Lifecycle */}
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium">
+                              {stage ? stage.emoji + stage.name : "—"}
                             </span>
-                          ) : contact.channel === "whatsapp" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full border border-green-200">
-                              💬 WhatsApp
+                          </td>
+
+                          {/* Email */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-700">
+                              {contact.email ? contact.email : "—"}{" "}
                             </span>
-                          ) : contact.channel === "email" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full border border-indigo-200">
-                              ✉️ Email
+                          </td>
+
+                          {/* Phone */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-700">
+                              {contact.phone ? contact.phone : "—"}
                             </span>
-                          ) : (
-                            <span className="text-gray-400 text-sm">—</span>
-                          )}
-                        </td>
+                          </td>
 
-                        {/* Lifecycle */}
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white ${getLifecycleColor(contact.lifecycle)}`}
-                          >
-                            {contact.lifecycle === "Hot Lead" && "🔥 "}
-                            {contact.lifecycle === "New Lead" && "📊 "}
-                            {contact.lifecycle}
-                          </span>
-                        </td>
-
-                        {/* Email */}
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-gray-700">
-                            {contact.email}
-                          </span>
-                        </td>
-
-                        {/* Phone */}
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-gray-700">
-                            {contact.phone}
-                          </span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => openEditModal(contact)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                              title="Edit contact"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteOne(contact.id)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              title="Delete contact"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          {/* Actions */}
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => openEditModal(contact)}
+                                className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                title="Edit contact"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteOne(contact.id)}
+                                className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete contact"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -1156,7 +1194,7 @@ export const Contacts = () => {
                         (p) =>
                           p === 1 ||
                           p === totalPages ||
-                          Math.abs(p - safePage) <= 1
+                          Math.abs(p - safePage) <= 1,
                       )
                       .reduce<(number | "…")[]>((acc, p, idx, arr) => {
                         if (
@@ -1183,7 +1221,7 @@ export const Contacts = () => {
                           >
                             {p}
                           </button>
-                        )
+                        ),
                       )}
                     <button
                       onClick={() =>
@@ -1296,10 +1334,12 @@ export const Contacts = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 >
                   <option value="">Select Lifecycle</option>
-                  <option value="New Lead">New Lead</option>
-                  <option value="Hot Lead">Hot Lead</option>
-                  <option value="Payment">Payment</option>
-                  <option value="Customer">Customer</option>
+                  {stages.map((stage) => (
+                    <option key={stage.id} value={stage.id}>
+                      {stage.emoji}
+                      {stage.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
