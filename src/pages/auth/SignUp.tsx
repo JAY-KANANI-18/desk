@@ -114,7 +114,7 @@ export const SignUp = () => {
   };
 
   const handleGoogle = async () => {
-    setGoogleLoading(true);
+    // setGoogleLoading(true);
     await loginWithGoogle();
   };
 

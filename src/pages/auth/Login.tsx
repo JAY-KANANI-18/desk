@@ -41,7 +41,7 @@ export const Login = () => {
   };
 
   const handleGoogle = async () => {
-    setGoogleLoading(true);
+    // setGoogleLoading(true);
     await loginWithGoogle();
   };
 
