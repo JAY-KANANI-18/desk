@@ -494,7 +494,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
         </div>
 
         {/* Setup guide */}
-        <SetupGuide />
+        {/* <SetupGuide /> */}
       </div>
 
       <p className="text-[11px] text-gray-400 text-center">

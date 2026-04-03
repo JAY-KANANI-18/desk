@@ -308,7 +308,7 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect, workspace
           </span>
         </div>
 
-        <SetupGuide />
+        {/* <SetupGuide /> */}
 
         <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
           <div>
