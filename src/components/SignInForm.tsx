@@ -20,7 +20,7 @@ export const SignInForm = () => {
             >
               <div className="bg-no-repeat box-border caret-transparent text-nowrap px-2">
                 <img
-                  src="https://c.animaapp.com/ml7j8uraO4VPFm/assets/icon_google.svg"
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                   alt="Google g"
                   className="bg-no-repeat box-border caret-transparent h-[18px] max-w-full text-nowrap w-[18px]"
                 />

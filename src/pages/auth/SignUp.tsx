@@ -156,7 +156,7 @@ export const SignUp = () => {
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <img
-                    src="https://c.animaapp.com/ml7j8uraO4VPFm/assets/icon_google.svg"
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
                     className="w-5 h-5"
                   />
