@@ -475,9 +475,9 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                 )}
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100 flex-wrap gap-3">
-                  <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                  {/* <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
                     <Lock size={10} /> Encrypted at rest
-                  </p>
+                  </p> */}
                   <button
                     onClick={handleCredentialsConnect}
                     disabled={connecting}
