@@ -167,7 +167,7 @@ export const ConnectChannelPage = () => {
       msgs: wsChannel.msgs,
       connectedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
-    navigate('/channels', { state: { newChannel: connected } });
+    navigate('/channels');
   };
 
   const SidebarContent = meta.SidebarContent;
