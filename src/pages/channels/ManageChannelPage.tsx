@@ -225,9 +225,9 @@ export const CHANNEL_META: Record<string, {
     navItems: [
       { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
       { id: 'templates',     label: 'Templates',     icon: <FileText size={14} /> },
-      { id: 'profile',       label: 'Profile',       icon: <User size={14} /> },
-      { id: 'troubleshoot',  label: 'Troubleshoot',  icon: <Wrench size={14} /> },
-      { id: 'catalog',       label: 'Meta Catalog',  icon: <ShoppingBag size={14} /> },
+      // { id: 'profile',       label: 'Profile',       icon: <User size={14} /> },
+      // { id: 'troubleshoot',  label: 'Troubleshoot',  icon: <Wrench size={14} /> },
+      // { id: 'catalog',       label: 'Meta Catalog',  icon: <ShoppingBag size={14} /> },
     ],
     additionalResources: [
       { label: 'WhatsApp Cloud API docs', href: 'https://developers.facebook.com/docs/whatsapp' },
@@ -241,9 +241,9 @@ export const CHANNEL_META: Record<string, {
     color: 'bg-indigo-600',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
-      { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
-      { id: 'chat_menu',      label: 'Chat Menu',        icon: <Menu size={14} /> },
-      { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
+      // { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
+      // { id: 'chat_menu',      label: 'Chat Menu',        icon: <Menu size={14} /> },
+      // { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
     ],
     additionalResources: [
       { label: 'Messenger Platform docs', href: 'https://developers.facebook.com/docs/messenger-platform' },
@@ -257,9 +257,9 @@ export const CHANNEL_META: Record<string, {
     color: 'bg-gradient-to-br from-purple-500 to-pink-500',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
-      { id: 'icebreakers',    label: 'Ice-Breakers',    icon: <MessageCircle size={14} />, badge: 'New' },
-      { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
-      { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
+      // { id: 'icebreakers',    label: 'Ice-Breakers',    icon: <MessageCircle size={14} />, badge: 'New' },
+      // { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
+      // { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
     ],
     additionalResources: [
       { label: 'Instagram Messaging API docs', href: 'https://developers.facebook.com/docs/instagram-api/guides/business-messaging' },
