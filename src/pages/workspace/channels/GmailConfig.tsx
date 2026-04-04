@@ -67,7 +67,7 @@ export const GmailConfiguration = ({
       <SaveButton saving={saving} saved={saved} error={error}
         onClick={() => save(() => ChannelApi.updateGmailChannel(String(channel.id), { email }))}
         label="Save Settings" />
-      <DangerZone channelLabel="Gmail" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="Gmail" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

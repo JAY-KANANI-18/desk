@@ -117,7 +117,7 @@ export const WebsiteChatConfiguration = ({
 
       <SaveButton saving={saving} saved={saved} error={error}
         onClick={() => save(() => ChannelApi.updateWebsiteChatChannel(String(channel.id), { welcomeMessage, awayMessage, primaryColor, operatorName, position }))} />
-      <DangerZone channelLabel="Website Chat" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="Website Chat" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

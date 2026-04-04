@@ -121,7 +121,7 @@ export const InstagramConfiguration = ({
       </div>
 
       <SaveButton saving={saving} saved={saved} error={error} onClick={handleSave} />
-      <DangerZone channelLabel="Instagram" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="Instagram" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

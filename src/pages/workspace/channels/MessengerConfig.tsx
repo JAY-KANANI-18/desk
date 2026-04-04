@@ -110,7 +110,7 @@ export const MessengerConfiguration = ({
 
       <SaveButton saving={saving} saved={saved} error={error}
         onClick={() => save(() => ChannelApi.updateMessengerChannel(String(channel.id), { accessToken, pageId }))} />
-      <DangerZone channelLabel="Messenger" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="Messenger" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

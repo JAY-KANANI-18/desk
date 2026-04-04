@@ -223,7 +223,7 @@ export const WhatsAppConfiguration = ({
       <SaveButton saving={saving} saved={saved} error={error} onClick={handleSave} />
 
       {/* Danger Zone */}
-      <DangerZone channelLabel="WhatsApp" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="WhatsApp" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

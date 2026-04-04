@@ -146,8 +146,8 @@ export const EditableField = ({ label, value, onChange, hint, placeholder, type 
 );
 
 // ─── DangerZone (shared by all configs) ──────────────────────────────────────
-export const DangerZone = ({ channelLabel, onDisconnect }: {
-  channelLabel: string; onDisconnect: () => void;
+export const DangerZone = ({ channelLabel, onDisconnect,channelId }: {
+  channelLabel: string; onDisconnect: () => void; channelId:string;
 }) => {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -155,7 +155,7 @@ export const DangerZone = ({ channelLabel, onDisconnect }: {
 
   const handleDisconnect = () =>
     save(async () => {
-      const r = await ChannelApi.disconnectChannel(''); // channelId passed from parent
+      const r = await ChannelApi.deleteChannel(channelId); // channelId passed from parent
       if (r.success) { onDisconnect(); return { success: true }; }
       return r;
     });
@@ -178,8 +178,9 @@ export const DangerZone = ({ channelLabel, onDisconnect }: {
             <div>
               <p className="text-sm font-semibold text-gray-900">Disconnect this channel</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Permanently disconnects this {channelLabel} channel. Message history is preserved.
+                Permanently disconnects this {channelLabel} channel. 
               </p>
+                {/* Message history is preserved. */}
               {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
             </div>
             {!confirm ? (

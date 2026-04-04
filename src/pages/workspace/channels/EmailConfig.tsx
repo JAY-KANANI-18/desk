@@ -155,7 +155,7 @@ export const EmailConfiguration = ({
       </div>
 
       <SaveButton saving={saving} saved={saved} error={error} onClick={handleSave} />
-      <DangerZone channelLabel="Email" onDisconnect={onDisconnect} />
+      <DangerZone channelLabel="Email" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );
 };

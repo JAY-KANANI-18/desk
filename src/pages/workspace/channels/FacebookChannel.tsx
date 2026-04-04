@@ -485,7 +485,12 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                   >
                     {connecting
                       ? <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" /> Connecting…</>
-                      : <><MessageSquare size={12} /> Connect Messenger</>}
+                      : <>
+                      
+                      {/* <MessageSquare size={12} />  */}
+                                {/* <img src="https://cdn.simpleicons.org/facebook/ffffff" className="w-3 h-3" /> */}
+
+                      Connect Messenger</>}
                   </button>
                 </div>
               </div>
