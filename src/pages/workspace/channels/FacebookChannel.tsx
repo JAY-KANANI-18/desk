@@ -139,13 +139,20 @@ interface MessengerOAuthPopupProps {
 
 export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: MessengerOAuthPopupProps) => {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'idle' | 'waiting' | 'exchanging' | 'saving'>('idle');
+  const [step, setStep] = useState<'idle' | 'waiting' | 'exchanging' | 'selecting' | 'saving'>('idle');
+  
+  // Page selection state
+  const [pages, setPages] = useState<Page[]>([]);
+  const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  const [pagesData, setPagesData] = useState<any[]>([]);
+  const [showPageSelector, setShowPageSelector] = useState(false);
 
   const stepLabel = {
-    idle:       'Connect with Meta',
+    idle:       'Connect with Facebook',
     waiting:    'Waiting for login…',
-    exchanging: 'Verifying account…',
-    saving:     'Setting up pages…',
+    exchanging: 'Fetching your pages…',
+    selecting:  'Select pages…',
+    saving:     'Connecting pages…',
   }[step];
 
   const handleConnect = async () => {
@@ -153,95 +160,166 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
     setStep('waiting');
 
     try {
-      // Step 1: Get OAuth URL from BE
-      // GET /webhooks/messenger/auth/url?workspaceId=xxx&redirectUri=xxx
       const redirectUri = import.meta.env.VITE_MESSENGER_REDIRECT_URI;
       const { url } = await ChannelApi.getMessengerAuthUrl(workspaceId, redirectUri);
 
-      // Step 2: Open Facebook OAuth popup
       const popup = window.open(url, 'messenger_oauth', 'width=650,height=700,scrollbars=yes');
       if (!popup) {
-        throw new Error('Popup blocked. Please allow popups for this site and try again.');
+        throw new Error('Popup blocked. Please allow popups for this site.');
       }
 
-      // Step 3: Wait for code from popup
       const code = await waitForCode(popup);
       setStep('exchanging');
 
-      // Step 4: Exchange code via BE
-      // POST /webhooks/messenger/auth/callback
-      setStep('saving');
-      const result = await ChannelApi.exchangeMessengerCode(code, workspaceId, redirectUri);
+      // Get pages list — don't connect yet
+      const result = await ChannelApi.getMessengerPages(code, workspaceId, redirectUri);
+      
+      // Store pages data for later
+      setPagesData(result.pages);
+      setPages(result.pages);
+      
+      // Pre-select all pages
+      setSelectedPageIds(result.pages.map((p: any) => p.id));
+      
+      // Show page selector
+      setShowPageSelector(true);
+      setStep('selecting');
+      setLoading(false);
 
-      // result.channels = array of pages connected
-      if (result.channels?.length) {
-        onSuccess(result.channels[0]);
-      } else {
-        throw new Error('No Facebook Pages found. Make sure you have admin access to at least one Page.');
-      }
     } catch (e: any) {
-      onError(e?.message ?? 'Messenger connection failed. Please try again.');
-    } finally {
+      onError(e?.message ?? 'Connection failed. Please try again.');
       setLoading(false);
       setStep('idle');
     }
   };
 
-  const waitForCode = (popup: Window): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      // Timeout after 5 minutes
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error('Login timed out. Please try again.'));
-      }, 5 * 60 * 1000);
+  const handleConfirmPages = async () => {
+    if (!selectedPageIds.length) {
+      onError('Please select at least one page.');
+      return;
+    }
 
-      // Method 1: postMessage from redirect page
-      const onMessage = (event: MessageEvent) => {
-        console.log({event});
-        
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "instagram_oauth" && event.data?.code) {
-          cleanup();
-          resolve(event.data.code);
-        }
-        if (event.data?.type === 'MESSENGER_OAUTH_ERROR') {
-          cleanup();
-          reject(new Error(event.data.error ?? 'OAuth failed'));
-        }
-      };
+    setLoading(true);
+    setStep('saving');
 
-      // Method 2: Poll popup URL for code param (fallback — no callback page needed)
-      const poll = setInterval(() => {
-        try {
-          if (popup.closed) {
-            cleanup();
-            reject(new Error('Login window was closed.'));
-            return;
-          }
-          const popupUrl = popup.location.href;
-          if (popupUrl && popupUrl.includes('code=')) {
-            const code = new URL(popupUrl).searchParams.get('code');
-            if (code) {
-              popup.close();
-              cleanup();
-              resolve(code);
-            }
-          }
-        } catch {
-          // Cross-origin (facebook.com) — normal while on FB, keep polling
-        }
-      }, 500);
+    try {
+      const result = await ChannelApi.connectSelectedPages({
+        workspaceId,
+        selectedPageIds,
+        pages: pagesData,
+      });
 
-      const cleanup = () => {
-        clearTimeout(timeout);
-        clearInterval(poll);
-        window.removeEventListener('message', onMessage);
-      };
-
-      window.addEventListener('message', onMessage);
-    });
+      if (result.channels?.length) {
+        onSuccess(result.channels[0]);
+      } else {
+        throw new Error('Failed to connect pages.');
+      }
+    } catch (e: any) {
+      onError(e?.message ?? 'Failed to connect pages.');
+    } finally {
+      setLoading(false);
+      setStep('idle');
+      setShowPageSelector(false);
+    }
   };
 
+  const togglePage = (pageId: string) => {
+    setSelectedPageIds(prev =>
+      prev.includes(pageId)
+        ? prev.filter(id => id !== pageId)
+        : [...prev, pageId]
+    );
+  };
+
+  // ── Page Selector UI ──
+  if (showPageSelector) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">
+            Select Pages to connect
+          </p>
+          <p className="text-[11px] text-gray-400 mt-0.5">
+            Choose which Facebook Pages to add to your inbox
+          </p>
+        </div>
+
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {pages.map((page: any) => (
+            <div
+              key={page.id}
+              onClick={() => togglePage(page.id)}
+              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                ${selectedPageIds.includes(page.id)
+                  ? 'border-indigo-300 bg-indigo-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+            >
+              {/* Checkbox */}
+              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
+                ${selectedPageIds.includes(page.id)
+                  ? 'bg-indigo-600 border-indigo-600'
+                  : 'border-gray-300'
+                }`}>
+                {selectedPageIds.includes(page.id) && (
+                  <CheckCircle size={10} className="text-white" />
+                )}
+              </div>
+
+              {/* Page icon */}
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                <img
+                  src="https://cdn.simpleicons.org/facebook/4f46e5"
+                  className="w-4 h-4"
+                  alt=""
+                />
+              </div>
+
+              {/* Page info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-900 truncate">
+                  {page.name}
+                </p>
+                <p className="text-[10px] text-gray-400">{page.category}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2 border-t border-gray-100">
+          <button
+            onClick={() => {
+              setShowPageSelector(false);
+              setStep('idle');
+              setPagesData([]);
+              setPages([]);
+              setSelectedPageIds([]);
+            }}
+            className="flex-1 px-4 py-2.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmPages}
+            disabled={loading || !selectedPageIds.length}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                Connecting…
+              </>
+            ) : (
+              `Connect ${selectedPageIds.length} Page${selectedPageIds.length > 1 ? 's' : ''}`
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Default connect button ──
   return (
     <button
       onClick={handleConnect}
