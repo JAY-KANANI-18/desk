@@ -8,6 +8,7 @@ import { GmailChannel } from '../workspace/channels/GmailChannel';
 import { WebsiteChatChannel, WebsiteChatChannelSidebar } from '../workspace/channels/WebsiteChatChannel';
 import type { Channel as WsChannel } from '../workspace/types';
 import { useWorkspace } from '../../context/WorkspaceContext';
+import { useChannel } from '../../context/ChannelContext';
 
 // ─── Channel metadata ─────────────────────────────────────────────────────────
 const CHANNEL_META: Record<string, {
@@ -133,7 +134,8 @@ export const ConnectChannelPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const {activeWorkspace} = useWorkspace();
-
+  const {refreshChannels} = useChannel()
+ 
   const meta = channelId ? CHANNEL_META[channelId] : null;
   const Component = channelId ? CHANNEL_COMPONENTS[channelId] : null;
 
@@ -155,7 +157,7 @@ export const ConnectChannelPage = () => {
     );
   }
 
-  const handleConnect = (wsChannel: WsChannel) => {
+  const handleConnect = async (wsChannel: WsChannel) => {
     const connected: ConnectedChannel = {
       id: wsChannel.id,
       name: wsChannel.name,
@@ -167,6 +169,7 @@ export const ConnectChannelPage = () => {
       msgs: wsChannel.msgs,
       connectedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
+   await refreshChannels()
     navigate('/channels');
   };
 

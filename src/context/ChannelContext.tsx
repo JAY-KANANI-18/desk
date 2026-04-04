@@ -31,6 +31,7 @@ interface Channel {
 
 interface OrganizationContextType {
   channels: any;
+  refreshChannels:any
   refreshOrganizationsUsers: () => Promise<any>;
   organizationSetup: () => Promise<any>;
   setActiveOrganizationFunc: (org: Organization) => Promise<any>;
