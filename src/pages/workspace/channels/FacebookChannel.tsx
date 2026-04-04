@@ -192,6 +192,61 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
       setStep('idle');
     }
   };
+  
+  const waitForCode = (popup: Window): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // Timeout after 5 minutes
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('Login timed out. Please try again.'));
+      }, 5 * 60 * 1000);
+
+      // Method 1: postMessage from redirect page
+      const onMessage = (event: MessageEvent) => {
+        console.log({event});
+        
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === "instagram_oauth" && event.data?.code) {
+          cleanup();
+          resolve(event.data.code);
+        }
+        if (event.data?.type === 'MESSENGER_OAUTH_ERROR') {
+          cleanup();
+          reject(new Error(event.data.error ?? 'OAuth failed'));
+        }
+      };
+
+      // Method 2: Poll popup URL for code param (fallback — no callback page needed)
+      const poll = setInterval(() => {
+        try {
+          if (popup.closed) {
+            cleanup();
+            reject(new Error('Login window was closed.'));
+            return;
+          }
+          const popupUrl = popup.location.href;
+          if (popupUrl && popupUrl.includes('code=')) {
+            const code = new URL(popupUrl).searchParams.get('code');
+            if (code) {
+              popup.close();
+              cleanup();
+              resolve(code);
+            }
+          }
+        } catch {
+          // Cross-origin (facebook.com) — normal while on FB, keep polling
+        }
+      }, 500);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        clearInterval(poll);
+        window.removeEventListener('message', onMessage);
+      };
+
+      window.addEventListener('message', onMessage);
+    });
+  };
 
   const handleConfirmPages = async () => {
     if (!selectedPageIds.length) {
