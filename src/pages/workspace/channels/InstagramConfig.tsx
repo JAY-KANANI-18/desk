@@ -69,7 +69,7 @@ export const InstagramConfiguration = ({
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Handle</span>
-            <span className="text-sm font-medium text-slate-700">@{channel?.config?.handle ?? channel?.name ?? '—'}</span>
+            <span className="text-sm font-medium text-slate-700">@{channel?.config?.handle ??  '—'}</span>
           </div>
         </div>
         {/* <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">
