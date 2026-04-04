@@ -246,7 +246,7 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
     <button
       onClick={handleConnect}
       disabled={loading}
-      className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
+      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
     >
       {loading ? (
         <>
