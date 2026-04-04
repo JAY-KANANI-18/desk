@@ -137,6 +137,7 @@ export const WhatsAppConfiguration = ({
   const handleSave = () =>
     save(() =>
       ChannelApi.updateWhatsAppChannel(String(channel.id), {
+        
         accessToken,
         phoneNumberId,
         wabaId,
@@ -168,9 +169,10 @@ export const WhatsAppConfiguration = ({
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-5 py-4">
           <InfoPill icon={Phone}     label="Phone Number"    value={channel?.config?.phoneNumber ?? channel?.identifier}  copyable mono />
-          <InfoPill icon={Hash}      label="Phone Number ID" value={phoneNumberId}  copyable mono />
+          <InfoPill icon={Hash}      label="Phone Number ID" value={channel?.config?.phoneNumberId}  copyable mono />
+          <InfoPill icon={Building2}      label="Verified Name" value={channel?.config?.verifiedName}  copyable mono />
           <InfoPill icon={Building2} label="WABA ID"         value={wabaId}         copyable mono />
-          <InfoPill icon={Building2} label="WABA Account"    value={channel?.config?.wabaAccountName} />
+          <InfoPill icon={Building2} label="WABA Name"    value={channel?.config?.wabaName} />
           {/* <InfoPill icon={Key}       label="Meta App"        value={channel?.config?.metaappname} /> */}
           {/* <InfoPill icon={Key}       label="System User"     value={channel?.config?.systemUserName} /> */}
         </div>

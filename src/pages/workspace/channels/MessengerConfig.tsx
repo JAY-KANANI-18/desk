@@ -65,7 +65,7 @@ export const MessengerConfiguration = ({
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Page Name</span>
-            <span className="text-sm font-medium text-slate-700">{channel?.name ?? '—'}</span>
+            <span className="text-sm font-medium text-slate-700">{channel?.config?.pageName ?? '—'}</span>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">

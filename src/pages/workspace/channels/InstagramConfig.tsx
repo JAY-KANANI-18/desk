@@ -39,7 +39,7 @@ export const InstagramConfiguration = ({
 }: { channel: ConnectedChannel; onDisconnect: () => void }) => {
   const { saving, saved, error, save } = useSave();
   const [accessToken, setAccessToken] = useState(channel?.config?.accessToken ?? channel?.credentials?.accessToken ?? '');
-  const [pageId,      setPageId]      = useState(channel?.config?.pageId ?? channel?.identifier ?? '');
+  const [igUserId,      setIgUserId]      = useState(channel?.config?.igUserId ?? channel?.identifier ?? '');
   const [name,      setName]      = useState(channel?.name ?? '');
 
   const callbackUrl = `${window.location.origin}/webhooks/instagram`;
@@ -48,7 +48,7 @@ export const InstagramConfiguration = ({
   const { copied: vtCopied, copy: copyVt } = useCopy(verifyToken);
 
   const handleSave = () =>
-    save(() => ChannelApi.updateInstagramChannel(String(channel.id), { accessToken, pageId,name }));
+    save(() => ChannelApi.updateInstagramChannel(String(channel.id), { accessToken, igUserId,name }));
 
   return (
     <div className="space-y-6">
@@ -64,12 +64,12 @@ export const InstagramConfiguration = ({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-5 py-4">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Page ID</span>
-            <span className="text-sm font-mono text-slate-700">{pageId || '—'}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">User ID</span>
+            <span className="text-sm font-mono text-slate-700">{igUserId || '—'}</span>
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Handle</span>
-            <span className="text-sm font-medium text-slate-700">@{channel?.config?.handle ??  '—'}</span>
+            <span className="text-sm font-medium text-slate-700">@{channel?.config?.userName ??  '—'}</span>
           </div>
         </div>
         {/* <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">
