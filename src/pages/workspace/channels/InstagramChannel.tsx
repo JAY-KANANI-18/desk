@@ -82,7 +82,7 @@ export const InstagramChannelSidebar = () => (
       </div>
     </div>
     <div className="h-px bg-gray-100" />
-    <div>
+    {/* <div>
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Requirements</p>
       <div className="space-y-1">
         {['Instagram Professional account', 'Linked Facebook Page (admin)', 'Meta Developer App', 'Messaging permissions enabled'].map((req, i) => (
@@ -92,7 +92,7 @@ export const InstagramChannelSidebar = () => (
           </div>
         ))}
       </div>
-    </div>
+    </div> */}
     <div className="mt-auto">
       <a href="https://developers.facebook.com/docs/messenger-platform/instagram" target="_blank" rel="noopener noreferrer"
         className="flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-700 transition-colors no-underline font-medium">
@@ -499,7 +499,7 @@ export const InstagramChannel = ({ connected, onConnect, onDisconnect, workspace
         <a href="https://developers.facebook.com/docs/messenger-platform/instagram" target="_blank" rel="noopener noreferrer"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">View documentation</a>
         {' '}·{' '}
-        <a href="mailto:support@yourplatform.com"
+        <a href="mailto:support@axorainfotech.com"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">Contact support</a>
       </p>
     </div>

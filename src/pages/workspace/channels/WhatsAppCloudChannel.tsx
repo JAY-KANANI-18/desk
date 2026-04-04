@@ -489,7 +489,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
         <a href="https://developers.facebook.com/docs/whatsapp/cloud-api" target="_blank" rel="noopener noreferrer"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">View documentation</a>
         {' '}·{' '}
-        <a href="mailto:support@yourplatform.com"
+        <a href="mailto:support@axorainfotech.com"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">Contact support</a>
       </p>
     </div>

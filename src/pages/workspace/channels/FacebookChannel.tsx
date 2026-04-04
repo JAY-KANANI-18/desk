@@ -78,7 +78,7 @@ export const FacebookChannelSidebar = () => (
       </div>
     </div>
     <div className="h-px bg-gray-100" />
-    <div>
+    {/* <div>
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Requirements</p>
       <div className="space-y-1">
         {['Facebook Business Page (admin access)', 'Meta Business Suite account', 'Meta Developer App', 'Messaging enabled on your Page'].map((req, i) => (
@@ -88,7 +88,7 @@ export const FacebookChannelSidebar = () => (
           </div>
         ))}
       </div>
-    </div>
+    </div> */}
     <div className="mt-auto">
       <a href="https://developers.facebook.com/docs/messenger-platform" target="_blank" rel="noopener noreferrer"
         className="flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-700 transition-colors no-underline font-medium">
@@ -374,7 +374,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Permissions requested</p>
                   <div className="space-y-1.5">
                     {[
-                      { perm: 'pages_show_list',        desc: 'List your Facebook Pages' },
+                      // { perm: 'pages_show_list',        desc: 'List your Facebook Pages' },
                       { perm: 'pages_messaging',        desc: 'Send & receive messages' },
                       { perm: 'pages_read_engagement',  desc: 'Read page engagement' },
                       { perm: 'pages_manage_metadata',  desc: 'Manage webhook subscriptions' },
@@ -481,7 +481,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                   <button
                     onClick={handleCredentialsConnect}
                     disabled={connecting}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {connecting
                       ? <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" /> Connecting…</>
@@ -502,7 +502,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
         <a href="https://developers.facebook.com/docs/messenger-platform" target="_blank" rel="noopener noreferrer"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">View documentation</a>
         {' '}·{' '}
-        <a href="mailto:support@yourplatform.com"
+        <a href="mailto:support@axorainfotech.com"
           className="text-gray-600 hover:text-gray-900 underline transition-colors">Contact support</a>
       </p>
     </div>

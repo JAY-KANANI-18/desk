@@ -424,7 +424,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
           View documentation
         </a>
         {' '}·{' '}
-        <a href="mailto:support@yourplatform.com" className="text-gray-600 hover:text-gray-900 underline transition-colors">
+        <a href="mailto:support@axorainfotech.com" className="text-gray-600 hover:text-gray-900 underline transition-colors">
           Contact support
         </a>
       </p>

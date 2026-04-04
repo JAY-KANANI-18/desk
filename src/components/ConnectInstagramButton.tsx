@@ -10,7 +10,7 @@ const scopes = [
   // "instagram_manage_messages",
   // "pages_manage_metadata"
   
-  "pages_show_list",
+  // "pages_show_list",
   "pages_messaging",
 "instagram_basic",  
 "pages_manage_metadata"

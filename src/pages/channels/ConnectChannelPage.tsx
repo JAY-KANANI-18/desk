@@ -226,13 +226,13 @@ export const ConnectChannelPage = () => {
               onDisconnect={() => navigate('/channels')}
             />
           </div>
-          <div className="border-t border-gray-100 py-4 text-center">
+          {/* <div className="border-t border-gray-100 py-4 text-center">
             <p className="text-[11px] text-gray-400">
               Visit our{' '}
               <a href="#" className="text-gray-600 hover:text-gray-900 underline transition-colors">Help Center</a>
               {' '}if you need step-by-step guidance.
             </p>
-          </div>
+          </div> */}
         </main>
       </div>
     </div>
