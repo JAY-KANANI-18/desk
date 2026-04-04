@@ -40,6 +40,7 @@ export const MessengerConfiguration = ({
   const { saving, saved, error, save } = useSave();
   const [accessToken, setAccessToken] = useState(channel?.config?.accessToken ?? channel?.credentials?.accessToken ?? '');
   const [pageId,      setPageId]      = useState(channel?.config?.pageId ?? channel?.identifier ?? '');
+  const [name,      setName]      = useState(channel?.name ?? '');
 
   const callbackUrl = `${window.location.origin}/webhooks/messenger`;
   const verifyToken = `rb_ms_webhook_${channel?.id}`;
@@ -53,9 +54,9 @@ export const MessengerConfiguration = ({
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-white">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow shadow-blue-200" />
           <span className="text-sm font-semibold text-slate-800">Configuration</span>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+          {/* <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
             <span>{channel?.name}</span>
-          </div>
+          </div> */}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-5 py-4">
           <div className="flex flex-col gap-0.5">
@@ -98,18 +99,22 @@ export const MessengerConfiguration = ({
         <h2 className="text-sm font-semibold text-slate-800 mb-1">Connection Settings</h2>
         <p className="text-xs text-slate-400 mb-4">Update your Facebook Page credentials.</p>
         <div className="space-y-4">
-          <Field label="Page Access Token" value={accessToken} onChange={setAccessToken}
+          {/* <Field label="Page Access Token" value={accessToken} onChange={setAccessToken}
             placeholder="EAABsbCS0r0AB…"
             hint="Page access token from Meta for Developers — must have pages_messaging scope"
             sensitive />
           <Field label="Page ID" value={pageId} onChange={setPageId}
             placeholder="123456789012345"
-            hint="Your Facebook Page ID" />
+            hint="Your Facebook Page ID" /> */}
+
+             <Field label="Channel Name" value={name} onChange={setName}
+            placeholder="channel name"
+            hint="Name of your channel" />
         </div>
       </div>
 
       <SaveButton saving={saving} saved={saved} error={error}
-        onClick={() => save(() => ChannelApi.updateMessengerChannel(String(channel.id), { accessToken, pageId }))} />
+        onClick={() => save(() => ChannelApi.updateMessengerChannel(String(channel.id), { accessToken, pageId,name }))} />
       <DangerZone channelLabel="Messenger" channelId={String(channel.id)} onDisconnect={onDisconnect} />
     </div>
   );

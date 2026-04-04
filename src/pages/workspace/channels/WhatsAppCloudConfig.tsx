@@ -128,6 +128,7 @@ export const WhatsAppConfiguration = ({
   const [graphApiVersion, setGraphApiVersion] = useState(channel?.config?.graphApiVersion ?? 'v19.0');
   const [tokenExpiry,     setTokenExpiry]     = useState(channel?.config?.tokenExpiry     ?? '');
   const [convWindow,      setConvWindow]      = useState(channel?.config?.conversationwindow ?? '24');
+  const [name,      setName]      = useState(channel?.name ?? '');
 
   const callbackUrl = `${window.location.origin}/webhooks/whatsapp`;
   const verifyToken = `rb_webhook_token_${channel?.id}`;
@@ -147,6 +148,7 @@ export const WhatsAppConfiguration = ({
         veriytoken:          verifyToken,
         metaappname:         channel?.config?.metaappname,
         systemUserName:      channel?.config?.systemUserName,
+        name
       })
     );
 
@@ -159,18 +161,18 @@ export const WhatsAppConfiguration = ({
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow shadow-emerald-200" />
             <span className="text-sm font-semibold text-slate-800">Configuration</span>
           </div>
-          <a href={chatLink} target="_blank" rel="noopener noreferrer"
+          {/* <a href={chatLink} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700">
             <QrCode size={13} />Open chat link
-          </a>
+          </a> */}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-5 py-4">
           <InfoPill icon={Phone}     label="Phone Number"    value={channel?.config?.phoneNumber ?? channel?.identifier}  copyable mono />
           <InfoPill icon={Hash}      label="Phone Number ID" value={phoneNumberId}  copyable mono />
           <InfoPill icon={Building2} label="WABA ID"         value={wabaId}         copyable mono />
           <InfoPill icon={Building2} label="WABA Account"    value={channel?.config?.wabaAccountName} />
-          <InfoPill icon={Key}       label="Meta App"        value={channel?.config?.metaappname} />
-          <InfoPill icon={Key}       label="System User"     value={channel?.config?.systemUserName} />
+          {/* <InfoPill icon={Key}       label="Meta App"        value={channel?.config?.metaappname} /> */}
+          {/* <InfoPill icon={Key}       label="System User"     value={channel?.config?.systemUserName} /> */}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">
           <div className="flex-1 min-w-0">
@@ -199,24 +201,27 @@ export const WhatsAppConfiguration = ({
         <h2 className="text-sm font-semibold text-slate-800 mb-1">Connection Settings</h2>
         <p className="text-xs text-slate-400 mb-4">Update your WhatsApp credentials when they change.</p>
         <div className="space-y-4">
-          <Field label="Access Token" value={accessToken} onChange={setAccessToken}
+           <Field label="Channel Name" value={name} onChange={setName}
+            placeholder="channel name"
+            hint="Name of your channel" />
+          {/* <Field label="Access Token" value={accessToken} onChange={setAccessToken}
             placeholder="EAABsbCS0r0AB…"
             hint="Permanent system-user token from Meta Business Manager"
-            sensitive />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            sensitive /> */}
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Phone Number ID" value={phoneNumberId} onChange={setPhoneNumberId}
               placeholder="15551790691" hint="Digits only — from Meta Business Manager" />
             <Field label="WABA ID" value={wabaId} onChange={setWabaId}
               placeholder="987654321098765" hint="WhatsApp Business Account ID" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          </div> */}
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SelectField label="Graph API Version" value={graphApiVersion} onChange={setGraphApiVersion}
               options={['v19.0','v18.0','v17.0'].map(v => ({ value: v, label: v }))}
               hint="Keep at latest unless advised otherwise" />
             <SelectField label="Conversation Window" value={convWindow} onChange={setConvWindow}
               options={[{ value: '24', label: '24 hours' }, { value: '72', label: '72 hours' }]}
               hint="How long after last message you can reply freely" />
-          </div>
+          </div> */}
         </div>
       </div>
 

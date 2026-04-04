@@ -40,6 +40,7 @@ export const InstagramConfiguration = ({
   const { saving, saved, error, save } = useSave();
   const [accessToken, setAccessToken] = useState(channel?.config?.accessToken ?? channel?.credentials?.accessToken ?? '');
   const [pageId,      setPageId]      = useState(channel?.config?.pageId ?? channel?.identifier ?? '');
+  const [name,      setName]      = useState(channel?.name ?? '');
 
   const callbackUrl = `${window.location.origin}/webhooks/instagram`;
   const verifyToken = `rb_ig_webhook_${channel?.id}`;
@@ -47,7 +48,7 @@ export const InstagramConfiguration = ({
   const { copied: vtCopied, copy: copyVt } = useCopy(verifyToken);
 
   const handleSave = () =>
-    save(() => ChannelApi.updateInstagramChannel(String(channel.id), { accessToken, pageId }));
+    save(() => ChannelApi.updateInstagramChannel(String(channel.id), { accessToken, pageId,name }));
 
   return (
     <div className="space-y-6">
@@ -56,10 +57,10 @@ export const InstagramConfiguration = ({
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-white">
           <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow shadow-pink-200" />
           <span className="text-sm font-semibold text-slate-800">Configuration</span>
-          <div className="ml-auto flex items-center gap-1.5">
+          {/* <div className="ml-auto flex items-center gap-1.5">
             <Instagram size={14} className="text-pink-500" />
             <span className="text-xs text-slate-500">{channel?.identifier}</span>
-          </div>
+          </div> */}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-5 py-4">
           <div className="flex flex-col gap-0.5">
@@ -71,7 +72,7 @@ export const InstagramConfiguration = ({
             <span className="text-sm font-medium text-slate-700">@{channel?.config?.handle ?? channel?.name ?? '—'}</span>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">
+        {/* <div className="flex flex-col sm:flex-row gap-3 px-5 py-3 bg-slate-50 border-t border-slate-100">
           <div className="flex-1 min-w-0">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 flex items-center gap-1 mb-1">
               <Webhook size={10}/>Callback URL
@@ -94,7 +95,7 @@ export const InstagramConfiguration = ({
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Permissions notice */}
@@ -110,13 +111,16 @@ export const InstagramConfiguration = ({
         <h2 className="text-sm font-semibold text-slate-800 mb-1">Connection Settings</h2>
         <p className="text-xs text-slate-400 mb-4">Update your Instagram Page credentials.</p>
         <div className="space-y-4">
-          <Field label="Page Access Token" value={accessToken} onChange={setAccessToken}
+          {/* <Field label="Page Access Token" value={accessToken} onChange={setAccessToken}
             placeholder="EAABsbCS0r0AB…"
             hint="Page access token from Meta for Developers — must have instagram_manage_messages scope"
-            sensitive />
-          <Field label="Page ID" value={pageId} onChange={setPageId}
+            sensitive /> */}
+          {/* <Field label="Page ID" value={pageId} onChange={setPageId}
             placeholder="123456789012345"
-            hint="The Facebook Page ID connected to your Instagram account" />
+            hint="The Facebook Page ID connected to your Instagram account" /> */}
+          <Field label="Channel Name" value={name} onChange={setName}
+            placeholder="channel name"
+            hint="Name of your channel" />
         </div>
       </div>
 
