@@ -39,24 +39,24 @@ export const ChannelApi = {
 // Add these to your ChannelApi
 
 // Get pages after OAuth without connecting
-getMessengerPages: async (code: string, workspaceId: string, redirectUri: string) => {
-  const { data } = await api.post('/channels/messenger/auth/pages', {
+getMessengerPages: async (code: string, workspaceId: string, redirectUri: string) => 
+   api.post('/channels/messenger/auth/pages', {
     code,
     workspaceId,
     redirectUri,
-  });
-  return data;
-},
+  })
+ 
+,
 
 // Connect only selected pages
 connectSelectedPages: async (payload: {
   workspaceId: string;
   selectedPageIds: string[];
   pages: any[];
-}) => {
-  const { data } = await api.post('/channels/messenger/auth/callback', payload);
-  return data;
-},
+}) => 
+  api.post('/channels/messenger/auth/callback', payload)
+
+,
     getChannels: () => api.get('/channels'),
     createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
         api.post(`/channels?workspaceId=${workspaceId}`, payload),
