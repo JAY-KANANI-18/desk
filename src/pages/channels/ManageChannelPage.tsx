@@ -486,10 +486,11 @@ const SectionContent = ({
 export const ManageChannelPage = () => {
   const { channelType, channelId } = useParams<{ channelType: string; channelId: string }>();
   const navigate = useNavigate();
-  const { channels } = useChannel();
+const { channels, loading, refreshing } = useChannel();
   const [activeSection, setActiveSection] = useState('configuration');
 
-  if (!channels?.length) {
+
+  if (loading || refreshing) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3 text-gray-400">
