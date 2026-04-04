@@ -255,8 +255,8 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
         </>
       ) : (
         <>
-          <img src="https://cdn.simpleicons.org/messenger/ffffff" className="w-3 h-3" />
-          Connect with Meta
+          <img src="https://cdn.simpleicons.org/facebook/ffffff" className="w-3 h-3" />
+          Connect with Facebook
         </>
       )}
     </button>
