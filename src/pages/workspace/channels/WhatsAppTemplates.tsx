@@ -180,13 +180,10 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
     setSyncMsg(null);
     const r = await ChannelApi.syncWhatsAppTemplates(String(channel.id));
     setSyncing(false);
-    if (r.success) {
-      setSyncMsg(`Synced ${r.data?.synced ?? 0} templates${r.data?.errors ? ` (${r.data.errors} errors)` : ''}`);
-      load();
-      setTimeout(() => setSyncMsg(null), 4000);
-    } else {
-      setError(r.error ?? 'Sync failed');
-    }
+    setSyncMsg(`Synced ${r.data?.synced ?? 0} templates${r.data?.errors ? ` (${r.data.errors} errors)` : ''}`);
+    load();
+    setTimeout(() => setSyncMsg(null), 4000);
+  
   };
 
   return (
