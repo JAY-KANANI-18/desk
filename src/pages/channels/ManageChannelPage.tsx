@@ -156,8 +156,8 @@ export const DangerZone = ({ channelLabel, onDisconnect,channelId }: {
   const handleDisconnect = () =>
     save(async () => {
       const r = await ChannelApi.deleteChannel(channelId); // channelId passed from parent
-      if (r.success) { onDisconnect(); return { success: true }; }
-      return r;
+      onDisconnect()
+      return r
     });
 
   return (
