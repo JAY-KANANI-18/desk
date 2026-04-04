@@ -503,6 +503,8 @@ const { channels, loading, refreshing } = useChannel();
 
   const channel = channels.find(c => String(c.id) === channelId);
   const meta = channelType ? CHANNEL_META[channelType] : null;
+  console.log({channel,meta,channelType});
+  
 
   if (!meta || !channelType || !channel) {
     return (
