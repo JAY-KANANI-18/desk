@@ -188,23 +188,23 @@ export const Channels = () => {
   }, []);
 
   // Pick up newly connected channel coming back from a connect page
-  useEffect(() => {
-    const state = location.state as {
-      newChannel?: ConnectedChannel;
-      disconnectedId?: number;
-    } | null;
-    if (state?.newChannel) {
-      setChannels((prev) => {
-        const filtered = prev.filter((c) => c.id !== state.newChannel!.id);
-        return [...filtered, state.newChannel!];
-      });
-      window.history.replaceState({}, "");
-    }
-    if (state?.disconnectedId) {
-      setChannels((prev) => prev.filter((c) => c.id !== state.disconnectedId));
-      window.history.replaceState({}, "");
-    }
-  }, [location.state]);
+  // useEffect(() => {
+  //   const state = location.state as {
+  //     newChannel?: ConnectedChannel;
+  //     disconnectedId?: number;
+  //   } | null;
+  //   if (state?.newChannel) {
+  //     setChannels((prev) => {
+  //       const filtered = prev.filter((c) => c.id !== state.newChannel!.id);
+  //       return [...filtered, state.newChannel!];
+  //     });
+  //     window.history.replaceState({}, "");
+  //   }
+  //   if (state?.disconnectedId) {
+  //     setChannels((prev) => prev.filter((c) => c.id !== state.disconnectedId));
+  //     window.history.replaceState({}, "");
+  //   }
+  // }, [location.state]);
 
   const handleChannelConnected = (ch: ConnectedChannel) => {
     setChannels((prev) => [...prev.filter((c) => c.id !== ch.id), ch]);
