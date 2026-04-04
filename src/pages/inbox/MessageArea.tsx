@@ -50,6 +50,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageIcon,
+  Workflow,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 import { useChannel } from "../../context/ChannelContext";
@@ -2093,205 +2094,215 @@ export function MessageArea({
         )}
 
         {/* ── Date groups ── */}
-    {loadingTimeline ? (
+        {loadingTimeline ? (
           <div className="flex items-center gap-2 text-sm text-gray-500 justify-center py-10">
             <RefreshCw size={14} className="animate-spin" />
             Loading conversation…
           </div>
         ) : (
-        <>
-          {dateGroups.map(({ dateKey, items }) => (
-            <div key={dateKey}>
-              <DateBadge label={dateBadgeLabel(dateKey)} />
+          <>
+            {dateGroups.map(({ dateKey, items }) => (
+              <div key={dateKey}>
+                <DateBadge label={dateBadgeLabel(dateKey)} />
 
-              {items.map((item) => {
-                /* ── ACTIVITY ROW ── */
-                if (item.kind === "activity") {
-                  return (
-                    <div
-                      key={item.key}
-                      ref={(el) => setItemRef(item.key, el)}
-                      className={matchRingClass(item.key)}
-                    >
-                      <ActivityRow
-                        activity={item.act}
-                        searchTerm={msgSearch || undefined}
-                        currentUser={currentUser}
-                      />
-                    </div>
+                {items.map((item) => {
+                  /* ── ACTIVITY ROW ── */
+                  if (item.kind === "activity") {
+                    return (
+                      <div
+                        key={item.key}
+                        ref={(el) => setItemRef(item.key, el)}
+                        className={matchRingClass(item.key)}
+                      >
+                        <ActivityRow
+                          activity={item.act}
+                          searchTerm={msgSearch || undefined}
+                          currentUser={currentUser}
+                        />
+                      </div>
+                    );
+                  }
+
+                  /* ── MESSAGE ── */
+                  const msg = item.msg;
+                  const isOutgoing = msg.direction === "outgoing";
+                  const isEvent = msg.type === "event" || msg.type === "system";
+                  const isComment = msg.type === "comment";
+                  const isWaTemplate = msg.type === "template";
+                  const channelType = channels?.find(
+                    (c) => c?.id === msg?.channelId,
+                  )?.type;
+                  const isEmail = channelType === "email";
+                  const displayTime = formatMsgTime(msg.createdAt, msg.time);
+                  const hoverKey = `msg-${msg.id}`;
+                  const isExpanded = !!expanded[msg.id];
+                  const OutgoingSender = workspaceUsers?.find(
+                    (u) => u.id === msg?.metadata?.sender?.userId,
                   );
-                }
+                  const bubbleColor = isOutgoing
+                    ? "bg-indigo-500 text-white rounded-br-sm"
+                    : "bg-gray-100 text-gray-900 rounded-bl-sm";
 
-                /* ── MESSAGE ── */
-                const msg = item.msg;
-                const isOutgoing = msg.direction === "outgoing";
-                const isEvent = msg.type === "event" || msg.type === "system";
-                const isComment = msg.type === "comment";
-                const isWaTemplate = msg.type === "template";
-                const channelType = channels?.find(
-                  (c) => c?.id === msg?.channelId,
-                )?.type;
-                const isEmail = channelType === "email";
-                const displayTime = formatMsgTime(msg.createdAt, msg.time);
-                const hoverKey = `msg-${msg.id}`;
-                const isExpanded = !!expanded[msg.id];
-                const OutgoingSender = workspaceUsers?.find(
-                  (u) => u.id === msg?.metadata?.sender?.userId,
-                );
-                const bubbleColor = isOutgoing
-                  ? "bg-indigo-500 text-white rounded-br-sm"
-                  : "bg-gray-100 text-gray-900 rounded-bl-sm";
+                  /* Legacy event pill */
+                  if (isEvent) {
+                    return (
+                      <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
+                        <LegacyEventRow msg={msg} />
+                      </div>
+                    );
+                  }
 
-                /* Legacy event pill */
-                if (isEvent) {
-                  return (
-                    <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
-                      <LegacyEventRow msg={msg} />
-                    </div>
-                  );
-                }
+                  /* Internal note */
+                  if (isComment) {
+                    return (
+                      <div
+                        key={msg.id}
+                        ref={(el) => setItemRef(item.key, el)}
+                        className={matchRingClass(item.key)}
+                      >
+                        <div className="flex justify-center my-4 px-4">
+                          <div
+                            className="w-full max-w-md bg-amber-50 border border-amber-200
+                        rounded-xl overflow-hidden shadow-sm"
+                          >
+                            <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200/60">
+                              <MessageSquare
+                                size={11}
+                                className="text-amber-600 flex-shrink-0"
+                              />
+                              <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
+                                Internal Note
+                              </span>
+                              <div className="flex items-center gap-1.5 ml-auto">
+                                <div
+                                  className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center
+                              text-[9px] font-bold text-amber-800"
+                                >
+                                  {msg.initials}
+                                </div>
+                                <span className="text-[11px] font-medium text-amber-800">
+                                  {msg.author}
+                                </span>
+                                <span className="text-[10px] text-amber-600/70 ml-1">
+                                  {displayTime}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="px-3 py-2.5">
+                              <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
+                                {msgSearch
+                                  ? highlightText(msg.text ?? "", msgSearch)
+                                  : msg.text}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
 
-                /* Internal note */
-                if (isComment) {
+                  /* Regular message bubble */
                   return (
                     <div
                       key={msg.id}
                       ref={(el) => setItemRef(item.key, el)}
-                      className={matchRingClass(item.key)}
+                      className={`flex items-end gap-3 mb-4 ${isOutgoing ? "justify-end" : "justify-start"}
+                    ${matchRingClass(item.key)}`}
+                      onMouseEnter={() => setHoveredMsgId(hoverKey)}
+                      onMouseLeave={() => setHoveredMsgId(null)}
                     >
-                      <div className="flex justify-center my-4 px-4">
+                      {/* Incoming avatar */}
+                      {!isOutgoing && (
                         <div
-                          className="w-full max-w-md bg-amber-50 border border-amber-200
-                        rounded-xl overflow-hidden shadow-sm"
+                          className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
+                      text-xs flex-shrink-0 overflow-hidden"
                         >
-                          <div className="flex items-center gap-2 px-3 py-2 border-b border-amber-200/60">
-                            <MessageSquare
-                              size={11}
-                              className="text-amber-600 flex-shrink-0"
+                          {selectedConversation?.contact?.avatarUrl ? (
+                            <img
+                              src={selectedConversation.contact.avatarUrl}
+                              alt={
+                                selectedConversation.contact.firstName || "C"
+                              }
+                              className="w-full h-full object-cover"
                             />
-                            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide">
-                              Internal Note
+                          ) : (
+                            <span>
+                              {selectedConversation?.contact?.firstName
+                                ?.charAt(0)
+                                ?.toUpperCase() || "C"}
                             </span>
-                            <div className="flex items-center gap-1.5 ml-auto">
-                              <div
-                                className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center
-                              text-[9px] font-bold text-amber-800"
-                              >
-                                {msg.initials}
-                              </div>
-                              <span className="text-[11px] font-medium text-amber-800">
-                                {msg.author}
-                              </span>
-                              <span className="text-[10px] text-amber-600/70 ml-1">
-                                {displayTime}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="px-3 py-2.5">
-                            <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
-                              {msgSearch
-                                ? highlightText(msg.text ?? "", msgSearch)
-                                : msg.text}
-                            </p>
-                          </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="relative flex flex-col max-w-sm">
+                        <QuickActions
+                          channel={
+                            channelType ??
+                            msg.channel ??
+                            selectedConversation?.channel ??
+                            "webchat"
+                          }
+                          isOutgoing={isOutgoing}
+                          msg={msg}
+                          visible={hoveredMsgId === hoverKey}
+                          onReply={(ctx) => onReply?.(ctx)}
+                        />
+                        <MessageBubble
+                          msg={msg}
+                          isOutgoing={isOutgoing}
+                          bubbleColor={bubbleColor}
+                          isEmail={isEmail}
+                          isWaTemplate={isWaTemplate}
+                          isExpanded={isExpanded}
+                          onToggleExpand={() =>
+                            setExpanded((s) => ({
+                              ...s,
+                              [msg.id]: !isExpanded,
+                            }))
+                          }
+                          onOpenEmailModal={() => setEmailModalMsg(msg)}
+                          previewLength={previewLength}
+                          searchTerm={msgSearch || undefined}
+                        />
+                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                          <span>{displayTime}</span>
+                          {isOutgoing && <MsgStatusIcon status={msg.status} />}
                         </div>
                       </div>
+
+                      {/* Outgoing avatar */}
+                      {isOutgoing && (
+                        <div
+                          className="w-8 h-8 border rounded-full flex items-center justify-center
+                      text-xs flex-shrink-0 overflow-hidden"
+                        >
+                          {msg.author?.id ? (
+                            msg.author?.avatarUrl ? (
+                              <img
+                                src={msg?.author?.avatarUrl}
+                                alt={msg.author?.firstName || "U"}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>
+                                {OutgoingSender?.firstName
+                                  ?.charAt(0)
+                                  ?.toUpperCase() || "U"}
+                              </span>
+                            )
+                          ) : (
+                    <Workflow size={18}  color="#4f46e5"/>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
-                }
-
-                /* Regular message bubble */
-                return (
-                  <div
-                    key={msg.id}
-                    ref={(el) => setItemRef(item.key, el)}
-                    className={`flex items-end gap-3 mb-4 ${isOutgoing ? "justify-end" : "justify-start"}
-                    ${matchRingClass(item.key)}`}
-                    onMouseEnter={() => setHoveredMsgId(hoverKey)}
-                    onMouseLeave={() => setHoveredMsgId(null)}
-                  >
-                    {/* Incoming avatar */}
-                    {!isOutgoing && (
-                      <div
-                        className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden"
-                      >
-                        {selectedConversation?.contact?.avatarUrl ? (
-                          <img
-                            src={selectedConversation.contact.avatarUrl}
-                            alt={selectedConversation.contact.firstName || "C"}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span>
-                            {selectedConversation?.contact?.firstName
-                              ?.charAt(0)
-                              ?.toUpperCase() || "C"}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="relative flex flex-col max-w-sm">
-                      <QuickActions
-                        channel={
-                          channelType ??
-                          msg.channel ??
-                          selectedConversation?.channel ??
-                          "webchat"
-                        }
-                        isOutgoing={isOutgoing}
-                        msg={msg}
-                        visible={hoveredMsgId === hoverKey}
-                        onReply={(ctx) => onReply?.(ctx)}
-                      />
-                      <MessageBubble
-                        msg={msg}
-                        isOutgoing={isOutgoing}
-                        bubbleColor={bubbleColor}
-                        isEmail={isEmail}
-                        isWaTemplate={isWaTemplate}
-                        isExpanded={isExpanded}
-                        onToggleExpand={() =>
-                          setExpanded((s) => ({ ...s, [msg.id]: !isExpanded }))
-                        }
-                        onOpenEmailModal={() => setEmailModalMsg(msg)}
-                        previewLength={previewLength}
-                        searchTerm={msgSearch || undefined}
-                      />
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                        <span>{displayTime}</span>
-                        {isOutgoing && <MsgStatusIcon status={msg.status} />}
-                      </div>
-                    </div>
-
-                    {/* Outgoing avatar */}
-                    {isOutgoing && (
-                      <div
-                        className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden"
-                      >
-                        {OutgoingSender?.avatarUrl ? (
-                          <img
-                            src={OutgoingSender.avatarUrl}
-                            alt={OutgoingSender.firstName || "U"}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span>
-                            {OutgoingSender?.firstName
-                              ?.charAt(0)
-                              ?.toUpperCase() || "U"}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </>)}
+                })}
+              </div>
+            ))}
+          </>
+        )}
 
         {/* Anchor – kept as a lightweight fallback reference */}
         <div ref={messagesEndRef} />
