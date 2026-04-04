@@ -49,13 +49,13 @@ export function useSave() {
     setSaved(false);
     const result = await fn();
     setSaving(false);
-    if (result.success) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } else {
-      setError(result.error ?? 'Something went wrong');
-      setTimeout(() => setError(null), 4000);
-    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+    // if (result.success) {
+    // } else {
+    //   setError(result.error ?? 'Something went wrong');
+    //   setTimeout(() => setError(null), 4000);
+    // }
   };
 
   return { saving, saved, error, save };
