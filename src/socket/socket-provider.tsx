@@ -1,23 +1,59 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { connectSocket } from "./socket";
+import { supabase } from "../lib/supabase";
 
 const SocketContext = createContext<Socket | null>(null);
 
-export function SocketProvider({ children }) {
-
+export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const token = localStorage.getItem("access_token");
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    let activeSocket: Socket | null = null;
 
-    if (!token) return;
+    const getSessionAndConnect = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const s = connectSocket(JSON.parse(token));
+      const accessToken = session?.access_token ?? null;
+      setToken(accessToken);
 
-    setSocket(s);
+      if (accessToken) {
+        activeSocket = connectSocket(accessToken);
+        setSocket(activeSocket);
+      }
+    };
 
-  }, [token]);
+    getSessionAndConnect();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const accessToken = session?.access_token ?? null;
+      setToken(accessToken);
+
+      if (activeSocket) {
+        activeSocket.disconnect();
+        activeSocket = null;
+      }
+
+      if (accessToken) {
+        activeSocket = connectSocket(accessToken);
+        setSocket(activeSocket);
+      } else {
+        setSocket(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (activeSocket) {
+        activeSocket.disconnect();
+      }
+    };
+  }, []);
 
   return (
     <SocketContext.Provider value={socket}>
