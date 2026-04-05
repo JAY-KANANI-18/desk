@@ -196,7 +196,7 @@ export function ChatHeader({
     fetchLifecycles();
   }, [fetchLifecycles]);
 
-  const filteredMembers = workspaceUsers?.filter(m => m.firstName.toLowerCase().includes(assignSearch.toLowerCase()) || m.lastName.toLowerCase().includes(assignSearch.toLowerCase())) || [];
+  const filteredMembers = workspaceUsers?.filter(m => m?.firstName?.toLowerCase().includes(assignSearch.toLowerCase()) || m?.lastName?.toLowerCase().includes(assignSearch.toLowerCase())) || [];
   console.log({ filteredMembers });
 
   const filteredTeams = teams.filter(t => t.name.toLowerCase().includes(assignSearch.toLowerCase()));
