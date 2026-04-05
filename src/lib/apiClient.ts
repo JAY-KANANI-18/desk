@@ -18,7 +18,7 @@ async function getAccessToken(): Promise<string | null> {
 export async function apiFetch(
     path: string,
     options: RequestInit = {},
-      workspace?: Workspace | null  // add this
+    workspace?: Workspace | null  // add this
 
 ) {
      const token = await getAccessToken();

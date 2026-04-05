@@ -157,11 +157,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
       applyUser(u);
 
-      try {
-        await refreshUser();
-      } catch (err) {
-        console.error("refreshUser failed after auth change", err);
-      }
+      // try {
+      //   await refreshUser();
+      // } catch (err) {
+      //   console.error("refreshUser failed after auth change", err);
+      // }
     });
 
     return unsubscribe;
