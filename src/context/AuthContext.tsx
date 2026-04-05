@@ -154,8 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
-      applyUser(u);
+      // setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
+      // applyUser(u);
 
       // try {
       //   await refreshUser();
