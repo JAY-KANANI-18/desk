@@ -1,27 +1,23 @@
+import { Workspace } from "../context/WorkspaceContext";
 import { apiFetch } from "./apiClient";
 
+// lib/api.ts
+let _workspaceRef: React.MutableRefObject<Workspace | null> | null = null;
+
+export function initApi(workspaceRef: React.MutableRefObject<Workspace | null>) {
+  _workspaceRef = workspaceRef;
+}
+
 export const api = {
-    get: (url: string) => apiFetch(url),
+  get: (path: string, options?: RequestInit) =>
+    apiFetch(path, { method: "GET", ...options }, _workspaceRef?.current),
 
-    post: (url: string, body?: any) =>
-        apiFetch(url, {
-            method: "POST",
-            body: JSON.stringify(body),
-        }),
+  post: (path: string, body?: unknown, options?: RequestInit) =>
+    apiFetch(path, { method: "POST", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
 
-    put: (url: string, body?: any) =>
-        apiFetch(url, {
-            method: "PUT",
-            body: JSON.stringify(body),
-        }),
-    patch: (url: string, body?: any) =>
-        apiFetch(url, {
-            method: "PATCH",
-            body: JSON.stringify(body),
-        }),
+  put: (path: string, body?: unknown, options?: RequestInit) =>
+    apiFetch(path, { method: "PUT", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
 
-    delete: (url: string) =>
-        apiFetch(url, {
-            method: "DELETE",
-        }),
+  delete: (path: string, options?: RequestInit) =>
+    apiFetch(path, { method: "DELETE", ...options }, _workspaceRef?.current),
 };

@@ -32,10 +32,7 @@ interface Channel {
 interface OrganizationContextType {
   channels: any;
   refreshChannels:any
-  refreshOrganizationsUsers: () => Promise<any>;
-  organizationSetup: () => Promise<any>;
-  setActiveOrganizationFunc: (org: Organization) => Promise<any>;
-  refreshOrganizations: () => Promise<any>;
+
   loading: boolean; // first load
   refreshing: boolean;
 }
@@ -82,43 +79,10 @@ export const ChannelContextProvider: React.FC<{
     refreshChannels(false); // first page load
   }, [refreshChannels]);
 
-  const whstappChannelManualSetup = useCallback(async (channelName: string) => {
-    const result = await ChannelApi.whatsappManualConnect();
-    return result;
-  }, []);
+  
 
-  const organizationSetup = useCallback(async (organizationName: string) => {
-    const result = await organizationApi.setup(
-      organizationName,
-      "Default Workspace",
-    );
-    return result;
-  }, []);
 
-  const refreshOrganizations = useCallback(async () => {
-    const result = await organizationApi.me();
-    return result;
-  }, []);
 
-  const inviteUser = useCallback(
-    async (email: string, role: string, workspaceAccess: any) => {
-      const result = await organizationApi.inviteUser(
-        email,
-        role,
-        workspaceAccess,
-      );
-      return result;
-    },
-    [],
-  );
-
-  const setActiveOrganizationFunc = (org: Organization) => {
-    localStorage.setItem("active_organization", JSON.stringify(org));
-  };
-
-  const refreshOrganizationsUsers = useCallback(async () => {
-    return [];
-  }, []);
 
   return (
     <ChannelContext.Provider
@@ -126,11 +90,8 @@ export const ChannelContextProvider: React.FC<{
         channels,
         loading,
         refreshing,
-        refreshChannels,
-        refreshOrganizationsUsers,
-        organizationSetup,
-        setActiveOrganizationFunc,
-        refreshOrganizations,
+        refreshChannels
+  
       }}
     >
       {children}

@@ -5,9 +5,10 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+
 import { authApi } from "../lib/authApi";
 import type { AuthUser } from "../lib/authApi";
-import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 // ─── Domain user type ─────────────────────────────────────────────────────────
 export interface User {
@@ -18,6 +19,7 @@ export interface User {
   avatarUrl?: string;
   role: string;
   activityStatus?: string;
+  organizations?: any[];
 }
 
 // ─── Context shape ────────────────────────────────────────────────────────────
@@ -27,26 +29,31 @@ interface AuthContextType {
   user: User | null;
   pendingEmail: string;
   authFlow: "signup" | "forgot-password" | null;
-  orgsLoaded: boolean;
   passwordSet: boolean;
   login: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<{ success: boolean; error?: string }>;
   signup: (
-    orgData?: Record<string, string>
+    name: string,
+    email: string,
+    password: string,
+    orgData?: Record<string, string>,
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loginWithGoogle: () => Promise<void>;
   forgotPassword: (
-    email: string
+    email: string,
   ) => Promise<{ success: boolean; error?: string }>;
   verifyCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   resendCode: () => Promise<void>;
   resetPassword: (
-    newPassword: string
+    newPassword: string,
   ) => Promise<{ success: boolean; error?: string }>;
   setPendingEmail: (email: string) => void;
+  organizationSetup: (
+    organizationName: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,23 +62,9 @@ const toUser = (u: AuthUser | User): User => ({
   firstName: "",
   lastName: "",
   email: u.email,
-  ...(u?.avatarUrl && { avatarUrl: u.avatarUrl }),
   role: u.role,
+  ...((u as any)?.avatarUrl && { avatarUrl: (u as any).avatarUrl }),
 });
-
-interface Workspace {
-  id: string;
-  name: string;
-  organizationId: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  workspaces: Workspace[];
-}
-
-
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -80,21 +73,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [pendingEmail, setPendingEmail] = useState("");
   const [passwordSet, setPasswordSet] = useState(false);
   const [authFlow, setAuthFlow] = useState<"signup" | "forgot-password" | null>(
-    null
+    null,
   );
+  const navigate = useNavigate();
 
   // ── Apply / clear session ──────────────────────────────────────────────────
   const applyUser = useCallback((u: AuthUser | null) => {
     if (u) {
-      console.log({ UUUUUUUUUU: u });
-     
-      setUser(toUser(u));
+      setUser((prev) => ({
+        ...prev,
+        ...toUser(u),
+      }));
       setIsAuthenticated(true);
     } else {
       setUser(null);
@@ -102,57 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-
-  //
-  // const refreshOrganizations = useCallback(async () => {
-  //   try {
-  //     const result = await authApi.getOrganizations();
-
-  //     if (result.success && result.data) {
-  //       console.log(result.data);
-
-  //       // setOrganizations(result.data.data);
-  //       if (result.success && result.data?.data?.length) {
-  //         const orgs = result.data.data;
-  //         setOrganizations(orgs);
-
-  //         if (!activeWorkspace) {
-  //           const firstOrg = orgs[0];
-  //           const firstWs = firstOrg.workspaces?.[0];
-
-  //           if (firstWs) {
-  //             setActiveOrganization(firstOrg);
-  //             setActiveWorkspace(firstWs);
-  //           }
-  //         }
-  //       }
-  //       console.log("seetled");
-  //     } else {
-  //       setOrganizations([]);
-  //     }
-
-  //     setOrgsLoaded(true);
-  //   } catch (err) {
-  //     console.error("Failed to fetch organizations", err);
-  //     setOrganizations([]);
-  //     setOrgsLoaded(true);
-  //   }
-  // }, []);
-
   const refreshUser = useCallback(async () => {
+    try {
+      console.log("REFRSH USER CALL");
+      
+      const result = await authApi.getUser();
 
-    const result = await authApi.getUser();
-
-    if (result.success && result.data) {
-
-      setUser(result.data);
-
-      let workspaces: Workspace[] = [];
-
-      if (result.data?.organizations) {
+      if (result.success && result.data) {
+        setUser((prev) => ({
+          ...(prev || {}),
+          ...result.data,
+        }));
       }
+    } catch (err) {
+      console.error("Failed to fetch user", err);
     }
-
   }, []);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -160,44 +118,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initAuth = async () => {
       try {
         const { user: u, session } = await authApi.getSession();
-        console.log({session, ffwefwe: session?.session?.user?.user_metadata?.passwordSet });
-        if (session) {
-          setPasswordSet(session?.session?.user?.user_metadata?.passwordSet || false);
-          
+
+        console.log("INIT SESSION", { session, user: u });
+
+        // ❌ No valid session
+        if (!session) {
+          applyUser(null);
+          setPasswordSet(false);
+          return;
         }
 
-
+        // ✅ Valid session
+        setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
         applyUser(u);
-        await refreshUser();
-        // await refreshOrganizations();
 
+        // Only fetch backend user if session is valid
+        await refreshUser();
       } catch (e) {
-        console.log({ e });
+        console.error("Auth init failed", e);
+        applyUser(null);
+        setPasswordSet(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     initAuth();
-    console.log("INIR");
 
-    const unsubscribe = authApi.onAuthStateChange((u) => {
+    const unsubscribe = authApi.onAuthStateChange(async (u, session) => {
+      console.log("AUTH STATE CHANGED", { u, session });
+
+      if (!session) {
+        applyUser(null);
+        setPasswordSet(false);
+        return;
+      }
+
+      setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
       applyUser(u);
+
+      try {
+        await refreshUser();
+      } catch (err) {
+        console.error("refreshUser failed after auth change", err);
+      }
     });
 
     return unsubscribe;
-  }, [applyUser]);
+  }, [applyUser, refreshUser]);
+
   // ── Auth actions ───────────────────────────────────────────────────────────
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await authApi.login(email, password);
-      localStorage.setItem("access_token", JSON.stringify(result.access_token));
 
-      if (result.success && result.user) applyUser(result.user);
+      // ❌ REMOVE localStorage token storage
+      // localStorage.setItem("access_token", JSON.stringify(result.access_token));
+      console.log("LOGIN")
+      console.log({ result });
+
+      if (result.success && result.user) {
+        applyUser(result.user);
+
+        const { session } = await authApi.getSession();
+        setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
+
+        await refreshUser();
+      }
 
       return { success: result.success, error: result.error };
     },
-    [applyUser]
+    [applyUser, refreshUser],
   );
 
   const signup = useCallback(
@@ -205,16 +196,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       name: string,
       email: string,
       password: string,
-      orgData?: Record<string, string>
+      orgData?: Record<string, string>,
     ) => {
       const result = await authApi.signup(name, email, password, orgData);
+
       if (result.success) {
         setPendingEmail(email);
         setAuthFlow("signup");
       }
+
       return result;
     },
-    []
+    [],
   );
 
   const loginWithGoogle = useCallback(async () => {
@@ -223,31 +216,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const forgotPassword = useCallback(async (email: string) => {
     const result = await authApi.forgotPassword(email);
+
     if (result.success) {
       setPendingEmail(email);
       setAuthFlow("forgot-password");
     }
+
     return result;
   }, []);
 
   const verifyCode = useCallback(
     async (code: string) => {
       const result = await authApi.verifyCode(code, pendingEmail, authFlow);
+      console.log({ authFlow });
+
       if (authFlow === "forgot-password") {
-        navigate("/auth/reset-password");
+        return { success: result.success, error: result.error };
       }
-      if (authFlow === "signup") {
-        await authApi.organizationSetup(
-          pendingEmail,
-          code,
-          result.access_token
-        );
+
+      console.log({ authFlow: "next" });
+
+      if (result.success && result.user) {
+        applyUser(result.user);
+
+        const { session } = await authApi.getSession();
+        setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
+
+        // if (authFlow === "signup") {
+        //   await authApi.organizationSetup(pendingEmail, "Default Workspace");
+        // }
       }
-      if (result.success && result.user) applyUser(result.user);
 
       return { success: result.success, error: result.error };
     },
-    [authFlow, pendingEmail, applyUser]
+    [authFlow, pendingEmail, applyUser],
   );
 
   const resendCode = useCallback(async () => {
@@ -256,24 +258,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resetPassword = useCallback(async (newPassword: string) => {
     const result = await authApi.resetPassword(newPassword);
+
     if (result.success) {
       setAuthFlow(null);
       setPendingEmail("");
+
+      const { session } = await authApi.getSession();
+      setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
     }
+
     return result;
   }, []);
 
-  const logout = useCallback(() => {
-    authApi.logout();
+  const logout = useCallback(async () => {
+    await authApi.logout();
     applyUser(null);
-    localStorage.removeItem("access_token");
+    setPasswordSet(false);
+    localStorage.removeItem("active_workspace"); // add
+    localStorage.removeItem("active_organization"); // add
+
+    // ❌ REMOVE manual token cleanup if no longer used
+    // localStorage.removeItem("access_token");
   }, [applyUser]);
 
   const organizationSetup = useCallback(async (organizationName: string) => {
     const result = await authApi.organizationSetup(
       organizationName,
       "Default Workspace",
-      localStorage.getItem("access_token")
     );
     return result;
   }, []);
@@ -287,8 +298,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         pendingEmail,
         authFlow,
         passwordSet,
-
-
         login,
         signup,
         logout,
@@ -299,7 +308,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         resetPassword,
         setPendingEmail,
         organizationSetup,
-        // refreshOrganizations,
       }}
     >
       {children}

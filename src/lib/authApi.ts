@@ -1,11 +1,9 @@
-import { useCallback } from 'react';
-import { supabase } from './supabase';
-import { apiFetch } from './apiClient';
+import { supabase } from "./supabase";
+import { apiFetch } from "./apiClient";
 
 // ─────────────────────────────────────────────
-// Normalised user shape (unchanged)
+// Types
 // ─────────────────────────────────────────────
-export const DUMMY_MODE = false;
 export interface AuthUser {
   id: string;
   email: string;
@@ -13,8 +11,7 @@ export interface AuthUser {
   role: string;
 }
 
-
-
+export const DUMMY_MODE = false;
 
 // ─── Mock users ───────────────────────────────────────────────────────────────
 // Each entry maps to a role in the authorization system.
@@ -38,83 +35,88 @@ const fromSupabase = (
   }
 ): AuthUser => ({
   id: u.id,
-  email: u.email ?? '',
+  email: u.email ?? "",
   name:
     u.user_metadata?.full_name ||
     u.user_metadata?.name ||
-    u.email?.split('@')[0] ||
-    'User',
-  role: u.user_metadata?.role ?? 'agent',
+    u.email?.split("@")[0] ||
+    "User",
+  role: u.user_metadata?.role ?? "agent",
 });
 
 // ─────────────────────────────────────────────
 // AUTH API
-// Structure is SAME as your previous file
 // ─────────────────────────────────────────────
 export const authApi = {
   // ── Session ───────────────────────────────
+  getSession: async (): Promise<{
+    session: any | null;
+    user: AuthUser | null;
+  }> => {
+    console.log("GET SESSION CALLED");
 
-getSession: async (): Promise<any | null> => {
-  console.log("GET SESSION CALLED");
+    const { data, error } = await supabase.auth.getSession();
 
-  const { data, error } = await supabase.auth.getSession();
+    console.log("SESSION RESULT", data, error);
 
-  console.log("SESSION RESULT", data, error);
+    const session = data?.session ?? null;
 
-  const session = data?.session;
-
-  return { session: data, user : {...(session?.user ? fromSupabase(session.user) : null)}}
-},
+    return {
+      session, // ✅ FIXED
+      user: session?.user ? fromSupabase(session.user) : null,
+    };
+  },
 
   onAuthStateChange: (
-    callback: (user: AuthUser | null) => void
+    callback: (user: AuthUser | null, session: any | null) => void
   ): (() => void) => {
-    const { data: { subscription } } =
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          callback(null);
-          return;
-        }
-        callback(session?.user ? fromSupabase(session.user) : null);
-      });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        callback(null, session);
+        return;
+      }
+
+      callback(session?.user ? fromSupabase(session.user) : null, session);
+    });
 
     return () => subscription.unsubscribe();
   },
 
   // ── Login ───────────────────────────────
-
   login: async (
     email: string,
     password: string
-  ): Promise<{ success: boolean; error?: string; user?: AuthUser; access_token?: string; }> => {
-    const { error } = await supabase.auth.signInWithPassword({
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    user?: AuthUser;
+  }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error?.code === 'email_not_confirmed') {
-      await supabase.auth.resend({ type: 'signup', email });
-      return { success: false, error: 'Email not confirmed' };
+    if (error?.code === "email_not_confirmed") {
+      await supabase.auth.resend({ type: "signup", email });
+      return { success: false, error: "Email not confirmed" };
     }
-    if (error) return { success: false, error: error.message };
 
-    const { data: { session } } = await supabase.auth.getSession();
+    if (error) return { success: false, error: error.message };
 
     return {
       success: true,
-      user: session?.user ? fromSupabase(session.user) : undefined,
-      access_token: session?.access_token
-
+      user: data?.user ? fromSupabase(data.user) : undefined,
     };
   },
 
   // ── Sign-up ───────────────────────────────
-
   signup: async (
     name: string,
     email: string,
     password: string,
-    orgData: any
+    orgData?: any
   ): Promise<{ success: boolean; error?: string }> => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -122,7 +124,7 @@ getSession: async (): Promise<any | null> => {
       options: {
         data: {
           full_name: name,
-           passwordSet: true
+          passwordSet: true,
         },
       },
     });
@@ -133,10 +135,9 @@ getSession: async (): Promise<any | null> => {
   },
 
   // ── Google OAuth ──────────────────────────
-
   loginWithGoogle: async (): Promise<void> => {
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/dashboard`,
       },
@@ -144,7 +145,6 @@ getSession: async (): Promise<any | null> => {
   },
 
   // ── Forgot password ───────────────────────
-
   forgotPassword: async (
     email: string
   ): Promise<{ success: boolean; error?: string }> => {
@@ -158,15 +158,14 @@ getSession: async (): Promise<any | null> => {
   },
 
   // ── Verify OTP ────────────────────────────
-
   verifyCode: async (
     code: string,
     email: string,
-    flow: 'signup' | 'forgot-password' | null
-  ): Promise<{ success: boolean; error?: string; user?: AuthUser; access_token?: string }> => {
-    const type = flow === 'forgot-password' ? 'recovery' : 'email';
+    flow: "signup" | "forgot-password" | null
+  ): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
+    const type = flow === "forgot-password" ? "recovery" : "email";
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email,
       token: code,
       type,
@@ -174,29 +173,22 @@ getSession: async (): Promise<any | null> => {
 
     if (error) return { success: false, error: error.message };
 
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log(session);
-
     return {
       success: true,
-      user: session?.user ? fromSupabase(session.user) : undefined,
-      access_token: session?.access_token,
+      user: data?.user ? fromSupabase(data.user) : undefined,
     };
   },
 
-
   // ── Organization Setup ────────────────────
-
   organizationSetup: async (
     organizationName: string,
-    workspaceName: string,
-    access_token: any
+    workspaceName: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       await apiFetch("/organizations/setup", {
         method: "POST",
         body: JSON.stringify({
-          organizationName, // make sure these are available in scope
+          organizationName,
           workspaceName,
         }),
       });
@@ -209,41 +201,38 @@ getSession: async (): Promise<any | null> => {
   },
 
   // ── Resend OTP ────────────────────────────
-
   resendCode: async (
     email: string,
-    flow: 'signup' | 'forgot-password' | null
+    flow: "signup" | "forgot-password" | null
   ): Promise<void> => {
-    if (flow === 'forgot-password') {
+    if (flow === "forgot-password") {
       await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
     } else {
-      await supabase.auth.resend({ type: 'signup', email });
+      await supabase.auth.resend({ type: "signup", email });
     }
   },
 
-
-
   // ── Reset password ────────────────────────
-
   resetPassword: async (
     newPassword: string
   ): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.
-      updateUser({
-        password: newPassword,
-        data:{passwordSet: true}
-      });
-    console.log({ error });
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+      data: { passwordSet: true },
+    });
 
     if (error) return { success: false, error: error.message };
 
     return { success: true };
   },
 
-
-  getOrganizations: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+  getOrganizations: async (): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+  }> => {
     try {
       const data = await apiFetch("/organizations/me", {
         method: "GET",
@@ -254,7 +243,12 @@ getSession: async (): Promise<any | null> => {
       return { success: false, error: error.message };
     }
   },
-  getUser: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+
+  getUser: async (): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+  }> => {
     try {
       const data = await apiFetch("/users/me", {
         method: "GET",
@@ -265,7 +259,12 @@ getSession: async (): Promise<any | null> => {
       return { success: false, error: error.message };
     }
   },
-  getWorkspace: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+
+  getWorkspace: async (): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+  }> => {
     try {
       const data = await apiFetch("/workspaces/me", {
         method: "GET",
@@ -278,9 +277,8 @@ getSession: async (): Promise<any | null> => {
   },
 
   // ── Logout ────────────────────────────────
-  /** Sign out the current user. */
   logout: async (): Promise<void> => {
     await supabase.auth.signOut();
+    localStorage.clear()
   },
-
 };

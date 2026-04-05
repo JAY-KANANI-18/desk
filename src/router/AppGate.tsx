@@ -1,6 +1,6 @@
 import { AuthRouter } from "./AuthRouter";
 import { OrganizationProvider, useOrganization } from "../context/OrganizationContext";
-import { WorkspaceProvider } from "../context/WorkspaceContext";
+import { useWorkspace, WorkspaceProvider } from "../context/WorkspaceContext";
 import { Onboarding } from "../pages/Onboarding";
 import { useAuth } from "../context/AuthContext";
 import { WorkspaceRouter } from "./WorkspaceRouter";
@@ -17,6 +17,10 @@ import { RingSpinner } from "../pages/Loader";
 
 export const AppGate = () => {
   const { user, isLoading, passwordSet } = useAuth();
+  const { organizations, orgLoading,activeOrganization } = useOrganization();
+  const { activeWorkspace, workspaceLoading } = useWorkspace();
+
+  console.log({user,isLoading,passwordSet,organizations,orgLoading,activeOrganization,activeWorkspace,workspaceLoading});
   
   if (isLoading) {
     return <RingSpinner size={48} color="#4f46e5" />;
@@ -35,10 +39,11 @@ export const AppGate = () => {
     );
   }
   
-  const { organizations, orgLoading } = useOrganization();
+  
   if (orgLoading) {
       return  <RingSpinner size={48} color="#4f46e5" />;
   }
+
 
   if (organizations?.length === 0) {
     return (
@@ -47,6 +52,9 @@ export const AppGate = () => {
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
+  }
+  if (workspaceLoading || !activeWorkspace || !activeOrganization) {
+      return  <RingSpinner size={48} color="#4f46e5" />;
   }
 
   return (
@@ -57,12 +65,10 @@ export const AppGate = () => {
           <Toaster position="top-right" />
 
           <SocketProvider>
-              <WorkspaceProvider>
                       <WorkflowProvider>
 
                 <WorkspaceRouter />
                 </WorkflowProvider>
-              </WorkspaceProvider>
       
           </SocketProvider>
         </ChannelContextProvider>

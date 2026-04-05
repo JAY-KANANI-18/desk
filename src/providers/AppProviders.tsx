@@ -1,10 +1,10 @@
 import { AuthProvider } from "../context/AuthContext";
-import { OrganizationProvider } from "../context/OrganizationContext";
+import { InnerProviders } from "./InnerProviders";
 
 export const AppProviders = ({ children }: any) => {
   return (
     <AuthProvider>
-      <OrganizationProvider>{children}</OrganizationProvider>
+      <InnerProviders>{children}</InnerProviders>
     </AuthProvider>
   );
 };

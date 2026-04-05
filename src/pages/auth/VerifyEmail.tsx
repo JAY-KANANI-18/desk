@@ -88,9 +88,9 @@ export const VerifyEmail = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
+          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
             <MessageSquare className="text-white" size={24} />
-          </div>
+          </div> */}
           <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
           <p className="text-gray-500 mt-1 text-sm">
             We sent a 6-digit code to{' '}

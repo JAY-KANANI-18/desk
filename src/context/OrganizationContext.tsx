@@ -56,6 +56,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     if (user) {
+      console.log("user found get org and set");
       organizationApi.me().then((u) => {
         console.log({ u });
         setOrgLoading(false);
@@ -68,7 +69,14 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setOrgLoading(false);
     }
+    
   }, [user]);
+
+  useEffect(()=>{
+    console.log("organization change", organizations);
+    
+
+  },[organizations])
 
   // setOrgsLoaded(true);
   // setOrganizations(orgs);

@@ -1,3 +1,4 @@
+import { Workspace } from "../context/WorkspaceContext";
 import { supabase } from "./supabase";
 import toast from "react-hot-toast";
 
@@ -9,37 +10,35 @@ async function getAccessToken(): Promise<string | null> {
         data: { session },
     } = await supabase.auth.getSession();
 
-    localStorage.setItem("access_token", JSON.stringify(session?.access_token) ?? "");
+    // localStorage.setItem("access_token", JSON.stringify(session?.access_token) ?? "");
 
     return session?.access_token ?? null;
 }
 
 export async function apiFetch(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+      workspace?: Workspace | null  // add this
+
 ) {
-    const token = await getAccessToken();
+     const token = await getAccessToken();
+  if (!token) throw new Error("Session expired");
 
-    const activeWorkspace = JSON.parse(
-        localStorage.getItem("active_workspace") ||
-        "null"
-    );
+  // remove the localStorage read, use param instead
+  const activeWorkspace = workspace ?? null;
 
-
-    const response = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(activeWorkspace
-                ? { "X-Workspace-Id": activeWorkspace.id }
-                : {}),
-            ...(activeWorkspace?.organizationId 
-                ? { "x-organization-id": activeWorkspace.organizationId }
-                : {}),
-        },
-    });
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(activeWorkspace ? { "X-Workspace-Id": activeWorkspace.id } : {}),
+      ...(activeWorkspace?.organizationId
+        ? { "x-organization-id": activeWorkspace.organizationId }
+        : {}),
+    },
+  });
 
     let json: any = null;
 

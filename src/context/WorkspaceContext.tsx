@@ -4,12 +4,15 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 
 import { workspaceApi } from "../lib/workspaceApi";
 import { useOrganization } from "./OrganizationContext";
 import { useSocket } from "../socket/socket-provider";
 import { inboxApi } from "../lib/inboxApi";
+import { initApi } from "../lib/api";
+import { useAuth } from "./AuthContext";
 
 export interface Workspace {
   id: string;
@@ -29,6 +32,7 @@ interface WorkspaceContextType {
   workspaces: Workspace[] | null;
   activeWorkspace: Workspace | null;
   workspaceUsers: User[] | null;
+  workspaceLoading:boolean;
   uploadFile: (file: File, entityId: string) => Promise<string>;
   createWorkspace: (ws: WorkspaceCreate) => void;
   deleteWorkspace: (ws: Workspace) => void;
@@ -56,12 +60,15 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
   const [workspaceUsers, setWorkspaceUsers] = useState<User[] | null>(null);
-
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
+  const workspaceRef = useRef<Workspace | null>(null);
+  initApi(workspaceRef); // wire once, api always reads latest ref
+  const {user} = useAuth()
 
-  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+
+  const [workspaceLoading, setWorkspaceLoading] = useState(true);
   const socket = useSocket();
 
   useEffect(() => {
@@ -84,7 +91,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   };
   useEffect(() => {
-    if (!organizations) return;
+    if (!activeOrganization && !activeWorkspace) return;
 
     const loadUsers = async () => {
       try {
@@ -131,18 +138,23 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   
 
   useEffect(() => {
-    if (!activeWorkspace && organizations?.length) {
+    console.log("setting workspace from organization change",{activeWorkspace,activeOrganization});
+    if (!activeWorkspace  && organizations?.length) {
+      
       setActiveWorkspaceFunc(organizations[0].workspaces[0]);
+      setWorkspaceLoading(false)
+      
     }
     setWorkspaces(organizations?.map((org) => org.workspaces).flat());
-  }, [organizations]);
+  }, [organizations,user]);
 
-  const setActiveWorkspaceFunc = (ws: Workspace) => {
+  const setActiveWorkspaceFunc =  (ws: Workspace) => {
+    workspaceRef.current = ws;           // sync, immediate
+    localStorage.setItem("active_workspace", JSON.stringify(ws));
     setActiveWorkspace(ws);
     setActiveOrganizationFunc(
       organizations?.find((org) => org.id === ws.organizationId)
     );
-    localStorage.setItem("active_workspace", JSON.stringify(ws));
   };
 
   const createWorkspace = (ws: WorkspaceCreate) => {
@@ -185,6 +197,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         refreshWorkspaceUsers,
         activeWorkspace,
         workspaceUsers,
+        workspaceLoading,
         uploadFile,
         setWorkspaces,
         createWorkspace,
