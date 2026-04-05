@@ -18,6 +18,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       } = await supabase.auth.getSession();
 
       const accessToken = session?.access_token ?? null;
+      console.log("accessTokensocket",accessToken);
+      
       setToken(accessToken);
 
       if (accessToken) {
@@ -27,11 +29,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     };
 
     getSessionAndConnect();
+    console.log("secket connectiong");
+    
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const accessToken = session?.access_token ?? null;
+      console.log("socker access",accessToken);
+      
       setToken(accessToken);
 
       if (activeSocket) {
