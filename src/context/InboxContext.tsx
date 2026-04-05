@@ -148,7 +148,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const notifyRef = useRef(notify);
   useEffect(() => { notifyRef.current = notify; }, [notify]);
 
-  const socket = useSocket();
+  const {socket} = useSocket();
   const { activeWorkspace } = useWorkspace();
   const { refreshWorkspaceUsers } = useWorkspace();
 
@@ -327,7 +327,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   ══════════════════════════════════════════════════════════════ */
 
   useEffect(() => {
-    if (!socket || !wsId) return;
+    if (!socket || !activeWorkspace.id) return;
 
     const onMessage = (msg: ApiMessage & { conversationId: string }) => {
       // Append to timeline if this conv is open
@@ -445,6 +445,8 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
     };
+    console.log("listening socket");
+    
     socket.on("message.upsert", onMessage);
     socket.on("message.status_updated", onStatusUpdate);
     socket.on("activity.upsert", onActivityUpsert);
@@ -457,7 +459,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("conversation.upsert", onConversation);
       socket.off("activity", onActivity);
     };
-  }, [socket, wsId, fetchConversations]);
+  }, [socket, activeWorkspace.id, fetchConversations]);
 
   /* ══════════════════════════════════════════════════════════════
      SEND MESSAGE

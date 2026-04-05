@@ -69,16 +69,17 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
 
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
-  const socket = useSocket();
+  const {socket} = useSocket();
 
   useEffect(() => {
-    if (!socket || !activeWorkspace) return;
-
-    socket.emit("workspace:join", {
+    console.log("socket emit",socket,activeWorkspace);
+  if (!socket || !activeWorkspace) return;
+    
+  socket.emit("workspace:join", {
       workspaceId: activeWorkspace.id,
     });
 
-  }, [socket, activeWorkspace]);
+}, [socket, activeWorkspace?.id]);
   let { organizations, activeOrganization, refreshOrganizations, setActiveOrganizationFunc } =
     useOrganization();
 

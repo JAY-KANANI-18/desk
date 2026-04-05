@@ -63,17 +63,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [unreadCount, setUnreadCount]     = useState(0);
   const [soundEnabled, setSoundEnabled]   = useState(true);
 
-const socket = useSocket(); 
+const {socket} = useSocket(); 
   useEffect(() => {
-
+    console.log({socket});
+    
   if (!socket) return;
 
-  socket.on("notification:new", (data) => {
+  socket?.on("notification:new", (data) => {
     console.log("Notification", data);
   });
 
   return () => {
-    socket.off("notification:new");
+    socket?.off("notification:new");
   };
 
 }, [socket]);

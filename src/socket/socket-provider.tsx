@@ -1,73 +1,60 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import type { Socket } from "socket.io-client";
-import { connectSocket } from "./socket";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Socket } from "socket.io-client";
+import { connectSocket, disconnectSocket } from "./socket";
 import { supabase } from "../lib/supabase";
 
-const SocketContext = createContext<Socket | null>(null);
+interface SocketContextType {
+  socket: Socket | null;
+}
 
-export function SocketProvider({ children }: { children: React.ReactNode }) {
+const SocketContext = createContext<SocketContextType | null>(null);
+
+export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const connectingRef = useRef(false); // ✅ ref-based guard, survives re-renders
 
   useEffect(() => {
-    let activeSocket: Socket | null = null;
+    let cleanup = false;
 
-    const getSessionAndConnect = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const token = session?.access_token ?? null;
 
-      const accessToken = session?.access_token ?? null;
-      console.log("accessTokensocket",accessToken);
-      
-      setToken(accessToken);
+        if (!token) {
+          disconnectSocket();
+          setSocket(null);
+          connectingRef.current = false;
+          return;
+        }
 
-      if (accessToken) {
-        activeSocket = connectSocket(accessToken);
-        setSocket(activeSocket);
+        // ✅ Skip if already connecting/connected with same token
+        if (connectingRef.current) return;
+        connectingRef.current = true;
+
+        if (cleanup) return;
+
+        const s = connectSocket(token);
+        setSocket(s);
       }
-    };
-
-    getSessionAndConnect();
-    console.log("secket connectiong");
-    
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const accessToken = session?.access_token ?? null;
-      console.log("socker access",accessToken);
-      
-      setToken(accessToken);
-
-      if (activeSocket) {
-        activeSocket.disconnect();
-        activeSocket = null;
-      }
-
-      if (accessToken) {
-        activeSocket = connectSocket(accessToken);
-        setSocket(activeSocket);
-      } else {
-        setSocket(null);
-      }
-    });
+    );
 
     return () => {
+      cleanup = true;
+      connectingRef.current = false;
       subscription.unsubscribe();
-      if (activeSocket) {
-        activeSocket.disconnect();
-      }
+      disconnectSocket();
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );
-}
+};
 
-export function useSocket(): Socket | null {
-  return useContext(SocketContext);
-}
+export const useSocket = () => {
+  const ctx = useContext(SocketContext);
+  if (!ctx) throw new Error("useSocket must be used within SocketProvider");
+  return ctx;
+};

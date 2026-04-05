@@ -92,6 +92,7 @@ export const authApi = {
     success: boolean;
     error?: string;
     user?: AuthUser;
+    session?:any;
   }> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -108,6 +109,7 @@ export const authApi = {
     return {
       success: true,
       user: data?.user ? fromSupabase(data.user) : undefined,
+      session:data?.session
     };
   },
 

@@ -64,13 +64,11 @@ export const AppGate = () => {
 
           <Toaster position="top-right" />
 
-          <SocketProvider>
                       <WorkflowProvider>
 
                 <WorkspaceRouter />
                 </WorkflowProvider>
       
-          </SocketProvider>
         </ChannelContextProvider>
       </CallProvider>
     </NotificationProvider >
