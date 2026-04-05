@@ -29,6 +29,7 @@
  *  POST   /workspaces/:wsId/messages/presign           get upload URL
  */
 
+import { api } from "./api";
 import { apiFetch } from "./apiClient";
 
 
@@ -138,7 +139,7 @@ export interface ConversationFilters {
   status?: ConvStatus | "all";
   priority?: ConvPriority | "all";
   direction?: Direction | "all";
-//   channelType?: string | "all";
+  //   channelType?: string | "all";
   assigneeId?: string | "me" | "unassigned";
   teamId?: string;
   unreplied?: boolean;
@@ -177,7 +178,6 @@ export const inboxApi = {
    *              unreplied (bool), search, cursor, limit
    */
   getConversations(
-    workspaceId: string,
     filters: ConversationFilters = {}
   ): Promise<PaginatedConversations> {
     const params = new URLSearchParams();
@@ -187,7 +187,7 @@ export const inboxApi = {
       }
     });
     const qs = params.toString();
-    return apiFetch(`/conversations${qs ? `?${qs}` : ""}`);
+    return api.get(`/conversations${qs ? `?${qs}` : ""}`);
   },
 
   /**
@@ -199,7 +199,7 @@ export const inboxApi = {
     workspaceId: string,
     q: string
   ): Promise<MessageSearchResult[]> {
-    return apiFetch(
+    return api.get(
       `/conversations/search?q=${encodeURIComponent(q)}`
     );
   },
@@ -211,7 +211,7 @@ export const inboxApi = {
     workspaceId: string,
     conversationId: string
   ): Promise<ApiConversation> {
-    return apiFetch(`/conversations/${conversationId}`);
+    return api.get(`/conversations/${conversationId}`);
   },
 
   /* ─── Messages ──────────────────────────────────────────────── */
@@ -228,7 +228,7 @@ export const inboxApi = {
   ): Promise<{ data: ApiMessage[]; nextCursor?: string }> {
     const params = new URLSearchParams({ limit: String(limit) });
     if (cursor) params.set("cursor", cursor);
-    return apiFetch(
+    return api.get(
       `/conversations/${conversationId}/messages?${params}`
     );
   },
@@ -245,7 +245,7 @@ export const inboxApi = {
   ): Promise<{ data: ApiTimelineItem[]; nextCursor?: string }> {
     const params = new URLSearchParams({ limit: String(limit) });
     if (cursor) params.set("cursor", cursor);
-    return apiFetch(
+    return api.get(
       `/conversations/${conversationId}/timeline?${params}`
     );
   },
@@ -264,12 +264,9 @@ export const inboxApi = {
       metadata?: Record<string, any>;
     }
   ): Promise<ApiMessage> {
-    return apiFetch(
-      `/conversations/${conversationId}/messages`,
-      {
-        method: "POST",
-        body: JSON.stringify({conversationId, channelId, ...payload }),
-      }
+    return api.post(
+      `/conversations/${conversationId}/messages`, { conversationId, channelId, ...payload }
+
     );
   },
 
@@ -283,36 +280,29 @@ export const inboxApi = {
     text: string,
     mentionedUserIds?: string[]
   ): Promise<ApiActivity> {
-    return apiFetch(
-      `/conversations/${conversationId}/notes`,
-      {
-        method: "POST",
-        body: JSON.stringify({ text, mentionedUserIds }),
-      }
+    return api.post(
+      `/conversations/${conversationId}/notes`, { text, mentionedUserIds }
+
     );
   },
 
   /* ─── Conversation state mutations ──────────────────────────── */
 
   close(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/close`,
-      { method: "POST" }
+    return api.post(
+      `/conversations/${conversationId}/close`
     );
   },
 
   open(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/open`,
-      { method: "POST" }
+    return api.post(
+      `/conversations/${conversationId}/open`
     );
   },
 
   setPending(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/pending`,
-      { method: "POST" }
-    );
+    return api.post(
+      `/conversations/${conversationId}/pending`    );
   },
 
   assignUser(
@@ -320,16 +310,14 @@ export const inboxApi = {
     conversationId: string,
     userId: string
   ): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/assign/user`,
-      { method: "POST", body: JSON.stringify({ userId }) }
+    return api.post(
+      `/conversations/${conversationId}/assign/user`,{ userId }
     );
   },
 
   unassignUser(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/assign/user`,
-      { method: "DELETE" }
+    return api.delete(
+      `/conversations/${conversationId}/assign/user`
     );
   },
 
@@ -338,16 +326,14 @@ export const inboxApi = {
     conversationId: string,
     teamId: string
   ): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/assign/team`,
-      { method: "POST", body: JSON.stringify({ teamId }) }
+    return api.post(
+      `/conversations/${conversationId}/assign/team`,{ teamId }
     );
   },
 
   unassignTeam(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/assign/team`,
-      { method: "DELETE" }
+    return api.delete(
+      `/conversations/${conversationId}/assign/team`
     );
   },
 
@@ -356,23 +342,20 @@ export const inboxApi = {
     conversationId: string,
     priority: ConvPriority
   ): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/priority`,
-      { method: "PATCH", body: JSON.stringify({ priority }) }
+    return api.put(
+      `/conversations/${conversationId}/priority`,{ priority }
     );
   },
 
   markRead(workspaceId: string, conversationId: string): Promise<void> {
-    return apiFetch(
-      `/conversations/${conversationId}/read`,
-      { method: "POST" }
+    return api.post(
+      `/conversations/${conversationId}/read`
     );
   },
 
-  updateContactLifecycle( contactId: string, lifecycleId: string): Promise<void> {
-    return apiFetch(
-      `/contacts/${contactId}/lifecycle`,
-      { method: "PATCH", body: JSON.stringify({ lifecycleId }) }
+  updateContactLifecycle(contactId: string, lifecycleId: string): Promise<void> {
+    return api.put(
+      `/contacts/${contactId}/lifecycle`,{ lifecycleId }
     );
   },
 
@@ -391,9 +374,6 @@ export const inboxApi = {
     },
     workspaceId?: string,
   ): Promise<{ uploadUrl: string; fileUrl: string }> {
-    return apiFetch(`/files/presign`, {
-      method: "POST",
-      body: JSON.stringify(opts),
-    });
+    return api.post(`/files/presign`, opts);
   },
 };

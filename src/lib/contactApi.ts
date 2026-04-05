@@ -178,7 +178,7 @@ const SEED_CONTACTS: Contact[] = [
 export const contactsApi = {
     /** GET /contacts — returns all contacts */
     getContacts: async (): Promise<Contact[]> => {
-        const res = await apiFetch("/contacts");
+        const res = await api.get("/contacts");
 
         // if (!res.ok) throw new Error("Failed to apiFetch contacts");
         return res;
@@ -213,11 +213,7 @@ export const contactsApi = {
     },
     /** POST /contacts — creates a new contact */
     createContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
-        const res = await apiFetch("/contacts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(contact),
-        });
+        const res = await api.post("/contacts", contact);
         return res;
     },
 
@@ -237,29 +233,20 @@ export const contactsApi = {
 
     /** DELETE /contacts/:id — deletes a single contact */
     deleteContact: async (id: number): Promise<void> => {
-        const res = await apiFetch(`/contacts/${id}`, { method: "DELETE" });
+        const res = await api.delete(`/contacts/${id}`);
         // if (!res.ok) throw new Error("Failed to delete contact");
     },
 
     /** DELETE /contacts — bulk delete */
     deleteContacts: async (ids: number[]): Promise<void> => {
-        const res = await apiFetch("/contacts", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids }),
-        });
-        if (!res.ok) throw new Error("Failed to delete contacts");
+        const res = await api.delete("/contacts",{ ids });
     },
 
     /** POST /contacts/import — bulk import from CSV rows */
     importContacts: async (
         contacts: Omit<Contact, "id">[]
     ): Promise<Contact[]> => {
-        const res = await apiFetch("/contacts/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contacts }),
-        });
+        const res = await api.post("/contacts/import",{ contacts });
         if (!res.ok) throw new Error("Failed to import contacts");
         return res.json();
     },
@@ -270,7 +257,7 @@ export const contactsApi = {
     }): Promise<Contact[]> => {
         const params = new URLSearchParams();
         if (filters?.lifecycle) params.set("lifecycle", filters.lifecycle);
-        const res = await apiFetch(`/contacts/export?${params}`);
+        const res = await api.get(`/contacts/export?${params}`);
         if (!res.ok) throw new Error("Failed to export contacts");
         return res.json();
     },

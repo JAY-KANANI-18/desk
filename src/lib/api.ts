@@ -5,19 +5,23 @@ import { apiFetch } from "./apiClient";
 let _workspaceRef: React.MutableRefObject<Workspace | null> | null = null;
 
 export function initApi(workspaceRef: React.MutableRefObject<Workspace | null>) {
-  _workspaceRef = workspaceRef;
+    _workspaceRef = workspaceRef;
 }
 
 export const api = {
-  get: (path: string, options?: RequestInit) =>
-    apiFetch(path, { method: "GET", ...options }, _workspaceRef?.current),
+    get: (path: string, options?: RequestInit) =>
+        apiFetch(path, { method: "GET", ...options }, _workspaceRef?.current),
 
-  post: (path: string, body?: unknown, options?: RequestInit) =>
-    apiFetch(path, { method: "POST", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
+    post: (path: string, body?: unknown, options?: RequestInit) =>
+        apiFetch(path, { method: "POST", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
 
-  put: (path: string, body?: unknown, options?: RequestInit) =>
-    apiFetch(path, { method: "PUT", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
+    put: (path: string, body?: unknown, options?: RequestInit) =>
+        apiFetch(path, { method: "PUT", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
 
-  delete: (path: string, options?: RequestInit) =>
-    apiFetch(path, { method: "DELETE", ...options }, _workspaceRef?.current),
+    delete: (path: string, options?: RequestInit) =>
+        apiFetch(path, { method: "DELETE", ...options }, _workspaceRef?.current),
+
+    patch: (url: string, body?: unknown, options?: RequestInit) =>
+        apiFetch(url, {
+            method: "PATCH", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
 };

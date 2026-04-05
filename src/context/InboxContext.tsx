@@ -240,10 +240,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchConversations = useCallback(
     async (replace: boolean) => {
-      if (!wsId) return;
       setConvLoading(true);
       try {
-        const result = await inboxApi.getConversations(wsId, {
+        const result = await inboxApi.getConversations( {
           ...filters,
           search: convSearch || undefined,
           cursor: replace ? undefined : nextConvCursor,
