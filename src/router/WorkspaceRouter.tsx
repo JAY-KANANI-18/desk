@@ -127,11 +127,7 @@ export const WorkspaceRouter = () => {
         }>
           <Route index element={<Navigate to="general-info" replace />} />
           <Route path="general-info" element={<WorkspaceGeneralInfo />} />
-          <Route path="users-settings" element={
-            <ProtectedRoute org="org:users:view">
-              <OrgUsersSettings />
-            </ProtectedRoute>
-          } />
+          
           <Route path="users" element={
             <ProtectedRoute org="org:workspaces:view">
               <WorkspaceUsers />

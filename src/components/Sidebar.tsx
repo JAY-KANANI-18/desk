@@ -200,7 +200,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       <div>
                         <div className="text-sm font-medium">Organization settings</div>
                         <div className="text-xs text-gray-500">
-                          {activeOrganization?.name} (ID: {activeOrganization?.id})
+                          {activeOrganization?.name} 
+                          {/* (ID: {activeOrganization?.id}) */}
                         </div>
                       </div>
                     </NavLink>

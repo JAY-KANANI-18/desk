@@ -4,6 +4,7 @@ import {
   Users,
   Tag,
   GitBranch,
+  RefreshCw,
 } from "lucide-react";
 
 export const menuSections = [
@@ -11,17 +12,17 @@ export const menuSections = [
     title: "General",
     items: [
       {
-        name: "General info",
+        name: "General Info",
         path: "/workspace/settings/general-info",
         icon: <Settings size={16} />,
       },
+      // {
+      //   name: "User settings",
+      //   path: "/workspace/settings/users-settings",
+      //   icon: <Users size={16} />,
+      // },
       {
-        name: "User settings",
-        path: "/workspace/settings/users-settings",
-        icon: <Users size={16} />,
-      },
-      {
-        name: "Workspace users",
+        name: "Workspace Users",
         path: "/workspace/settings/users",
         icon: <Users size={16} />,
       },
@@ -33,7 +34,7 @@ export const menuSections = [
       {
         name: "Lifecycle",
         path: "/workspace/settings/lifecycle",
-        icon: <GitBranch size={16} />,
+        icon: <RefreshCw size={16} />,
       },
       {
         name: "Tags",
