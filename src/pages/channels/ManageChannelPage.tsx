@@ -486,7 +486,7 @@ const SectionContent = ({
 export const ManageChannelPage = () => {
   const { channelType, channelId } = useParams<{ channelType: string; channelId: string }>();
   const navigate = useNavigate();
-const { channels, loading, refreshing } = useChannel();
+const { channels, loading, refreshing ,refreshChannels} = useChannel();
   const [activeSection, setActiveSection] = useState('configuration');
 
 
@@ -619,7 +619,8 @@ const { channels, loading, refreshing } = useChannel();
               sectionId={activeSection}
               channelType={channelType}
               channel={channel}
-              onDisconnect={() => navigate('/channels')}
+              onDisconnect={() => {refreshChannels() 
+                navigate('/channels')}}
             />
           </div>
         </main>

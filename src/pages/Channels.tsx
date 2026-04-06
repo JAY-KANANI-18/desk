@@ -175,7 +175,6 @@ export const Channels = () => {
   const navigate = useNavigate();
   const {channels,loading} =  useChannel()
 
-
   // Pick up newly connected channel coming back from a connect page
   // useEffect(() => {
   //   const state = location.state as {
@@ -195,9 +194,9 @@ export const Channels = () => {
   //   }
   // }, [location.state]);
 
-  const handleChannelConnected = (ch: ConnectedChannel) => {
-    setChannels((prev) => [...prev.filter((c) => c.id !== ch.id), ch]);
-  };
+  // const handleChannelConnected = (ch: ConnectedChannel) => {
+  //   setChannels((prev) => [...prev.filter((c) => c.id !== ch.id), ch]);
+  // };
   return (
     <ConnectedChannelsView
       channels={channels}

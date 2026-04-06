@@ -101,7 +101,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                 }`
               }
             >
-              <item.icon size={20} className="flex-shrink-0" />
+              <item.icon size={22} className="flex-shrink-0" />
               {isExpanded && (
                 <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
                   {item.label}
@@ -143,7 +143,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                   isExpanded ? "w-full" : "w-10 justify-center"
                 }`}
               >
-                <Settings size={20} className="flex-shrink-0" />
+                <Settings size={22} className="flex-shrink-0" />
                 {isExpanded && (
                   <span className="text-sm font-medium">Settings</span>
                 )}
@@ -156,7 +156,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                 isExpanded ? "w-full" : "w-10 justify-center"
               }`}
             >
-              <Settings size={20} className="flex-shrink-0" />
+              <Settings size={22} className="flex-shrink-0" />
               {isExpanded && (
               <span className="text-sm font-medium">Settings</span>
               )}
@@ -196,7 +196,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       onClick={() => setShowSettingsMenu(false)}
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg"
                     >
-                      <Building2 size={18} />
+                      <Building2 size={22} />
                       <div>
                         <div className="text-sm font-medium">Organization settings</div>
                         <div className="text-xs text-gray-500">
@@ -213,7 +213,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                       onClick={() => setShowSettingsMenu(false)}
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full"
                     >
-                      <Building size={18} />
+                      <Building size={22} />
                       <div>
                         <div className="text-sm font-medium">Workspace settings</div>
                         <div className="text-xs text-gray-500">
@@ -273,7 +273,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
                     onClick={() => setShowSettingsMenu(false)}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full"
                   >
-                    <User size={18} />
+                    <User size={22} />
                     <div>
                       <div className="text-sm font-medium">Personal settings</div>
                       <div className="text-xs text-gray-500">Profile & notifications</div>
