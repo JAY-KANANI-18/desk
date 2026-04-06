@@ -21,6 +21,7 @@ import {
 import { CHANNEL_TYPE_TO_SLUG } from "./channels/ManageChannelPage";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
+import { useChannel } from "../context/ChannelContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ConnectedChannel {
@@ -50,12 +51,10 @@ interface CatalogChannel {
 const ConnectedChannelsView = ({
   loading,
   channels,
-  setChannels,
   onConnectNew,
 }: {
   loading: boolean;
   channels: ConnectedChannel[];
-  setChannels: React.Dispatch<React.SetStateAction<ConnectedChannel[]>>;
   onConnectNew: () => void;
 }) => {
   const navigate = useNavigate();
@@ -173,19 +172,9 @@ const ConnectedChannelsView = ({
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const Channels = () => {
-  const location = useLocation();
-  const [channels, setChannels] = useState<ConnectedChannel[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const {channels,loading} =  useChannel()
 
-  useEffect(() => {
-    ChannelApi.getChannels().then((chs) => {
-      console.log({ chs });
-
-      setChannels(chs);
-      setLoading(false);
-    });
-  }, []);
 
   // Pick up newly connected channel coming back from a connect page
   // useEffect(() => {
@@ -213,7 +202,6 @@ export const Channels = () => {
     <ConnectedChannelsView
       channels={channels}
       loading={loading}
-      setChannels={setChannels}
       onConnectNew={() => navigate("/channels/connect")}
     />
   );

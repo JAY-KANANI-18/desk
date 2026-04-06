@@ -1,174 +1,151 @@
-import React, { createContext, useContext, useMemo, useCallback } from "react";
+import React, {
+  createContext, useContext, useMemo, useCallback,
+} from "react";
+import { useOrganization } from "./OrganizationContext";
+import { useWorkspace } from "./WorkspaceContext";
 import { useAuth } from "./AuthContext";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROLES
-// Hierarchy (highest → lowest): owner > admin > supervisor > agent
-// ─────────────────────────────────────────────────────────────────────────────
-export type Role = "owner" | "admin" | "supervisor" | "agent";
+// ── Org level ──────────────────────────────────────────────
+export type OrgRole =
+  | "ORG_ADMIN"
+  | "ORG_BILLING_ADMIN"
+  | "ORG_USER_ADMIN"
+  | "ORG_MEMBER";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERMISSIONS
-// Fine-grained capabilities checked via can(permission).
-// ─────────────────────────────────────────────────────────────────────────────
-export type Permission =
-  // Inbox
-  | "inbox.view"
-  | "inbox.assign"
-  | "inbox.resolve"
-  | "inbox.delete"
-  // Contacts
-  | "contacts.view"
-  | "contacts.edit"
-  | "contacts.delete"
-  | "contacts.import"
-  // Broadcast
-  | "broadcast.view"
-  | "broadcast.send"
-  // Workflows
-  | "workflows.view"
-  | "workflows.manage"
-  // Reports
-  | "reports.view"
-  | "reports.export"
-  // Channels
-  | "channels.view"
-  | "channels.manage"
-  // Team
-  | "team.view"
-  | "team.manage"
-  // Billing
-  | "billing.view"
-  | "billing.manage"
-  // Workspace
-  | "workspace.settings";
+export type OrgPermission =
+  | "org:settings:manage" | "org:settings:view"
+  | "org:delete"
+  | "org:billing:manage" | "org:billing:view"
+  | "org:subscription:cancel"
+  | "org:users:manage"   | "org:users:view"
+  | "org:workspaces:manage" | "org:workspaces:view";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROLE → PERMISSIONS MAP
-// Edit this object to adjust what each role can do.
-// When DUMMY_MODE = false, the role comes from user_metadata.role in Supabase.
-// ─────────────────────────────────────────────────────────────────────────────
-export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  owner: [
-    "inbox.view",
-    "inbox.assign",
-    "inbox.resolve",
-    "inbox.delete",
-    "contacts.view",
-    "contacts.edit",
-    "contacts.delete",
-    "contacts.import",
-    "broadcast.view",
-    "broadcast.send",
-    "workflows.view",
-    "workflows.manage",
-    "reports.view",
-    "reports.export",
-    "channels.view",
-    "channels.manage",
-    "team.view",
-    "team.manage",
-    "billing.view",
-    "billing.manage",
-    "workspace.settings",
+const ORG_ROLE_PERMISSIONS: Record<OrgRole, OrgPermission[]> = {
+  ORG_ADMIN: [
+    "org:settings:manage", "org:settings:view", "org:delete",
+    "org:billing:manage",  "org:billing:view",  "org:subscription:cancel",
+    "org:users:manage",    "org:users:view",
+    "org:workspaces:manage", "org:workspaces:view",
   ],
-  admin: [
-    "inbox.view",
-    "inbox.assign",
-    "inbox.resolve",
-    "inbox.delete",
-    "contacts.view",
-    "contacts.edit",
-    "contacts.delete",
-    "contacts.import",
-    "broadcast.view",
-    "broadcast.send",
-    "workflows.view",
-    "workflows.manage",
-    "reports.view",
-    "reports.export",
-    "channels.view",
-    "channels.manage",
-    "team.view",
-    "team.manage",
-    "billing.view",
-    "workspace.settings",
+  ORG_BILLING_ADMIN: [
+    "org:settings:view",
+    "org:billing:manage", "org:billing:view",
+    "org:users:view", "org:workspaces:view",
   ],
-  supervisor: [
-    "inbox.view",
-    "inbox.assign",
-    "inbox.resolve",
-    "contacts.view",
-    "contacts.edit",
-    "broadcast.view",
-    "broadcast.send",
-    "workflows.view",
-    "reports.view",
-    "channels.view",
-    "team.view",
+  ORG_USER_ADMIN: [
+    "org:settings:view", "org:billing:view",
+    "org:users:manage", "org:users:view",
+    "org:workspaces:manage", "org:workspaces:view",
   ],
-  agent: [
-    "inbox.view",
-    "inbox.resolve",
-    "contacts.view",
-    "broadcast.view",
-    "workflows.view",
-    "reports.view",
-    "channels.view",
-    "team.view",
+  ORG_MEMBER: [],
+};
+
+// ── Workspace level ────────────────────────────────────────
+export type WorkspaceRole = "WS_OWNER" | "WS_MANAGER" | "WS_AGENT";
+
+export type WorkspacePermission =
+  | "ws:dashboard:view"
+  | "ws:contacts:view"   | "ws:contacts:manage"
+  | "ws:messages:view"   | "ws:messages:send"
+  | "ws:shortcuts:use"   | "ws:shortcuts:manage"
+  | "ws:broadcasts:view" | "ws:broadcasts:send"
+  | "ws:reports:view"
+  | "ws:settings:view"   | "ws:settings:manage" | "ws:settings:limited"
+  | "ws:profile:manage"  | "ws:notifications:manage"
+  | "ws:teams:manage"
+  | "ws:workflows:view"  | "ws:workflows:manage"
+  | "ws:channels:manage"
+  | "ws:files:access";
+
+const WS_ROLE_PERMISSIONS: Record<WorkspaceRole, WorkspacePermission[]> = {
+  WS_OWNER: [
+    "ws:dashboard:view",
+    "ws:contacts:view",    "ws:contacts:manage",
+    "ws:messages:view",    "ws:messages:send",
+    "ws:shortcuts:use",    "ws:shortcuts:manage",
+    "ws:broadcasts:view",  "ws:broadcasts:send",
+    "ws:reports:view",
+    "ws:settings:view",    "ws:settings:manage",  "ws:settings:limited",
+    "ws:profile:manage",   "ws:notifications:manage",
+    "ws:teams:manage",
+    "ws:workflows:view",   "ws:workflows:manage",
+    "ws:channels:manage",  "ws:files:access",
+  ],
+  WS_MANAGER: [
+    "ws:dashboard:view",
+    "ws:contacts:view",    "ws:contacts:manage",
+    "ws:messages:view",    "ws:messages:send",
+    "ws:shortcuts:use",    "ws:shortcuts:manage",
+    "ws:broadcasts:view",  "ws:broadcasts:send",
+    "ws:reports:view",
+    "ws:settings:view",    "ws:settings:limited",
+    "ws:profile:manage",   "ws:notifications:manage",
+    "ws:workflows:view",   "ws:files:access",
+  ],
+  WS_AGENT: [
+    "ws:messages:view",    "ws:messages:send",
+    "ws:shortcuts:use",
+    "ws:profile:manage",   "ws:notifications:manage",
   ],
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONTEXT
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Context ────────────────────────────────────────────────
 interface AuthorizationContextType {
-  /** The current user's role, or null if not authenticated. */
-  role: Role | null;
-  /** All permissions granted to the current role. */
-  permissions: Permission[];
-  /** Returns true if the current user has the given permission. */
-  can: (permission: Permission) => boolean;
-  /** Returns true if the current user has one of the given roles. */
-  hasRole: (role: Role | Role[]) => boolean;
+  orgRole: OrgRole | null;
+  workspaceRole: WorkspaceRole | null;
+  canOrg: (...p: OrgPermission[]) => boolean;
+  canWs: (...p: WorkspacePermission[]) => boolean;
+  isOrgAdmin: boolean;
+  isWsOwner: boolean;
 }
 
-const AuthorizationContext = createContext<AuthorizationContextType | null>(
-  null
-);
+const AuthorizationContext = createContext<AuthorizationContextType | null>(null);
 
-//
 export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user } = useAuth();
+  const { activeOrganization } = useOrganization();
+  const { activeWorkspace } = useWorkspace();
+  const {user} = useAuth()
+  console.log({activeWorkspace,activeOrganization});
 
-  const role = useMemo<Role | null>(() => {
-    if (!user) return null;
-    const r = user.role as Role;
-    return ROLE_PERMISSIONS[r] ? r : "agent";
-  }, [user]);
+  // Expect activeOrganization to carry myRole, e.g. activeOrganization.myRole
+  const orgRole = (activeOrganization?.role ?? null) as OrgRole | null;
 
-  const permissions = useMemo<Permission[]>(() => {
-    if (!role) return [];
-    return ROLE_PERMISSIONS[role] ?? [];
-  }, [role]);
+  // Expect activeWorkspace to carry myRole, e.g. activeWorkspace.myRole
+  
+  const workspaceRole = ((activeWorkspace?.members?.find((m:any)=> m.userId == user.id))?.role ?? null) as WorkspaceRole | null;
 
-  const can = useCallback(
-    (permission: Permission) => permissions.includes(permission),
-    [permissions]
-  );
-
-  const hasRole = useCallback(
-    (r: Role | Role[]) => {
-      if (!role) return false;
-      return Array.isArray(r) ? r.includes(role) : role === r;
+  const canOrg = useCallback(
+    (...permissions: OrgPermission[]): boolean => {
+      if (!orgRole) return false;
+      const granted = ORG_ROLE_PERMISSIONS[orgRole] ?? [];
+      return permissions.every(p => granted.includes(p));
     },
-    [role]
+    [orgRole],
   );
+
+  const canWs = useCallback(
+    (...permissions: WorkspacePermission[]): boolean => {
+      // if (orgRole === "ORG_ADMIN") return true; // org admins bypass ws restrictions
+      if (!workspaceRole) return false;
+      const granted = WS_ROLE_PERMISSIONS[workspaceRole] ?? [];
+      return permissions.every(p => granted.includes(p));
+    },
+    [orgRole, workspaceRole],
+  );
+
+  const value = useMemo(() => ({
+    orgRole,
+    workspaceRole,
+    canOrg,
+    canWs,
+    isOrgAdmin: orgRole === "ORG_ADMIN",
+    isWsOwner: workspaceRole === "WS_OWNER",
+  }), [orgRole, workspaceRole, canOrg, canWs]);
 
   return (
-    <AuthorizationContext.Provider value={{ role, permissions, can, hasRole }}>
+    <AuthorizationContext.Provider value={value}>
       {children}
     </AuthorizationContext.Provider>
   );
@@ -176,41 +153,35 @@ export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuthorization = () => {
   const ctx = useContext(AuthorizationContext);
-  if (!ctx)
-    throw new Error(
-      "useAuthorization must be used within AuthorizationProvider"
-    );
+  if (!ctx) throw new Error("useAuthorization must be inside AuthorizationProvider");
   return ctx;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROLE GUARD
-// Inline component for conditional rendering based on permissions / roles.
-//
-// Usage:
-//   <RoleGuard permission="billing.manage">
-//     <BillingButton />
-//   </RoleGuard>
-//
-//   <RoleGuard role={['owner', 'admin']} fallback={<p>Admins only</p>}>
-//     <AdminPanel />
-//   </RoleGuard>
-// ─────────────────────────────────────────────────────────────────────────────
-interface RoleGuardProps {
-  permission?: Permission;
-  role?: Role | Role[];
+// ── Guards ─────────────────────────────────────────────────
+interface OrgGuardProps {
+  permission: OrgPermission | OrgPermission[];
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
-export const RoleGuard: React.FC<RoleGuardProps> = ({
-  permission,
-  role,
-  children,
-  fallback = null,
+export const OrgGuard: React.FC<OrgGuardProps> = ({
+  permission, children, fallback = null,
 }) => {
-  const { can, hasRole } = useAuthorization();
-  if (permission && !can(permission)) return <>{fallback}</>;
-  if (role && !hasRole(role)) return <>{fallback}</>;
-  return <>{children}</>;
+  const { canOrg } = useAuthorization();
+  const perms = Array.isArray(permission) ? permission : [permission];
+  return canOrg(...perms) ? <>{children}</> : <>{fallback}</>;
+};
+
+interface WsGuardProps {
+  permission: WorkspacePermission | WorkspacePermission[];
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+export const WsGuard: React.FC<WsGuardProps> = ({
+  permission, children, fallback = null,
+}) => {
+  const { canWs } = useAuthorization();
+  const perms = Array.isArray(permission) ? permission : [permission];
+  return canWs(...perms) ? <>{children}</> : <>{fallback}</>;
 };

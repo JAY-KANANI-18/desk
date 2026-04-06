@@ -33,6 +33,16 @@ interface WorkspaceContextType {
   activeWorkspace: Workspace | null;
   workspaceUsers: User[] | null;
   workspaceLoading:boolean;
+    inviteUser: (
+    email: string,
+    role: string,
+    workspaceAccess: any
+  ) => Promise<any>;
+  updateUser: (
+    email: string,
+    role: string,
+    workspaceAccess: any
+  ) => Promise<any>;
   uploadFile: (file: File, entityId: string) => Promise<string>;
   createWorkspace: (ws: WorkspaceCreate) => void;
   deleteWorkspace: (ws: Workspace) => void;
@@ -157,6 +167,30 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
       organizations?.find((org) => org.id === ws.organizationId)
     );
   };
+  const inviteUser = useCallback(
+    async (email: string, role: string, workspaceAccess: any) => {
+      const result = await workspaceApi.inviteUser(
+        email,
+        role,
+        workspaceAccess,
+      );
+
+      return result;
+    },
+    []
+  );
+  const updateUser = useCallback(
+    async (email: string, role: string, workspaceAccess: any) => {
+      const result = await workspaceApi.updateUser(
+        email,
+        role,
+        workspaceAccess,
+      );
+
+      return result;
+    },
+    []
+  );
 
   const createWorkspace = (ws: WorkspaceCreate) => {
     workspaceApi.create(ws).then(async () => {
@@ -196,6 +230,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         workspaces,
         setActiveWorkspaceFunc,
         refreshWorkspaceUsers,
+        inviteUser,
+        updateUser,
         activeWorkspace,
         workspaceUsers,
         workspaceLoading,

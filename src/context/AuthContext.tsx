@@ -4,13 +4,11 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
-
 import { authApi } from "../lib/authApi";
 import type { AuthUser } from "../lib/authApi";
-import { useNavigate } from "react-router-dom";
 
-// ─── Domain user type ─────────────────────────────────────────────────────────
 export interface User {
   id: string;
   firstName: string;
@@ -19,124 +17,83 @@ export interface User {
   avatarUrl?: string;
   role: string;
   activityStatus?: string;
-  organizations?: any[];
 }
 
-// ─── Context shape ────────────────────────────────────────────────────────────
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
+  passwordSet: boolean;
   pendingEmail: string;
   authFlow: "signup" | "forgot-password" | null;
-  passwordSet: boolean;
-  login: (
-    email: string,
-    password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
-  signup: (
-    name: string,
-    email: string,
-    password: string,
-    orgData?: Record<string, string>,
-  ) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string, orgData?: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loginWithGoogle: () => Promise<void>;
-  forgotPassword: (
-    email: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   verifyCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   resendCode: () => Promise<void>;
-  resetPassword: (
-    newPassword: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   setPendingEmail: (email: string) => void;
-  organizationSetup: (
-    organizationName: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  organizationSetup: (organizationName: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const toUser = (u: AuthUser | User): User => ({
-  id: u.id,
-  firstName: "",
-  lastName: "",
-  email: u.email,
-  role: u.role,
-  ...((u as any)?.avatarUrl && { avatarUrl: (u as any).avatarUrl }),
-});
-
-// ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isLoading, setIsLoading]       = useState(true);
+  const [user, setUser]                 = useState<User | null>(null);
+  const [passwordSet, setPasswordSet]   = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
-  const [passwordSet, setPasswordSet] = useState(false);
-  const [authFlow, setAuthFlow] = useState<"signup" | "forgot-password" | null>(
-    null,
-  );
-  const navigate = useNavigate();
+  const [authFlow, setAuthFlow]         = useState<"signup" | "forgot-password" | null>(null);
 
-  // ── Apply / clear session ──────────────────────────────────────────────────
-  const applyUser = useCallback((u: AuthUser | null) => {
-    if (u) {
-      setUser((prev) => ({
-        ...prev,
-        ...toUser(u),
-      }));
-      setIsAuthenticated(true);
-    } else {
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  }, []);
+  // Prevent double-init from StrictMode
+  const initialized = useRef(false);
 
-  const refreshUser = useCallback(async () => {
-    try {
-      console.log("REFRSH USER CALL");
-      
-      const result = await authApi.getUser();
-
-      if (result.success && result.data) {
-        setUser((prev) => ({
-          ...(prev || {}),
-          ...result.data,
-        }));
+  // ── Single setter — only updates if data actually changed ──────────────────
+  const setUserOnce = useCallback((incoming: User | null) => {
+    setUser(prev => {
+      if (!incoming) return null;
+      // shallow compare — skip rerender if nothing changed
+      if (
+        prev?.id === incoming.id &&
+        prev?.firstName === incoming.firstName &&
+        prev?.lastName === incoming.lastName &&
+        prev?.email === incoming.email &&
+        prev?.role === incoming.role &&
+        prev?.avatarUrl === incoming.avatarUrl &&
+        prev?.activityStatus === incoming.activityStatus
+      ) {
+        return prev; // same reference = no rerender
       }
-    } catch (err) {
-      console.error("Failed to fetch user", err);
-    }
+      return incoming;
+    });
   }, []);
 
-  // ── Bootstrap ──────────────────────────────────────────────────────────────
+  // ── Bootstrap — runs once ──────────────────────────────────────────────────
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const initAuth = async () => {
       try {
         const { user: u, session } = await authApi.getSession();
 
-        console.log("INIT SESSION", { session, user: u });
-
-        // ❌ No valid session
         if (!session) {
-          applyUser(null);
+          setUser(null);
           setPasswordSet(false);
           return;
         }
 
-        // ✅ Valid session
         setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
-        applyUser(u);
 
-        // Only fetch backend user if session is valid
-        await refreshUser();
+        // One single API call — get the full backend user
+        const backendUser = await authApi.getUser();
+        setUserOnce(backendUser);
+
       } catch (e) {
-        console.error("Auth init failed", e);
-        applyUser(null);
+        console.error('Auth init failed', e);
+        setUser(null);
         setPasswordSet(false);
       } finally {
         setIsLoading(false);
@@ -145,70 +102,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     initAuth();
 
+    // Only listen for SIGN_OUT — ignore other events to prevent rerender loops
     const unsubscribe = authApi.onAuthStateChange(async (u, session) => {
-      console.log("AUTH STATE CHANGED", { u, session });
-
       if (!session) {
-        applyUser(null);
+        setUser(null);
         setPasswordSet(false);
-        return;
+        setIsLoading(false);
       }
-
-      // setPasswordSet(session.user?.user_metadata?.passwordSet ?? false);
-      // applyUser(u);
-
-      // try {
-      //   await refreshUser();
-      // } catch (err) {
-      //   console.error("refreshUser failed after auth change", err);
-      // }
     });
 
     return unsubscribe;
-  }, [applyUser, refreshUser]);
+  }, [setUserOnce]);
 
-  // ── Auth actions ───────────────────────────────────────────────────────────
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const result = await authApi.login(email, password);
+  // ── Login — one flow, one setUser call ────────────────────────────────────
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await authApi.login(email, password);
 
-      // ❌ REMOVE localStorage token storage
-      // localStorage.setItem("access_token", JSON.stringify(result.access_token));
-      console.log("LOGIN")
-      console.log({ result });
+    if (result.success) {
+      const { session } = await authApi.getSession();
+      setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
 
-      if (result.success && result.user) {
-        applyUser(result.user);
+      // One call to get full user — not applyUser + refreshUser
+      const backendUser = await authApi.getUser();
+      setUserOnce(backendUser);
+    }
 
-        const { session } = await authApi.getSession();
-        setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
+    return { success: result.success, error: result.error };
+  }, [setUserOnce]);
 
-        await refreshUser();
-      }
+  // ── Logout — clear everything ──────────────────────────────────────────────
+  const logout = useCallback(async () => {
+    await authApi.logout();
+    setUser(null);
+    setPasswordSet(false);
+    localStorage.removeItem(`activeOrgId`);
+    // workspace localStorage cleared in WorkspaceContext via user=null
+  }, []);
 
-      return { success: result.success, error: result.error };
-    },
-    [applyUser, refreshUser],
-  );
-
-  const signup = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      orgData?: Record<string, string>,
-    ) => {
-      const result = await authApi.signup(name, email, password, orgData);
-
-      if (result.success) {
-        setPendingEmail(email);
-        setAuthFlow("signup");
-      }
-
-      return result;
-    },
-    [],
-  );
+  const signup = useCallback(async (
+    name: string, email: string, password: string, orgData?: Record<string, string>
+  ) => {
+    const result = await authApi.signup(name, email, password, orgData);
+    if (result.success) {
+      setPendingEmail(email);
+      setAuthFlow('signup');
+    }
+    return result;
+  }, []);
 
   const loginWithGoogle = useCallback(async () => {
     await authApi.loginWithGoogle();
@@ -216,41 +156,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const forgotPassword = useCallback(async (email: string) => {
     const result = await authApi.forgotPassword(email);
-
     if (result.success) {
       setPendingEmail(email);
-      setAuthFlow("forgot-password");
+      setAuthFlow('forgot-password');
     }
-
     return result;
   }, []);
 
-  const verifyCode = useCallback(
-    async (code: string) => {
-      const result = await authApi.verifyCode(code, pendingEmail, authFlow);
-      console.log({ authFlow });
+  const verifyCode = useCallback(async (code: string) => {
+    const result = await authApi.verifyCode(code, pendingEmail, authFlow);
 
-      if (authFlow === "forgot-password") {
-        return { success: result.success, error: result.error };
-      }
-
-      console.log({ authFlow: "next" });
-
-      if (result.success && result.user) {
-        applyUser(result.user);
-
-        const { session } = await authApi.getSession();
-        setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
-
-        // if (authFlow === "signup") {
-        //   await authApi.organizationSetup(pendingEmail, "Default Workspace");
-        // }
-      }
-
+    if (authFlow === 'forgot-password') {
       return { success: result.success, error: result.error };
-    },
-    [authFlow, pendingEmail, applyUser],
-  );
+    }
+
+    if (result.success && result.user) {
+      const { session } = await authApi.getSession();
+      setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
+      const backendUser = await authApi.getUser();
+      setUserOnce(backendUser);
+    }
+
+    return { success: result.success, error: result.error };
+  }, [authFlow, pendingEmail, setUserOnce]);
 
   const resendCode = useCallback(async () => {
     await authApi.resendCode(pendingEmail, authFlow);
@@ -258,58 +186,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resetPassword = useCallback(async (newPassword: string) => {
     const result = await authApi.resetPassword(newPassword);
-
     if (result.success) {
       setAuthFlow(null);
-      setPendingEmail("");
-
+      setPendingEmail('');
       const { session } = await authApi.getSession();
       setPasswordSet(session?.user?.user_metadata?.passwordSet ?? false);
     }
-
     return result;
   }, []);
 
-  const logout = useCallback(async () => {
-    await authApi.logout();
-    applyUser(null);
-    setPasswordSet(false);
-    localStorage.removeItem("active_workspace"); // add
-    localStorage.removeItem("active_organization"); // add
-
-    // ❌ REMOVE manual token cleanup if no longer used
-    // localStorage.removeItem("access_token");
-  }, [applyUser]);
-
   const organizationSetup = useCallback(async (organizationName: string) => {
-    const result = await authApi.organizationSetup(
-      organizationName,
-      "Default Workspace",
-    );
-    return result;
+    return authApi.organizationSetup(organizationName, 'Default Workspace');
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        isLoading,
-        user,
-        pendingEmail,
-        authFlow,
-        passwordSet,
-        login,
-        signup,
-        logout,
-        loginWithGoogle,
-        forgotPassword,
-        verifyCode,
-        resendCode,
-        resetPassword,
-        setPendingEmail,
-        organizationSetup,
-      }}
-    >
+    <AuthContext.Provider value={{
+      isAuthenticated: !!user,   // ← derived from user, not separate state
+      isLoading,
+      user,
+      passwordSet,
+      pendingEmail,
+      authFlow,
+      login,
+      signup,
+      logout,
+      loginWithGoogle,
+      forgotPassword,
+      verifyCode,
+      resendCode,
+      resetPassword,
+      setPendingEmail,
+      organizationSetup,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -317,6 +225,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 };

@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { apiFetch } from "./apiClient";
+import { api } from "./api";
 
 // ─────────────────────────────────────────────
 // Types
@@ -92,7 +93,7 @@ export const authApi = {
     success: boolean;
     error?: string;
     user?: AuthUser;
-    session?:any;
+    session?: any;
   }> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -109,7 +110,7 @@ export const authApi = {
     return {
       success: true,
       user: data?.user ? fromSupabase(data.user) : undefined,
-      session:data?.session
+      session: data?.session
     };
   },
 
@@ -234,49 +235,22 @@ export const authApi = {
     success: boolean;
     data?: any;
     error?: string;
-  }> => {
-    try {
-      const data = await apiFetch("/organizations/me", {
-        method: "GET",
-      });
+  }> => await api.get("/user/organizations"),
 
-      return { success: true, data };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
 
-  getUser: async (): Promise<{
-    success: boolean;
-    data?: any;
-    error?: string;
-  }> => {
-    try {
-      const data = await apiFetch("/users/me", {
-        method: "GET",
-      });
 
-      return { success: true, data };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
+
+  getUser: async () =>
+    api.get("/user")
+
+
+  ,
 
   getWorkspace: async (): Promise<{
     success: boolean;
     data?: any;
     error?: string;
-  }> => {
-    try {
-      const data = await apiFetch("/workspaces/me", {
-        method: "GET",
-      });
-
-      return { success: true, data };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
+  }> =>  await api.get("/user/workspaces"),
 
   // ── Logout ────────────────────────────────
   logout: async (): Promise<void> => {

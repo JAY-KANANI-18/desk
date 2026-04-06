@@ -57,6 +57,19 @@ export const workspaceApi = {
   getTeamMembers: () =>
     api.get(`/workspaces/users`),
 
+    inviteUser: ( email: string, role: string, workspaceAccess: any) =>
+        api.post("/workspaces/invite", {
+            email,
+            role,
+            workspaceAccess
+        }),
+    updateUser: ( email: string, role: string, workspaceAccess: any) =>
+        api.put("/workspaces/users", {
+            email,
+            role,
+            workspaceAccess
+        }),
+
 
   /* =========================================================
      Teams
@@ -264,13 +277,13 @@ export const workspaceApi = {
   ========================================================= */
 
   getUserProfile: () =>
-    api.get(`/users/me`),
+    api.get(`/user`),
 
   updateUserProfile: (profile: any) =>
-    api.patch(`/users/me`, profile),
+    api.patch(`/user`, profile),
 
   changePassword: (current: string, newPass: string) =>
-    api.post(`/users/change-password`, {
+    api.post(`/user/change-password`, {
       current,
       new: newPass
     }),
@@ -292,7 +305,7 @@ export const workspaceApi = {
   ========================================================= */
 
   getAvailability: () =>
-    api.get(`/users/availability`),
+    api.get(`/workspaces/availability`),
 
   updateAvailability: (activityStatus: string) =>
     api.patch(`/users/me/availability`, { activityStatus }),

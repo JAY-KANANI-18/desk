@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { authApi } from "../lib/authApi";
 import type { AuthUser } from "../lib/authApi";
@@ -32,7 +33,13 @@ interface OrganizationContextType {
     role: string,
     workspaceAccess: any
   ) => Promise<any>;
+  updateUser: (
+    email: string,
+    role: string,
+    workspaceAccess: any
+  ) => Promise<any>;
   orgUsers: any;
+  updateOrganization:() => Promise<any>;
   refreshOrganizationsUsers: () => Promise<any>;
   organizationSetup: () => Promise<any>;
   setActiveOrganizationFunc: (
@@ -53,11 +60,15 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [orgUsers, setOrgUsers] = useState<any>();
 
   const { user } = useAuth();
+    const initialized = useRef(false);
+  
 
   useEffect(() => {
+        if (initialized.current) return;
+    initialized.current = true;
     if (user) {
-      console.log("user found get org and set");
-      organizationApi.me().then((u) => {
+      console.log("organization change", organizations);
+      authApi.getOrganizations().then((u) => {
         console.log({ u });
         setOrgLoading(false);
         setOrganizations(u);
@@ -72,11 +83,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     
   }, [user]);
 
-  useEffect(()=>{
-    console.log("organization change", organizations);
-    
-
-  },[organizations])
+ 
 
   // setOrgsLoaded(true);
   // setOrganizations(orgs);
@@ -111,6 +118,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     []
   );
+  const updateUser = useCallback(
+    async (email: string, role: string, workspaceAccess: any) => {
+      const result = await organizationApi.updateUser(
+        email,
+        role,
+        workspaceAccess,
+      );
+
+      return result;
+    },
+    []
+  );
 
   const setActiveOrganizationFunc = (org: Organization) => {
     setActiveOrganization(org);
@@ -124,7 +143,19 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     
   }, [activeOrganization]);
 
+const updateOrganization = async (id: string, payload: any) => {
+  const res = await organizationApi.updateOrganization(id,payload);
 
+  setOrganizations((prev) =>
+    prev.map((org) => (org.id === id ? res.data : org))
+  );
+
+  setActiveOrganization((prev) =>
+    prev?.id === id ? res.data : prev
+  );
+
+  return res.data;
+};
 
     // setOrganizations(result.data);
 
@@ -138,7 +169,9 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
         organizations,
         activeOrganization,
         inviteUser,
+        updateUser,
         orgUsers,
+        updateOrganization,
         setActiveOrganizationFunc,
         refreshOrganizationsUsers,
         organizationSetup,

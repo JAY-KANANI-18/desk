@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, CheckCircle, MessageSquare } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, MessageSquare, ShieldAlert, Mail, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+const parseHashParams = (): Record<string, string> => {
+  const hash = window.location.hash.slice(1);
+  return Object.fromEntries(new URLSearchParams(hash));
+};
 
 export const ResetPassword = () => {
   const navigate = useNavigate();
@@ -13,6 +18,57 @@ export const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // ── Check for error params in hash (e.g. expired invite link) ──
+  const hashParams = parseHashParams();
+  if (hashParams.error) {
+    const isExpired = hashParams.error_code === 'otp_expired';
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="h-1.5 w-full bg-indigo-400" />
+            <div className="p-8 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 bg-amber-50 border border-amber-100">
+                <ShieldAlert className="text-amber-500" size={30} />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 mb-2">
+                {isExpired ? 'Invitation link expired' : 'Access denied'}
+              </h1>
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                {isExpired ? (
+                  <>
+                    This invitation link is no longer valid — it may have already been used or has expired.{' '}
+                    <span className="text-gray-700 font-medium">Please contact your administrator</span> to request a new invitation.
+                  </>
+                ) : (
+                  <>{hashParams.error_description?.replace(/\+/g, ' ')} Please contact your administrator if you believe this is a mistake.</>
+                )}
+              </p>
+           
+              <div className="flex flex-col gap-2.5">
+               
+                <button
+                  onClick={() => navigate('/auth/login', { replace: true })}
+                  className="w-full border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-medium py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft size={15} />
+                  Back to sign in
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-5">
+            Need help?{' '}
+            <a href="mailto:support@axorainfotech.com" className="underline underline-offset-2 hover:text-gray-600 transition-colors">
+              Contact support
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // ── End error handling ──
 
   const getPasswordStrength = (pw: string) => {
     if (!pw) return { label: '', color: '', width: '0%' };

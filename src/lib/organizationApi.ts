@@ -12,11 +12,20 @@ export const organizationApi = {
             role,
             workspaceAccess
         }),
+    updateUser: ( email: string, role: string, workspaceAccess: any) =>
+        api.put("/organizations/users", {
+            email,
+            role,
+            workspaceAccess
+        }),
+
+    updateOrganization : (id:string,payload:any) =>
+        api.put(`/organizations/${id}`, payload),
 
     getusers : (organizationId: string) =>
         api.get(`/organizations/users`),
 
-    me: () => api.get("/organizations/me"),
+    me: () => api.get("/user/organizations"),
     deleteUser: (userId: string) => api.delete(`/organizations/users/${userId}`),
 
 };

@@ -5,6 +5,7 @@ import { Field, Section, Select, ToggleRow } from "../PanelShell";
 import { ConnectedChannel } from "../../../channels/ManageChannelPage";
 import { FileIcon, Upload, X } from "lucide-react";
 import { useWorkflow } from "../../WorkflowContext";
+import { useChannel } from "../../../../context/ChannelContext";
 
 
 
@@ -32,17 +33,18 @@ export function SendMessageConfig({ step, onChange }: SP) {
   const data = step.data as SendMessageData;
   const u = (p: Partial<SendMessageData>) => onChange({ ...data, ...p });
 
-  const [channels, setChannels] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showVarMenu, setShowVarMenu] = useState(false);
   const [varQuery, setVarQuery] = useState("");
   const [caretPos, setCaretPos] = useState(0);
   const { uploadFile } = useWorkflow();
+    const [channels, setChannels] = useState<any[]>([]);
+
+  const {channels:ch} = useChannel()
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    ChannelApi.getChannels().then((chs) => {
       setChannels([
         { value: "", label: "Last Interacted Channel" },
         ...chs.map((c) => ({
@@ -50,8 +52,8 @@ export function SendMessageConfig({ step, onChange }: SP) {
           label: `${c.name} (${c.type})`,
         })),
       ]);
-    });
-  }, []);
+   
+  }, [ch]);
 
   const textValue = data.defaultMessage.text ?? "";
 

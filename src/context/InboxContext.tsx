@@ -39,6 +39,7 @@ import {
   ConvPriority,
 } from "../lib/inboxApi";
 import { workspaceApi } from "../lib/workspaceApi";
+import { useChannel } from "./ChannelContext";
 
 /* ══════════════════════════════════════════════════════════════════
    TYPES
@@ -89,7 +90,7 @@ export interface InboxContextType {
   /* Input mode */
   inputMode: "reply" | "note";
   setInputMode: React.Dispatch<React.SetStateAction<"reply" | "note">>;
-lifecycles: any[];
+  lifecycles: any[];
   /* Message search (within open conversation) */
   msgSearchOpen: boolean;
   msgSearch: string;
@@ -103,7 +104,12 @@ lifecycles: any[];
   /* Actions */
   sendMessage: (payload: {
     text?: string;
-    attachments?: Array<{ type: string; url: string; name: string; mimeType?: string }>;
+    attachments?: Array<{
+      type: string;
+      url: string;
+      name: string;
+      mimeType?: string;
+    }>;
     metadata?: Record<string, any>;
   }) => Promise<void>;
   fetchLifecycles: () => Promise<void>;
@@ -146,9 +152,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { notify } = useNotifications();
   const notifyRef = useRef(notify);
-  useEffect(() => { notifyRef.current = notify; }, [notify]);
+  useEffect(() => {
+    notifyRef.current = notify;
+  }, [notify]);
 
-  const {socket} = useSocket();
+  const { socket } = useSocket();
   const { activeWorkspace } = useWorkspace();
   const { refreshWorkspaceUsers } = useWorkspace();
 
@@ -186,12 +194,13 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   /* ── Timeline ── */
   const [timeline, setTimeline] = useState<ApiTimelineItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
-  const [nextTimelineCursor, setNextTimelineCursor] = useState<string | undefined>();
+  const [nextTimelineCursor, setNextTimelineCursor] = useState<
+    string | undefined
+  >();
   const [hasMoreTimeline, setHasMoreTimeline] = useState(false);
   const [lifecycles, setLifecycles] = useState<any[]>([]);
 
   /* ── Channels ── */
-  const [channels, setChannels] = useState<any[] | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<any>(null);
 
   /* ── Contact detail ── */
@@ -205,7 +214,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /* ── Workspace users (for assignee picker) ── */
   const [workspaceUsers, setWorkspaceUsers] = useState<any[]>([]);
-
+  const { channels } = useChannel();
   /* ══════════════════════════════════════════════════════════════
      BOOTSTRAP
   ══════════════════════════════════════════════════════════════ */
@@ -216,23 +225,22 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     if (!wsId) return;
-    ChannelApi.getChannels().then((result) => {
-      setChannels(result);
-      if (!selectedChannel && result.length > 0) setSelectedChannel(result[0]);
-    });
+
+    if (!selectedChannel && channels.length > 0)
+      setSelectedChannel(channels[0]);
   }, [wsId]);
 
-  useEffect(()=>{
-    console.log({convList});
-    
-   setSelectedConversation((prev) => {
-    if(prev){
-      const updatedConv = convList.find(c => c.id === prev.id);
-      return updatedConv || prev;
-    }
-    return prev;
-   });
-  },[convList])
+  useEffect(() => {
+    console.log({ convList });
+
+    setSelectedConversation((prev) => {
+      if (prev) {
+        const updatedConv = convList.find((c) => c.id === prev.id);
+        return updatedConv || prev;
+      }
+      return prev;
+    });
+  }, [convList]);
 
   /* ══════════════════════════════════════════════════════════════
      LOAD CONVERSATIONS  (re-fetches when filters / search change)
@@ -242,12 +250,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     async (replace: boolean) => {
       setConvLoading(true);
       try {
-        const result = await inboxApi.getConversations( {
+        const result = await inboxApi.getConversations({
           ...filters,
           search: convSearch || undefined,
           cursor: replace ? undefined : nextConvCursor,
         });
-        setConvList((prev) => replace ? result.data : [...prev, ...result.data]);
+        setConvList((prev) =>
+          replace ? result.data : [...prev, ...result.data],
+        );
         setNextConvCursor(result.nextCursor);
         setHasMoreConvs(!!result.nextCursor);
       } catch (err) {
@@ -256,7 +266,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         setConvLoading(false);
       }
     },
-    [wsId, filters, convSearch, nextConvCursor]
+    [wsId, filters, convSearch, nextConvCursor],
   );
 
   /* Initial load + re-load when filters change */
@@ -281,7 +291,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         const result = await inboxApi.getTimeline(wsId, convId, cursor);
         // BE returns newest-first; we want oldest-first for display
         const items = [...result.data].reverse();
-        setTimeline((prev) => replace ? items : [...items, ...prev]);
+        setTimeline((prev) => (replace ? items : [...items, ...prev]));
         setNextTimelineCursor(result.nextCursor);
         setHasMoreTimeline(!!result.nextCursor);
       } catch (err) {
@@ -290,25 +300,25 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         setTimelineLoading(false);
       }
     },
-    [wsId]
+    [wsId],
   );
 
-
-  const fetchLifecycles = useCallback(
-    async () => {
-      const result = await workspaceApi.getLifecycleStages();
-      setLifecycles(result);
-
-    },
-    [activeWorkspace?.id]
-  );
-
+  const fetchLifecycles = useCallback(async () => {
+    const result = await workspaceApi.getLifecycleStages();
+    setLifecycles(result);
+  }, [activeWorkspace?.id]);
 
   const loadMoreTimeline = useCallback(async () => {
     if (!timelineLoading && hasMoreTimeline && selectedConversation) {
       await fetchTimeline(selectedConversation.id, false, nextTimelineCursor);
     }
-  }, [timelineLoading, hasMoreTimeline, selectedConversation, nextTimelineCursor, fetchTimeline]);
+  }, [
+    timelineLoading,
+    hasMoreTimeline,
+    selectedConversation,
+    nextTimelineCursor,
+    fetchTimeline,
+  ]);
 
   /* ══════════════════════════════════════════════════════════════
      REFRESH CONTACT
@@ -317,9 +327,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshContact = useCallback(async () => {
     if (!selectedConversation?.contactId) return;
     try {
-      const detail = await contactsApi.getContact(selectedConversation.contactId);
+      const detail = await contactsApi.getContact(
+        selectedConversation.contactId,
+      );
       setSelectedContact(detail);
-    } catch { }
+    } catch {}
   }, [selectedConversation?.contactId]);
 
   /* ══════════════════════════════════════════════════════════════
@@ -332,7 +344,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     const onMessage = (msg: ApiMessage & { conversationId: string }) => {
       // Append to timeline if this conv is open
       console.log({ msg });
-      let message = msg
+      let message = msg;
       if (message.conversationId === selectedConvIdRef.current) {
         const item: ApiTimelineItem = {
           id: message.id,
@@ -382,7 +394,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       messageId: string;
       status: "delivered" | "read" | "failed";
     }) => {
-
       // Update timeline message
       if (data.conversationId === selectedConvIdRef.current) {
         setTimeline((prev) =>
@@ -400,7 +411,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
             }
 
             return item;
-          })
+          }),
         );
       }
 
@@ -425,9 +436,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     const onConversation = (conv: ApiConversation) => {
       setConvList((prev) => {
         const exists = prev.find((c) => c.id === conv.id);
-        console.log({exists});
+        console.log({ exists });
         if (!exists) return [conv, ...prev];
-        
+
         return prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c));
       });
     };
@@ -441,12 +452,12 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     const onActivityUpsert = (item: ApiTimelineItem) => {
       if (item.activity?.conversationId === selectedConvIdRef.current) {
         setTimeline((prev) =>
-          prev.map((i) => (i.id === item.id ? { ...i, ...item } : i))
+          prev.map((i) => (i.id === item.id ? { ...i, ...item } : i)),
         );
       }
     };
     console.log("listening socket");
-    
+
     socket.on("message.upsert", onMessage);
     socket.on("message.status_updated", onStatusUpdate);
     socket.on("activity.upsert", onActivityUpsert);
@@ -467,17 +478,15 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const sendMessage = useCallback(
     async (msg: any) => {
-
       const payload: any = {
         ...(msg.text && { text: msg.text }),
         ...(msg.attachments?.length && { attachments: msg.attachments }),
         ...(msg.metadata && { metadata: msg.metadata }),
-
       };
 
       if (msg.template) {
         payload.metadata = {
-          template: msg.template
+          template: msg.template,
         };
       }
       console.log({ payload, selectedConversation });
@@ -485,13 +494,12 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       const message = await inboxApi.sendMessage(
         selectedConversation?.id!,
         selectedChannel?.id,
-        payload
+        payload,
       );
 
       console.log({ message });
-
     },
-    [selectedChannel?.id, selectedConversation?.id]
+    [selectedChannel?.id, selectedConversation?.id],
   );
 
   // const sendMessage = useCallback(
@@ -563,7 +571,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           wsId,
           selectedConversation.id,
           text,
-          mentionedUserIds
+          mentionedUserIds,
         );
         const item: ApiTimelineItem = {
           id: activity.id,
@@ -576,7 +584,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error("[InboxContext] sendNote:", err);
       }
     },
-    [wsId, selectedConversation]
+    [wsId, selectedConversation],
   );
 
   /* ══════════════════════════════════════════════════════════════
@@ -588,11 +596,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   ══════════════════════════════════════════════════════════════ */
 
   const updateSelectedConv = (patch: Partial<ApiConversation>) => {
-    setSelectedConversation((prev) => prev ? { ...prev, ...patch } : prev);
+    setSelectedConversation((prev) => (prev ? { ...prev, ...patch } : prev));
     setConvList((prev) =>
       prev.map((c) =>
-        c.id === selectedConversation?.id ? { ...c, ...patch } : c
-      )
+        c.id === selectedConversation?.id ? { ...c, ...patch } : c,
+      ),
     );
   };
 
@@ -619,13 +627,17 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!wsId || !selectedConversation) return;
       if (userId) {
         await inboxApi.assignUser(wsId, selectedConversation.id, userId);
-        updateSelectedConv({ contact: { ...selectedConversation.contact, assigneeId: userId } });
+        updateSelectedConv({
+          contact: { ...selectedConversation.contact, assigneeId: userId },
+        });
       } else {
         await inboxApi.unassignUser(wsId, selectedConversation.id);
-        updateSelectedConv({ contact: { ...selectedConversation.contact, assigneeId: undefined } });
+        updateSelectedConv({
+          contact: { ...selectedConversation.contact, assigneeId: undefined },
+        });
       }
     },
-    [wsId, selectedConversation]
+    [wsId, selectedConversation],
   );
 
   const assignTeam = useCallback(
@@ -633,13 +645,17 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!wsId || !selectedConversation) return;
       if (teamId) {
         await inboxApi.assignTeam(wsId, selectedConversation.id, teamId);
-        updateSelectedConv({ contact: { ...selectedConversation.contact, teamId } });
+        updateSelectedConv({
+          contact: { ...selectedConversation.contact, teamId },
+        });
       } else {
         await inboxApi.unassignTeam(wsId, selectedConversation.id);
-        updateSelectedConv({ contact: { ...selectedConversation.contact, teamId: undefined } });
+        updateSelectedConv({
+          contact: { ...selectedConversation.contact, teamId: undefined },
+        });
       }
     },
-    [wsId, selectedConversation]
+    [wsId, selectedConversation],
   );
 
   const setPriority = useCallback(
@@ -648,7 +664,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       await inboxApi.setPriority(wsId, selectedConversation.id, priority);
       updateSelectedConv({ priority });
     },
-    [wsId, selectedConversation]
+    [wsId, selectedConversation],
   );
 
   /* ══════════════════════════════════════════════════════════════
@@ -658,7 +674,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const uploadFile = useCallback(
     async (file: File, entityId: string): Promise<string> => {
       if (!wsId) throw new Error("No workspace");
-      const { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl( {
+      const { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl({
         type: "message-attachment",
         fileName: file.name,
         contentType: file.type,
@@ -671,7 +687,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       return fileUrl;
     },
-    [wsId]
+    [wsId],
   );
 
   const selectConversation = useCallback(
@@ -687,21 +703,27 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       setInputMode("reply");
       console.log({ ApiConversation: conv });
 
-      setSelectedChannel(conv?.lastMessage?.channel ?? conv?.lastMessage?.contact?.contactChannels[0]?.channelId);
+      setSelectedChannel(
+        conv?.lastMessage?.channel ??
+          conv?.lastMessage?.contact?.contactChannels[0]?.channelId,
+      );
 
       // Mark read
-      if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => { });
+      if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => {});
 
       // Zero unread in list
       setConvList((prev) =>
-        prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c))
+        prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)),
       );
 
       // Load timeline
       fetchTimeline(conv.id, true);
 
       // Load contact detail
-      contactsApi.getContact(conv.contactId).then(setSelectedContact).catch(() => { });
+      contactsApi
+        .getContact(conv.contactId)
+        .then(setSelectedContact)
+        .catch(() => {});
 
       // Auto-select channel matching the conversation's channel type
       // if (conv.channelId) {
@@ -713,9 +735,8 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
     },
-    [wsId, fetchTimeline]
+    [wsId, fetchTimeline],
   );
-
 
   /* ── Channel helpers ── */
   const handleChannelChange = useCallback((channel: any) => {
@@ -728,8 +749,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       return !prev;
     });
   }, []);
-
-
 
   /* ══════════════════════════════════════════════════════════════
      PROVIDE
