@@ -24,6 +24,8 @@ import {
   Plus,
   Key,
   CircleUserRound,
+  Sparkles,
+  BadgeCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -36,6 +38,7 @@ import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { AvailabilityStatus } from "../pages/workspace/types";
 import { workspaceApi } from "../lib/workspaceApi";
+import { useGetStarted } from "../context/GetStartedContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Workspace Switcher
@@ -93,7 +96,8 @@ const MOCK_ORGS: Organization[] = [
 const WorkspaceSwitcher = () => {
   const [open, setOpen] = useState(false);
   const { organizations } = useOrganization();
-  const { workspace, setActiveWorkspaceFunc, activeWorkspace } = useWorkspace();
+  const { workspaces, setActiveWorkspaceFunc, activeWorkspace } =
+    useWorkspace();
   const navigate = useNavigate();
 
   // const [activeOrg, setActiveOrg] = useState<Organization>(MOCK_ORGS[0]);
@@ -110,8 +114,9 @@ const WorkspaceSwitcher = () => {
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 h-9 px-2.5 rounded-lg transition-colors ${open ? "bg-gray-100" : "hover:bg-gray-100"
-          }`}
+        className={`flex items-center gap-2 h-9 px-2.5 rounded-lg transition-colors ${
+          open ? "bg-gray-100" : "hover:bg-gray-100"
+        }`}
       >
         {/* Workspace avatar */}
         <div
@@ -120,7 +125,6 @@ const WorkspaceSwitcher = () => {
           {activeWorkspace?.initial || activeWorkspace?.name?.slice(0, 1)}
         </div>
 
-    
         <span className="text-sm font-semibold text-gray-800 max-w-[140px] truncate hidden sm:block">
           {activeWorkspace?.name}
         </span>
@@ -419,56 +423,56 @@ const HelpPanel = ({ onClose }: { onClose: () => void }) => (
   </>
 );
 
-const STATUSES: { key: AvailabilityStatus; label: string; color: string }[]
-  = [
-    { key: 'online', label: 'Online', color: 'bg-green-500' },
-    { key: 'away', label: 'Away', color: 'bg-yellow-400' },
-    { key: 'dnd', label: 'Do not disturb', color: 'bg-red-500' },
-  ];
+const STATUSES: { key: AvailabilityStatus; label: string; color: string }[] = [
+  { key: "online", label: "Online", color: "bg-green-500" },
+  { key: "away", label: "Away", color: "bg-yellow-400" },
+  { key: "dnd", label: "Do not disturb", color: "bg-red-500" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TopBar
 // ─────────────────────────────────────────────────────────────────────────────
 export const TopBar = () => {
   const navigate = useNavigate();
-const { user, logout } = useAuth();
-const { workspaceUsers } = useWorkspace();
-const { unreadCount, markAllRead } = useNotifications();
+  const { user, logout } = useAuth();
+  const { workspaceUsers } = useWorkspace();
+  const { unreadCount, markAllRead } = useNotifications();
 
-const [showNotifications, setShowNotifications] = useState(false);
-const [showHelp, setShowHelp] = useState(false);
-const [showUserMenu, setShowUserMenu] = useState(false);
+  const { dismissed, isComplete, completedCount, totalCount } = useGetStarted();
+  const showOnboarding = !dismissed
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-const [activityStatus, setActivityStatus] = useState<{
-  key: string;
-  label: string;
-  color: string;
-} | null>(null);
+  const [activityStatus, setActivityStatus] = useState<{
+    key: string;
+    label: string;
+    color: string;
+  } | null>(null);
 
-const [open, setOpen] = useState(false);
-const ref = useRef<HTMLDivElement>(null);
-useEffect(() => {
-  if (!workspaceUsers || !user) return;
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!workspaceUsers || !user) return;
 
-  const currentUser = workspaceUsers.find((u) => u.id === user.id);
+    const currentUser = workspaceUsers.find((u) => u.id === user.id);
 
-  if (!currentUser?.activityStatus) return;
+    if (!currentUser?.activityStatus) return;
 
-  const status = STATUSES.find((s) => s.key === currentUser.activityStatus);
+    const status = STATUSES.find((s) => s.key === currentUser.activityStatus);
 
-  if (status) {
-    setActivityStatus(status);
-  }
-}, [workspaceUsers, user]);
-
+    if (status) {
+      setActivityStatus(status);
+    }
+  }, [workspaceUsers, user]);
 
   useEffect(() => {
-   
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
   const handleLogout = () => {
     logout();
@@ -486,8 +490,11 @@ useEffect(() => {
   const handleAvailabilityChange = async (status: any) => {
     const prev = activityStatus;
     setActivityStatus(status);
-    try { await workspaceApi.updateAvailability( status.key); }
-    catch { setActivityStatus(prev); }
+    try {
+      await workspaceApi.updateAvailability(status.key);
+    } catch {
+      setActivityStatus(prev);
+    }
   };
 
   return (
@@ -506,7 +513,58 @@ useEffect(() => {
           <Phone size={18} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white" />
         </button> */}
+        {/* Center — onboarding CTA */}
+        {showOnboarding && (
+          <button
+            onClick={() => navigate("/get-started")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "7px 14px",
+              borderRadius: 999,
+              border: "none",
+              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+              color: "white",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              position: "relative",
+              boxShadow: "0 0 0 0 rgba(99,102,241,0.5)",
+              animation: "topbarPulse 2.5s ease infinite",
+            }}
+          >
+            {/* Animated ring */}
+            <style>{`
+      @keyframes topbarPulse {
+        0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); }
+        50%      { box-shadow: 0 0 0 7px rgba(99,102,241,0); }
+      }
+      @keyframes sparkSpin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+    `}</style>
 
+            <BadgeCheck size={20} style={{ animation: "sparkSpin 3s " }} />
+
+            <span>How to Start ?</span>
+
+            {/* Progress pill */}
+            <span
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 999,
+                padding: "2px 7px",
+                fontSize: 11,
+                fontWeight: 700,
+                marginLeft: 2,
+              }}
+            >
+              {completedCount}/{totalCount}
+            </span>
+          </button>
+        )}
         {/* Help */}
         <div className="relative">
           <button
@@ -515,10 +573,11 @@ useEffect(() => {
               setShowNotifications(false);
               setShowUserMenu(false);
             }}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${showHelp
-              ? "bg-gray-100 text-gray-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              }`}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+              showHelp
+                ? "bg-gray-100 text-gray-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            }`}
             title="Help"
           >
             <HelpCircle size={20} />
@@ -530,10 +589,11 @@ useEffect(() => {
         <div className="relative">
           <button
             onClick={openNotifications}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative ${showNotifications
-              ? "bg-gray-100 text-gray-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              }`}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative ${
+              showNotifications
+                ? "bg-gray-100 text-gray-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            }`}
             title="Notifications"
           >
             <Bell size={20} />
@@ -566,11 +626,13 @@ useEffect(() => {
             title={user?.firstName || user?.lastName || "User"}
           >
             <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-              {user?.avatarUrl && <img
-                src={user?.avatarUrl}
-                alt={"avatar"}
-                className="w-full rounded-full h-full object-cover"
-              />}
+              {user?.avatarUrl && (
+                <img
+                  src={user?.avatarUrl}
+                  alt={"avatar"}
+                  className="w-full rounded-full h-full object-cover"
+                />
+              )}
             </div>
             <span className="text-sm font-medium text-gray-700 hidden md:block max-w-[120px] truncate">
               {user?.firstName || user?.lastName || user?.email || "User"}
@@ -581,49 +643,61 @@ useEffect(() => {
             <>
               <div
                 className={`fixed inset-0 z-10 transition-opacity duration-500
-      ${showUserMenu ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      ${showUserMenu ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
                 onClick={() => setShowUserMenu(false)}
               />
-              <div className={`absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20
+              <div
+                className={`absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20
     transition-all duration-200 origin-top-right
-    ${showUserMenu ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+    ${showUserMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
               >
                 <div className="p-4 border-b border-gray-100">
                   <div className="font-semibold text-gray-800">
-                    {user?.firstName ?? "User"
-                    }
+                    {user?.firstName ?? "User"}
                   </div>
                   <div className="text-sm text-gray-500 truncate">
                     {user?.email ?? ""}
                   </div>
                   <div className="relative" ref={ref}>
                     <button
-                      onClick={() => setOpen(o => !o)}
+                      onClick={() => setOpen((o) => !o)}
                       className="flex items-center gap-2 mt-2 group"
                     >
-                      <div className={`w-2 h-2 rounded-full ${activityStatus?.color}`} />
+                      <div
+                        className={`w-2 h-2 rounded-full ${activityStatus?.color}`}
+                      />
                       <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
                         {activityStatus?.label}
                       </span>
                       <ChevronDown
                         size={13}
-                        className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                        className={`text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
                       />
                     </button>
 
-                    <div className={`absolute top-0 right-full mr-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden
+                    <div
+                      className={`absolute top-0 right-full mr-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden
                                                   transition-all duration-200 origin-top-left
-                                                ${open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+                                                ${open ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
                     >
-                      {STATUSES.map(s => (
+                      {STATUSES.map((s) => (
                         <button
                           key={s.key}
-                          onClick={() => { handleAvailabilityChange(s); setOpen(false); }}
+                          onClick={() => {
+                            handleAvailabilityChange(s);
+                            setOpen(false);
+                          }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors"
                         >
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color}`} />
-                          <span className="text-sm text-gray-700 flex-1 text-left">{s.label}</span>
-                          {status.key === s.key && <Check size={13} className="text-indigo-600" />}
+                          <div
+                            className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color}`}
+                          />
+                          <span className="text-sm text-gray-700 flex-1 text-left">
+                            {s.label}
+                          </span>
+                          {status.key === s.key && (
+                            <Check size={13} className="text-indigo-600" />
+                          )}
                         </button>
                       ))}
                     </div>

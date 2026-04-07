@@ -411,8 +411,8 @@ export function ReplyInput({
                 </div>
               )}
 
-              <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
-              <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button>
+              {/* <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
+              <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button> */}
               <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
 
               <div className="relative" ref={emojiRef}>
@@ -425,7 +425,7 @@ export function ReplyInput({
                 )}
               </div>
 
-              <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button>
+              {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
               {!isNote && (
                 <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">

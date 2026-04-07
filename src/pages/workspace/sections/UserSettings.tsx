@@ -7,11 +7,11 @@ import type { UserProfile, NotificationPrefs, AvailabilityStatus } from '../type
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { useWorkspace } from '../../../context/WorkspaceContext';
 import { DataLoader } from '../../Loader';
+import { useAuth } from '../../../context/AuthContext';
 
 export const UserSettings = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [notifs, setNotifs] = useState<NotificationPrefs | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -29,19 +29,19 @@ export const UserSettings = () => {
   const [pwSaved, setPwSaved] = useState(false);
 
   const { uploadFile } = useWorkspace();
+  const {user,setUserOnce } = useAuth()
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const [p] = await Promise.all([
-      workspaceApi.getUserProfile(),
-    ]);
-    setProfile(p);
-    setNotifs({ email: true, browser: true, mentions: true, assignments: true, newConversations: true });
-    setLoading(false);
-  }, []);
 
-  useEffect(() => { load(); }, [load]);
+    console.log({usezzr:user});
+    
+    if(!user) return 
+ 
+    setProfile(user);
+    setNotifs({ email: true, browser: true, mentions: true, assignments: true, newConversations: true });
+  }, [user]);
+
+  useEffect(() => { load(); }, [load,user]);
 
   // Clean up object URL on unmount or when preview changes
   useEffect(() => {
@@ -115,11 +115,12 @@ export const UserSettings = () => {
         setAvatarUploading(false);
       }
 
-      await workspaceApi.updateUserProfile({
+    const user =   await workspaceApi.updateUserProfile({
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         avatarUrl: finalAvatarUrl,
       });
+      setUserOnce(user)
 
       // Update local profile with new avatar URL
       setProfile(prev => prev ? { ...prev, avatarUrl: finalAvatarUrl } : prev);
@@ -151,8 +152,8 @@ export const UserSettings = () => {
     ? (profile.firstName?.split(' ').map(n => n[0]).join('') ?? '').slice(0, 2).toUpperCase()
     : '??';
 
-  if (loading) return <DataLoader type={"AI details"} />;
-  if (error || !profile || !notifs) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
+  // if (loading) return <DataLoader type={"Profile details"} />;
+  // if (error || !profile || !notifs) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (
     <div className="space-y-6 overflow-y-auto h-[calc(100vh-120px)] p-5">
@@ -218,8 +219,8 @@ export const UserSettings = () => {
 
             {/* Pending upload label */}
             {avatarFile && !avatarUploading && (
-              <span className="text-[11px] text-indigo-600 font-medium max-w-[90px] truncate text-center" title={avatarFile.name}>
-                {avatarFile.name}
+              <span className="text-[11px] text-indigo-600 font-medium max-w-[90px] truncate text-center" title={avatarFile?.name}>
+                {avatarFile?.name}
               </span>
             )}
 
@@ -234,7 +235,7 @@ export const UserSettings = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
               <input
-                value={profile.firstName || ''}
+                value={profile?.firstName || ''}
                 onChange={e => setProfile({ ...profile, firstName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
@@ -242,7 +243,7 @@ export const UserSettings = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
               <input
-                value={profile.lastName || ''}
+                value={profile?.lastName || ''}
                 onChange={e => setProfile({ ...profile, lastName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
@@ -251,7 +252,7 @@ export const UserSettings = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 readOnly
-                value={profile.email || ''}
+                value={profile?.email || ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-gray-500"
               />
             </div>

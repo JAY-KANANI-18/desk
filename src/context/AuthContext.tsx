@@ -26,6 +26,7 @@ interface AuthContextType {
   passwordSet: boolean;
   pendingEmail: string;
   authFlow: "signup" | "forgot-password" | null;
+  setUserOnce:(data:User | null) => void
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, orgData?: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -195,6 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result;
   }, []);
 
+
   const organizationSetup = useCallback(async (organizationName: string) => {
     return authApi.organizationSetup(organizationName, 'Default Workspace');
   }, []);
@@ -207,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       passwordSet,
       pendingEmail,
       authFlow,
+      setUserOnce,
       login,
       signup,
       logout,

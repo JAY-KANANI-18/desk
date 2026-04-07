@@ -39,7 +39,7 @@ interface WorkspaceContextType {
     workspaceAccess: any
   ) => Promise<any>;
   updateUser: (
-    email: string,
+    userId: string,
     role: string,
     workspaceAccess: any
   ) => Promise<any>;
@@ -180,9 +180,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
   const updateUser = useCallback(
-    async (email: string, role: string, workspaceAccess: any) => {
+    async (id: string, role: string, workspaceAccess: any) => {
       const result = await workspaceApi.updateUser(
-        email,
+        id,
         role,
         workspaceAccess,
       );

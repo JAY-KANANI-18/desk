@@ -80,6 +80,9 @@ if (!user.firstName || !user.lastName) {
   );
 }
 
+// After workspace loads, before WorkspaceRouter:
+
+
   return (
     <NotificationProvider>
       <CallProvider>

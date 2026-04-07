@@ -476,7 +476,7 @@ export const WorkspaceUsers = () => {
     email: string;
     role: string;
   }) => {
-    await inviteUser(email, role);
+    await inviteUser(email, role,{});
     await refreshWorkspaceUsers();
   };
 

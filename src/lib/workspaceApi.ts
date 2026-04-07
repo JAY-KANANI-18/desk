@@ -63,9 +63,9 @@ export const workspaceApi = {
             role,
             workspaceAccess
         }),
-    updateUser: ( email: string, role: string, workspaceAccess: any) =>
+    updateUser: ( id: string, role: string, workspaceAccess: any) =>
         api.put("/workspaces/users", {
-            email,
+            id,
             role,
             workspaceAccess
         }),
