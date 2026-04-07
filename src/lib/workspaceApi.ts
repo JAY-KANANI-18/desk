@@ -308,7 +308,7 @@ export const workspaceApi = {
     api.get(`/workspaces/availability`),
 
   updateAvailability: (activityStatus: string) =>
-    api.patch(`/users/me/availability`, { activityStatus }),
+    api.patch(`/user/me/availability`, { activityStatus }),
 
   /* =========================================================
      Workflow API (for testing, should be moved to its own file)
