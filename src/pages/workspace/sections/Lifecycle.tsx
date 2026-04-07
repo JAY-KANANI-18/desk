@@ -99,7 +99,7 @@ const EmojiPicker = ({ value, onChange }: EmojiPickerProps) => {
 
       {open && (
         <div
-          className="absolute left-0 top-11 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 grid grid-cols-5 gap-1 w-52"
+          className="absolute left-0 bottom-11 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 grid grid-cols-5 gap-1 w-52"
           style={{ animation: "fadeSlideIn 120ms ease" }}
         >
           {EMOJIS.map(e => (
@@ -160,12 +160,12 @@ const StageRow = ({
 
   return (
     <div
-      className={[
-        "relative flex flex-col gap-1.5 py-3 transition-all duration-150",
-        isDragging ? "opacity-30 scale-[0.99]" : "opacity-100 scale-100",
-      ].join(" ")}
-      style={{ position: "relative" }}
-    >
+  className={[
+    "relative flex flex-col gap-1.5 py-3 transition-all duration-150",
+    isDragging ? "opacity-30 scale-[0.99]" : "opacity-100 scale-100",
+    menuOpen ? "z-50" : "z-0",
+  ].join(" ")}
+>
       {/* Drop indicator line */}
       {isDragOver && dragOverPosition === "above" && (
         <div className="absolute -top-px left-8 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
@@ -462,7 +462,7 @@ const StagePanel = ({
   onChange, onBlurSave, onDelete, onMenuAction, onAddNew, onCommitNew,
   getDragHandleProps, getDropZoneProps, drag,
 }: PanelProps) => (
-  <div className={`rounded-2xl border border-gray-200 overflow-hidden flex flex-col ${className}`}>
+  <div className={`rounded-2xl border border-gray-200 overflow-visible flex flex-col ${className}`}>
     {/* Panel header */}
     <div className="px-5 pt-4 pb-3.5 border-b border-gray-100 flex items-start gap-3 bg-white/60">
       <span className="text-xl mt-0.5 shrink-0">{icon}</span>

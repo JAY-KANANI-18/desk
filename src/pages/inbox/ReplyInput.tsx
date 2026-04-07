@@ -26,6 +26,7 @@ import { Template, TemplateModal } from './TemplateModal';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
+import { CHANNEL_TYPE_TO_SLUG } from '../channels/ManageChannelPage';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
@@ -427,7 +428,7 @@ export function ReplyInput({
 
               {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
-              {!isNote && (
+              {!isNote && selectedChannel?.type == 'whatsapp' && (
                 <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
                   <LayoutTemplate size={16} />
                 </button>
