@@ -41,7 +41,7 @@ export const GetStartedProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const navigate = useNavigate();
 
   const [isOpen,    setIsOpen]    = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
   const [steps,     setSteps]     = useState<GetStartedSteps | []>([]);
 
   useEffect(() => {
