@@ -439,7 +439,7 @@ export const TopBar = () => {
   const { unreadCount, markAllRead } = useNotifications();
 
   const { dismissed, isComplete, completedCount, totalCount } = useGetStarted();
-  const showOnboarding = !dismissed
+  const showOnboarding = !dismissed && !isComplete;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);

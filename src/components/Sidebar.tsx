@@ -96,7 +96,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const { canWs, canOrg } = useAuthorization();
   const { isOpen, dismissed, isComplete, completedCount, totalCount, open } =
     useGetStarted();
-  const showOnboarding = !dismissed ;
+  const showOnboarding = !dismissed && !isComplete;
 
   const handleNavClick = () => {
     if (onNavigate) onNavigate();
