@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { User } from '../../context/AuthContext';
 
 export type ChatDirection = 'incoming' | 'outgoing';
@@ -61,23 +60,41 @@ export type CallLog = {
 };
 
 export type ChannelConfig = {
-  icon: ReactNode;
+  icon: string;
   bg: string;
   label: string;
 };
 
 export interface Contact {
-  id: number;
+  id: number | string;
   conversationId?: number;
   firstName: string;
   lastName?: string;
-  email: string;
-  phone: string;
-  company: string;
-  lifecycleStage: string;
-  tags: string[];
-  avatarUrl: string;
-  channel: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  lifecycleStage?: string;
+  lifecycleId?: string | number | null;
+  tags?: string[];
+  avatarUrl?: string;
+  channel?: string;
+  identifier?: string;
   assigneeId: string | null;
-  status: 'open' | 'closed';
+  status: 'open' | 'closed' | 'merged' | string;
+  contactChannels?: Array<{
+    id: string;
+    channelId: string;
+    channelType: string;
+    identifier: string;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+    createdAt?: string;
+  }>;
+  mergedIntoContactId?: string | null;
+  mergedIntoContact?: Partial<Contact> | null;
+  marketingOptOut?: boolean;
+  duplicateSummary?: {
+    total: number;
+    suggestions: any[];
+  };
 }

@@ -1,37 +1,98 @@
-import { Smile } from 'lucide-react';
-import { emojiCategories } from './data';
+import { useLayoutEffect, useRef, useState } from 'react';
+import LibraryEmojiPicker, { EmojiClickData, EmojiStyle, Theme } from 'emoji-picker-react';
 
 interface EmojiPickerProps {
-  mode: 'reply' | 'comment';
-  accent: 'gray' | 'amber';
+  mode: 'reply' | 'comment' | 'tag';
+  accent: 'gray' | 'amber' | 'indigo';
   onSelect: (emoji: string) => void;
 }
 
 export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0, ready: false });
+
+  const accentStyles =
+    accent === 'amber'
+      ? {
+          border: '#fcd34d',
+          background: '#fff7ed',
+        }
+      : accent === 'indigo'
+        ? {
+            border: '#c7d2fe',
+            background: '#eef2ff',
+          }
+        : {
+            border: '#e5e7eb',
+            background: '#ffffff',
+        };
+
+  useLayoutEffect(() => {
+    const updatePosition = () => {
+      const picker = pickerRef.current;
+      const anchor = picker?.parentElement;
+      if (!picker || !anchor) return;
+
+      const margin = 8;
+      const anchorRect = anchor.getBoundingClientRect();
+      const pickerRect = picker.getBoundingClientRect();
+
+      let top = anchorRect.top - pickerRect.height - margin;
+      if (top < margin) {
+        top = Math.min(
+          window.innerHeight - pickerRect.height - margin,
+          anchorRect.bottom + margin,
+        );
+      }
+
+      let left = anchorRect.left;
+      if (left + pickerRect.width > window.innerWidth - margin) {
+        left = window.innerWidth - pickerRect.width - margin;
+      }
+      if (left < margin) {
+        left = margin;
+      }
+
+      setPosition({ top, left, ready: true });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, []);
+
   return (
-    <div className="absolute bottom-full mb-2 left-0 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-      <div className={`px-3 py-2 border-b border-gray-100 flex items-center gap-2 ${accent === 'amber' ? 'bg-amber-50' : 'bg-gray-50'}`}>
-        <Smile size={13} className={accent === 'amber' ? 'text-amber-500' : 'text-gray-500'} />
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Emoji</span>
-      </div>
-      <div className="p-2 max-h-56 overflow-y-auto">
-        {emojiCategories.map(cat => (
-          <div key={cat.label} className="mb-2">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">{cat.label}</p>
-            <div className="flex flex-wrap gap-0.5">
-              {cat.emojis.map(emoji => (
-                <button
-                  key={emoji}
-                  onMouseDown={e => { e.preventDefault(); onSelect(emoji); }}
-                  className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div
+      ref={pickerRef}
+      className="fixed z-50 overflow-hidden rounded-xl shadow-xl"
+      style={{
+        top: position.top,
+        left: position.left,
+        visibility: position.ready ? 'visible' : 'hidden',
+      }}
+    >
+      <LibraryEmojiPicker
+        onEmojiClick={(emojiData: EmojiClickData) => onSelect(emojiData.emoji)}
+        theme={Theme.LIGHT}
+        emojiStyle={EmojiStyle.NATIVE}
+        lazyLoadEmojis
+        searchDisabled={false}
+        skinTonesDisabled
+        previewConfig={{ showPreview: false }}
+        width={320}
+        height={Math.min(380, window.innerHeight - 24)}
+        style={{
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.18)',
+          borderRadius: 16,
+          border: `1px solid ${accentStyles.border}`,
+          backgroundColor: accentStyles.background,
+        }}
+      />
     </div>
   );
 }

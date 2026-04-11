@@ -22,6 +22,8 @@ const CHANNEL_CONNECT_SLUGS: Record<string, string> = {
   email: "email",
   gmail: "gmail",
   website_chat: "website_chat",
+  exotel_call: "exotel_call",
+  msg91_sms: "msg91_sms",
 };
 
 const CATALOG_CATEGORIES = [
@@ -95,7 +97,26 @@ const CATALOG_CHANNELS: CatalogChannel[] = [
     badgeColor: "bg-green-100 text-green-700",
     category: "livechat",
   },
-
+  {
+    id: "exotel_call",
+    name: "Exotel Calling",
+    description:
+      "Connect Exotel cloud telephony for inbound and outbound customer calls.",
+    icon: "https://cdn.simpleicons.org/ringcentral",
+    badge: "New",
+    badgeColor: "bg-blue-100 text-blue-700",
+    category: "calls",
+  },
+  {
+    id: "msg91_sms",
+    name: "MSG91 SMS",
+    description:
+      "Connect MSG91 to send and receive transactional and support SMS.",
+    icon: "https://cdn.simpleicons.org/androidmessages",
+    badge: "New",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+    category: "sms",
+  },
   // {
   //   id: 'tiktok',
   //   name: 'TikTok',

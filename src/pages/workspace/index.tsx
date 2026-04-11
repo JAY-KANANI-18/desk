@@ -3,11 +3,25 @@ import {
   Settings,
   Users,
   Tag,
-  GitBranch,
   RefreshCw,
+  Plug,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 
-export const menuSections = [
+type MenuItem = {
+  name: string;
+  path: string;
+  icon: JSX.Element;
+  badge?: string;
+};
+
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
+
+export const menuSections: MenuSection[] = [
   {
     title: "General",
     items: [
@@ -41,6 +55,26 @@ export const menuSections = [
         path: "/workspace/settings/tags",
         icon: <Tag size={16} />,
       },
+      {
+        name: "Integrations",
+        path: "/workspace/settings/integrations",
+        icon: <Plug size={16} />,
+      },
+    ],
+  },
+  {
+    title: "AI",
+    items: [
+      {
+        name: "AI Assist",
+        path: "/workspace/settings/ai-assist",
+        icon: <Wand2 size={16} />,
+      },
+      {
+        name: "AI Prompts",
+        path: "/workspace/settings/ai-prompts",
+        icon: <Sparkles size={16} />,
+      },
     ],
   },
 ];
@@ -51,6 +85,9 @@ const routeTitleMap: Record<string, string> = {
   "/workspace/settings/users": "Workspace users",
   "/workspace/settings/lifecycle": "Lifecycle",
   "/workspace/settings/tags": "Tags",
+  "/workspace/settings/integrations": "Integrations",
+  "/workspace/settings/ai-assist": "AI Assist",
+  "/workspace/settings/ai-prompts": "AI Prompts",
 };
 
 const SettingsSidebar = () => {
@@ -135,4 +172,3 @@ export const WorkspaceSettings = () => {
     </div>
   );
 };
-

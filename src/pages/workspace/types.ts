@@ -60,6 +60,14 @@ export interface Integration {
   icon: string;
   category: string;
   connected: boolean;
+  routingChannelId?: string | null;
+  summary?: {
+    accountName?: string;
+    accountId?: string;
+    accountStatus?: string;
+    currency?: string;
+    campaignCount?: number;
+  } | null;
 }
 
 export interface WidgetConfig {
@@ -105,28 +113,58 @@ export interface Snippet {
 }
 
 export interface ConversationTag {
-  id: number;
+  id: string | number;
   name: string;
   color: string;
+  emoji?: string;
+  description?: string | null;
+  workspaceId?: string;
+  spaceId?: string | number;
+  createdBy?: string;
+  createdById?: string | null;
+  updatedById?: string | null;
+  updatedAt?: string;
+  bundle?: {
+    color: string;
+    emoji?: string;
+    description?: string | null;
+  };
   count: number;
 }
 
 export interface AISettings {
   enabled: boolean;
   autoSuggest: boolean;
-  tone: string;
-  language: string;
+  provider: string;
+  model: string;
+  defaultLanguage: string;
+  tone?: string;
+  language?: string;
   summarize: boolean;
   sentiment: boolean;
   translate: boolean;
   smartReply: boolean;
 }
 
+export interface AIPromptOption {
+  label: string;
+  value: string;
+  instruction?: string;
+}
+
 export interface AIPrompt {
-  id: number;
+  id: string | number;
+  key?: string | null;
   name: string;
+  description?: string | null;
+  kind: 'rewrite' | 'assist' | 'summarize' | string;
   prompt: string;
-  active: boolean;
+  options?: AIPromptOption[] | null;
+  isDefault: boolean;
+  isEnabled: boolean;
+  isActive: boolean;
+  active?: boolean;
+  sortOrder: number;
 }
 
 export interface Team {

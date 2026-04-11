@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { Layout } from "../components/Layout";
 import { AppSitemap } from "../pages/AppSitemap";
@@ -26,17 +26,25 @@ import { WorkflowCanvas } from "../pages/workflow/WorkflowCanvas";
 import { WorkflowList } from "../pages/workflow/WorkflowList";
 import { WorkspaceSettings } from "../pages/workspace";
 import { UserSettings } from "../pages/workspace/sections/UserSettings";
+import { UserSettingsLayout } from "../pages/user";
+import { NotificationPreferences } from "../pages/user/sections/NotificationPreferences";
 import { WorkspaceUsers } from "../pages/workspace/sections/WorkspaceUsers";
 import Lifecycle from "../pages/workspace/sections/Lifecycle";
 import { Tags } from "../pages/workspace/sections/Tags";
+import { Integrations } from "../pages/workspace/sections/Integrations";
 import { WorkspaceGeneralInfo } from "../pages/workspace/sections/GeneralInfo";
+import { AIAssist } from "../pages/workspace/sections/AIAssist";
+import { AIPrompts } from "../pages/workspace/sections/AIPrompts";
+import MetaAdsCallback from "../pages/MetaAdsCallback";
 import OnboardingPage from "../pages/GetStartedChecklist";
 import { useGetStarted } from "../context/GetStartedContext";
+import { useAuth } from "../context/AuthContext";
 
 // ... all your existing imports ...
 
 export const WorkspaceRouter = () => {
-  const {steps,dismiss,complete} = useGetStarted()
+  const { steps, dismiss, complete } = useGetStarted();
+  const { user } = useAuth();
 
 
  
@@ -48,6 +56,7 @@ export const WorkspaceRouter = () => {
           element={
             <OnboardingPage
               completedSteps={steps} // from useOnboarding()
+              userName={user?.firstName ?? "there"}
               onDismiss={dismiss}
               onComplete={complete}
             />
@@ -58,6 +67,7 @@ export const WorkspaceRouter = () => {
           path="/meta/instagram/callback"
           element={<InstagramCallback />}
         />
+        <Route path="/meta/ads/callback" element={<MetaAdsCallback />} />
 
         {/* Agents and above */}
         <Route
@@ -198,10 +208,24 @@ export const WorkspaceRouter = () => {
           />
           <Route path="lifecycle" element={<Lifecycle />} />
           <Route path="tags" element={<Tags />} />
+          <Route path="ai-assist" element={<AIAssist />} />
+          <Route path="ai-prompts" element={<AIPrompts />} />
+          <Route
+            path="integrations"
+            element={
+              <ProtectedRoute ws="ws:channels:manage">
+                <Integrations />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Profile — everyone */}
-        <Route path="user/settings" element={<UserSettings />} />
+        <Route path="user/settings" element={<UserSettingsLayout />}>
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<UserSettings />} />
+          <Route path="notifications" element={<NotificationPreferences />} />
+        </Route>
         <Route path="/auth/reset-password" element={<ResetPassword />} />
 
         {/* Org routes — requires org permissions */}

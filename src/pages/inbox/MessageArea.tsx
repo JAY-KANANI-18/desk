@@ -58,7 +58,7 @@ import { Conversation } from "./types";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useAuth, User } from "../../context/AuthContext";
 import { useInbox } from "../../context/InboxContext";
-import { formatTime } from "./utils";
+import { extractMentionLabels, formatTime, renderCommentText } from "./utils";
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES
@@ -169,7 +169,7 @@ export interface Message {
       detail?: string;
     };
     quotedMessage?: {
-      id?: number;
+      id?: string | number;
       text?: string;
       author?: string;
       attachmentType?: MediaAttachment["type"];
@@ -183,7 +183,7 @@ export interface Message {
 export interface ReplyContext {
   type: "chat" | "email";
   quotedMessage?: {
-    id: number;
+    id: string | number;
     text: string;
     author: string;
     attachmentType?: "image" | "video" | "audio" | "file";
@@ -1390,8 +1390,20 @@ const ACTIVITY_CONFIG: Record<
   merge_contact: {
     icon: GitMerge,
     pill: "text-orange-600 bg-orange-50 border-orange-200",
-    label: (a, currentUser) =>
-      `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} merged contact`,
+    label: (a, currentUser) => {
+      const mergedName = a.metadata?.mergedContactName ?? "Unknown";
+      const mergedId = a.metadata?.mergedContactId
+        ? ` (#${a.metadata.mergedContactId})`
+        : "";
+      const survivorName = a.metadata?.survivorContactName ?? "Unknown";
+      const survivorId = a.metadata?.survivorContactId
+        ? ` (#${a.metadata.survivorContactId})`
+        : "";
+      const actor =
+        currentUser.id === a.actor?.id ? "you" : (a.actor?.name ?? "system");
+
+      return `Contact ${mergedName}${mergedId} merged into ${survivorName}${survivorId} by ${actor}`;
+    },
   },
 
   label_added: {
@@ -1498,6 +1510,7 @@ function ActivityRow({
   if (cfg.noteCard) {
     const text = activity.metadata?.text as string | undefined;
     const mentionIds = (activity.metadata?.mentionedUserIds ?? []) as string[];
+    const mentionLabels = extractMentionLabels(text ?? '');
     return (
       <div className="flex justify-center my-4 px-4">
         <div className="w-full max-w-md bg-amber-50 border border-amber-200 rounded-xl overflow-hidden shadow-sm">
@@ -1521,19 +1534,21 @@ function ActivityRow({
           {text && (
             <div className="px-3 py-2.5">
               <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">
-                {searchTerm ? highlightText(text, searchTerm) : text}
+                {searchTerm ? highlightText(text, searchTerm) : renderCommentText(text)}
               </p>
             </div>
           )}
-          {mentionIds.length > 0 && (
+          {(mentionLabels.length > 0 || mentionIds.length > 0) && (
             <div className="px-3 pb-2 flex items-center gap-1 flex-wrap">
               <span className="text-[10px] text-amber-600/70">Mentioned:</span>
-              {mentionIds.map((uid) => (
+              {(mentionLabels.length > 0
+                ? mentionLabels.map((mention) => ({ key: mention.userId, label: mention.displayName }))
+                : mentionIds.map((uid) => ({ key: uid, label: uid }))).map((mention) => (
                 <span
-                  key={uid}
+                  key={mention.key}
                   className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full"
                 >
-                  @{uid}
+                  @{mention.label}
                 </span>
               ))}
             </div>
@@ -2127,6 +2142,9 @@ export function MessageArea({
                   const msg = item.msg;
                   const isOutgoing = msg.direction === "outgoing";
                   const isEvent = msg.type === "event" || msg.type === "system";
+                  const isCallEvent =
+                    msg.type === "call_event" ||
+                    (msg.channelType === "exotel_call" && msg.type === "status");
                   const isComment = msg.type === "comment";
                   const isWaTemplate = msg.type === "template";
                   const channelType = channels?.find(
@@ -2148,6 +2166,19 @@ export function MessageArea({
                     return (
                       <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
                         <LegacyEventRow msg={msg} />
+                      </div>
+                    );
+                  }
+
+                  if (isCallEvent) {
+                    return (
+                      <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
+                        <div className="flex justify-center my-3">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border bg-cyan-50 text-cyan-700 border-cyan-200">
+                            <PhoneCall size={12} />
+                            {msg.text || "Call update"}
+                          </span>
+                        </div>
                       </div>
                     );
                   }

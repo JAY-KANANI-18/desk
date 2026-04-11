@@ -118,7 +118,25 @@ rotateWebchatToken: (workspaceId: string, channelId: string) =>
 updateWebsiteChatChannel: ( channelId: string, data: any) =>
     api.patch(`/channels/webchat/${channelId}`, data),
 
+connectMsg91: (payload: {
+  workspaceId: string;
+  name?: string;
+  senderId: string;
+  authKey: string;
+  route?: string;
+  dltTemplateId?: string;
+  apiUrl?: string;
+}) => api.post('/channels/sms/msg91/connect', payload),
 
+connectExotel: (payload: {
+  workspaceId: string;
+  name?: string;
+  callerId: string;
+  sid: string;
+  apiKey: string;
+  apiToken: string;
+  apiUrl?: string;
+}) => api.post('/channels/calling/exotel/connect', payload),
 
 }
 

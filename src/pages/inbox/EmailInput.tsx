@@ -477,7 +477,22 @@ export function EmailInput({
                   <Smile size={16} />
                 </button>
                 {emojiOpen && (
-                  <EmojiPicker mode="reply" accent="gray" onSelect={emoji => {  setEmojiOpen(false); }} />
+                  <EmojiPicker
+                    mode="reply"
+                    accent="gray"
+                    onSelect={emoji => {
+                      const selection = window.getSelection();
+                      if (selection?.rangeCount && editorRef.current?.contains(selection.anchorNode)) {
+                        document.execCommand('insertText', false, emoji);
+                      } else if (editorRef.current) {
+                        editorRef.current.focus();
+                        document.execCommand('insertText', false, emoji);
+                      }
+
+                      setHtml(editorRef.current?.innerHTML || '');
+                      setEmojiOpen(false);
+                    }}
+                  />
                 )}
               </div>
 

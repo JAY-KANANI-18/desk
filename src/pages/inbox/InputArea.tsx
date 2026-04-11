@@ -19,7 +19,7 @@
  *   wrapper doesn't need to know the internals.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { ReplyInput }  from './ReplyInput';
 import { EmailInput }  from './EmailInput';
 import type { Conversation, Message } from './types';
@@ -33,6 +33,7 @@ export interface SharedInputProps {
   selectedChannel: any;
   onChannelChange: (ch: any) => void;
   onSendMessage: (msg: Message) => void;
+  onSendNote: (note: any) => void;
   /** 'reply' = normal reply, 'note' = internal note */
   inputMode: 'reply' | 'note';
   onInputModeChange: (mode: 'reply' | 'note') => void;
@@ -51,6 +52,7 @@ interface InputAreaProps {
   onChannelChange: (ch: any) => void;
   channels: any[] | null;
   onSendMessage: (msg: Message) => void;
+  onSendNote: (note: any) => void;
   /** Forwarded from MessageArea's onReply callback */
   replyContext?: ReplyContext | null;
   onClearReplyContext?: () => void;

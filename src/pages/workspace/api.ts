@@ -127,8 +127,9 @@ export const MOCK_DATA = {
   aiSettings: {
     enabled: true,
     autoSuggest: true,
-    tone: 'professional',
-    language: 'auto',
+    provider: 'cohere',
+    model: 'command-a-03-2025',
+    defaultLanguage: 'auto',
     summarize: true,
     sentiment: true,
     translate: false,
@@ -136,9 +137,9 @@ export const MOCK_DATA = {
   } as AISettings,
 
   aiPrompts: [
-    { id: 1, name: 'Empathetic support', prompt: 'You are a helpful customer support agent. Always be empathetic, concise, and solution-focused. Address the customer by their first name.', active: true },
-    { id: 2, name: 'Sales assistant', prompt: 'You are a sales assistant. Help customers understand product benefits, handle objections professionally, and guide them toward a purchase decision.', active: false },
-    { id: 3, name: 'Technical support', prompt: 'You are a technical support specialist. Provide clear, step-by-step troubleshooting instructions. Ask clarifying questions when needed.', active: false },
+    { id: '1', key: 'change-tone', name: 'Change tone', description: 'Adjust draft tone', kind: 'rewrite', prompt: 'Tone prompt', options: [{ label: 'Professional', value: 'professional' }], isDefault: true, isEnabled: true, isActive: false, sortOrder: 10 },
+    { id: '2', key: 'assist-reply', name: 'AI Assist Reply', description: 'Draft from history', kind: 'assist', prompt: 'Assist prompt', options: null, isDefault: true, isEnabled: true, isActive: true, sortOrder: 20 },
+    { id: '3', key: 'summarize-conversation', name: 'Conversation Summary', description: 'Summary to note', kind: 'summarize', prompt: 'Summary prompt', options: null, isDefault: true, isEnabled: true, isActive: true, sortOrder: 30 },
   ] as AIPrompt[],
 
   teams: [
@@ -158,4 +159,3 @@ export const MOCK_DATA = {
     voicemailGreeting: "Hi, you've reached our support team. Please leave a message and we'll get back to you shortly.",
   } as CallSettings,
 };
-

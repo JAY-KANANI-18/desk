@@ -72,6 +72,8 @@ export interface ApiContact {
   status?: string;
   assigneeId?: string;
   teamId?: string;
+  lifecycleId?: string | number | null;
+  identifier?: string;
 }
 
 export interface ApiChannel {
@@ -161,6 +163,43 @@ export interface MessageSearchResult {
   snippet: string;           // highlighted snippet from BE
   createdAt: string;
   contact: ApiContact;
+}
+
+export interface AiAssistResult {
+  conversationId: string;
+  mode: string;
+  generatedAt: string;
+  provider?: {
+    name: string;
+    model: string | null;
+    configured: boolean;
+    used: boolean;
+  };
+  summary: string | null;
+  suggestedReply: string | null;
+  suggestedTags: string[];
+  intent: string | null;
+  urgency: 'low' | 'normal' | 'high' | null;
+  channel: string;
+  confidence: 'low' | 'medium' | 'high' | string | null;
+  guardrails: string[];
+  context?: Record<string, any>;
+}
+
+export interface AiTextResult {
+  text: string;
+  promptId: string;
+  promptName: string;
+  optionValue?: string | null;
+  provider: {
+    provider: string;
+    model: string | null;
+    configured: boolean;
+  } | {
+    name?: string;
+    model?: string | null;
+    configured?: boolean;
+  };
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -261,6 +300,7 @@ export const inboxApi = {
     payload: {
       text?: string;
       attachments?: Array<{ type: string; url: string; name: string; mimeType?: string }>;
+      replyToMessageId?: string;
       metadata?: Record<string, any>;
     }
   ): Promise<ApiMessage> {
@@ -357,6 +397,25 @@ export const inboxApi = {
     return api.put(
       `/contacts/${contactId}/lifecycle`,{ lifecycleId }
     );
+  },
+
+  getAiAssist(conversationId: string): Promise<AiAssistResult> {
+    return api.get(`/ai-assist/conversations/${conversationId}`);
+  },
+
+  rewriteWithPrompt(
+    conversationId: string,
+    payload: { draft: string; promptId: string; optionValue?: string }
+  ): Promise<AiTextResult> {
+    return api.post(`/ai-assist/conversations/${conversationId}/rewrite`, payload);
+  },
+
+  generateAiDraft(conversationId: string): Promise<AiTextResult> {
+    return api.post(`/ai-assist/conversations/${conversationId}/assist-draft`);
+  },
+
+  summarizeConversation(conversationId: string): Promise<AiTextResult> {
+    return api.post(`/ai-assist/conversations/${conversationId}/summarize`);
   },
 
   /* ─── Media / upload ────────────────────────────────────────── */

@@ -3,9 +3,6 @@ import { Navigate, useNavigate } from "react-router-dom";
 import {
   Bell,
   HelpCircle,
-  MessageCircle,
-  UserCheck,
-  AtSign,
   Volume2,
   VolumeX,
   X,
@@ -29,11 +26,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
-import { useCall } from "../context/CallContext";
-import type {
-  AppNotification,
-  NotificationEventType,
-} from "../context/NotificationContext";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { AvailabilityStatus } from "../pages/workspace/types";
@@ -205,27 +197,6 @@ const WorkspaceSwitcher = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification panel helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const TYPE_CONFIG: Record<
-  NotificationEventType,
-  { icon: React.ReactNode; iconBg: string; iconColor: string }
-> = {
-  new_message: {
-    icon: <MessageCircle size={14} />,
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  assign: {
-    icon: <UserCheck size={14} />,
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-600",
-  },
-  mention: {
-    icon: <AtSign size={14} />,
-    iconBg: "bg-violet-100",
-    iconColor: "text-violet-600",
-  },
-};
-
 function relativeTime(ts: number): string {
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 60) return `${diff}s ago`;
@@ -239,20 +210,43 @@ function relativeTime(ts: number): string {
 // ─────────────────────────────────────────────────────────────────────────────
 interface NotificationPanelProps {
   onClose: () => void;
-  onNavigateToInbox: () => void;
+  onNavigateToInbox: (conversationId?: string | null) => void;
+  onOpenPreferences: () => void;
 }
 
 const NotificationPanel = ({
   onClose,
   onNavigateToInbox,
+  onOpenPreferences,
 }: NotificationPanelProps) => {
   const {
-    history,
-    dismissFromHistory,
-    clearHistory,
+    activeTab,
+    center,
+    setActiveTab,
+    loadTab,
+    updateNotificationState,
+    archiveAll,
+    markAllRead,
     soundEnabled,
     toggleSound,
   } = useNotifications();
+  const items = center[activeTab].items;
+
+  useEffect(() => {
+    if (
+      !center[activeTab].loaded &&
+      !center[activeTab].loading &&
+      !center[activeTab].error
+    ) {
+      void loadTab(activeTab, true);
+    }
+  }, [activeTab, center, loadTab]);
+
+  const getTypeLabel = (type: string) =>
+    type
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char: string) => char.toUpperCase());
 
   return (
     <>
@@ -268,9 +262,9 @@ const NotificationPanel = ({
             <span className="text-sm font-semibold text-gray-800">
               Notifications
             </span>
-            {history.length > 0 && (
+            {items.length > 0 && (
               <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
-                {history.length}
+                {items.length}
               </span>
             )}
           </div>
@@ -282,10 +276,19 @@ const NotificationPanel = ({
             >
               {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
             </button>
-            {history.length > 0 && (
+            {activeTab === "new" && items.length > 0 && (
               <button
-                onClick={clearHistory}
-                title="Clear all"
+                onClick={() => void markAllRead()}
+                title="Mark all read"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Check size={14} />
+              </button>
+            )}
+            {items.length > 0 && (
+              <button
+                onClick={() => void archiveAll(activeTab)}
+                title="Archive all"
                 className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <Trash2 size={14} />
@@ -300,9 +303,41 @@ const NotificationPanel = ({
           </div>
         </div>
 
+        <div className="px-3 pt-2 pb-1 flex items-center gap-1 border-b border-gray-100">
+          {(["new", "archived", "all"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+                activeTab === tab
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              {tab === "new" ? "New" : tab === "archived" ? "Archived" : "All"}
+            </button>
+          ))}
+        </div>
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          {history.length === 0 ? (
+          {center[activeTab].loading && items.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500">
+              Loading notifications...
+            </div>
+          ) : center[activeTab].error && items.length === 0 ? (
+            <div className="py-10 px-4 text-center">
+              <p className="text-sm font-medium text-gray-600">
+                Could not load notifications
+              </p>
+              <button
+                onClick={() => void loadTab(activeTab, true)}
+                className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              >
+                Try again
+              </button>
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                 <Bell size={20} className="text-gray-400" />
@@ -311,49 +346,81 @@ const NotificationPanel = ({
                 No notifications yet
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                New messages, assignments and mentions will appear here
+                {activeTab === "archived"
+                  ? "Archived notifications will show here"
+                  : "New activity will show here"}
               </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {history.map((n: AppNotification) => {
-                const cfg = TYPE_CONFIG[n.type];
+              {items.map((n) => {
                 return (
                   <div
                     key={n.id}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group cursor-pointer"
+                    className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group cursor-pointer ${
+                      !n.readAt && !n.archivedAt ? "bg-indigo-50/40" : ""
+                    }`}
                     onClick={() => {
-                      if (n.conversationId != null) {
-                        onNavigateToInbox();
+                      const conversationId =
+                        typeof n.metadata?.conversationId === "string"
+                          ? n.metadata.conversationId
+                          : null;
+                      if (conversationId) {
+                        onNavigateToInbox(conversationId);
+                        void updateNotificationState(n.id, { read: true });
                         onClose();
                       }
                     }}
                   >
-                    <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 ${cfg.iconBg} ${cfg.iconColor}`}
-                    >
-                      {cfg.icon}
+                    <div className="flex-shrink-0 mt-0.5">
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600">
+                        {getTypeLabel(n.type)}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 leading-tight truncate">
+                      <p className="text-xs font-semibold text-gray-800 leading-tight">
                         {n.title}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug">
                         {n.body}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-1">
-                        {relativeTime(n.timestamp)}
+                        {relativeTime(new Date(n.createdAt).getTime())}
                       </p>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dismissFromHistory(n.id);
-                      }}
-                      className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-500 transition-all"
-                    >
-                      <X size={12} />
-                    </button>
+                    <div className="flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      {activeTab === "new" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void updateNotificationState(n.id, { archived: true });
+                          }}
+                          className="text-[11px] text-gray-500 hover:text-gray-700"
+                        >
+                          Archive
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void updateNotificationState(n.id, { read: !!n.readAt ? false : true });
+                        }}
+                        className="text-[11px] text-gray-500 hover:text-gray-700"
+                      >
+                        {n.readAt ? "Unread" : "Read"}
+                      </button>
+                      {n.archivedAt && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void updateNotificationState(n.id, { archived: false });
+                          }}
+                          className="text-[11px] text-gray-500 hover:text-gray-700"
+                        >
+                          Unarchive
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -366,14 +433,22 @@ const NotificationPanel = ({
           <span className="text-xs text-gray-400">
             {soundEnabled ? "Sound on" : "Sound off"}
           </span>
-          {history.length > 0 && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={clearHistory}
-              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+              onClick={onOpenPreferences}
+              className="text-xs text-gray-500 hover:text-gray-700 font-medium transition-colors"
             >
-              Clear all
+              Preferences
             </button>
-          )}
+            {center[activeTab].nextCursor && (
+              <button
+                onClick={() => void loadTab(activeTab)}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+              >
+                Load more
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -423,9 +498,11 @@ const HelpPanel = ({ onClose }: { onClose: () => void }) => (
   </>
 );
 
-const STATUSES: { key: AvailabilityStatus; label: string; color: string }[] = [
+const STATUSES: { key: string; label: string; color: string }[] = [
   { key: "online", label: "Online", color: "bg-green-500" },
+  { key: "offline", label: "Offline", color: "bg-gray-400" },
   { key: "away", label: "Away", color: "bg-yellow-400" },
+  { key: "busy", label: "Busy", color: "bg-orange-500" },
   { key: "dnd", label: "Do not disturb", color: "bg-red-500" },
 ];
 
@@ -436,7 +513,7 @@ export const TopBar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { workspaceUsers } = useWorkspace();
-  const { unreadCount, markAllRead } = useNotifications();
+  const { unreadCount, browserPermission, requestBrowserPermission } = useNotifications();
 
   const { dismissed, isComplete, completedCount, totalCount } = useGetStarted();
   const showOnboarding = !dismissed && !isComplete;
@@ -481,11 +558,13 @@ export const TopBar = () => {
   };
 
   const openNotifications = useCallback(() => {
+    if (browserPermission === "default") {
+      void requestBrowserPermission();
+    }
     setShowNotifications(true);
     setShowHelp(false);
     setShowUserMenu(false);
-    markAllRead();
-  }, [markAllRead]);
+  }, [browserPermission, requestBrowserPermission]);
 
   const handleAvailabilityChange = async (status: any) => {
     const prev = activityStatus;
@@ -606,7 +685,13 @@ export const TopBar = () => {
           {showNotifications && (
             <NotificationPanel
               onClose={() => setShowNotifications(false)}
-              onNavigateToInbox={() => navigate("/inbox")}
+              onNavigateToInbox={(conversationId) =>
+                navigate(conversationId ? `/inbox/${conversationId}` : "/inbox")
+              }
+              onOpenPreferences={() => {
+                setShowNotifications(false);
+                navigate("/user/settings/notifications");
+              }}
             />
           )}
         </div>
@@ -713,6 +798,16 @@ export const TopBar = () => {
                   >
                     <CircleUserRound size={16} className="text-gray-400" />
                     Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate("/user/settings/notifications");
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
+                  >
+                    <Bell size={16} className="text-gray-400" />
+                    Notifications
                   </button>
                   <button
                     onClick={() => {

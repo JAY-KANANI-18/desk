@@ -306,6 +306,30 @@ export const CHANNEL_META: Record<string, {
       { label: 'Install on Wix', href: '#' },
     ],
   },
+  sms: {
+    label: 'MSG91 SMS',
+    icon: 'https://cdn.simpleicons.org/androidmessages',
+    color: 'bg-emerald-600',
+    navItems: [
+      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
+      { id: 'troubleshoot',  label: 'Troubleshoot',  icon: <Wrench size={14} /> },
+    ],
+    additionalResources: [
+      { label: 'MSG91 Docs', href: 'https://msg91.com/help' },
+    ],
+  },
+  exotel_call: {
+    label: 'Exotel Calling',
+    icon: 'https://cdn.simpleicons.org/ringcentral',
+    color: 'bg-cyan-600',
+    navItems: [
+      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
+      { id: 'troubleshoot',  label: 'Troubleshoot',  icon: <Wrench size={14} /> },
+    ],
+    additionalResources: [
+      { label: 'Exotel Docs', href: 'https://developer.exotel.com/' },
+    ],
+  },
 };
 
 export const CHANNEL_TYPE_TO_SLUG: Record<string, string> = {
@@ -316,6 +340,8 @@ export const CHANNEL_TYPE_TO_SLUG: Record<string, string> = {
   'Email (SMTP/IMAP)':  'email',
   'Gmail':              'gmail',
   'Website Chat':       'webchat',
+  'MSG91 SMS':          'sms',
+  'Exotel Calling':     'exotel_call',
 };
 
 // ─── Generic sections ─────────────────────────────────────────────────────────
@@ -478,7 +504,7 @@ const SectionContent = ({
     case 'email':       return <EmailConfiguration      channel={channel} onDisconnect={onDisconnect} />;
     case 'gmail':       return <GmailConfiguration      channel={channel} onDisconnect={onDisconnect} />;
     case 'webchat':return <WebsiteChatConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    default:            return <WhatsAppConfiguration   channel={channel} onDisconnect={onDisconnect} />;
+    default:            return <EmailConfiguration      channel={channel} onDisconnect={onDisconnect} />;
   }
 };
 

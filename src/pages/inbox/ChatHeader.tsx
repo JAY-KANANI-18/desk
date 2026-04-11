@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Search, Phone, Clock, MoreVertical, ChevronDown, UserCircle2,
-  BellOff, AlarmClock, CheckCircle2, LockOpen, Lock, X, Users
+  Search, Phone, ChevronDown, UserCircle2,
+  CheckCircle2, LockOpen,
 } from 'lucide-react';
-import { teamMembers, teams, snoozeOptions, channelConfig } from './data';
+import { teams ,teamMembers, snoozeOptions, channelConfig} from './data';
 import type { Conversation, Assignee } from './types';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useInbox } from '../../context/InboxContext';
-import { contactsApi } from '../../lib/contactApi';
 import { inboxApi } from '../../lib/inboxApi';
+import { useCall } from '../../context/CallContext';
 
 interface ChatHeaderProps {
   selectedConversation: Conversation;
@@ -16,7 +16,6 @@ interface ChatHeaderProps {
   onSnooze: (value: string) => void;
   onUnsnooze: () => void;
   chatStatus: 'open' | 'closed';
-  onChatStatusChange: (status: 'open' | 'closed') => void;
   msgSearchOpen: boolean;
   onToggleMsgSearch: () => void;
 }
@@ -56,9 +55,6 @@ function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSe
   const current = lifecycles.find(l => String(l.id) === String(currentStageId));
   const lifecycleStages = lifecycles.filter(l => l.type === 'lifecycle');
   const lostStages = lifecycles.filter(l => l.type === 'lost');
-  console.log({current,lifecycles,currentStageId});
-  
-
   return (
     <div className="relative inline-flex" ref={ref}>
       {/* Trigger — plain text appearance; chevron fades in on hover */}
@@ -166,7 +162,7 @@ function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSe
 
 export function ChatHeader({
   selectedConversation,
-  snoozedUntil,
+   snoozedUntil,
   onSnooze,
   onUnsnooze,
   msgSearchOpen,
@@ -175,7 +171,7 @@ export function ChatHeader({
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignee, setAssignee] = useState<Assignee | null>(null);
   const [assignSearch, setAssignSearch] = useState('');
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
+   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [closeMenuOpen, setCloseMenuOpen] = useState(false);
   const [closeCategory, setCloseCategory] = useState('');
   const [closeSummary, setCloseSummary] = useState('');
@@ -185,20 +181,16 @@ export function ChatHeader({
   const snoozeRef = useRef<HTMLDivElement>(null);
   const closeMenuRef = useRef<HTMLDivElement>(null);
 
-  const ch = channelConfig[selectedConversation?.channel] ?? channelConfig['email'];
   const { workspaceUsers } = useWorkspace();
 
-  const { assignUser, closeConversation, openConversation, lifecycles, fetchLifecycles } = useInbox();
-
-  console.log({ workspaceUsers });
+  const { assignUser, closeConversation, openConversation, lifecycles, fetchLifecycles, sendMessage, selectedChannel } = useInbox();
+  const { startOutgoingCall } = useCall();
 
   useEffect(() => {
     fetchLifecycles();
   }, [fetchLifecycles]);
 
   const filteredMembers = workspaceUsers?.filter(m => m?.firstName?.toLowerCase().includes(assignSearch.toLowerCase()) || m?.lastName?.toLowerCase().includes(assignSearch.toLowerCase())) || [];
-  console.log({ filteredMembers });
-
   const filteredTeams = teams.filter(t => t.name.toLowerCase().includes(assignSearch.toLowerCase()));
 
   useEffect(() => {
@@ -215,26 +207,20 @@ export function ChatHeader({
 
   useEffect(() => {
     if (!selectedConversation) return;
-    console.log({ssssssssssss:selectedConversation?.contact?.status});
-    
-    setChatStatus(selectedConversation?.contact?.status);
+    setChatStatus((selectedConversation?.contact?.status as "open" | "closed" | undefined) ?? null);
   }, [selectedConversation,selectedConversation?.contact?.status]);
 
   useEffect(() => {
     if (!selectedConversation?.contact || !workspaceUsers) return;
 
-    console.log({ workspaceUsers, selectedConversationnnnnnnnnnnn: selectedConversation });
-
     const user = workspaceUsers.find(
       (u) => u.id === selectedConversation?.contact?.assigneeId
     );
-    console.log({ user });
-
     setAssignee(user || null);
   }, [selectedConversation?.contact?.assigneeId, workspaceUsers]);
 
   const handleStatusAction = async (s: ConvStatus) => {
-    setChatStatus(false);
+    setChatStatus(null);
     if (s === "closed") await closeConversation();
     else if (s === "open") await openConversation();
   };
@@ -246,7 +232,30 @@ export function ChatHeader({
   };
 
   const handleLifecycleChange = async (stageId: string | number | null) => {
-   await  inboxApi.updateContactLifecycle(String(selectedConversation!.contact!.id), String(stageId));
+    await inboxApi.updateContactLifecycle(
+      String(selectedConversation.contact.id),
+      stageId === null ? '' : String(stageId),
+    );
+  };
+
+  const handleStartCall = async () => {
+    if (!selectedChannel || selectedChannel.type !== 'exotel_call') return;
+    const phone = selectedConversation?.contact?.phone;
+    if (!phone) return;
+
+    startOutgoingCall({
+      name: `${selectedConversation?.contact?.firstName ?? ''} ${selectedConversation?.contact?.lastName ?? ''}`.trim() || 'Contact',
+      phone,
+      isKnown: true,
+    });
+
+    await sendMessage({
+      text: '',
+      metadata: {
+        mode: 'voice_call',
+        to: phone,
+      },
+    });
   };
 
   return (
@@ -439,10 +448,18 @@ export function ChatHeader({
           )}
         </div> */}
 
-        {/* <button className="p-2 hover:bg-gray-100 rounded-lg"><Phone size={20} /></button> */}
+        {selectedChannel?.type === 'exotel_call' && (
+          <button
+            onClick={handleStartCall}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+            title="Start call"
+          >
+            <Phone size={20} />
+          </button>
+        )}
 
         {/* Open / Close */}
-        <div className="relative" ref={closeMenuRef}>
+        <div className="relative">
           {chatStatus === 'closed' ? (
             <button onClick={() => handleStatusAction('open')} className="px-3 py-1.5 text-sm  rounded-lg border flex items-center gap-2">
               <LockOpen size={16} />Open

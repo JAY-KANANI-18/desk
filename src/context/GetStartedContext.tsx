@@ -24,16 +24,10 @@ interface GetStartedContextType {
   open:           () => void;
   close:          () => void;
   dismiss:        () => Promise<void>;
+  complete:       () => Promise<void>;
 }
 
 const GetStartedContext = createContext<GetStartedContextType | null>(null);
-
-const DEFAULT_STEPS: GetStartedSteps = {
-  connectChannel: false,
-  inviteTeam:     false,
-  sendMessage:    false,
-  setupLifecycle: false,
-};
 
 export const GetStartedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeWorkspace } = useWorkspace();
@@ -42,7 +36,12 @@ export const GetStartedProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [isOpen,    setIsOpen]    = useState(false);
   const [dismissed, setDismissed] = useState(true);
-  const [steps,     setSteps]     = useState<GetStartedSteps | []>([]);
+  const [steps,     setSteps]     = useState<GetStartedSteps>({
+    connectChannel: false,
+    inviteTeam: false,
+    sendMessage: false,
+    setupLifecycle: false,
+  });
 
   useEffect(() => {
     if (!activeWorkspace || !user) return;

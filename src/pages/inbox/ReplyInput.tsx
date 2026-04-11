@@ -15,24 +15,29 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Send, Paperclip, Smile, Mic, X, ChevronDown, Check,
   Video, FileText, DollarSign, LayoutTemplate,
-  MessageSquare, StickyNote, Image as ImageIcon,
-  Play, File,
+  MessageSquare, StickyNote,
+  Play, File as FileIcon,
+  Wand2, Sparkles, Loader2, AtSign,
 } from 'lucide-react';
 import { channelConfig, variables } from './data';
-import type { Conversation, Message, MediaAttachment, AttachmentType } from './types';
+import type { MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
 import { Template, TemplateModal } from './TemplateModal';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
-import { CHANNEL_TYPE_TO_SLUG } from '../channels/ManageChannelPage';
+import { workspaceApi } from '../../lib/workspaceApi';
+import { inboxApi } from '../../lib/inboxApi';
+import type { AIPrompt } from '../workspace/types';
+import { useWorkspace } from '../../context/WorkspaceContext';
+import { extractMentionIds } from './utils';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
-type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl?: string };
+type AttachedFile = { file: globalThis.File; type: AttachmentType; url: string; previewUrl?: string };
 
-function getAttachmentType(file: File): AttachmentType {
+function getAttachmentType(file: globalThis.File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
@@ -65,7 +70,7 @@ function QuotedReplyBanner({
         )}
         {q.attachmentType === 'file' && (
           <div className="w-9 h-9 rounded bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <File size={14} className="text-indigo-500" />
+            <FileIcon size={14} className="text-indigo-500" />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -105,7 +110,13 @@ export function ReplyInput({
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
   const [variableQuery, setVariableQuery] = useState<string | null>(null);
   const [variableHighlight, setVariableHighlight] = useState(0);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionHighlight, setMentionHighlight] = useState(0);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [aiPrompts, setAiPrompts] = useState<AIPrompt[]>([]);
+  const [aiPromptMenuOpen, setAiPromptMenuOpen] = useState(false);
+  const [activePromptParent, setActivePromptParent] = useState<AIPrompt | null>(null);
+  const [aiLoadingAction, setAiLoadingAction] = useState<'rewrite' | 'assist' | 'summarize' | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -114,10 +125,22 @@ export function ReplyInput({
   const emojiRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
+  const aiPromptMenuRef = useRef<HTMLDivElement>(null);
+  const mentionDropdownRef = useRef<HTMLDivElement>(null);
 
   const { uploadFile,selectedChannel,channels,selectedConversation } = useInbox();
+  const { workspaceUsers } = useWorkspace();
 
   const isNote = inputMode === 'note';
+  const contactName = [selectedConversation?.contact?.firstName, selectedConversation?.contact?.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || selectedConversation?.contact?.email || selectedConversation?.contact?.phone || 'Customer';
+  const contactIdentifier =
+    selectedConversation?.contact?.identifier ||
+    selectedConversation?.contact?.phone ||
+    selectedConversation?.contact?.email ||
+    undefined;
 
   const filteredVariables = variableQuery !== null
     ? variables.filter(v =>
@@ -125,31 +148,62 @@ export function ReplyInput({
       v.label.toLowerCase().includes(variableQuery.toLowerCase())
     )
     : [];
+  const filteredMentionUsers = mentionQuery !== null
+    ? (workspaceUsers ?? []).filter((user: any) => {
+      const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || '';
+      return label.toLowerCase().includes(mentionQuery.toLowerCase());
+    })
+    : [];
 
   // click-outside handlers
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setEmojiOpen(false);
       if (channelRef.current && !channelRef.current.contains(e.target as Node)) setChannelMenuOpen(false);
+      if (aiPromptMenuRef.current && !aiPromptMenuRef.current.contains(e.target as Node)) {
+        setAiPromptMenuOpen(false);
+        setActivePromptParent(null);
+      }
       if (
         variableDropdownRef.current && !variableDropdownRef.current.contains(e.target as Node) &&
         textareaRef.current && !textareaRef.current.contains(e.target as Node)
       ) setVariableQuery(null);
+      if (
+        mentionDropdownRef.current && !mentionDropdownRef.current.contains(e.target as Node) &&
+        textareaRef.current && !textareaRef.current.contains(e.target as Node)
+      ) setMentionQuery(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    workspaceApi.getAIPrompts()
+      .then((rows) => setAiPrompts(rows))
+      .catch(() => setAiPrompts([]));
   }, []);
 
   // auto-grow textarea
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setMessage(val);
-    // variable trigger
     const cursorPos = e.target.selectionStart ?? val.length;
     const textBeforeCursor = val.slice(0, cursorPos);
-    const varMatch = textBeforeCursor.match(/\$(\w*)$/);
-    if (varMatch) { setVariableQuery(varMatch[1]); setVariableHighlight(0); }
-    else setVariableQuery(null);
+    const mentionMatch = isNote ? textBeforeCursor.match(/@([\w.-]*)$/) : null;
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setMentionHighlight(0);
+      setVariableQuery(null);
+    } else if (isNote && textBeforeCursor.endsWith('@')) {
+      setMentionQuery('');
+      setMentionHighlight(0);
+      setVariableQuery(null);
+    } else {
+      setMentionQuery(null);
+      const varMatch = textBeforeCursor.match(/\$(\w*)$/);
+      if (varMatch) { setVariableQuery(varMatch[1]); setVariableHighlight(0); }
+      else setVariableQuery(null);
+    }
     // auto-grow
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -158,6 +212,12 @@ export function ReplyInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionQuery !== null && filteredMentionUsers.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionHighlight(h => Math.min(h + 1, filteredMentionUsers.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionHighlight(h => Math.max(h - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); insertMention(filteredMentionUsers[mentionHighlight]); return; }
+      if (e.key === 'Escape') { setMentionQuery(null); return; }
+    }
     if (variableQuery !== null && filteredVariables.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setVariableHighlight(h => Math.min(h + 1, filteredVariables.length - 1)); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
@@ -165,6 +225,28 @@ export function ReplyInput({
       if (e.key === 'Escape') { setVariableQuery(null); return; }
     }
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
+  };
+
+  const insertMention = (user: any) => {
+    if (!textareaRef.current) return;
+    const cursorPos = textareaRef.current.selectionStart ?? message.length;
+    const textBeforeCursor = message.slice(0, cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@([\w.-]*)$/) || textBeforeCursor.match(/@$/);
+    if (!mentionMatch) return;
+
+    const start = cursorPos - mentionMatch[0].length;
+    const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
+    const insertion = `@[${user.id}|${label}] `;
+    const newText = message.slice(0, start) + insertion + message.slice(cursorPos);
+    setMessage(newText);
+    setMentionQuery(null);
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newPos = start + insertion.length;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
   };
 
   const insertVariable = (variable: typeof variables[0]) => {
@@ -189,11 +271,11 @@ export function ReplyInput({
   };
 
   const addFiles = async (files: FileList | null) => {
-    if (!files) return;
+    if (!files || !selectedConversation?.id) return;
     const uploaded: AttachedFile[] = [];
     for (const file of Array.from(files)) {
       const previewUrl = URL.createObjectURL(file);
-      const uploadedUrl = await uploadFile(file, selectedConversation?.id);
+      const uploadedUrl = await uploadFile(file, selectedConversation.id);
       uploaded.push({ file, type: getAttachmentType(file), previewUrl, url: uploadedUrl || '' });
     }
     setAttachedFiles(prev => [...prev, ...uploaded]);
@@ -202,6 +284,7 @@ export function ReplyInput({
   const removeFile = (index: number) => setAttachedFiles(prev => prev.filter((_, i) => i !== index));
 
   const canSend = message.trim().length > 0 || attachedFiles.length > 0;
+  const rewritePrompts = aiPrompts.filter((prompt) => prompt.kind === 'rewrite' && (prompt.isEnabled ?? true));
 
   const handleSend = () => {
     if (!canSend) return;
@@ -223,18 +306,19 @@ export function ReplyInput({
         attachments: attachments.length > 0 ? attachments : undefined,
         // attach quoted context for BE
         metadata:{
-          contactIdentifier: selectedConversation?.contact?.identifier, // e.g. phone number or email or sessionId
+          contactIdentifier,
           ...(replyContext?.type === 'chat' && replyContext.quotedMessage
-            ? { replyTo: replyContext.quotedMessage   }
+            ? { quotedMessage: replyContext.quotedMessage }
             : {}),
         },
 
 
       } as any);
     } else {
-
+      const mentionedUserIds = extractMentionIds(message);
       onSendNote({
-        text: message.trim()
+        text: message.trim(),
+        mentionedUserIds,
       } as any);
     }
 
@@ -244,8 +328,53 @@ export function ReplyInput({
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
+  const handleRewrite = async (prompt: AIPrompt, optionValue?: string) => {
+    if (!selectedConversation?.id || !message.trim()) return;
+    setAiLoadingAction('rewrite');
+    try {
+      const result = await inboxApi.rewriteWithPrompt(String(selectedConversation.id), {
+        draft: message,
+        promptId: String(prompt.id),
+        optionValue,
+      });
+      setMessage(result.text);
+      setAiPromptMenuOpen(false);
+      setActivePromptParent(null);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    } finally {
+      setAiLoadingAction(null);
+    }
+  };
+
+  const handleAssistDraft = async () => {
+    if (!selectedConversation?.id) return;
+    setAiLoadingAction('assist');
+    try {
+      const result = await inboxApi.generateAiDraft(String(selectedConversation.id));
+      onInputModeChange('reply');
+      setMessage(result.text);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    } finally {
+      setAiLoadingAction(null);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!selectedConversation?.id) return;
+    setAiLoadingAction('summarize');
+    try {
+      const result = await inboxApi.summarizeConversation(String(selectedConversation.id));
+      onInputModeChange('note');
+      setMessage(result.text);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    } finally {
+      setAiLoadingAction(null);
+    }
+  };
+
   const handleAudioSend = async (audioBlob: Blob) => {
-    const file = new File([audioBlob], 'audio_recording.m4a', { type: 'audio/x-m4a' });
+    if (!selectedConversation?.id) return;
+    const file = new globalThis.File([audioBlob], 'audio_recording.m4a', { type: 'audio/x-m4a' });
     const url = await uploadFile(file, selectedConversation.id);
     onSendMessage({
       id: Date.now(),
@@ -280,7 +409,7 @@ export function ReplyInput({
 
   const templateContextValues: Record<string, string> = {
     conversation_id: String(selectedConversation?.id ?? ''),
-    contact_name: selectedConversation?.customerName ?? '',
+    contact_name: contactName,
   };
 
   /* ── bg ── */
@@ -288,8 +417,6 @@ export function ReplyInput({
   const replyBg = 'bg-white';
   const activeBg = isNote ? noteBg : replyBg;
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
-  const focusRing = isNote ? 'focus-within:ring-amber-300 focus-within:border-amber-400' : 'focus-within:ring-indigo-400 focus-within:border-indigo-400';
-
   return (
     <div className={`${activeBg} transition-colors duration-150 `}>
       <TemplateModal open={templateOpen}  onClose={() => setTemplateOpen(false)} onUse={handleTemplateUse} contextValues={templateContextValues} />
@@ -305,9 +432,57 @@ export function ReplyInput({
         </div>
       ) : (
         <div className={`mx-3 mb-2.5 border ${borderClr} rounded-xl transition-shadow p-1`}>
+          {!isNote && (
+            <div className="flex items-center justify-end px-2 pt-1 pb-1">
+              <button
+                onClick={handleAssistDraft}
+                disabled={aiLoadingAction !== null}
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-60"
+              >
+                {aiLoadingAction === 'assist' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                AI Assist
+              </button>
+            </div>
+          )}
 
           {/* Variable dropdown */}
           <div className="relative">
+            {mentionQuery !== null && filteredMentionUsers.length > 0 && (
+              <div ref={mentionDropdownRef} className="absolute bottom-full left-0 mb-1 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
+                  <AtSign size={13} className="text-amber-500" />
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mention a teammate</span>
+                  {mentionQuery !== null && <span className="ml-auto text-xs text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded">@{mentionQuery}</span>}
+                </div>
+                <div className="max-h-52 overflow-y-auto py-1">
+                  {filteredMentionUsers.map((user: any, idx) => {
+                    const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
+                    return (
+                      <button
+                        key={user.id}
+                        onMouseDown={(e) => { e.preventDefault(); insertMention(user); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${mentionHighlight === idx ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
+                          {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
+                          <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {mentionQuery !== null && mentionQuery.length > 0 && filteredMentionUsers.length === 0 && (
+              <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                <div className="px-4 py-3 text-center">
+                  <p className="text-sm text-gray-400">No teammate matches <span className="font-medium text-gray-600">@{mentionQuery}</span></p>
+                </div>
+              </div>
+            )}
             {variableQuery !== null && filteredVariables.length > 0 && (
               <div ref={variableDropdownRef} className="absolute bottom-full left-0 mb-1 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
                 <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
@@ -349,9 +524,9 @@ export function ReplyInput({
               value={message}
               onChange={handleMessageChange}
               onKeyDown={handleKeyDown}
-              placeholder={isNote ? "Write an internal note… (only visible to your team)" : "Reply… type '$' for variables"}
+              placeholder={isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
               className={`w-full px-4 py-3 resize-none focus:outline-none text-sm leading-relaxed ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
-              rows={2}
+              rows={1}
               style={{ maxHeight: 200, overflowY: 'auto' }}
             />
           </div>
@@ -386,6 +561,55 @@ export function ReplyInput({
 
             {/* Left: attachments + emoji + mic + template */}
             <div className="flex items-center gap-0.5">
+              {!isNote && (
+                <div className="relative mr-1" ref={aiPromptMenuRef}>
+                  <button onClick={() => setAiPromptMenuOpen((open) => !open)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
+                    <Wand2 size={16} />
+                  </button>
+                  {aiPromptMenuOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 flex gap-2 z-50">
+                      <div className="w-80 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-800">AI Prompts</p>
+                        </div>
+                        <div className="py-2">
+                          {rewritePrompts.map((prompt) => {
+                            const hasOptions = Array.isArray(prompt.options) && prompt.options.length > 0;
+                            return (
+                              <button
+                                key={prompt.id}
+                                onClick={() => hasOptions ? setActivePromptParent(prompt) : handleRewrite(prompt)}
+                                className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${activePromptParent?.id === prompt.id ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">{prompt.name}</p>
+                                  {prompt.description && <p className="text-xs text-gray-500 mt-0.5">{prompt.description}</p>}
+                                </div>
+                                {hasOptions && <ChevronDown size={14} className="-rotate-90 text-gray-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {activePromptParent && Array.isArray(activePromptParent.options) && activePromptParent.options.length > 0 && (
+                        <div className="w-72 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="text-sm font-semibold text-gray-800">{activePromptParent.name}</p>
+                          </div>
+                          <div className="py-2">
+                            {activePromptParent.options.map((option) => (
+                              <button key={option.value} onClick={() => handleRewrite(activePromptParent, option.value)} className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50">
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Channel selector (only in reply mode) */}
               {!isNote && (
                 <div className="relative mr-1" ref={channelRef}>
@@ -426,6 +650,27 @@ export function ReplyInput({
                 )}
               </div>
 
+              {isNote && (
+                <button
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const pos = textareaRef.current?.selectionStart ?? message.length;
+                    const nextValue = message.slice(0, pos) + '@' + message.slice(pos);
+                    setMessage(nextValue);
+                    setMentionQuery('');
+                    setMentionHighlight(0);
+                    setTimeout(() => {
+                      textareaRef.current?.focus();
+                      textareaRef.current?.setSelectionRange(pos + 1, pos + 1);
+                    }, 0);
+                  }}
+                  className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600 transition-colors"
+                  title="Mention teammate"
+                >
+                  <AtSign size={16} />
+                </button>
+              )}
+
               {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
               {!isNote && selectedChannel?.type == 'whatsapp' && (
@@ -439,6 +684,12 @@ export function ReplyInput({
             <div className="flex items-center gap-1.5">
 
               {/* ── Mode switcher: two compact pills ── */}
+              {!isNote && (
+                <button onClick={handleSummarize} disabled={aiLoadingAction !== null} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:opacity-60">
+                  {aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  Summarize
+                </button>
+              )}
               <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                 <button
                   onClick={() => onInputModeChange('reply')}

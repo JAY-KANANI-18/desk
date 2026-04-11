@@ -131,6 +131,18 @@ export const workspaceApi = {
   disconnectIntegration: (integrationId: string) =>
     api.delete(`/workspaces/integrations/${integrationId}`),
 
+  getMetaAdsOAuthUrl: () =>
+    api.get(`/integrations/meta-ads/oauth/url`),
+
+  exchangeMetaAdsOAuthCode: (code: string) =>
+    api.post(`/integrations/meta-ads/oauth/exchange`, { code }),
+
+  getMetaAdsStatus: () =>
+    api.get(`/integrations/meta-ads/status`),
+
+  disconnectMetaAdsIntegration: () =>
+    api.delete(`/integrations/meta-ads`),
+
 
   /* =========================================================
      Widget Settings
@@ -226,7 +238,7 @@ export const workspaceApi = {
   addTag: (tag: any) =>
     api.post(`/workspaces/tags`, tag),
 
-  deleteTag: (tagId: number) =>
+  deleteTag: (tagId: number | string) =>
     api.delete(`/workspaces/tags/${tagId}`),
 
 
@@ -248,16 +260,22 @@ export const workspaceApi = {
   getAIPrompts: () =>
     api.get(`/workspaces/ai-prompts`),
 
+  getAIAssistPrompt: () =>
+    api.get(`/workspaces/ai-assist-prompt`),
+
+  updateAIAssistPrompt: (prompt: any) =>
+    api.put(`/workspaces/ai-assist-prompt`, prompt),
+
   addAIPrompt: (prompt: any) =>
     api.post(`/workspaces/ai-prompts`, prompt),
 
-  updateAIPrompt: (promptId: number, updates: any) =>
+  updateAIPrompt: (promptId: string | number, updates: any) =>
     api.put(`/workspaces/ai-prompts/${promptId}`, updates),
 
-  deleteAIPrompt: (promptId: number) =>
+  deleteAIPrompt: (promptId: string | number) =>
     api.delete(`/workspaces/ai-prompts/${promptId}`),
 
-  setActiveAIPrompt: (promptId: number) =>
+  setActiveAIPrompt: (promptId: string | number) =>
     api.post(`/workspaces/ai-prompts/${promptId}/activate`),
 
 
@@ -294,10 +312,10 @@ export const workspaceApi = {
   ========================================================= */
 
   getNotificationPrefs: () =>
-    api.get(`/workspaces/users/notifications`),
+    api.get(`/notifications/preferences`),
 
   updateNotificationPrefs: (prefs: any) =>
-    api.put(`/workspaces/users/notifications`, prefs),
+    api.put(`/notifications/preferences`, prefs),
 
 
   /* =========================================================

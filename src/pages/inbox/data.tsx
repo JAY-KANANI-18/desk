@@ -226,6 +226,21 @@ export const channelConfig: Record<string, ChannelConfig> = {
     bg: "bg-purple-500",
     label: "Website Chat",
   },
+  sms: {
+    icon: "https://cdn.simpleicons.org/androidmessages",
+    bg: "bg-emerald-600",
+    label: "SMS",
+  },
+  exotel_call: {
+    icon: "https://cdn.simpleicons.org/ringcentral",
+    bg: "bg-cyan-600",
+    label: "Voice Call",
+  },
+  meta_ads: {
+    icon: "https://cdn.simpleicons.org/meta",
+    bg: "bg-blue-700",
+    label: "Meta Ads",
+  },
 };
 
 export const teamMembers = [

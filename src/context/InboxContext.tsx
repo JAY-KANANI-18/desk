@@ -58,6 +58,7 @@ export interface InboxContextType {
   convLoading: boolean;
   hasMoreConvs: boolean;
   loadMoreConversations: () => void;
+  refreshConversations: () => Promise<ApiConversation[]>;
 
   /* Filters */
   filters: InboxFilters;
@@ -269,6 +270,26 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     [wsId, filters, convSearch, nextConvCursor],
   );
 
+  const refreshConversations = useCallback(async () => {
+    setConvLoading(true);
+    try {
+      const result = await inboxApi.getConversations({
+        ...filters,
+        search: convSearch || undefined,
+        cursor: undefined,
+      });
+      setConvList(result.data);
+      setNextConvCursor(result.nextCursor);
+      setHasMoreConvs(!!result.nextCursor);
+      return result.data;
+    } catch (err) {
+      console.error("[InboxContext] refreshConversations:", err);
+      return [];
+    } finally {
+      setConvLoading(false);
+    }
+  }, [filters, convSearch]);
+
   /* Initial load + re-load when filters change */
   useEffect(() => {
     fetchConversations(true);
@@ -443,6 +464,56 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     };
 
+    const onContactMerged = async (payload: {
+      primaryContactId: string;
+      secondaryContactId: string;
+      survivorConversationId?: string | null;
+      mergedConversationIds?: string[];
+    }) => {
+      const mergedIds = new Set(payload.mergedConversationIds ?? []);
+
+      if (mergedIds.size > 0) {
+        setConvList((prev) => prev.filter((conv) => !mergedIds.has(conv.id)));
+      }
+
+      const selectedConvId = selectedConvIdRef.current;
+      const selectedWasMerged =
+        !!selectedConvId && mergedIds.has(selectedConvId);
+
+      if (!selectedWasMerged) {
+        return;
+      }
+
+      const conversations = await refreshConversations();
+      const survivorConversation = conversations.find(
+        (conv) => conv.id === payload.survivorConversationId,
+      );
+
+      if (survivorConversation) {
+        const nextConversation = {
+          ...survivorConversation,
+          unreadCount: 0,
+        };
+        setSelectedConversation(nextConversation);
+        selectedConvIdRef.current = survivorConversation.id;
+        setTimeline([]);
+        setNextTimelineCursor(undefined);
+        setHasMoreTimeline(false);
+        setMsgSearch("");
+        setMsgSearchOpen(false);
+        setInputMode("reply");
+        fetchTimeline(survivorConversation.id, true);
+        contactsApi
+          .getContact(survivorConversation.contactId)
+          .then(setSelectedContact)
+          .catch(() => {});
+      } else {
+        setSelectedConversation(null);
+        selectedConvIdRef.current = undefined;
+        setTimeline([]);
+      }
+    };
+
     const onActivity = (item: ApiTimelineItem) => {
       if (item.activity?.conversationId === selectedConvIdRef.current) {
         setTimeline((prev) => [...prev, item]);
@@ -463,14 +534,16 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     socket.on("activity.upsert", onActivityUpsert);
     socket.on("conversation.upsert", onConversation);
     socket.on("activity", onActivity);
+    socket.on("contact:merged", onContactMerged);
 
     return () => {
       socket.off("message.upsert", onMessage);
       socket.off("message.status_updated", onStatusUpdate);
       socket.off("conversation.upsert", onConversation);
       socket.off("activity", onActivity);
+      socket.off("contact:merged", onContactMerged);
     };
-  }, [socket, activeWorkspace.id, fetchConversations]);
+  }, [socket, activeWorkspace.id, fetchConversations, refreshConversations, fetchTimeline]);
 
   /* ══════════════════════════════════════════════════════════════
      SEND MESSAGE
@@ -478,11 +551,20 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const sendMessage = useCallback(
     async (msg: any) => {
+      const quotedMessage = msg.metadata?.quotedMessage ?? msg.metadata?.replyTo;
       const payload: any = {
         ...(msg.text && { text: msg.text }),
         ...(msg.attachments?.length && { attachments: msg.attachments }),
-        ...(msg.metadata && { metadata: msg.metadata }),
+        ...(quotedMessage?.id && { replyToMessageId: String(quotedMessage.id) }),
+        ...((msg.metadata || quotedMessage) && {
+          metadata: {
+            ...(msg.metadata ?? {}),
+            ...(quotedMessage ? { quotedMessage } : {}),
+          },
+        }),
       };
+
+      if (payload.metadata?.replyTo) delete payload.metadata.replyTo;
 
       if (msg.template) {
         payload.metadata = {
@@ -703,10 +785,22 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       setInputMode("reply");
       console.log({ ApiConversation: conv });
 
-      setSelectedChannel(
-        conv?.lastMessage?.channel ??
-          conv?.lastMessage?.contact?.contactChannels[0]?.channelId,
+      const inferredType =
+        (conv as any)?.lastMessage?.channel?.type ??
+        (conv as any)?.lastMessage?.channelType ??
+        (conv as any)?.channel?.type ??
+        (conv as any)?.contact?.contactChannels?.[0]?.channelType;
+      const inferredId =
+        (conv as any)?.lastMessage?.channelId ??
+        (conv as any)?.lastMessage?.channel?.id ??
+        (conv as any)?.channel?.id ??
+        (conv as any)?.contact?.contactChannels?.[0]?.channelId;
+      const matchedChannel = channels?.find(
+        (c: any) =>
+          (inferredId && c.id === inferredId) ||
+          (inferredType && c.type === inferredType),
       );
+      setSelectedChannel(matchedChannel ?? channels?.[0] ?? null);
 
       // Mark read
       if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => {});
@@ -735,7 +829,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
     },
-    [wsId, fetchTimeline],
+    [wsId, fetchTimeline, channels],
   );
 
   /* ── Channel helpers ── */
@@ -761,6 +855,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         convLoading,
         hasMoreConvs,
         loadMoreConversations,
+        refreshConversations,
         filters,
         lifecycles,
         setFilters,

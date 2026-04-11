@@ -9,6 +9,8 @@ import { WebsiteChatChannel, WebsiteChatChannelSidebar } from '../workspace/chan
 import type { Channel as WsChannel } from '../workspace/types';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useChannel } from '../../context/ChannelContext';
+import { useState } from 'react';
+import { ChannelApi } from '../../lib/channelApi';
 
 // ─── Channel metadata ─────────────────────────────────────────────────────────
 const CHANNEL_META: Record<string, {
@@ -62,6 +64,18 @@ const CHANNEL_META: Record<string, {
     SidebarContent: WebsiteChatChannelSidebar,
 
   },
+  exotel_call: {
+    name: 'Exotel Calling',
+    description: 'Connect Exotel for inbound and outbound voice calls.',
+    icon: 'ringcentral',
+    color: 'bg-cyan-600',
+  },
+  msg91_sms: {
+    name: 'MSG91 SMS',
+    description: 'Connect MSG91 for transactional and support SMS.',
+    icon: 'androidmessages',
+    color: 'bg-emerald-600',
+  },
 };
 
 // ─── Component map ────────────────────────────────────────────────────────────
@@ -69,6 +83,97 @@ type SetupProps = {
   connected: WsChannel | null;
   onConnect: (ch: WsChannel) => void;
   onDisconnect: (id: number) => void;
+  workspaceId: string;
+};
+
+const ExotelCallChannel: React.FC<SetupProps> = ({ onConnect, workspaceId }) => {
+  const [name, setName] = useState('Exotel Calling');
+  const [callerId, setCallerId] = useState('');
+  const [sid, setSid] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [apiToken, setApiToken] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConnect = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const ch = await ChannelApi.connectExotel({
+        workspaceId,
+        name,
+        callerId,
+        sid,
+        apiKey,
+        apiToken,
+      });
+      onConnect(ch as any);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'Failed to connect Exotel');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 bg-white border border-gray-200 rounded-xl p-5">
+      <h2 className="text-lg font-semibold text-gray-900">Exotel setup</h2>
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Channel name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Caller ID" value={callerId} onChange={(e) => setCallerId(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Exotel SID" value={sid} onChange={(e) => setSid(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="API Key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="API Token" value={apiToken} onChange={(e) => setApiToken(e.target.value)} />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <button onClick={handleConnect} disabled={loading || !callerId || !sid || !apiKey || !apiToken} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-50">
+        {loading ? 'Connecting...' : 'Connect Exotel'}
+      </button>
+    </div>
+  );
+};
+
+const Msg91SmsChannel: React.FC<SetupProps> = ({ onConnect, workspaceId }) => {
+  const [name, setName] = useState('MSG91 SMS');
+  const [senderId, setSenderId] = useState('');
+  const [authKey, setAuthKey] = useState('');
+  const [route, setRoute] = useState('4');
+  const [dltTemplateId, setDltTemplateId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConnect = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const ch = await ChannelApi.connectMsg91({
+        workspaceId,
+        name,
+        senderId,
+        authKey,
+        route,
+        dltTemplateId: dltTemplateId || undefined,
+      });
+      onConnect(ch as any);
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'Failed to connect MSG91');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 bg-white border border-gray-200 rounded-xl p-5">
+      <h2 className="text-lg font-semibold text-gray-900">MSG91 setup</h2>
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Channel name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Sender ID" value={senderId} onChange={(e) => setSenderId(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Auth Key" value={authKey} onChange={(e) => setAuthKey(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Route (default 4)" value={route} onChange={(e) => setRoute(e.target.value)} />
+      <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="DLT Template ID (optional)" value={dltTemplateId} onChange={(e) => setDltTemplateId(e.target.value)} />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <button onClick={handleConnect} disabled={loading || !senderId || !authKey} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-50">
+        {loading ? 'Connecting...' : 'Connect MSG91'}
+      </button>
+    </div>
+  );
 };
 
 const CHANNEL_COMPONENTS: Record<string, React.ComponentType<SetupProps>> = {
@@ -78,6 +183,8 @@ const CHANNEL_COMPONENTS: Record<string, React.ComponentType<SetupProps>> = {
   email: EmailChannel,
   gmail: GmailChannel,
   website_chat: WebsiteChatChannel,
+  exotel_call: ExotelCallChannel,
+  msg91_sms: Msg91SmsChannel,
 };
 
 interface ConnectedChannel {

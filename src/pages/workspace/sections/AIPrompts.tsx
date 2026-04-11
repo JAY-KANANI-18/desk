@@ -6,113 +6,222 @@ import type { AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
 
+type PromptFormState = {
+  name: string;
+  description: string;
+  prompt: string;
+};
+
+const EMPTY_FORM: PromptFormState = {
+  name: '',
+  description: '',
+  prompt: '',
+};
+
 export const AIPrompts = () => {
-  const [prompts, setPrompts]         = useState<AIPrompt[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [showAdd, setShowAdd]         = useState(false);
-  const [editPrompt, setEditPrompt]   = useState<AIPrompt | null>(null);
-  const [form, setForm]               = useState({ name: '', prompt: '' });
-  const [saving, setSaving]           = useState(false);
+  const [prompts, setPrompts] = useState<AIPrompt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editPrompt, setEditPrompt] = useState<AIPrompt | null>(null);
+  const [form, setForm] = useState<PromptFormState>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setPrompts(await workspaceApi.getAIPrompts()); }
-    catch { setError('Failed to load AI prompts.'); }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError(null);
+    try {
+      setPrompts(await workspaceApi.getAIPrompts());
+    } catch {
+      setError('Failed to load AI prompts.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const openCreate = () => {
+    setEditPrompt(null);
+    setForm(EMPTY_FORM);
+    setShowEditor(true);
+  };
+
+  const openEdit = (prompt: AIPrompt) => {
+    setEditPrompt(prompt);
+    setForm({
+      name: prompt.name,
+      description: prompt.description ?? '',
+      prompt: prompt.prompt,
+    });
+    setShowEditor(true);
+  };
+
+  const closeEditor = () => {
+    setShowEditor(false);
+    setEditPrompt(null);
+    setForm(EMPTY_FORM);
+  };
 
   const handleSave = async () => {
-    if (!form.name || !form.prompt) return;
+    if (!form.name.trim() || !form.prompt.trim()) return;
+
     setSaving(true);
+    setError(null);
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      prompt: form.prompt.trim(),
+      kind: 'rewrite',
+      isEnabled: true,
+    };
+
     try {
       if (editPrompt) {
-        await workspaceApi.updateAIPrompt(editPrompt.id, form);
-        setPrompts(prev => prev.map(p => p.id === editPrompt.id ? { ...p, ...form } : p));
+        await workspaceApi.updateAIPrompt(editPrompt.id, payload);
       } else {
-        const created = await workspaceApi.addAIPrompt(form);
-        setPrompts(prev => [...prev, created]);
+        await workspaceApi.addAIPrompt(payload);
       }
-      setForm({ name: '', prompt: '' });
-      setShowAdd(false); setEditPrompt(null);
-    } catch { setError('Failed to save prompt.'); }
-    finally { setSaving(false); }
+      await load();
+      closeEditor();
+    } catch {
+      setError('Failed to save prompt.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = async (id: number) => {
-    setPrompts(prev => prev.filter(p => p.id !== id));
-    try { await workspaceApi.deleteAIPrompt(id); }
-    catch { load(); }
+  const handleDelete = async (prompt: AIPrompt) => {
+    try {
+      await workspaceApi.deleteAIPrompt(prompt.id);
+      await load();
+    } catch {
+      setError('Failed to delete prompt.');
+    }
   };
 
-  const handleSetActive = async (id: number) => {
-    setPrompts(prev => prev.map(p => ({ ...p, active: p.id === id })));
-    try { await workspaceApi.setActiveAIPrompt(id); }
-    catch { load(); }
+  const handleToggle = async (prompt: AIPrompt) => {
+    try {
+      await workspaceApi.updateAIPrompt(prompt.id, {
+        isEnabled: !prompt.isEnabled,
+      });
+      await load();
+    } catch {
+      setError('Failed to update prompt.');
+    }
   };
 
-  if (loading) return <DataLoader type={"prompts"} />;
+  if (loading) return <DataLoader type={'prompts'} />;
   if (error && prompts.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
     <div className="space-y-6">
-      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
-        <Sparkles size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-indigo-800">Custom AI system prompts</p>
-          <p className="text-xs text-indigo-600 mt-0.5">Define how the AI behaves when assisting your agents. Only one prompt can be active at a time.</p>
+      <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+        <div className="flex items-start gap-3">
+          <Sparkles size={18} className="mt-0.5 flex-shrink-0 text-indigo-600" />
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">AI Prompts</p>
+            <p className="mt-1 text-xs leading-5 text-indigo-700">
+              These prompts are only for rewrite actions in the inbox composer. Default prompts can be enabled or disabled. Custom prompts support full CRUD.
+            </p>
+          </div>
         </div>
       </div>
 
+      {error && <SectionError message={error} onRetry={load} />}
+
+      <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+        <Plus size={16} />
+        Add AI prompt
+      </button>
+
       <div className="space-y-3">
-        {prompts.map(p => (
-          <div key={p.id} className={`bg-white rounded-xl border p-5 transition-colors ${p.active ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-gray-200'}`}>
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-800">{p.name}</span>
-                {p.active && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Active</span>}
+        {prompts.map((prompt) => (
+          <div key={prompt.id} className="rounded-2xl border border-gray-200 bg-white px-5 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900">{prompt.name}</p>
+                  {!prompt.isDefault && <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">Custom</span>}
+                </div>
+                <p className="mt-1 text-sm text-gray-500">{prompt.description ?? prompt.prompt}</p>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button onClick={() => { setEditPrompt(p); setForm({ name: p.name, prompt: p.prompt }); setShowAdd(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"><Edit2 size={14} /></button>
-                <button onClick={() => handleDelete(p.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+
+              <div className="flex items-center gap-3">
+                {!prompt.isDefault && (
+                  <button onClick={() => void handleDelete(prompt)} className="inline-flex items-center gap-1 text-red-500 hover:text-red-600">
+                    <Trash2 size={15} /> Delete
+                  </button>
+                )}
+                {!prompt.isDefault && (
+                  <button onClick={() => openEdit(prompt)} className="inline-flex items-center gap-1 rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    <Edit2 size={15} /> Edit
+                  </button>
+                )}
+                <button
+                  onClick={() => void handleToggle(prompt)}
+                  className={`h-7 w-12 rounded-full transition-colors ${prompt.isEnabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+                  aria-label={prompt.isEnabled ? 'Disable prompt' : 'Enable prompt'}
+                >
+                  <span className={`block h-6 w-6 rounded-full bg-white transition-transform ${prompt.isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{p.prompt}</p>
-            {!p.active && (
-              <button onClick={() => handleSetActive(p.id)} className="mt-3 text-xs text-indigo-600 hover:text-indigo-700 font-medium">Set as active →</button>
-            )}
           </div>
         ))}
       </div>
 
-      <button onClick={() => { setEditPrompt(null); setForm({ name: '', prompt: '' }); setShowAdd(true); }} className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors w-full justify-center">
-        <Plus size={16} /> Add prompt
-      </button>
+      {showEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <h3 className="text-2xl font-semibold text-gray-900">{editPrompt ? 'Edit Prompt' : 'New Prompt'}</h3>
+              <button onClick={closeEditor} className="text-gray-500 hover:text-gray-700">
+                <X size={22} />
+              </button>
+            </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">{editPrompt ? 'Edit prompt' : 'Add AI prompt'}</h3>
-              <button onClick={() => { setShowAdd(false); setEditPrompt(null); }}><X size={20} className="text-gray-400" /></button>
-            </div>
-            <div className="space-y-4">
+            <div className="space-y-5 px-6 py-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prompt name</label>
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Empathetic support" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="mb-2 block text-sm font-medium text-gray-600">Prompt Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Name of your prompt"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">System prompt</label>
-                <textarea value={form.prompt} onChange={e => setForm({ ...form, prompt: e.target.value })} rows={6} placeholder="You are a helpful customer support agent..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-                <p className="text-xs text-gray-400 mt-1">{form.prompt.length} / 2000 characters</p>
+                <label className="mb-2 block text-sm font-medium text-gray-600">Prompt Action</label>
+                <textarea
+                  value={form.prompt}
+                  onChange={(e) => setForm((prev) => ({ ...prev, prompt: e.target.value }))}
+                  rows={4}
+                  placeholder="Write exactly what you want your prompt to do. Always start with a verb. Ex: Make concise"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-600">Description</label>
+                <input
+                  value={form.description}
+                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Short description shown in AI prompts list"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => { setShowAdd(false); setEditPrompt(null); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2">
-                {saving ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</> : editPrompt ? 'Save changes' : 'Add prompt'}
+
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button onClick={closeEditor} className="rounded-xl px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={saving} className="rounded-xl bg-gray-300 px-4 py-2 text-sm font-medium text-white disabled:opacity-70 enabled:bg-blue-600 enabled:hover:bg-blue-700">
+                {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

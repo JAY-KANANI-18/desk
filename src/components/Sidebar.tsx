@@ -66,7 +66,12 @@ const navItems: {
     path: "/contacts",
     ws: "ws:contacts:view",
   },
-  // { icon: Radio, label: "Broadcast", path: "/broadcast" },
+  {
+    icon: Radio,
+    label: "Broadcast",
+    path: "/broadcast",
+    ws: "ws:broadcasts:view",
+  },
 
   {
     icon: Workflow,

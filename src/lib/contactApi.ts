@@ -12,7 +12,7 @@ import { apiFetch } from "./apiClient";
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 interface Contact {
-    id: number;
+    id: number | string;
     firstName: string;
     lastName?: string;
     email: string;
@@ -20,6 +20,41 @@ interface Contact {
     lifecycle?: string;
     channel: string;
     tags?: string[];
+}
+
+export interface ContactDuplicateSuggestion {
+    contact: any;
+    score: number;
+    reasons: string[];
+    conversationCount: number;
+    openConversationCount: number;
+}
+
+export interface ContactMergePreview {
+    primary: any;
+    secondary: any;
+    confidenceScore: number;
+    reasonCodes: string[];
+    suggestedResolution: Record<string, any>;
+    impact: {
+        conversationsToMove: number;
+        channelsToMove: number;
+        workflowRunsToMove: number;
+        notificationHistoryToMove: number;
+    };
+}
+
+export interface ContactMergeResult {
+    mergeRunId: string;
+    contact: Contact;
+    survivorConversationId?: string | null;
+    mergedConversationIds?: string[];
+}
+
+export interface ContactTagMutationResult {
+    contactId: string;
+    tagId: string;
+    tags: string[];
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC DATA
@@ -184,8 +219,43 @@ export const contactsApi = {
         return res;
     },
 
-    getContact: async (contactId: number): Promise<Contact> => {
+    getContact: async (contactId: number | string): Promise<Contact> => {
         const res = await api.get(`/contacts/${contactId}`);
+        return res;
+    },
+
+    getDuplicateSuggestions: async (contactId: number | string): Promise<{
+        contactId: string;
+        suggestions: ContactDuplicateSuggestion[];
+    }> => {
+        const res = await api.get(`/contacts/${contactId}/duplicates`);
+        return res;
+    },
+
+    getMergePreview: async (
+        primaryContactId: number | string,
+        duplicateContactId: number | string,
+    ): Promise<ContactMergePreview> => {
+        const res = await api.get(
+            `/contacts/${primaryContactId}/merge-preview?duplicateContactId=${duplicateContactId}`,
+        );
+        return res;
+    },
+
+    mergeContactIntoPrimary: async (
+        primaryContactId: number | string,
+        secondaryContactId: number | string,
+        payload?: {
+            source?: string;
+            reasonCodes?: string[];
+            confidenceScore?: number;
+            resolution?: Record<string, unknown>;
+        },
+    ): Promise<ContactMergeResult> => {
+        const res = await api.post(`/contacts/${primaryContactId}/merge`, {
+            secondaryContactId,
+            ...(payload ?? {}),
+        });
         return res;
     },
 
@@ -199,11 +269,25 @@ export const contactsApi = {
     //     const res = await api.post("/contacts", contact);
     //     return res;
     // },
-    updateContact: async (id: number, updates: Partial<Contact>): Promise<Contact> => {
+    updateContact: async (id: number | string, updates: Partial<Contact>): Promise<Contact> => {
         const res = await api.patch(`/contacts/${id}`, updates);
         return res;
     },
-    MergeContacts: async (keepId: number | undefined, removeId: number, merged: Contact): Promise<Contact> => {
+    addTagToContact: async (
+        contactId: number | string,
+        tagId: string,
+    ): Promise<ContactTagMutationResult> => {
+        const res = await api.post(`/contacts/${contactId}/tags`, { tagId });
+        return res;
+    },
+    removeTagFromContact: async (
+        contactId: number | string,
+        tagId: string,
+    ): Promise<ContactTagMutationResult> => {
+        const res = await api.delete(`/contacts/${contactId}/tags/${tagId}`);
+        return res;
+    },
+    MergeContacts: async (keepId: number | string | undefined, removeId: number | string, merged: Contact): Promise<any> => {
         const res = await api.post(`/contacts/merge`, {
             keepId,
             removeId,

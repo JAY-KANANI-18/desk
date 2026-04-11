@@ -18,7 +18,7 @@ import { ConversationList } from "./inbox/ConversationList";
 import { ChatHeader }       from "./inbox/ChatHeader";
 import { MessageArea }      from "./inbox/MessageArea";
 import { InputArea }        from "./inbox/InputArea";
-import { ContactSidebar }   from "./inbox/ContactSidebar";
+import { ContactSidebarHybrid } from "./inbox/ContactSidebarHybrid";
 import type { Conversation } from "./inbox/types";
 import type { ReplyContext } from "./inbox/MessageArea";
 
@@ -63,7 +63,10 @@ export function InboxPage() {
   useEffect(() => { setReplyContext(null); }, [selectedConversation?.id]);
 
   const handleSendMessage = useCallback((msg) => sendMessage(msg), [sendMessage]);
-  const handleSendNote = useCallback((msg) => sendNote(msg), [sendNote]);
+  const handleSendNote = useCallback(
+    (msg) => sendNote(msg?.text ?? "", msg?.mentionedUserIds ?? []),
+    [sendNote],
+  );
 
   useEffect(() => {
     if (!conversationId && convList.length > 0) navigate(`/inbox/${convList[0].id}`, { replace: true });
@@ -138,7 +141,11 @@ export function InboxPage() {
       )}
 
       {selectedConversation?.id && (
-        <ContactSidebar key={selectedConversation?.id} selectedConversation={selectedConversation} contactDetails={selectedContact} />
+        <ContactSidebarHybrid
+          key={selectedConversation?.id}
+          selectedConversation={selectedConversation}
+          contactDetails={selectedContact}
+        />
       )}
     </div>
   );

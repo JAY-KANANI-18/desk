@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-
+import { useSocket } from "../socket/socket-provider";
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,6 +49,7 @@ interface CallContextType {
   toggleSpeaker: () => void;
   toggleRecord: () => void;
   simulateIncomingCall: (contact?: Partial<CallContact>) => void;
+  startOutgoingCall: (contact: CallContact) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ const CallContext = createContext<CallContextType | null>(null);
 export const CallProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { socket } = useSocket();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
 
@@ -159,6 +161,21 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
+  const startOutgoingCall = useCallback((contact: CallContact) => {
+    setActiveCall({
+      id: `out_${Date.now()}`,
+      contact,
+      channel: "phone",
+      startedAt: Date.now(),
+      duration: 0,
+      isMuted: false,
+      isOnHold: false,
+      isSpeaker: false,
+      isRecording: false,
+      status: "active",
+    });
+  }, []);
+
   const acceptCall = useCallback(() => {
     const call = incomingRef.current;
     if (!call) return;
@@ -206,6 +223,44 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onMessage = (msg: any) => {
+      const isInboundCall =
+        msg?.channelType === "exotel_call" &&
+        msg?.direction === "incoming" &&
+        (msg?.type === "call_event" || msg?.type === "status");
+
+      if (!isInboundCall || incomingRef.current || activeRef.current) return;
+
+      const from =
+        msg?.metadata?.from ||
+        msg?.metadata?.call?.from ||
+        msg?.metadata?.contactIdentifier ||
+        "Unknown";
+
+      const contact: CallContact = {
+        name: msg?.metadata?.contactName || "Incoming caller",
+        phone: String(from),
+        isKnown: !!msg?.metadata?.contactId,
+      };
+
+      setIncomingCall({
+        id: msg?.id || `call_${Date.now()}`,
+        contact,
+        channel: "phone",
+        startedAt: Date.now(),
+      });
+    };
+
+    socket.on("message.upsert", onMessage);
+    return () => {
+      socket.off("message.upsert", onMessage);
+    };
+  }, [socket]);
+
   return (
     <CallContext.Provider
       value={{
@@ -219,6 +274,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({
         toggleSpeaker,
         toggleRecord,
         simulateIncomingCall,
+        startOutgoingCall,
       }}
     >
       {children}
