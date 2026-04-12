@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Search, Phone, ChevronDown, UserCircle2,
   CheckCircle2, LockOpen,
@@ -169,7 +169,6 @@ export function ChatHeader({
   onToggleMsgSearch,
 }: ChatHeaderProps) {
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee, setAssignee] = useState<Assignee | null>(null);
   const [assignSearch, setAssignSearch] = useState('');
    const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [closeMenuOpen, setCloseMenuOpen] = useState(false);
@@ -210,14 +209,13 @@ export function ChatHeader({
     setChatStatus((selectedConversation?.contact?.status as "open" | "closed" | undefined) ?? null);
   }, [selectedConversation,selectedConversation?.contact?.status]);
 
-  useEffect(() => {
-    if (!selectedConversation?.contact || !workspaceUsers) return;
-
-    const user = workspaceUsers.find(
-      (u) => u.id === selectedConversation?.contact?.assigneeId
-    );
-    setAssignee(user || null);
-  }, [selectedConversation?.contact?.assigneeId, workspaceUsers]);
+  const assignee = useMemo(
+    () =>
+      workspaceUsers?.find(
+        (u) => u.id === selectedConversation?.contact?.assigneeId,
+      ) || null,
+    [workspaceUsers, selectedConversation?.contact?.assigneeId],
+  );
 
   const handleStatusAction = async (s: ConvStatus) => {
     setChatStatus(null);

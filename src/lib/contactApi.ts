@@ -22,6 +22,22 @@ interface Contact {
     tags?: string[];
 }
 
+export interface ContactListParams {
+    search?: string;
+    lifecycle?: string;
+    sortField?: "name" | "email" | "lifecycle" | "phone";
+    sortDir?: "asc" | "desc";
+    page?: number;
+    limit?: number;
+}
+
+export interface ContactListResponse {
+    data: Contact[];
+    total: number;
+    page: number;
+    limit: number;
+}
+
 export interface ContactDuplicateSuggestion {
     contact: any;
     score: number;
@@ -212,10 +228,16 @@ const SEED_CONTACTS: Contact[] = [
 
 export const contactsApi = {
     /** GET /contacts — returns all contacts */
-    getContacts: async (): Promise<Contact[]> => {
-        const res = await api.get("/contacts");
-
-        // if (!res.ok) throw new Error("Failed to apiFetch contacts");
+    getContacts: async (params?: ContactListParams): Promise<ContactListResponse> => {
+        const searchParams = new URLSearchParams();
+        if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+        if (params?.lifecycle) searchParams.set("lifecycle", params.lifecycle);
+        if (params?.sortField) searchParams.set("sortField", params.sortField);
+        if (params?.sortDir) searchParams.set("sortDir", params.sortDir);
+        if (params?.page) searchParams.set("page", String(params.page));
+        if (params?.limit) searchParams.set("limit", String(params.limit));
+        const query = searchParams.toString();
+        const res = await api.get(`/contacts${query ? `?${query}` : ""}`);
         return res;
     },
 

@@ -27,6 +27,7 @@ import { useNotifications } from "./NotificationContext";
 import { useSocket } from "../socket/socket-provider";
 import { useWorkspace } from "./WorkspaceContext";
 import { useOrganization } from "./OrganizationContext";
+import { useAuth } from "./AuthContext";
 import { contactsApi } from "../lib/contactApi";
 import { ChannelApi } from "../lib/channelApi";
 import {
@@ -158,6 +159,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [notify]);
 
   const { socket } = useSocket();
+  const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { refreshWorkspaceUsers } = useWorkspace();
 
@@ -191,6 +193,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedConversation, setSelectedConversation] =
     useState<ApiConversation | null>(null);
   const selectedConvIdRef = useRef<string | undefined>();
+  const selectedContactRef = useRef<any>(null);
 
   /* ── Timeline ── */
   const [timeline, setTimeline] = useState<ApiTimelineItem[]>([]);
@@ -242,6 +245,10 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       return prev;
     });
   }, [convList]);
+
+  useEffect(() => {
+    selectedContactRef.current = selectedContact;
+  }, [selectedContact]);
 
   /* ══════════════════════════════════════════════════════════════
      LOAD CONVERSATIONS  (re-fetches when filters / search change)
@@ -362,19 +369,65 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!socket || !activeWorkspace.id) return;
 
+    const mergeConversation = (
+      current: ApiConversation,
+      incoming: Partial<ApiConversation>,
+    ): ApiConversation => ({
+      ...current,
+      ...incoming,
+      contact: incoming.contact
+        ? {
+            ...(current.contact ?? {}),
+            ...incoming.contact,
+          }
+        : current.contact,
+      lastMessage: incoming.lastMessage
+        ? {
+            ...(current.lastMessage ?? {}),
+            ...incoming.lastMessage,
+          }
+        : current.lastMessage,
+    });
+
+    const upsertTimelineMessage = (
+      prev: ApiTimelineItem[],
+      message: ApiMessage & { conversationId: string },
+    ) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.type === "message" && item.message?.id === message.id,
+      );
+
+      const nextItem: ApiTimelineItem = {
+        id: message.id,
+        type: "message",
+        timestamp: message.createdAt,
+        message,
+      };
+
+      if (existingIndex === -1) {
+        return [...prev, nextItem];
+      }
+
+      return prev.map((item, index) =>
+        index === existingIndex
+          ? {
+              ...item,
+              timestamp: message.createdAt,
+              message: {
+                ...item.message,
+                ...message,
+              },
+            }
+          : item,
+      );
+    };
+
     const onMessage = (msg: ApiMessage & { conversationId: string }) => {
       // Append to timeline if this conv is open
       console.log({ msg });
       let message = msg;
       if (message.conversationId === selectedConvIdRef.current) {
-        const item: ApiTimelineItem = {
-          id: message.id,
-          type: "message",
-          timestamp: message.createdAt,
-          message: message,
-        };
-
-        setTimeline((prev) => [...prev, item]);
+        setTimeline((prev) => upsertTimelineMessage(prev, message));
       }
 
       // Update conversation list
@@ -460,8 +513,62 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log({ exists });
         if (!exists) return [conv, ...prev];
 
-        return prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c));
+        return prev.map((c) => (c.id === conv.id ? mergeConversation(c, conv) : c));
       });
+
+      if (conv.id === selectedConvIdRef.current) {
+        setSelectedConversation((prev) =>
+          prev ? mergeConversation(prev, conv) : conv,
+        );
+      }
+
+      if (conv.contact && conv.contact.id === selectedContactRef.current?.id) {
+        setSelectedContact((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                ...conv.contact,
+              }
+            : conv.contact,
+        );
+      }
+    };
+
+    const onContactUpdated = (contact: any) => {
+      if (!contact?.id) return;
+
+      setConvList((prev) =>
+        prev.map((conv) =>
+          conv.contact?.id === contact.id
+            ? mergeConversation(conv, {
+                contact: {
+                  ...conv.contact,
+                  ...contact,
+                },
+              } as Partial<ApiConversation>)
+            : conv,
+        ),
+      );
+
+      setSelectedConversation((prev) =>
+        prev?.contact?.id === contact.id
+          ? mergeConversation(prev, {
+              contact: {
+                ...prev.contact,
+                ...contact,
+              },
+            } as Partial<ApiConversation>)
+          : prev,
+      );
+
+      setSelectedContact((prev: any) =>
+        prev?.id === contact.id
+          ? {
+              ...prev,
+              ...contact,
+            }
+          : prev,
+      );
     };
 
     const onContactMerged = async (payload: {
@@ -533,6 +640,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     socket.on("message.status_updated", onStatusUpdate);
     socket.on("activity.upsert", onActivityUpsert);
     socket.on("conversation.upsert", onConversation);
+    socket.on("contact:updated", onContactUpdated);
     socket.on("activity", onActivity);
     socket.on("contact:merged", onContactMerged);
 
@@ -540,6 +648,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("message.upsert", onMessage);
       socket.off("message.status_updated", onStatusUpdate);
       socket.off("conversation.upsert", onConversation);
+      socket.off("contact:updated", onContactUpdated);
       socket.off("activity", onActivity);
       socket.off("contact:merged", onContactMerged);
     };
@@ -579,9 +688,33 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         payload,
       );
 
+      if (
+        user?.id &&
+        selectedConversation?.contact &&
+        selectedConversation.contact.assigneeId !== user.id
+      ) {
+        const assignee = workspaceUsers.find((member: any) => member.id === user.id);
+        updateSelectedConv({
+          contact: {
+            ...selectedConversation.contact,
+            assigneeId: user.id,
+            ...(assignee ? { assignee } : {}),
+          },
+        });
+        setSelectedContact((prev: any) =>
+          prev?.id === selectedConversation.contact.id
+            ? {
+                ...prev,
+                assigneeId: user.id,
+                ...(assignee ? { assignee } : {}),
+              }
+            : prev,
+        );
+      }
+
       console.log({ message });
     },
-    [selectedChannel?.id, selectedConversation?.id],
+    [selectedChannel?.id, selectedConversation, user?.id, workspaceUsers],
   );
 
   // const sendMessage = useCallback(

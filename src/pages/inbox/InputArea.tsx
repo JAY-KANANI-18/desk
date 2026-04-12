@@ -21,7 +21,7 @@
 
 import { useEffect } from 'react';
 import { ReplyInput }  from './ReplyInput';
-import { EmailInput }  from './EmailInput';
+import { EmailInput }  from './EmailInputV2';
 import type { Conversation, Message } from './types';
 import type { ReplyContext } from './MessageArea';
 

@@ -40,6 +40,27 @@ export type BroadcastRunRow = {
   channel?: { id: string; name: string; type: string; identifier: string };
 };
 
+export type BroadcastRunStatus =
+  | "scheduled"
+  | "running"
+  | "completed"
+  | "partial_failure";
+
+export type BroadcastRunListParams = {
+  take?: number;
+  cursor?: string;
+  search?: string;
+  status?: BroadcastRunStatus;
+  sortBy?: "name" | "scheduledAt" | "status";
+  sortOrder?: "asc" | "desc";
+};
+
+export type BroadcastRunListResponse = {
+  data: BroadcastRunRow[];
+  nextCursor?: string;
+  total: number;
+};
+
 export type BroadcastAnalytics = {
   broadcastRunId: string;
   totalMessages: number;
@@ -71,8 +92,17 @@ export type BroadcastTrace = {
 };
 
 export const broadcastApi = {
-  list: (take?: number) =>
-    api.get(`/broadcasts${take != null ? `?take=${take}` : ""}`) as Promise<BroadcastRunRow[]>,
+  list: (params: BroadcastRunListParams = {}) => {
+    const searchParams = new URLSearchParams();
+    if (params.take != null) searchParams.set("take", String(params.take));
+    if (params.cursor) searchParams.set("cursor", params.cursor);
+    if (params.search?.trim()) searchParams.set("search", params.search.trim());
+    if (params.status) searchParams.set("status", params.status);
+    if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+    if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+    const query = searchParams.toString();
+    return api.get(`/broadcasts${query ? `?${query}` : ""}`) as Promise<BroadcastRunListResponse>;
+  },
 
   get: (id: string) => api.get(`/broadcasts/${id}`) as Promise<BroadcastRunRow>,
 
@@ -90,7 +120,6 @@ export const broadcastApi = {
     channelId: string;
     tagIds?: string[];
     lifecycleId?: string;
-    teamId?: string;
     respectMarketingOptOut?: boolean;
     limit?: number;
   }) => api.post("/broadcasts/audience-preview", body) as Promise<BroadcastAudiencePreview>,
@@ -102,7 +131,6 @@ export const broadcastApi = {
     template?: { name: string; language: string; variables?: Record<string, string> };
     tagIds?: string[];
     lifecycleId?: string;
-    teamId?: string;
     respectMarketingOptOut?: boolean;
     limit?: number;
     scheduledAt?: string;

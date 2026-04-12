@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { api } from './api';
+import { buildEmailChannelPayload, type EmailChannelFormValues } from './emailChannel';
 
 interface Channel {
     id: string;
@@ -72,6 +73,13 @@ connectSelectedPages: async (payload: {
         api.put(`/channels/messenger/${channelId}`, data),
     updateEmailChannel: (channelId: string, data: any) =>
         api.put(`/channels/email/${channelId}`, data),
+    connectEmailChannel: (workspaceId: string, values: EmailChannelFormValues) =>
+        api.post(`/channels/email/smtp/connect`, {
+            workspaceId,
+            ...buildEmailChannelPayload(values),
+        }),
+    testEmailConnection: (channelId: string) =>
+        api.post(`/channels/email/${channelId}/test`),
     updateGmailChannel: (channelId: string, data: any) =>
         api.put(`/channels/gmail/${channelId}`, data),
 

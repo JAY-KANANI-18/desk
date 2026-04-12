@@ -21,6 +21,7 @@ import {
 import { contactsApi } from "../lib/contactApi";
 import { DataLoader } from "./Loader";
 import { workspaceApi } from "../lib/workspaceApi";
+import { useWorkspace } from "../context/WorkspaceContext";
 import { LifecycleStage } from "./workspace/types";
 import { CHANNEL_META } from "./channels/ManageChannelPage";
 import { Tooltip } from "../components/ui/Tooltip";
@@ -44,12 +45,25 @@ const PAGE_SIZE = 10;
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 interface Contact {
-  id: number;
+  id: number | string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   lifecycle?: string;
+  lifecycleId?: string;
+  assigneeId?: string;
+  assignee?: {
+    id: string;
+    firstName: string;
+    lastName?: string;
+    avatarUrl?: string;
+  };
+  avatarUrl?: string;
+  contactChannels?: Array<{
+    channelType?: string;
+    channelId?: string | number;
+  }>;
   channel?: string;
   tags?: string[];
 }
@@ -61,6 +75,8 @@ const lifecycleStages = [
   { name: "Hot Lead", color: "bg-orange-500", count: 1 },
   { name: "Payment", color: "bg-green-500", count: 0 },
   { name: "Customer", color: "bg-purple-500", count: 0 },
+  { label: "Phone A â†’ Z", field: "phone", dir: "asc" },
+  { label: "Phone Z â†’ A", field: "phone", dir: "desc" },
 ];
 
 const lostStages = [{ name: "Cold Lead", color: "bg-gray-500", count: 0 }];
@@ -75,6 +91,9 @@ const segments = [
 
 type SortField = "name" | "email" | "lifecycle" | "phone";
 type SortDir = "asc" | "desc";
+
+const MAX_VISIBLE_CHANNELS = 3;
+const MAX_VISIBLE_TAGS = 3;
 
 const SORT_OPTIONS: { label: string; field: SortField; dir: SortDir }[] = [
   { label: "Name A → Z", field: "name", dir: "asc" },
@@ -211,23 +230,15 @@ const SEED_CONTACTS: Contact[] = [
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export const Contacts = () => {
+  const { workspaceUsers } = useWorkspace();
   const [contacts, setContacts] = useState<Contact[]>(
     DUMMY_MODE ? SEED_CONTACTS : [],
   );
   const [loading, setLoading] = useState(!DUMMY_MODE);
 
   // ── Bootstrap (API mode) ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (DUMMY_MODE) return;
-    contactsApi
-      .getContacts()
-      .then(setContacts)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
   // ── UI state ──────────────────────────────────────────────────────────────
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
   const [showNewContact, setShowNewContact] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -245,6 +256,10 @@ export const Contacts = () => {
     msg: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalContacts, setTotalContacts] = useState(
+    DUMMY_MODE ? SEED_CONTACTS.length : 0,
+  );
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [stages, setStages] = useState<
     { name: string; color: string; count: number }[]
   >([]);
@@ -263,6 +278,15 @@ export const Contacts = () => {
   });
 
   const loadRef = useRef<() => Promise<void>>();
+  const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    clearTimeout(searchDebounce.current);
+    searchDebounce.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(searchDebounce.current);
+  }, [searchQuery]);
 
   // ── Load ─────────────────────────────────────────────────────────────────
 
@@ -271,11 +295,26 @@ export const Contacts = () => {
     try {
       const data: LifecycleStage[] = await workspaceApi.getLifecycleStages();
       setStages(data);
+      if (DUMMY_MODE) {
+        setContacts(SEED_CONTACTS);
+        setTotalContacts(SEED_CONTACTS.length);
+      } else {
+        const result = await contactsApi.getContacts({
+          search: debouncedSearchQuery || undefined,
+          lifecycle: selectedLifecycle ?? undefined,
+          sortField: sortOption?.field,
+          sortDir: sortOption?.dir,
+          page: currentPage,
+          limit: PAGE_SIZE,
+        });
+        setContacts(result.data);
+        setTotalContacts(result.total);
+      }
     } catch {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, debouncedSearchQuery, selectedLifecycle, sortOption]);
 
   loadRef.current = load;
 
@@ -358,13 +397,10 @@ export const Contacts = () => {
   // ── Pagination ────────────────────────────────────────────────────────────
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredContacts.length / PAGE_SIZE),
+    Math.ceil(totalContacts / PAGE_SIZE),
   );
   const safePage = Math.min(currentPage, totalPages);
-  const paginatedContacts = filteredContacts.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
-  );
+  const paginatedContacts = filteredContacts;
   console.log({ paginatedContacts });
 
   // ── Selection helpers ─────────────────────────────────────────────────────
@@ -410,8 +446,8 @@ export const Contacts = () => {
     } else {
       try {
         await contactsApi.deleteContacts(ids);
-        setContacts((prev) => prev.filter((c) => !selectedIds.has(c.id)));
         setSelectedIds(new Set());
+        await loadRef.current?.();
         showToast(
           "success",
           `${ids.length} contact${ids.length > 1 ? "s" : ""} deleted.`,
@@ -434,12 +470,12 @@ export const Contacts = () => {
     } else {
       try {
         await contactsApi.deleteContact(id);
-        setContacts((prev) => prev.filter((c) => c.id !== id));
         setSelectedIds((prev) => {
           const n = new Set(prev);
           n.delete(id);
           return n;
         });
+        await loadRef.current?.();
         showToast("success", "Contact deleted.");
       } catch {
         showToast("error", "Failed to delete contact.");
@@ -476,14 +512,12 @@ export const Contacts = () => {
       showToast("success", "Contact updated.");
     } else {
       try {
-        const updated = await contactsApi.updateContact(
+        await contactsApi.updateContact(
           editingContact.id,
           updates,
         );
-        setContacts((prev) =>
-          prev.map((c) => (c.id === editingContact.id ? updated : c)),
-        );
         setEditingContact(null);
+        await loadRef.current?.();
         showToast("success", "Contact updated.");
       } catch {
         showToast("error", "Failed to update contact.");
@@ -517,8 +551,7 @@ export const Contacts = () => {
       showToast("success", "Contact created.");
     } else {
       try {
-        const created = await contactsApi.createContact(payload);
-        setContacts((prev) => [...prev, created]);
+        await contactsApi.createContact(payload);
         setShowNewContact(false);
         setNewContact({
           firstName: "",
@@ -529,7 +562,8 @@ export const Contacts = () => {
           tags: [],
         });
         console.log("succes contact create");
-
+        setCurrentPage(1);
+        await loadRef.current?.();
         showToast("success", "Contact created.");
       } catch {
         showToast("error", "Failed to create contact.");
@@ -632,8 +666,9 @@ export const Contacts = () => {
     } else {
       try {
         const created = await contactsApi.importContacts(importParsed);
-        setContacts((prev) => [...prev, ...created]);
         setShowImportModal(false);
+        setCurrentPage(1);
+        await loadRef.current?.();
         showToast(
           "success",
           `${created.length} contact${created.length > 1 ? "s" : ""} imported.`,
@@ -645,13 +680,13 @@ export const Contacts = () => {
   };
 
   // ── Column sort click helper ──────────────────────────────────────────────
-  const handleColSort = (field: SortField, defaultIdx: number) => {
-    const cur = sortOption?.field === field ? sortOption.dir : null;
-    setSortOption(
-      SORT_OPTIONS.find(
-        (o) => o.field === field && o.dir === (cur === "asc" ? "desc" : "asc"),
-      ) || SORT_OPTIONS[defaultIdx],
-    );
+  const handleColSort = (field: SortField) => {
+    const nextDir: SortDir =
+      sortOption?.field === field && sortOption.dir === "asc" ? "desc" : "asc";
+    const nextLabel = `${field.charAt(0).toUpperCase()}${field.slice(1)} ${
+      nextDir === "asc" ? "A â†’ Z" : "Z â†’ A"
+    }`;
+    setSortOption({ field, dir: nextDir, label: nextLabel });
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -884,6 +919,14 @@ export const Contacts = () => {
               <Download size={15} />
               <span>Export</span>
             </button>
+
+            <button
+              onClick={() => setShowNewContact(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <Plus size={15} />
+              <span>New Contact</span>
+            </button>
           </div>
 
           {/* Active filters row */}
@@ -907,7 +950,7 @@ export const Contacts = () => {
                 </span>
               )}
               <span className="text-xs text-gray-400 ml-auto">
-                {filteredContacts.length} of {contacts.length} contacts
+                {contacts.length} on this page of {totalContacts} contacts
               </span>
             </div>
           )}
@@ -960,7 +1003,7 @@ export const Contacts = () => {
                     {/* Name */}
                     <th
                       className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-800"
-                      onClick={() => handleColSort("name", 0)}
+                      onClick={() => handleColSort("name")}
                     >
                       <span className="flex items-center gap-1">
                         Name
@@ -975,13 +1018,16 @@ export const Contacts = () => {
                       </span>
                     </th>
                     {/* Channel */}
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-44">
                       Channel
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">
+                      Assignee
                     </th>
                     {/* Lifecycle */}
                     <th
                       className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-800 w-36"
-                      onClick={() => handleColSort("lifecycle", 4)}
+                      onClick={() => handleColSort("lifecycle")}
                     >
                       <span className="flex items-center gap-1">
                         Lifecycle
@@ -998,7 +1044,7 @@ export const Contacts = () => {
                     {/* Email */}
                     <th
                       className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-800"
-                      onClick={() => handleColSort("email", 2)}
+                      onClick={() => handleColSort("email")}
                     >
                       <span className="flex items-center gap-1">
                         Email
@@ -1015,7 +1061,7 @@ export const Contacts = () => {
                     {/* Phone */}
                     <th
                       className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-800 w-40"
-                      onClick={() => handleColSort("phone", 0)}
+                      onClick={() => handleColSort("phone")}
                     >
                       <span className="flex items-center gap-1">
                         Phone
@@ -1029,6 +1075,9 @@ export const Contacts = () => {
                         />
                       </span>
                     </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-52">
+                      Tags
+                    </th>
                     {/* Actions */}
                     <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
                       Actions
@@ -1039,7 +1088,7 @@ export const Contacts = () => {
                   {paginatedContacts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={9}
                         className="px-6 py-16 text-center text-gray-400 text-sm"
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -1053,6 +1102,13 @@ export const Contacts = () => {
                       const stage = stages.find(
                         (s) => s.id === contact.lifecycleId,
                       );
+                      const workspaceAssignee =
+                        workspaceUsers?.find((user) => user.id === contact.assigneeId) ?? null;
+                      const assigneeName = workspaceAssignee
+                        ? `${workspaceAssignee.firstName} ${workspaceAssignee.lastName ?? ""}`.trim()
+                        : contact.assignee
+                          ? `${contact.assignee.firstName} ${contact.assignee.lastName ?? ""}`.trim()
+                          : "";
 
                       return (
                         <tr
@@ -1094,18 +1150,6 @@ export const Contacts = () => {
                                 <div className="font-medium text-gray-900 text-sm">
                                   {contact.firstName} {contact.lastName}
                                 </div>
-                                {contact?.tags?.length > 0 && (
-                                  <div className="flex gap-1 mt-0.5">
-                                    {contact?.tags?.map((tag) => (
-                                      <span
-                                        key={tag}
-                                        className="text-xs px-1.5 py-0.5 bg-white text-gray-500 rounded"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </td>
@@ -1113,29 +1157,58 @@ export const Contacts = () => {
                           {/* Channel */}
                           <td className="px-4 py-3">
                             {contact.contactChannels?.length ? (
-                              <div className="flex items-center gap-2">
-                                {contact.contactChannels.map(
+                              <div className="flex h-9 items-center gap-2 overflow-hidden">
+                                {contact.contactChannels.slice(0, MAX_VISIBLE_CHANNELS).map(
                                   (channel, index) => {
                                     const icon =
                                       channelConfig[channel?.channelType]?.icon;
 
-                                    return icon ? (
+                                    return (
                                       <Tooltip
                                         key={`${channel?.channelType}-${index}`}
                                         content={channel?.channelType + " : " + channel?.channelId}
+                                        side="top"
                                       >
-                                        <img
-                                          src={icon}
-                                          alt={channel?.channelType}
-                                          className="w-7 h-7 p-1  cursor-pointer"
-                                        />
+                                        <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-transparent">
+                                          {icon ? (
+                                            <img
+                                              src={icon}
+                                              alt={channel?.channelType}
+                                              className="h-4 w-4 object-contain"
+                                            />
+                                          ) : null}
+                                        </div>
                                       </Tooltip>
-                                    ) : null;
+                                    );
                                   },
+                                )}
+                                {contact.contactChannels.length > MAX_VISIBLE_CHANNELS && (
+                                  <Tooltip
+                                    content={contact.contactChannels
+                                      .slice(MAX_VISIBLE_CHANNELS)
+                                      .map((channel) => channel.channelType ?? "channel")
+                                      .join(", ")}
+                                    side="top"
+                                  >
+                                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-100 px-2 text-[11px] font-medium text-gray-600">
+                                      +{contact.contactChannels.length - MAX_VISIBLE_CHANNELS}
+                                    </span>
+                                  </Tooltip>
                                 )}
                               </div>
                             ) : (
                               <span>-</span>
+                            )}
+                          </td>
+
+                          {/* Assignee */}
+                          <td className="px-4 py-3">
+                            {assigneeName ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                                {assigneeName}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-400">Unassigned</span>
                             )}
                           </td>
 
@@ -1158,6 +1231,33 @@ export const Contacts = () => {
                             <span className="text-sm text-gray-700">
                               {contact.phone ? contact.phone : "—"}
                             </span>
+                          </td>
+
+                          {/* Tags */}
+                          <td className="px-4 py-3">
+                            {contact?.tags?.length ? (
+                              <div className="flex h-9 items-center gap-1 overflow-hidden">
+                                {contact.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
+                                  <Tooltip key={tag} content={tag} side="top">
+                                    <span className="max-w-[88px] truncate rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
+                                      {tag}
+                                    </span>
+                                  </Tooltip>
+                                ))}
+                                {contact.tags.length > MAX_VISIBLE_TAGS && (
+                                  <Tooltip
+                                    content={contact.tags.slice(MAX_VISIBLE_TAGS).join(", ")}
+                                    side="top"
+                                  >
+                                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-gray-100 px-2 text-[11px] font-medium text-gray-600">
+                                      +{contact.tags.length - MAX_VISIBLE_TAGS}
+                                    </span>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
                           </td>
 
                           {/* Actions */}
@@ -1187,12 +1287,12 @@ export const Contacts = () => {
               </table>
 
               {/* Pagination footer */}
-              {filteredContacts.length > PAGE_SIZE && (
+              {totalContacts > PAGE_SIZE && (
                 <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between text-sm sticky bottom-0">
                   <span className="text-gray-500 text-xs">
                     Showing {(safePage - 1) * PAGE_SIZE + 1}–
-                    {Math.min(safePage * PAGE_SIZE, filteredContacts.length)} of{" "}
-                    {filteredContacts.length} contacts
+                    {Math.min((safePage - 1) * PAGE_SIZE + paginatedContacts.length, totalContacts)} of{" "}
+                    {totalContacts} contacts
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -1790,13 +1890,6 @@ export const Contacts = () => {
       )}
 
       {/* ── FAB ───────────────────────────────────────────────────────────── */}
-      <button
-        onClick={() => setShowNewContact(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center z-40"
-      >
-        <Plus size={24} />
-      </button>
-
       {/* Close sort menu on outside click */}
       {showSortMenu && (
         <div

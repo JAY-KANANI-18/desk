@@ -17,7 +17,7 @@ import {
   Video, FileText, DollarSign, LayoutTemplate,
   MessageSquare, StickyNote,
   Play, File as FileIcon,
-  Wand2, Sparkles, Loader2, AtSign,
+  Wand2, Sparkles, Loader2, AtSign, AlertTriangle, Clock3,
 } from 'lucide-react';
 import { channelConfig, variables } from './data';
 import type { MediaAttachment, AttachmentType } from './types';
@@ -37,11 +37,35 @@ import { extractMentionIds } from './utils';
 
 type AttachedFile = { file: globalThis.File; type: AttachmentType; url: string; previewUrl?: string };
 
+const WINDOW_RESTRICTED_CHANNELS = new Set(['whatsapp', 'messenger', 'instagram']);
+const FIRST_MESSAGE_RESTRICTED_CHANNELS = new Set(['messenger', 'instagram']);
+
 function getAttachmentType(file: globalThis.File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'doc';
+}
+
+function parseTimestamp(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' && Number.isNaN(Number(value))) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numericValue)) return null;
+  return numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue;
+}
+
+function formatWindowExpiry(value: number | null): string | null {
+  if (!value) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
 }
 
 /* ─── Quoted-reply banner ────────────────────────────────────────────────────── */
@@ -128,10 +152,43 @@ export function ReplyInput({
   const aiPromptMenuRef = useRef<HTMLDivElement>(null);
   const mentionDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { uploadFile,selectedChannel,channels,selectedConversation } = useInbox();
+  const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
 
   const isNote = inputMode === 'note';
+  const channelType = selectedChannel?.type ?? selectedConversation?.channel?.type;
+  const selectedContactChannels =
+    (selectedContact?.contactChannels as any[] | undefined) ??
+    (selectedConversation?.contact?.contactChannels as any[] | undefined) ??
+    [];
+  const selectedContactChannel = selectedContactChannels.find((contactChannel) =>
+    contactChannel?.channelId === selectedChannel?.id ||
+    contactChannel?.channelType === channelType,
+  );
+  const normalizedChannelType = String(channelType ?? '').toLowerCase();
+  const hasChannelIdentifier = Boolean(selectedContactChannel?.identifier);
+  const messageWindowExpiry = parseTimestamp(selectedContactChannel?.messageWindowExpiry);
+  const isWindowRestrictedChannel = WINDOW_RESTRICTED_CHANNELS.has(normalizedChannelType);
+  const requiresInboundFirst = FIRST_MESSAGE_RESTRICTED_CHANNELS.has(normalizedChannelType);
+  const isChannelInitiationBlocked = requiresInboundFirst && !hasChannelIdentifier;
+  const isMessageWindowClosed = isWindowRestrictedChannel && messageWindowExpiry !== null && messageWindowExpiry <= Date.now();
+  const isFreeFormReplyBlocked =
+    isChannelInitiationBlocked ||
+    (normalizedChannelType === 'whatsapp' && isWindowRestrictedChannel && messageWindowExpiry === null) ||
+    isMessageWindowClosed;
+  const canSendFreeFormReply = !isFreeFormReplyBlocked;
+  const showWindowRestrictionWarning = !isNote && isFreeFormReplyBlocked;
+  const isReplyComposerLocked = !isNote && isFreeFormReplyBlocked;
+  const formattedWindowExpiry = formatWindowExpiry(messageWindowExpiry);
+  const restrictionCopy = isChannelInitiationBlocked
+    ? normalizedChannelType === 'instagram'
+      ? 'This contact has not messaged you on Instagram yet. You can only reply after they start the conversation.'
+      : 'This contact has not messaged you on Messenger yet. You can only reply after they start the conversation.'
+    : normalizedChannelType === 'whatsapp'
+      ? 'This WhatsApp contact channel is not open for free-form messaging. Send a template to message the contact.'
+      : normalizedChannelType === 'instagram'
+        ? 'This Instagram contact channel is outside the reply window. Wait for a new inbound message before sending a normal reply.'
+        : 'This Messenger contact channel is outside the messaging window. Wait for a new inbound message before sending a normal reply.';
   const contactName = [selectedConversation?.contact?.firstName, selectedConversation?.contact?.lastName]
     .filter(Boolean)
     .join(' ')
@@ -183,8 +240,19 @@ export function ReplyInput({
       .catch(() => setAiPrompts([]));
   }, []);
 
+  useEffect(() => {
+    if (!isReplyComposerLocked) return;
+    setEmojiOpen(false);
+    setAiPromptMenuOpen(false);
+    setActivePromptParent(null);
+    setShowRecorder(false);
+    setVariableQuery(null);
+    setMentionQuery(null);
+  }, [isReplyComposerLocked]);
+
   // auto-grow textarea
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (isReplyComposerLocked) return;
     const val = e.target.value;
     setMessage(val);
     const cursorPos = e.target.selectionStart ?? val.length;
@@ -212,6 +280,7 @@ export function ReplyInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isReplyComposerLocked) return;
     if (mentionQuery !== null && filteredMentionUsers.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setMentionHighlight(h => Math.min(h + 1, filteredMentionUsers.length - 1)); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setMentionHighlight(h => Math.max(h - 1, 0)); return; }
@@ -271,6 +340,7 @@ export function ReplyInput({
   };
 
   const addFiles = async (files: FileList | null) => {
+    if (isReplyComposerLocked) return;
     if (!files || !selectedConversation?.id) return;
     const uploaded: AttachedFile[] = [];
     for (const file of Array.from(files)) {
@@ -283,7 +353,8 @@ export function ReplyInput({
 
   const removeFile = (index: number) => setAttachedFiles(prev => prev.filter((_, i) => i !== index));
 
-  const canSend = message.trim().length > 0 || attachedFiles.length > 0;
+  const hasComposerContent = message.trim().length > 0 || attachedFiles.length > 0;
+  const canSend = isNote ? hasComposerContent : hasComposerContent && canSendFreeFormReply;
   const rewritePrompts = aiPrompts.filter((prompt) => prompt.kind === 'rewrite' && (prompt.isEnabled ?? true));
 
   const handleSend = () => {
@@ -329,6 +400,7 @@ export function ReplyInput({
   };
 
   const handleRewrite = async (prompt: AIPrompt, optionValue?: string) => {
+    if (isReplyComposerLocked) return;
     if (!selectedConversation?.id || !message.trim()) return;
     setAiLoadingAction('rewrite');
     try {
@@ -347,6 +419,7 @@ export function ReplyInput({
   };
 
   const handleAssistDraft = async () => {
+    if (isReplyComposerLocked) return;
     if (!selectedConversation?.id) return;
     setAiLoadingAction('assist');
     try {
@@ -360,6 +433,7 @@ export function ReplyInput({
   };
 
   const handleSummarize = async () => {
+    if (isReplyComposerLocked) return;
     if (!selectedConversation?.id) return;
     setAiLoadingAction('summarize');
     try {
@@ -373,6 +447,7 @@ export function ReplyInput({
   };
 
   const handleAudioSend = async (audioBlob: Blob) => {
+    if (isReplyComposerLocked) return;
     if (!selectedConversation?.id) return;
     const file = new globalThis.File([audioBlob], 'audio_recording.m4a', { type: 'audio/x-m4a' });
     const url = await uploadFile(file, selectedConversation.id);
@@ -432,12 +507,29 @@ export function ReplyInput({
         </div>
       ) : (
         <div className={`mx-3 mb-2.5 border ${borderClr} rounded-xl transition-shadow p-1`}>
-          {!isNote && (
+          {showWindowRestrictionWarning && (
+            <div className="mx-2 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="mt-0.5 text-amber-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-amber-900">{restrictionCopy}</p>
+                  {formattedWindowExpiry && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
+                      <Clock3 size={12} />
+                      Window expired at {formattedWindowExpiry}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isNote && !isReplyComposerLocked && (
             <div className="flex items-center justify-end px-2 pt-1 pb-1">
               <button
                 onClick={handleAssistDraft}
                 disabled={aiLoadingAction !== null}
-                className="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {aiLoadingAction === 'assist' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
                 AI Assist
@@ -525,10 +617,20 @@ export function ReplyInput({
               onChange={handleMessageChange}
               onKeyDown={handleKeyDown}
               placeholder={isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
-              className={`w-full px-4 py-3 resize-none focus:outline-none text-sm leading-relaxed ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
+              className={`w-full px-4 py-3 resize-none focus:outline-none text-sm leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
               rows={1}
               style={{ maxHeight: 200, overflowY: 'auto' }}
             />
+            {isReplyComposerLocked && (
+              <div className="px-4 py-4">
+                <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 px-4 py-3">
+                  <p className="text-sm font-medium text-amber-900">Reply actions are hidden while this channel window is closed.</p>
+                  <p className="mt-1 text-xs text-amber-700">
+                    You can switch channel, add an internal note, or use a template if this channel supports it.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Attached file previews */}
@@ -539,16 +641,20 @@ export function ReplyInput({
                   af.type === 'image' ? (
                     <div key={i} className="relative group flex-shrink-0">
                       <img src={af.previewUrl} alt={af.file.name} className="w-14 h-14 object-cover rounded-lg border border-gray-200 shadow-sm" />
-                      <button onMouseDown={e => { e.preventDefault(); removeFile(i); }}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                        <X size={10} />
-                      </button>
+                      {!isReplyComposerLocked && (
+                        <button onMouseDown={e => { e.preventDefault(); removeFile(i); }}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                          <X size={10} />
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
                       {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
                       <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
-                      <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
+                      {!isReplyComposerLocked && (
+                        <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
+                      )}
                     </span>
                   )
                 )}
@@ -561,7 +667,7 @@ export function ReplyInput({
 
             {/* Left: attachments + emoji + mic + template */}
             <div className="flex items-center gap-0.5">
-              {!isNote && (
+              {!isNote && !isReplyComposerLocked && (
                 <div className="relative mr-1" ref={aiPromptMenuRef}>
                   <button onClick={() => setAiPromptMenuOpen((open) => !open)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
                     <Wand2 size={16} />
@@ -638,17 +744,21 @@ export function ReplyInput({
 
               {/* <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
               <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button> */}
-              <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
+              {!isReplyComposerLocked && (
+                <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
+              )}
 
-              <div className="relative" ref={emojiRef}>
-                <button onClick={() => setEmojiOpen(o => !o)}
-                  className={`p-1.5 rounded-lg transition-colors ${emojiOpen ? 'bg-yellow-100 text-yellow-600' : 'hover:bg-gray-200 text-gray-500'}`} title="Emoji">
-                  <Smile size={16} />
-                </button>
-                {emojiOpen && (
-                  <EmojiPicker mode="reply" accent="gray" onSelect={emoji => { setMessage(prev => prev + emoji); setEmojiOpen(false); }} />
-                )}
-              </div>
+              {!isReplyComposerLocked && (
+                <div className="relative" ref={emojiRef}>
+                  <button onClick={() => setEmojiOpen(o => !o)}
+                    className={`p-1.5 rounded-lg transition-colors ${emojiOpen ? 'bg-yellow-100 text-yellow-600' : 'hover:bg-gray-200 text-gray-500'}`} title="Emoji">
+                    <Smile size={16} />
+                  </button>
+                  {emojiOpen && (
+                    <EmojiPicker mode="reply" accent="gray" onSelect={emoji => { setMessage(prev => prev + emoji); setEmojiOpen(false); }} />
+                  )}
+                </div>
+              )}
 
               {isNote && (
                 <button
@@ -684,8 +794,8 @@ export function ReplyInput({
             <div className="flex items-center gap-1.5">
 
               {/* ── Mode switcher: two compact pills ── */}
-              {!isNote && (
-                <button onClick={handleSummarize} disabled={aiLoadingAction !== null} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:opacity-60">
+              {!isNote && !isReplyComposerLocked && (
+                <button onClick={handleSummarize} disabled={aiLoadingAction !== null} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60">
                   {aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   Summarize
                 </button>
@@ -712,22 +822,24 @@ export function ReplyInput({
               </div>
 
               {/* Send button */}
-              <button onClick={handleSend} disabled={!canSend}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${canSend
-                  ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}>
-                <Send size={14} />
-              </button>
+              {(!isReplyComposerLocked || isNote) && (
+                <button onClick={handleSend} disabled={!canSend}
+                  className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${canSend
+                    ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}>
+                  <Send size={14} />
+                </button>
+              )}
             </div>
           </div>
 
         </div>
       )}
 
-      <input ref={imageRef} type="file"  accept="image/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-      <input ref={videoRef} type="file"  accept="video/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-      <input ref={fileRef} type="file"  className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+      {!isReplyComposerLocked && <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />}
+      {!isReplyComposerLocked && <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />}
+      {!isReplyComposerLocked && <input ref={fileRef} type="file" className="hidden" onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />}
     </div>
   );
 }

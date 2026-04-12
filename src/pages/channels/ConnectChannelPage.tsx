@@ -3,7 +3,7 @@ import { ArrowLeft, Video, MessageCircle } from 'lucide-react';
 import { WhatsAppCloudChannel, WhatsAppChannelSidebar } from '../workspace/channels/WhatsAppCloudChannel';
 import { FacebookChannel, FacebookChannelSidebar } from '../workspace/channels/FacebookChannel';
 import { InstagramChannel, InstagramChannelSidebar } from '../workspace/channels/InstagramChannel';
-import { EmailChannel, EmailChannelSidebar } from '../workspace/channels/EmailChannel';
+import { EmailChannel, EmailChannelSidebar } from '../workspace/channels/EmailChannelV2';
 import { GmailChannel } from '../workspace/channels/GmailChannel';
 import { WebsiteChatChannel, WebsiteChatChannelSidebar } from '../workspace/channels/WebsiteChatChannel';
 import type { Channel as WsChannel } from '../workspace/types';

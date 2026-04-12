@@ -275,24 +275,7 @@ export const EmailChannel = ({ connected, onConnect, onDisconnect }: Props) => {
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="p-6 space-y-6">
 
-          {/* Provider presets */}
-          <div>
-            <p className="text-[11px] font-semibold text-gray-500 mb-2">Email provider</p>
-            <div className="flex flex-wrap gap-2">
-              {COMMON_PROVIDERS.map(({ label }) => (
-                <button
-                  key={label}
-                  onClick={() => applyPreset(label)}
-                  className={`px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors cursor-pointer
-                    ${selectedProvider === label
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-indigo-600'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+     
 
           <div className="h-px bg-gray-100" />
 

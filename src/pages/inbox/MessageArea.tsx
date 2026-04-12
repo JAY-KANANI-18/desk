@@ -59,12 +59,14 @@ import { useWorkspace } from "../../context/WorkspaceContext";
 import { useAuth, User } from "../../context/AuthContext";
 import { useInbox } from "../../context/InboxContext";
 import { extractMentionLabels, formatTime, renderCommentText } from "./utils";
+import { Tooltip } from "../../components/ui/Tooltip";
+import { channelConfig } from "./data";
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES
 ═══════════════════════════════════════════════════════════════════ */
 
-export type MessageStatus = "pending" | "sent" | "delivered" | "read";
+export type MessageStatus = "pending" | "sent" | "delivered" | "read" | "failed";
 
 export interface MediaAttachment {
   type: "image" | "video" | "audio" | "file";
@@ -281,11 +283,62 @@ function highlightText(text: string, term: string): React.ReactNode {
 function MsgStatusIcon({ status }: { status?: MessageStatus }) {
   if (!status || status === "pending")
     return <Clock size={14} className="text-gray-400 flex-shrink-0" />;
+  if (status === "failed")
+    return <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />;
   if (status === "sent")
     return <Check size={14} className="text-gray-400 flex-shrink-0" />;
   if (status === "delivered")
     return <CheckCheck size={14} className="text-gray-400 flex-shrink-0" />;
   return <CheckCheck size={14} className="text-indigo-500 flex-shrink-0" />;
+}
+
+function getFailedMessageCopy(msg: Message): string {
+  const rawError =
+    msg.metadata?.error ||
+    msg.metadata?.providerError ||
+    msg.metadata?.lastError ||
+    "";
+
+  const error = String(rawError).toLowerCase();
+  const channel = String(msg.channel ?? msg.channelType ?? "").toLowerCase();
+
+  if (!error) {
+    return channel === "email"
+      ? "This email could not be sent. Please check the recipient and try again."
+      : "This message could not be sent. Please try again.";
+  }
+
+  if (error.includes("channel") && (error.includes("disconnect") || error.includes("not found"))) {
+    return "This channel is not available right now. Please reconnect it and try again.";
+  }
+  if (error.includes("access token") || error.includes("unauthorized") || error.includes("forbidden")) {
+    return "This channel needs to be reconnected before you can send messages.";
+  }
+  if (error.includes("24") && error.includes("window")) {
+    return "This customer can't receive a free-form reply right now. Use an approved template or try again later.";
+  }
+  if (error.includes("template")) {
+    return "This template message couldn't be sent. Please check the template and try again.";
+  }
+  if (error.includes("email") && (error.includes("invalid") || error.includes("recipient"))) {
+    return "This email address looks invalid. Please check it and try again.";
+  }
+  if (error.includes("phone") && (error.includes("invalid") || error.includes("recipient"))) {
+    return "This phone number looks invalid. Please check it and try again.";
+  }
+  if (error.includes("attachment") || error.includes("media") || error.includes("file")) {
+    return "This message couldn't be sent because one of the attachments wasn't accepted.";
+  }
+  if (error.includes("rate") || error.includes("limit") || error.includes("too many")) {
+    return "Too many messages were sent at once. Please wait a moment and try again.";
+  }
+  if (error.includes("network") || error.includes("timeout") || error.includes("temporar") || error.includes("unavailable")) {
+    return "There was a temporary delivery problem. Please try again in a moment.";
+  }
+
+  return channel === "email"
+    ? "This email could not be sent. Please review it and try again."
+    : "This message could not be sent. Please try again.";
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2075,7 +2128,7 @@ export function MessageArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="relative flex-1 overflow-y-auto px-4 py-6"
+        className="relative flex-1 overflow-y-auto overflow-x-hidden px-4 py-6"
         style={{ scrollBehavior: "auto", overflowAnchor: "none" }}
       >
         {/* Loading older messages spinner */}
@@ -2150,10 +2203,25 @@ export function MessageArea({
                   const channelType = channels?.find(
                     (c) => c?.id === msg?.channelId,
                   )?.type;
-                  const isEmail = channelType === "email";
+                  const resolvedChannelType =
+                    (typeof channelType === "string" && channelType) ||
+                    (typeof msg.channel === "string" && msg.channel) ||
+                    (typeof selectedConversation?.channel === "string" &&
+                      selectedConversation.channel) ||
+                    selectedConversation?.channel?.type ||
+                    "webchat";
+                  const channelBadge =
+                    channelConfig[
+                      resolvedChannelType as keyof typeof channelConfig
+                    ] ?? channelConfig.email;
+                  const isEmail = resolvedChannelType === "email";
                   const displayTime = formatMsgTime(msg.createdAt, msg.time);
                   const hoverKey = `msg-${msg.id}`;
                   const isExpanded = !!expanded[msg.id];
+                  const failedMessageCopy =
+                    isOutgoing && msg.status === "failed"
+                      ? getFailedMessageCopy(msg)
+                      : null;
                   const OutgoingSender = workspaceUsers?.find(
                     (u) => u.id === msg?.metadata?.sender?.userId,
                   );
@@ -2244,36 +2312,43 @@ export function MessageArea({
                     >
                       {/* Incoming avatar */}
                       {!isOutgoing && (
-                        <div
-                          className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden"
-                        >
-                          {selectedConversation?.contact?.avatarUrl ? (
+                        <div className="relative flex-shrink-0">
+                          <div
+                            className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center
+                      text-xs overflow-hidden"
+                          >
+                            {selectedConversation?.contact?.avatarUrl ? (
+                              <img
+                                src={selectedConversation.contact.avatarUrl}
+                                alt={
+                                  selectedConversation.contact.firstName || "C"
+                                }
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>
+                                {selectedConversation?.contact?.firstName
+                                  ?.charAt(0)
+                                  ?.toUpperCase() || "C"}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center
+                        border-2 border-white bg-white"
+                          >
                             <img
-                              src={selectedConversation.contact.avatarUrl}
-                              alt={
-                                selectedConversation.contact.firstName || "C"
-                              }
-                              className="w-full h-full object-cover"
+                              src={channelBadge.icon}
+                              alt={channelBadge.label}
+                              className="w-3 h-3"
                             />
-                          ) : (
-                            <span>
-                              {selectedConversation?.contact?.firstName
-                                ?.charAt(0)
-                                ?.toUpperCase() || "C"}
-                            </span>
-                          )}
+                          </span>
                         </div>
                       )}
 
                       <div className="relative flex flex-col max-w-sm">
                         <QuickActions
-                          channel={
-                            channelType ??
-                            msg.channel ??
-                            selectedConversation?.channel ??
-                            "webchat"
-                          }
+                          channel={resolvedChannelType}
                           isOutgoing={isOutgoing}
                           msg={msg}
                           visible={hoveredMsgId === hoverKey}
@@ -2296,35 +2371,57 @@ export function MessageArea({
                           previewLength={previewLength}
                           searchTerm={msgSearch || undefined}
                         />
-                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                          <span>{displayTime}</span>
-                          {isOutgoing && <MsgStatusIcon status={msg.status} />}
+                        <div className="mt-1">
+                          <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <span>{displayTime}</span>
+                            {isOutgoing && !failedMessageCopy && <MsgStatusIcon status={msg.status} />}
+                            {failedMessageCopy && (
+                              <Tooltip content={failedMessageCopy} side="left">
+                                <span className="inline-flex cursor-help items-center">
+                                  <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
+                                </span>
+                              </Tooltip>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Outgoing avatar */}
                       {isOutgoing && (
-                        <div
-                          className="w-8 h-8 border rounded-full flex items-center justify-center
-                      text-xs flex-shrink-0 overflow-hidden"
-                        >
-                          {msg.author?.id ? (
-                            msg.author?.avatarUrl ? (
-                              <img
-                                src={msg?.author?.avatarUrl}
-                                alt={msg.author?.firstName || "U"}
-                                className="w-full h-full object-cover"
-                              />
+                        <div className="relative flex-shrink-0">
+                          <div
+                            className="w-8 h-8 border rounded-full flex items-center justify-center
+                      text-xs overflow-hidden"
+                          >
+                            {msg.author?.id ? (
+                              msg.author?.avatarUrl ? (
+                                <img
+                                  src={msg?.author?.avatarUrl}
+                                  alt={msg.author?.firstName || "U"}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>
+                                  {OutgoingSender?.firstName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "U"}
+                                </span>
+                              )
                             ) : (
-                              <span>
-                                {OutgoingSender?.firstName
-                                  ?.charAt(0)
-                                  ?.toUpperCase() || "U"}
-                              </span>
+                              <Workflow size={18} color="#4f46e5" />
                             )
-                          ) : (
-                    <Workflow size={18}  color="#4f46e5"/>
-                          )}
+                            }
+                          </div>
+                          <span
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center
+                        border-2 border-white bg-white"
+                          >
+                            <img
+                              src={channelBadge.icon}
+                              alt={channelBadge.label}
+                              className="w-3 h-3"
+                            />
+                          </span>
                         </div>
                       )}
                     </div>

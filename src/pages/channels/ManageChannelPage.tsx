@@ -12,7 +12,7 @@ import { ChannelApi } from '../../lib/channelApi';
 import { WhatsAppConfiguration } from '../workspace/channels/WhatsAppCloudConfig';
 import { InstagramConfiguration } from '../workspace/channels/InstagramConfig';
 import { MessengerConfiguration } from '../workspace/channels/MessengerConfig';
-import { EmailConfiguration } from '../workspace/channels/EmailConfig';
+import { EmailConfiguration } from '../workspace/channels/EmailConfigV2';
 import { GmailConfiguration } from '../workspace/channels/GmailConfig';
 import { WebsiteChatConfiguration } from '../workspace/channels/WebsiteChatConfig';
 

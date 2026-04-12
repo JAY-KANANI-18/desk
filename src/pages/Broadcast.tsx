@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Plus,
@@ -20,14 +20,130 @@ import { workspaceApi } from "../lib/workspaceApi";
 import {
   broadcastApi,
   type BroadcastAnalytics,
+  type BroadcastRunStatus,
   type BroadcastRunRow,
   type BroadcastSendResult,
   type BroadcastTrace,
 } from "../lib/broadcastApi";
 
 type TagRow = { id: string; name: string };
-type LifecycleRow = { id: string; name: string };
-type TeamRow = { id: string; name: string };
+type LifecycleRow = { id: string; name: string; type?: string; emoji?: string | null };
+
+function BroadcastTagPicker({
+  tags,
+  value,
+  onChange,
+}: {
+  tags: TagRow[];
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const filteredTags = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return tags;
+    return tags.filter((tag) => tag.name.toLowerCase().includes(q));
+  }, [search, tags]);
+
+  const selectedTags = useMemo(
+    () => tags.filter((tag) => value.includes(tag.id)),
+    [tags, value],
+  );
+
+  const toggleTag = (tagId: string) => {
+    onChange(value.includes(tagId) ? value.filter((id) => id !== tagId) : [...value, tagId]);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-[42px] w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm hover:border-gray-400"
+      >
+        <div className="flex flex-1 flex-wrap gap-1.5">
+          {selectedTags.length === 0 ? (
+            <span className="text-gray-400">Select tags</span>
+          ) : (
+            selectedTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700"
+              >
+                {tag.name}
+              </span>
+            ))
+          )}
+        </div>
+        <ChevronRight
+          size={16}
+          className={`shrink-0 text-gray-400 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+          <div className="border-b border-gray-100 px-3 py-2">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tags"
+              className="w-full border-none p-0 text-sm text-gray-700 outline-none placeholder:text-gray-400"
+            />
+          </div>
+          <div className="max-h-52 overflow-y-auto py-1">
+            {filteredTags.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-gray-400">No tags found</div>
+            ) : (
+              filteredTags.map((tag) => {
+                const selected = value.includes(tag.id);
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.id)}
+                    className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
+                      selected ? "bg-indigo-50 text-indigo-700" : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span>{tag.name}</span>
+                    {selected ? <span className="text-xs font-medium">Selected</span> : null}
+                  </button>
+                );
+              })
+            )}
+          </div>
+          {value.length > 0 && (
+            <div className="border-t border-gray-100 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function templateVariableKeys(raw: unknown): string[] {
   if (!raw) return [];
@@ -55,7 +171,7 @@ function statusLabel(status: string) {
 function statusBadgeClass(status: string) {
   if (status === "partial_failure") return "bg-amber-100 text-amber-800";
   if (status === "completed") return "bg-emerald-100 text-emerald-800";
-  if (status === "scheduled") return "bg-blue-100 text-blue-800";
+  if (status === "scheduled") return "bg-indigo-100 text-indigo-800";
   if (status === "running") return "bg-indigo-100 text-indigo-800";
   return "bg-gray-100 text-gray-700";
 }
@@ -98,7 +214,7 @@ function calendarEventClass(status: string) {
     return "border-l-red-500 bg-red-50 text-red-900 hover:bg-red-100";
   }
   if (status === "scheduled") {
-    return "border-l-sky-500 bg-sky-50 text-sky-900 hover:bg-sky-100";
+    return "border-l-indigo-500 bg-indigo-50 text-indigo-900 hover:bg-indigo-100";
   }
   return "border-l-amber-500 bg-amber-50 text-amber-900 hover:bg-amber-100";
 }
@@ -111,6 +227,16 @@ function calendarStatusLabel(status: string) {
 
 function canMutateBroadcast(status?: string) {
   return status === "scheduled";
+}
+
+const BROADCAST_PAGE_SIZE = 25;
+
+function statusFilterToApiStatus(value: string): BroadcastRunStatus | undefined {
+  if (value === "Scheduled") return "scheduled";
+  if (value === "Running") return "running";
+  if (value === "Completed") return "completed";
+  if (value === "Partial failure") return "partial_failure";
+  return undefined;
 }
 
 export const Broadcast = () => {
@@ -129,12 +255,18 @@ export const Broadcast = () => {
 
   const [tags, setTags] = useState<TagRow[]>([]);
   const [lifecycles, setLifecycles] = useState<LifecycleRow[]>([]);
-  const [teams, setTeams] = useState<TeamRow[]>([]);
 
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "scheduledAt" | "status" | undefined>();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [calendarMonth, setCalendarMonth] = useState(() => startOfMonth(new Date()));
+  const [nextCursor, setNextCursor] = useState<string>();
+  const [hasMoreRuns, setHasMoreRuns] = useState(false);
+  const [runsLoadingMore, setRunsLoadingMore] = useState(false);
+  const [runsTotal, setRunsTotal] = useState(0);
 
   const [showComposer, setShowComposer] = useState(false);
   const [sending, setSending] = useState(false);
@@ -147,7 +279,6 @@ export const Broadcast = () => {
     text: "",
     tagIds: [] as string[],
     lifecycleId: "",
-    teamId: "",
     respectMarketingOptOut: true,
     limit: 200,
     scheduleMode: "now" as "now" | "later",
@@ -170,43 +301,82 @@ export const Broadcast = () => {
   >([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
+  const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
+  const runStatus = useMemo(() => statusFilterToApiStatus(selectedStatus), [selectedStatus]);
 
-  const loadRuns = useCallback(async () => {
-    setRunsLoading(true);
+  useEffect(() => {
+    clearTimeout(searchDebounce.current);
+    searchDebounce.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(searchDebounce.current);
+  }, [searchQuery]);
+
+  const loadRuns = useCallback(async (replace = true, cursor?: string) => {
+    if (replace) {
+      setRunsLoading(true);
+    } else {
+      setRunsLoadingMore(true);
+    }
     try {
-      const data = await broadcastApi.list(50);
-      setRuns(Array.isArray(data) ? data : []);
+      const result = await broadcastApi.list({
+        take: BROADCAST_PAGE_SIZE,
+        cursor,
+        search: debouncedSearchQuery || undefined,
+        status: runStatus,
+        sortBy,
+        sortOrder: sortBy ? sortOrder : undefined,
+      });
+      const rows = Array.isArray(result?.data) ? result.data : [];
+      setRuns((prev) => {
+        if (replace) return rows;
+        const seen = new Set(prev.map((row) => row.id));
+        return [...prev, ...rows.filter((row) => !seen.has(row.id))];
+      });
+      setNextCursor(result?.nextCursor);
+      setHasMoreRuns(!!result?.nextCursor);
+      setRunsTotal(typeof result?.total === "number" ? result.total : rows.length);
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "Failed to load broadcasts");
-      setRuns([]);
+      if (replace) {
+        setRuns([]);
+        setRunsTotal(0);
+      }
+      setNextCursor(undefined);
+      setHasMoreRuns(false);
     } finally {
-      setRunsLoading(false);
+      if (replace) {
+        setRunsLoading(false);
+      } else {
+        setRunsLoadingMore(false);
+      }
     }
-  }, []);
+  }, [debouncedSearchQuery, runStatus, sortBy, sortOrder]);
 
   const loadMeta = useCallback(async () => {
     try {
-      const [t, l, tm] = await Promise.all([
+      const [t, l] = await Promise.all([
         workspaceApi.getTags(),
         workspaceApi.getLifecycleStages(),
-        workspaceApi.getTeams(),
       ]);
       const tagList = Array.isArray(t) ? t : (t as { data?: TagRow[] })?.data ?? [];
-      const lifeList = Array.isArray(l) ? l : (l as { data?: LifecycleRow[] })?.data ?? [];
-      const teamList = Array.isArray(tm) ? tm : (tm as { data?: TeamRow[] })?.data ?? [];
+      const rawLifecycleList = Array.isArray(l) ? l : (l as { data?: LifecycleRow[] })?.data ?? [];
+      const lifeList = rawLifecycleList.filter((stage) => !stage.type || stage.type === "lifecycle");
       setTags(tagList);
       setLifecycles(lifeList);
-      setTeams(teamList);
     } catch {
       /* non-fatal */
     }
   }, []);
 
   useEffect(() => {
-    loadRuns();
-    loadMeta();
-  }, [loadRuns, loadMeta]);
+    void loadMeta();
+  }, [loadMeta]);
+
+  useEffect(() => {
+    void loadRuns(true);
+  }, [loadRuns]);
 
   const selectedChannel = useMemo(
     () => channels.find((c) => String(c.id) === form.channelId),
@@ -230,6 +400,10 @@ export const Broadcast = () => {
       }
     })();
   }, [form.channelId, isWhatsApp]);
+
+  useEffect(() => {
+    setAudiencePreview(null);
+  }, [form.channelId, form.lifecycleId, form.respectMarketingOptOut, form.tagIds]);
 
   const selectedTemplate = useMemo(
     () => waTemplates.find((t) => t.id === selectedTemplateId),
@@ -267,7 +441,6 @@ export const Broadcast = () => {
         channelId: form.channelId,
         tagIds: form.tagIds.length ? form.tagIds : undefined,
         lifecycleId: form.lifecycleId || undefined,
-        teamId: form.teamId || undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
         limit: 200,
       });
@@ -360,7 +533,6 @@ export const Broadcast = () => {
           : undefined,
         tagIds: form.tagIds.length ? form.tagIds : undefined,
         lifecycleId: form.lifecycleId || undefined,
-        teamId: form.teamId || undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
         limit: Math.min(500, Math.max(1, form.limit)),
         scheduledAt:
@@ -386,14 +558,13 @@ export const Broadcast = () => {
         text: "",
         tagIds: [],
         lifecycleId: "",
-        teamId: "",
         respectMarketingOptOut: true,
         limit: 200,
         scheduleMode: "now",
         scheduledAt: "",
       });
       setAudiencePreview(null);
-      await loadRuns();
+      await loadRuns(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Send failed");
     } finally {
@@ -414,7 +585,7 @@ export const Broadcast = () => {
     });
     setAnalytics(a);
     setTrace(t);
-    await loadRuns();
+    await loadRuns(true);
     return full;
   };
 
@@ -490,13 +661,6 @@ export const Broadcast = () => {
     }
   };
 
-  const filteredRuns = runs.filter((run) => {
-    const matchesSearch = run.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const st = statusLabel(run.status);
-    const matchesStatus = selectedStatus === "All" || st === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
-
   const calendarDays = useMemo(() => {
     const first = startOfMonth(calendarMonth);
     const gridStart = new Date(first);
@@ -509,7 +673,7 @@ export const Broadcast = () => {
   }, [calendarMonth]);
 
   const calendarEventsByDate = useMemo(() => {
-    return filteredRuns
+    return runs
       .filter((run) => run.scheduledAt)
       .reduce<Record<string, BroadcastRunRow[]>>((acc, run) => {
         const key = formatDateKey(new Date(run.scheduledAt as string));
@@ -518,7 +682,7 @@ export const Broadcast = () => {
         );
         return acc;
       }, {});
-  }, [filteredRuns]);
+  }, [runs]);
 
   const monthLabel = calendarMonth.toLocaleDateString(undefined, {
     month: "long",
@@ -526,14 +690,28 @@ export const Broadcast = () => {
   });
 
   const todayKey = formatDateKey(new Date());
+  const activeRunLabel = debouncedSearchQuery
+    ? `${runsTotal} result${runsTotal === 1 ? "" : "s"}`
+    : `${runs.length} loaded${runsTotal > runs.length ? ` of ${runsTotal}` : ""}`;
 
   const statusFilters = [
-    { name: "All", color: "bg-blue-500" },
-    { name: "Scheduled", color: "bg-blue-400" },
+    { name: "All", color: "bg-indigo-500" },
+    { name: "Scheduled", color: "bg-indigo-400" },
     { name: "Running", color: "bg-indigo-500" },
     { name: "Completed", color: "bg-emerald-500" },
     { name: "Partial failure", color: "bg-amber-500" },
   ];
+
+  const toggleSort = (field: "name" | "scheduledAt" | "status") => {
+    const nextOrder = sortBy === field && sortOrder === "asc" ? "desc" : "asc";
+    setSortBy(field);
+    setSortOrder(nextOrder);
+  };
+
+  const sortIndicator = (field: "name" | "scheduledAt" | "status") => {
+    if (sortBy !== field) return "↕";
+    return sortOrder === "asc" ? "↑" : "↓";
+  };
 
   return (
     <div className="flex h-full bg-gray-50 flex-col md:flex-row">
@@ -549,7 +727,7 @@ export const Broadcast = () => {
               type="button"
               onClick={() => setSelectedStatus(filter.name)}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                selectedStatus === filter.name ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50"
+                selectedStatus === filter.name ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-600"
               }`}
             >
               <div className={`w-3 h-3 ${filter.color} rounded-full`} />
@@ -574,20 +752,24 @@ export const Broadcast = () => {
                   placeholder="Search broadcasts"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                 />
               </div>
               <button
                 type="button"
-                onClick={() => refreshChannels(false)}
-                disabled={channelsLoading}
+                onClick={() => {
+                  void refreshChannels(false);
+                  void loadRuns(true);
+                }}
+                disabled={channelsLoading || runsLoading}
                 className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 flex items-center gap-2"
               >
-                <RefreshCw size={16} className={channelsLoading ? "animate-spin" : ""} />
+                <RefreshCw size={16} className={channelsLoading || runsLoading ? "animate-spin" : ""} />
                 Channels
               </button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">{activeRunLabel}</span>
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
@@ -611,7 +793,7 @@ export const Broadcast = () => {
                   setLastSendResult(null);
                   setShowComposer(true);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium"
               >
                 <Plus size={18} />
                 New broadcast
@@ -730,6 +912,19 @@ export const Broadcast = () => {
                   })}
                 </div>
               </div>
+              {(hasMoreRuns || runsLoadingMore) && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void loadRuns(false, nextCursor)}
+                    disabled={runsLoadingMore || !nextCursor}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {runsLoadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
+                    Load more broadcasts
+                  </button>
+                </div>
+              )}
             </div>
           ) : runsLoading ? (
             <div className="flex justify-center py-20 text-gray-500 gap-2 items-center">
@@ -737,18 +932,40 @@ export const Broadcast = () => {
               Loading broadcasts…
             </div>
           ) : (
-            <table className="w-full min-w-[960px]">
-              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                <tr>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Schedule
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Name
-                  </th>
+            <div className="pb-6">
+              <table className="w-full min-w-[960px]">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("status")}
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                      >
+                        Status
+                        <span className="text-[11px]">{sortIndicator("status")}</span>
+                      </button>
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("scheduledAt")}
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                      >
+                        Schedule
+                        <span className="text-[11px]">{sortIndicator("scheduledAt")}</span>
+                      </button>
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort("name")}
+                        className="inline-flex items-center gap-1 hover:text-gray-900"
+                      >
+                        Name
+                        <span className="text-[11px]">{sortIndicator("name")}</span>
+                      </button>
+                    </th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Channel
                   </th>
@@ -767,14 +984,16 @@ export const Broadcast = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRuns.length === 0 ? (
+                {runs.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500 text-sm">
-                      No broadcasts yet. Create one to reach opted-in contacts on a connected channel.
+                      {debouncedSearchQuery || selectedStatus !== "All"
+                        ? "No broadcasts matched this search or filter."
+                        : "No broadcasts yet. Create one to reach opted-in contacts on a connected channel."}
                     </td>
                   </tr>
                 ) : (
-                  filteredRuns.map((run) => (
+                  runs.map((run) => (
                     <tr key={run.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openDetail(run)}>
                       <td className="px-6 py-4">
                         <span
@@ -786,7 +1005,7 @@ export const Broadcast = () => {
                       <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                         {run.scheduledAt ? formatDateTime(run.scheduledAt) : formatDateTime(run.createdAt)}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-blue-600">{run.name}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-indigo-600">{run.name}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">
                         {run.channel?.name ?? "—"}{" "}
                         <span className="text-gray-400">({run.channel?.type ?? "?"})</span>
@@ -799,7 +1018,21 @@ export const Broadcast = () => {
                   ))
                 )}
               </tbody>
-            </table>
+              </table>
+              {(hasMoreRuns || runsLoadingMore) && (
+                <div className="flex justify-center px-6 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => void loadRuns(false, nextCursor)}
+                    disabled={runsLoadingMore || !nextCursor}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {runsLoadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
+                    Load more broadcasts
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -816,7 +1049,7 @@ export const Broadcast = () => {
             )}
             <button
               type="button"
-              className="ml-3 text-blue-600 hover:underline"
+                          className="ml-3 text-indigo-600 hover:underline"
               onClick={async () => {
                 try {
                   const full = await broadcastApi.get(lastSendResult.broadcastRunId);
@@ -857,7 +1090,7 @@ export const Broadcast = () => {
                   placeholder="Q1 promo — WhatsApp"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -866,7 +1099,7 @@ export const Broadcast = () => {
                 <select
                   value={form.channelId}
                   onChange={(e) => setForm({ ...form, channelId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="">Select channel</option>
                   {channels
@@ -879,57 +1112,30 @@ export const Broadcast = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Lifecycle</label>
-                  <select
-                    value={form.lifecycleId}
-                    onChange={(e) => setForm({ ...form, lifecycleId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    <option value="">Any stage</option>
-                    {lifecycles.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Team</label>
-                  <select
-                    value={form.teamId}
-                    onChange={(e) => setForm({ ...form, teamId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    <option value="">Any team</option>
-                    {teams.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Lifecycle</label>
+                <select
+                  value={form.lifecycleId}
+                  onChange={(e) => setForm({ ...form, lifecycleId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Any stage</option>
+                  {lifecycles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {`${s.emoji ?? ""} ${s.name}`.trim()}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tags (any match)</label>
-                <select
-                  multiple
+                <BroadcastTagPicker
+                  tags={tags}
                   value={form.tagIds}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                    setForm({ ...form, tagIds: selected });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[88px]"
-                >
-                  {tags.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple tags.</p>
+                  onChange={(tagIds) => setForm({ ...form, tagIds })}
+                />
+                <p className="text-xs text-gray-500 mt-1">Recipients match if they have at least one selected tag.</p>
               </div>
 
               <label className="flex items-start gap-2 cursor-pointer">
@@ -1015,7 +1221,7 @@ export const Broadcast = () => {
                     onChange={(e) => setForm({ ...form, text: e.target.value })}
                     rows={4}
                     placeholder="Write the message for this channel…"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               )}
@@ -1027,7 +1233,7 @@ export const Broadcast = () => {
                     type="button"
                     onClick={() => setForm({ ...form, scheduleMode: "now", scheduledAt: "" })}
                     className={`px-3 py-2 border rounded-lg text-sm ${
-                      form.scheduleMode === "now" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-300"
+                      form.scheduleMode === "now" ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-gray-300"
                     }`}
                   >
                     Send now
@@ -1036,7 +1242,7 @@ export const Broadcast = () => {
                     type="button"
                     onClick={() => setForm({ ...form, scheduleMode: "later" })}
                     className={`px-3 py-2 border rounded-lg text-sm ${
-                      form.scheduleMode === "later" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-300"
+                      form.scheduleMode === "later" ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-gray-300"
                     }`}
                   >
                     Schedule
@@ -1084,7 +1290,7 @@ export const Broadcast = () => {
                 type="button"
                 onClick={handleSend}
                 disabled={sending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : null}
                 {form.scheduleMode === "later" ? "Schedule broadcast" : "Send broadcast"}
@@ -1197,7 +1403,7 @@ export const Broadcast = () => {
                       type="button"
                       onClick={saveBroadcastAction}
                       disabled={broadcastActionSaving}
-                      className="px-3 py-2 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                      className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                     >
                       {broadcastActionSaving ? <Loader2 size={14} className="animate-spin" /> : null}
                       Save
@@ -1249,7 +1455,7 @@ export const Broadcast = () => {
                   </p>
                   <button
                     type="button"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-indigo-600 hover:underline"
                     onClick={async () => {
                       if (!selectedRun?.id) return;
                       setAnalyticsLoading(true);
@@ -1310,7 +1516,7 @@ export const Broadcast = () => {
                   <p className="text-xs text-gray-500 uppercase font-medium">Recipient trace</p>
                   <button
                     type="button"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-indigo-600 hover:underline"
                     onClick={async () => {
                       if (!selectedRun?.id) return;
                       setTraceLoading(true);

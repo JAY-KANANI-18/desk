@@ -42,6 +42,14 @@ export type ConvStatus = "open" | "pending" | "resolved" | "closed";
 export type ConvPriority = "low" | "normal" | "high" | "urgent";
 export type Direction = "incoming" | "outgoing";
 
+export interface ConversationWindowCategory {
+  authentication?: number | null;
+  marketing?: number | null;
+  utility?: number | null;
+  service?: number | null;
+  referral_conversion?: number | null;
+}
+
 export interface ApiConversation {
   id: string;
   workspaceId: string;
@@ -58,6 +66,14 @@ export interface ApiConversation {
   contact: ApiContact;
   channel?: ApiChannel;
   lastMessage?: ApiMessage;
+  channelId?: string | number;
+  lastMessageTime?: string | number | null;
+  lastIncomingMessageTime?: string | number | null;
+  lastCallInteractionTime?: string | number | null;
+  messageWindowExpiry?: string | number | null;
+  conversationWindowCategory?: ConversationWindowCategory | null;
+  call_permission?: boolean | null;
+  hasPermanentCallPermission?: boolean;
 }
 
 export interface ApiContact {
@@ -74,6 +90,25 @@ export interface ApiContact {
   teamId?: string;
   lifecycleId?: string | number | null;
   identifier?: string;
+  contactChannels?: ApiContactChannel[];
+}
+
+export interface ApiContactChannel {
+  id: string;
+  channelId: string;
+  channelType: string;
+  identifier: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  lastMessageTime?: string | number | null;
+  lastIncomingMessageTime?: string | number | null;
+  lastCallInteractionTime?: string | number | null;
+  messageWindowExpiry?: string | number | null;
+  conversationWindowCategory?: ConversationWindowCategory | null;
+  call_permission?: boolean | null;
+  hasPermanentCallPermission?: boolean;
 }
 
 export interface ApiChannel {
@@ -93,7 +128,7 @@ export interface ApiMessage {
   direction: Direction;
   text?: string;
   subject?: string;
-  status: string;
+  status: "pending" | "sent" | "delivered" | "read" | "failed" | string;
   author?: string;
   initials?: string;
   createdAt: string;

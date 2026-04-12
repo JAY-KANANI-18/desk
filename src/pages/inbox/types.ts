@@ -8,7 +8,7 @@ export type Assignee = User
   // | { kind: 'team'; id: string; name: string; color: string }
   // | null;
 
-export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read';
+export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export type AttachmentType = 'image' | 'audio' | 'video' | 'doc';
 
@@ -89,6 +89,20 @@ export interface Contact {
     displayName?: string | null;
     avatarUrl?: string | null;
     createdAt?: string;
+    updatedAt?: string;
+    lastMessageTime?: string | number | null;
+    lastIncomingMessageTime?: string | number | null;
+    lastCallInteractionTime?: string | number | null;
+    messageWindowExpiry?: string | number | null;
+    conversationWindowCategory?: {
+      authentication?: number | null;
+      marketing?: number | null;
+      utility?: number | null;
+      service?: number | null;
+      referral_conversion?: number | null;
+    } | null;
+    call_permission?: boolean | null;
+    hasPermanentCallPermission?: boolean;
   }>;
   mergedIntoContactId?: string | null;
   mergedIntoContact?: Partial<Contact> | null;
