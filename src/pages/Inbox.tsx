@@ -11,7 +11,13 @@
  */
 
 import { useEffect, useCallback, useState } from "react";
-import { useParams, useNavigate, Outlet } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  Outlet,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { InboxProvider, useInbox } from "../context/InboxContext";
 import { SubSidebar }       from "./inbox/SubSidebar";
 import { ConversationList } from "./inbox/ConversationList";
@@ -19,18 +25,24 @@ import { ChatHeader }       from "./inbox/ChatHeader";
 import { MessageArea }      from "./inbox/MessageArea";
 import { InputArea }        from "./inbox/InputArea";
 import { ContactSidebarHybrid } from "./inbox/ContactSidebarHybrid";
-import type { Conversation } from "./inbox/types";
 import type { ReplyContext } from "./inbox/MessageArea";
+import type { ApiConversation } from "../lib/inboxApi";
 
 export function InboxPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const targetMessageId = searchParams.get("targetMessageId");
+  const navTargetMessageId = (location.state as any)?.targetMessageId ?? null;
+  const navPreserveSearch = (location.state as any)?.preserveSearch ?? false;
 
   const {
     convList,
     selectedConversation,
-    messages,
     timeline,
+    targetMessageId: loadedTargetMessageId,
+    requestedTargetMessageId,
     selectedChannel,
     inputMode,
     snoozedUntil,
@@ -62,9 +74,9 @@ export function InboxPage() {
   // Clear reply context when conversation changes
   useEffect(() => { setReplyContext(null); }, [selectedConversation?.id]);
 
-  const handleSendMessage = useCallback((msg) => sendMessage(msg), [sendMessage]);
+  const handleSendMessage = useCallback((msg: any) => sendMessage(msg), [sendMessage]);
   const handleSendNote = useCallback(
-    (msg) => sendNote(msg?.text ?? "", msg?.mentionedUserIds ?? []),
+    (msg: any) => sendNote(msg?.text ?? "", msg?.mentionedUserIds ?? []),
     [sendNote],
   );
 
@@ -72,15 +84,33 @@ export function InboxPage() {
     if (!conversationId && convList.length > 0) navigate(`/inbox/${convList[0].id}`, { replace: true });
   }, [conversationId, convList, navigate]);
 
+  const resolvedTargetMessageId =
+    targetMessageId ?? navTargetMessageId ?? loadedTargetMessageId ?? null;
+
   useEffect(() => {
     if (!conversationId) return;
-    const id   = Number(conversationId);
-    if (id === selectedConversation?.id) return;
-    const conv = convList.find((c) => c.id === id);
-    if (conv) selectConversation(conv);
-  }, [conversationId, convList]);
+    const isSameConversation = conversationId === selectedConversation?.id;
+    const isSameTarget =
+      (resolvedTargetMessageId ?? null) === (requestedTargetMessageId ?? null);
+    if (isSameConversation && isSameTarget) return;
+    const conv = convList.find((c) => c.id === conversationId);
+    if (conv) {
+      selectConversation(conv, {
+        targetMessageId: resolvedTargetMessageId,
+        preserveSearch: navPreserveSearch,
+      });
+    }
+  }, [
+    conversationId,
+    convList,
+    selectedConversation?.id,
+    selectConversation,
+    resolvedTargetMessageId,
+    requestedTargetMessageId,
+    navPreserveSearch,
+  ]);
 
-  const handleSelectConversation = useCallback((conv: Conversation) => {
+  const handleSelectConversation = useCallback((conv: ApiConversation) => {
     selectConversation(conv);
     navigate(`/inbox/${conv.id}`);
   }, [selectConversation, navigate]);
@@ -90,27 +120,26 @@ export function InboxPage() {
       <SubSidebar />
 
       <ConversationList
-        conversations={convList}
-        selectedConversation={selectedConversation}
         onSelectConversation={handleSelectConversation}
-        channels={channels}
       />
 
       {selectedConversation ? (
         <div className="flex-1 flex flex-col bg-white min-w-0">
           <ChatHeader
-            selectedConversation={selectedConversation}
+            selectedConversation={selectedConversation as any}
             snoozedUntil={snoozedUntil}
             onSnooze={setSnoozedUntil}
             onUnsnooze={() => setSnoozedUntil(null)}
+            chatStatus={selectedConversation.status === "closed" ? "closed" : "open"}
             msgSearchOpen={msgSearchOpen}
             onToggleMsgSearch={toggleMsgSearch}
           />
 
           <MessageArea
-            selectedConversation={selectedConversation}
+            selectedConversation={selectedConversation as any}
             // messages={messages[selectedConversation?.id] ?? []}
-            timelineItems={timeline}
+            timelineItems={timeline as any}
+            targetMessageId={resolvedTargetMessageId}
             snoozedUntil={snoozedUntil}
             onUnsnooze={() => setSnoozedUntil(null)}
             msgSearchOpen={msgSearchOpen}
@@ -124,7 +153,7 @@ export function InboxPage() {
             key={selectedConversation?.id}
             inputMode={inputMode}
             onInputModeChange={setInputMode}
-            selectedConversation={selectedConversation}
+            selectedConversation={selectedConversation as any}
             selectedChannel={selectedChannel}
             onChannelChange={handleChannelChange}
             channels={channels}
@@ -143,7 +172,7 @@ export function InboxPage() {
       {selectedConversation?.id && (
         <ContactSidebarHybrid
           key={selectedConversation?.id}
-          selectedConversation={selectedConversation}
+          selectedConversation={selectedConversation as any}
           contactDetails={selectedContact}
         />
       )}

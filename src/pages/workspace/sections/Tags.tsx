@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Smile, X } from 'lucide-react';
+import { Plus, Smile, X, Search } from 'lucide-react';
 
 import { SectionError } from '../components/SectionError';
 import type { ConversationTag } from '../types';
@@ -7,6 +7,7 @@ import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
 import { getTagSurfaceStyle, resolveTagBaseColor, TAG_COLOR_OPTIONS } from '../../../lib/tagAppearance';
 import { EmojiPicker } from '../../inbox/EmojiPicker';
+import { ListPagination } from '../../../components/ui/ListPagination';
 
 export const Tags = () => {
   const [tags, setTags]       = useState<ConversationTag[]>([]);
@@ -16,17 +17,56 @@ export const Tags = () => {
   const [newTag, setNewTag]   = useState({ name: '', color: 'tag-indigo', emoji: '😀', description: '' });
   const [adding, setAdding]   = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [searchDraft, setSearchDraft] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
   const emojiRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
-    // setLoading(true); 
+  const load = useCallback(async (nextPage = page, nextSearch = search) => {
+    setLoading(true);
     setError(null);
-   setTags(await workspaceApi.getTags()); 
-   setLoading(false);
-    
-  }, []);
+    try {
+      const response = await workspaceApi.listTags({
+        page: nextPage,
+        limit: pagination.limit,
+        search: nextSearch || undefined,
+      });
+      setTags(Array.isArray(response?.items) ? response.items : []);
+      setPagination(
+        response?.pagination ?? {
+          total: Array.isArray(response?.items) ? response.items.length : 0,
+          page: nextPage,
+          limit: pagination.limit,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      );
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load tags');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, pagination.limit]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(page, search); }, [load, page, search]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchDraft.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
 
   useEffect(() => {
     if (!emojiOpen) return;
@@ -45,16 +85,16 @@ export const Tags = () => {
     if (!newTag.name) return;
     // setAdding(true);
 
-      const created = await workspaceApi.addTag(newTag);
-      setTags(prev => [...prev, created]);
+      await workspaceApi.addTag(newTag);
+      await load(1, search);
       setNewTag({ name: '', color: 'tag-indigo', emoji: '😀', description: '' });
       setShowAdd(false);
    
   };
 
   const handleDelete = async (id: number | string) => {
-    setTags(prev => prev.filter(t => t.id !== id));
- await workspaceApi.deleteTag(id); 
+ await workspaceApi.deleteTag(id);
+ await load(page, search);
    
   };
 
@@ -72,6 +112,17 @@ export const Tags = () => {
           <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
             <Plus size={16} /> Add tag
           </button>
+        </div>
+        <div className="border-b border-gray-100 px-6 py-4">
+          <div className="relative max-w-xs">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Search tags..."
+              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -120,6 +171,14 @@ export const Tags = () => {
             </tbody>
           </table>
         </div>
+        <ListPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          itemLabel="tags"
+          onPageChange={setPage}
+        />
       </div>
 
       {showAdd && (

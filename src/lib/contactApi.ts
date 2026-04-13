@@ -17,8 +17,23 @@ interface Contact {
     lastName?: string;
     email: string;
     phone: string;
-    lifecycle?: string;
-    channel: string;
+    lifecycle?: string | { id?: string; name?: string; emoji?: string } | null;
+    lifecycleStage?: string | null;
+    company?: string | null;
+    status?: string | null;
+    assignee?: {
+        id: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        avatarUrl?: string;
+    } | null;
+    contactChannels?: Array<{
+        channelType?: string;
+        channelId?: string | number;
+        identifier?: string;
+    }>;
+    channel?: string;
     tags?: string[];
 }
 
@@ -360,11 +375,16 @@ export const contactsApi = {
     /** GET /contacts/export?lifecycle=X — export contacts as JSON (convert to CSV client-side) */
     exportContacts: async (filters?: {
         lifecycle?: string;
+        search?: string;
+        sortField?: "name" | "email" | "lifecycle" | "phone";
+        sortDir?: "asc" | "desc";
     }): Promise<Contact[]> => {
         const params = new URLSearchParams();
         if (filters?.lifecycle) params.set("lifecycle", filters.lifecycle);
+        if (filters?.search?.trim()) params.set("search", filters.search.trim());
+        if (filters?.sortField) params.set("sortField", filters.sortField);
+        if (filters?.sortDir) params.set("sortDir", filters.sortDir);
         const res = await api.get(`/contacts/export?${params}`);
-        if (!res.ok) throw new Error("Failed to export contacts");
-        return res.json();
+        return res;
     },
 };

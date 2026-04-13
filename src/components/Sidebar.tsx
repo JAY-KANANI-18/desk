@@ -26,6 +26,7 @@ import {
   Sparkles,
   CheckCircleIcon,
   BookCheck,
+  Megaphone,
 } from "lucide-react";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
@@ -67,7 +68,7 @@ const navItems: {
     ws: "ws:contacts:view",
   },
   {
-    icon: Radio,
+    icon: Megaphone,
     label: "Broadcast",
     path: "/broadcast",
     ws: "ws:broadcasts:view",

@@ -92,6 +92,7 @@ export interface LifecycleStage {
   name: string;
   color: string;
   count: number;
+  emoji?: string;
 }
 
 export interface ClosingNoteTemplate {

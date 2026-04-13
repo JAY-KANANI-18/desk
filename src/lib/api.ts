@@ -24,4 +24,7 @@ export const api = {
     patch: (url: string, body?: unknown, options?: RequestInit) =>
         apiFetch(url, {
             method: "PATCH", body: JSON.stringify(body), ...options }, _workspaceRef?.current),
+
+    postForm: (path: string, formData: FormData, options?: RequestInit) =>
+        apiFetch(path, { method: "POST", body: formData, ...options }, _workspaceRef?.current),
 };

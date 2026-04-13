@@ -26,17 +26,15 @@ import React, {
 import { useNotifications } from "./NotificationContext";
 import { useSocket } from "../socket/socket-provider";
 import { useWorkspace } from "./WorkspaceContext";
-import { useOrganization } from "./OrganizationContext";
 import { useAuth } from "./AuthContext";
 import { contactsApi } from "../lib/contactApi";
-import { ChannelApi } from "../lib/channelApi";
 import {
   inboxApi,
   ApiConversation,
   ApiMessage,
   ApiTimelineItem,
+  TimelineWindowResult,
   ConversationFilters,
-  ConvStatus,
   ConvPriority,
 } from "../lib/inboxApi";
 import { workspaceApi } from "../lib/workspaceApi";
@@ -72,13 +70,22 @@ export interface InboxContextType {
 
   /* Selected conversation */
   selectedConversation: ApiConversation | null;
-  selectConversation: (conv: ApiConversation) => void;
+  selectConversation: (
+    conv: ApiConversation,
+    options?: { targetMessageId?: string | null; preserveSearch?: boolean },
+  ) => void;
 
   /* Timeline (messages + activities merged) */
   timeline: ApiTimelineItem[];
   timelineLoading: boolean;
-  hasMoreTimeline: boolean;
-  loadMoreTimeline: () => void;
+  loadingOlderTimeline: boolean;
+  loadingNewerTimeline: boolean;
+  hasMoreOlderTimeline: boolean;
+  hasMoreNewerTimeline: boolean;
+  targetMessageId: string | null;
+  requestedTargetMessageId: string | null;
+  loadOlderTimeline: () => Promise<void>;
+  loadNewerTimeline: () => Promise<void>;
 
   /* Channels */
   channels: any[] | null;
@@ -160,8 +167,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const { socket } = useSocket();
   const { user } = useAuth();
-  const { activeWorkspace } = useWorkspace();
-  const { refreshWorkspaceUsers } = useWorkspace();
+  const { activeWorkspace, refreshWorkspaceUsers, workspaceUsers } = useWorkspace();
 
   const wsId = activeWorkspace?.id as string | undefined;
 
@@ -198,10 +204,13 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   /* ── Timeline ── */
   const [timeline, setTimeline] = useState<ApiTimelineItem[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
-  const [nextTimelineCursor, setNextTimelineCursor] = useState<
-    string | undefined
-  >();
-  const [hasMoreTimeline, setHasMoreTimeline] = useState(false);
+  const [loadingOlderTimeline, setLoadingOlderTimeline] = useState(false);
+  const [loadingNewerTimeline, setLoadingNewerTimeline] = useState(false);
+  const [nextTimelineCursor, setNextTimelineCursor] = useState<string | undefined>();
+  const [hasMoreOlderTimeline, setHasMoreOlderTimeline] = useState(false);
+  const [hasMoreNewerTimeline, setHasMoreNewerTimeline] = useState(false);
+  const [targetMessageId, setTargetMessageId] = useState<string | null>(null);
+  const [requestedTargetMessageId, setRequestedTargetMessageId] = useState<string | null>(null);
   const [lifecycles, setLifecycles] = useState<any[]>([]);
 
   /* ── Channels ── */
@@ -217,7 +226,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [msgSearch, setMsgSearch] = useState("");
 
   /* ── Workspace users (for assignee picker) ── */
-  const [workspaceUsers, setWorkspaceUsers] = useState<any[]>([]);
   const { channels } = useChannel();
   /* ══════════════════════════════════════════════════════════════
      BOOTSTRAP
@@ -311,24 +319,88 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
      SELECT CONVERSATION → load timeline
   ══════════════════════════════════════════════════════════════ */
 
-  const fetchTimeline = useCallback(
-    async (convId: string, replace: boolean, cursor?: string) => {
+  const mergeUniqueTimelineItems = useCallback(
+    (items: ApiTimelineItem[]) => {
+      const seen = new Set<string>();
+      return items.filter((item) => {
+        const key = `${item.type}:${item.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    },
+    [],
+  );
+
+  const applyTimelineWindow = useCallback(
+    (
+      result: TimelineWindowResult,
+      mode: "replace" | "prepend" | "append",
+    ) => {
+      setTimeline((prev) => {
+        const next =
+          mode === "replace"
+            ? result.data
+            : mode === "prepend"
+              ? [...result.data, ...prev]
+              : [...prev, ...result.data];
+        return mergeUniqueTimelineItems(next);
+      });
+
+      if (mode === "replace") {
+        setHasMoreOlderTimeline(!!result.hasMoreOlder || !!result.nextCursor);
+        setHasMoreNewerTimeline(!!result.hasMoreNewer);
+      } else {
+        if (result.hasMoreOlder !== undefined) setHasMoreOlderTimeline(!!result.hasMoreOlder);
+        if (result.hasMoreNewer !== undefined) setHasMoreNewerTimeline(!!result.hasMoreNewer);
+      }
+
+      if (result.nextCursor !== undefined) {
+        setNextTimelineCursor(result.nextCursor);
+      }
+
+      if (mode === "replace") {
+        setTargetMessageId(result.targetFound === false ? null : (result.targetMessageId ?? null));
+      }
+    },
+    [mergeUniqueTimelineItems],
+  );
+
+  const fetchLatestTimeline = useCallback(
+    async (convId: string) => {
       if (!wsId) return;
       setTimelineLoading(true);
       try {
-        const result = await inboxApi.getTimeline(wsId, convId, cursor);
-        // BE returns newest-first; we want oldest-first for display
-        const items = [...result.data].reverse();
-        setTimeline((prev) => (replace ? items : [...items, ...prev]));
-        setNextTimelineCursor(result.nextCursor);
-        setHasMoreTimeline(!!result.nextCursor);
+        const result = await inboxApi.getTimeline(wsId, convId, { limit: 30 });
+        applyTimelineWindow(result, "replace");
       } catch (err) {
-        console.error("[InboxContext] fetchTimeline:", err);
+        console.error("[InboxContext] fetchLatestTimeline:", err);
       } finally {
         setTimelineLoading(false);
       }
     },
-    [wsId],
+    [applyTimelineWindow, wsId],
+  );
+
+  const fetchTimelineAroundMessage = useCallback(
+    async (convId: string, messageId: string) => {
+      if (!wsId) return;
+      setTimelineLoading(true);
+      try {
+        const result = await inboxApi.getTimeline(wsId, convId, {
+          aroundMessageId: messageId,
+          before: 20,
+          after: 20,
+          limit: 40,
+        });
+        applyTimelineWindow(result, "replace");
+      } catch (err) {
+        console.error("[InboxContext] fetchTimelineAroundMessage:", err);
+      } finally {
+        setTimelineLoading(false);
+      }
+    },
+    [applyTimelineWindow, wsId],
   );
 
   const fetchLifecycles = useCallback(async () => {
@@ -336,16 +408,87 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     setLifecycles(result);
   }, [activeWorkspace?.id]);
 
-  const loadMoreTimeline = useCallback(async () => {
-    if (!timelineLoading && hasMoreTimeline && selectedConversation) {
-      await fetchTimeline(selectedConversation.id, false, nextTimelineCursor);
+  const getBoundaryMessageId = useCallback(
+    (direction: "older" | "newer") => {
+      const items = direction === "older" ? timeline : [...timeline].reverse();
+      const boundary = items.find((item) => item.type === "message" && item.message?.id);
+      return boundary?.message?.id;
+    },
+    [timeline],
+  );
+
+  const loadOlderTimeline = useCallback(async () => {
+    if (!wsId || !selectedConversation || loadingOlderTimeline || !hasMoreOlderTimeline) return;
+
+    const anchorMessageId = getBoundaryMessageId("older");
+    if (!anchorMessageId) {
+      if (!timelineLoading && nextTimelineCursor) {
+        setLoadingOlderTimeline(true);
+        try {
+          const result = await inboxApi.getTimeline(wsId, selectedConversation.id, {
+            cursor: nextTimelineCursor,
+            limit: 30,
+          });
+          applyTimelineWindow(result, "prepend");
+        } catch (err) {
+          console.error("[InboxContext] loadOlderTimeline:", err);
+        } finally {
+          setLoadingOlderTimeline(false);
+        }
+      }
+      return;
+    }
+
+    setLoadingOlderTimeline(true);
+    try {
+      const result = await inboxApi.getTimeline(wsId, selectedConversation.id, {
+        anchorMessageId,
+        direction: "older",
+        limit: 30,
+      });
+      applyTimelineWindow(result, "prepend");
+    } catch (err) {
+      console.error("[InboxContext] loadOlderTimeline:", err);
+    } finally {
+      setLoadingOlderTimeline(false);
     }
   }, [
-    timelineLoading,
-    hasMoreTimeline,
-    selectedConversation,
+    applyTimelineWindow,
+    getBoundaryMessageId,
+    hasMoreOlderTimeline,
+    loadingOlderTimeline,
     nextTimelineCursor,
-    fetchTimeline,
+    selectedConversation,
+    timelineLoading,
+    wsId,
+  ]);
+
+  const loadNewerTimeline = useCallback(async () => {
+    if (!wsId || !selectedConversation || loadingNewerTimeline || !hasMoreNewerTimeline) return;
+
+    const anchorMessageId = getBoundaryMessageId("newer");
+    if (!anchorMessageId) return;
+
+    setLoadingNewerTimeline(true);
+    try {
+      const result = await inboxApi.getTimeline(wsId, selectedConversation.id, {
+        anchorMessageId,
+        direction: "newer",
+        limit: 30,
+      });
+      applyTimelineWindow(result, "append");
+    } catch (err) {
+      console.error("[InboxContext] loadNewerTimeline:", err);
+    } finally {
+      setLoadingNewerTimeline(false);
+    }
+  }, [
+    applyTimelineWindow,
+    getBoundaryMessageId,
+    hasMoreNewerTimeline,
+    loadingNewerTimeline,
+    selectedConversation,
+    wsId,
   ]);
 
   /* ══════════════════════════════════════════════════════════════
@@ -367,7 +510,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   ══════════════════════════════════════════════════════════════ */
 
   useEffect(() => {
-    if (!socket || !activeWorkspace.id) return;
+    if (!socket || !activeWorkspace?.id) return;
 
     const mergeConversation = (
       current: ApiConversation,
@@ -458,7 +601,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           type: "new_message",
           title: "New message",
           body: message.text || "Attachment",
-          conversationId: message.conversationId,
+          conversationId: message.conversationId as any,
         });
       }
     };
@@ -472,7 +615,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data.conversationId === selectedConvIdRef.current) {
         setTimeline((prev) =>
           prev.map((item) => {
-            if (item.type !== "message") return item;
+            if (item.type !== "message" || !item.message) return item;
 
             if (item.message.id === data.messageId) {
               return {
@@ -551,7 +694,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       );
 
       setSelectedConversation((prev) =>
-        prev?.contact?.id === contact.id
+        prev && prev.contact?.id === contact.id
           ? mergeConversation(prev, {
               contact: {
                 ...prev.contact,
@@ -605,11 +748,13 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         selectedConvIdRef.current = survivorConversation.id;
         setTimeline([]);
         setNextTimelineCursor(undefined);
-        setHasMoreTimeline(false);
+        setHasMoreOlderTimeline(false);
+        setHasMoreNewerTimeline(false);
+        setTargetMessageId(null);
         setMsgSearch("");
         setMsgSearchOpen(false);
         setInputMode("reply");
-        fetchTimeline(survivorConversation.id, true);
+        fetchLatestTimeline(survivorConversation.id);
         contactsApi
           .getContact(survivorConversation.contactId)
           .then(setSelectedContact)
@@ -652,7 +797,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("activity", onActivity);
       socket.off("contact:merged", onContactMerged);
     };
-  }, [socket, activeWorkspace.id, fetchConversations, refreshConversations, fetchTimeline]);
+  }, [socket, activeWorkspace?.id, fetchConversations, refreshConversations, fetchLatestTimeline]);
 
   /* ══════════════════════════════════════════════════════════════
      SEND MESSAGE
@@ -693,7 +838,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         selectedConversation?.contact &&
         selectedConversation.contact.assigneeId !== user.id
       ) {
-        const assignee = workspaceUsers.find((member: any) => member.id === user.id);
+        const assignee = workspaceUsers?.find((member: any) => member.id === user.id);
         updateSelectedConv({
           contact: {
             ...selectedConversation.contact,
@@ -906,15 +1051,20 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const selectConversation = useCallback(
-    (conv: ApiConversation) => {
+    (conv: ApiConversation, options?: { targetMessageId?: string | null; preserveSearch?: boolean }) => {
       setSelectedConversation({ ...conv, unreadCount: 0 });
       selectedConvIdRef.current = conv.id;
 
       setTimeline([]);
       setNextTimelineCursor(undefined);
-      setHasMoreTimeline(false);
-      setMsgSearch("");
-      setMsgSearchOpen(false);
+      setHasMoreOlderTimeline(false);
+      setHasMoreNewerTimeline(false);
+      setTargetMessageId(options?.targetMessageId ?? null);
+      setRequestedTargetMessageId(options?.targetMessageId ?? null);
+      if (!options?.preserveSearch) {
+        setMsgSearch("");
+        setMsgSearchOpen(false);
+      }
       setInputMode("reply");
       console.log({ ApiConversation: conv });
 
@@ -943,8 +1093,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)),
       );
 
-      // Load timeline
-      fetchTimeline(conv.id, true);
+      if (options?.targetMessageId) {
+        fetchTimelineAroundMessage(conv.id, options.targetMessageId);
+      } else {
+        fetchLatestTimeline(conv.id);
+      }
 
       // Load contact detail
       contactsApi
@@ -962,7 +1115,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
     },
-    [wsId, fetchTimeline, channels],
+    [wsId, channels, fetchLatestTimeline, fetchTimelineAroundMessage],
   );
 
   /* ── Channel helpers ── */
@@ -999,8 +1152,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         selectConversation,
         timeline,
         timelineLoading,
-        hasMoreTimeline,
-        loadMoreTimeline,
+        loadingOlderTimeline,
+        loadingNewerTimeline,
+        hasMoreOlderTimeline,
+        hasMoreNewerTimeline,
+        targetMessageId,
+        requestedTargetMessageId,
+        loadOlderTimeline,
+        loadNewerTimeline,
         channels,
         selectedChannel,
         handleChannelChange,
@@ -1024,7 +1183,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         assignTeam,
         setPriority,
         uploadFile,
-        workspaceUsers,
+        workspaceUsers: workspaceUsers ?? [],
       }}
     >
       {children}

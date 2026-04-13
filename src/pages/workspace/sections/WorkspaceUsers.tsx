@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 
 import { useWorkspace } from "../../../context/WorkspaceContext";
 import { organizationApi } from "../../../lib/organizationApi";
 import { WsGuard } from "../../../context/AuthorizationContext";
+import { workspaceApi } from "../../../lib/workspaceApi";
+import { ListPagination } from "../../../components/ui/ListPagination";
 
 const workspaceRoles = [
   { id: "WS_OWNER", name: "Owner" },
@@ -462,12 +464,61 @@ const EditWorkspaceUserModal = ({
    Main Team Settings
 ========================= */
 export const WorkspaceUsers = () => {
-  const { refreshWorkspaceUsers, workspaceUsers, inviteUser, updateUser } =
-    useWorkspace();
+  const { refreshWorkspaceUsers, inviteUser, updateUser } = useWorkspace();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchDraft.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
+
+  const loadUsers = async (nextPage = page, nextSearch = search) => {
+    setLoading(true);
+    try {
+      const response = await workspaceApi.listUsers({
+        page: nextPage,
+        limit: pagination.limit,
+        search: nextSearch || undefined,
+      });
+      setUsers(Array.isArray(response?.items) ? response.items : []);
+      setPagination(
+        response?.pagination ?? {
+          total: Array.isArray(response?.items) ? response.items.length : 0,
+          page: nextPage,
+          limit: pagination.limit,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers(page, search);
+  }, [page, search]);
 
   const handleInvite = async ({
     email,
@@ -478,6 +529,7 @@ export const WorkspaceUsers = () => {
   }) => {
     await inviteUser(email, role,{});
     await refreshWorkspaceUsers();
+    await loadUsers(1, search);
   };
 
   const handleSave = async ({
@@ -497,11 +549,13 @@ export const WorkspaceUsers = () => {
   }) => {
     await updateUser(userId, role, restrictions);
     await refreshWorkspaceUsers();
+    await loadUsers(page, search);
   };
 
   const handleDelete = async (userId: string) => {
     await organizationApi.deleteUser(userId);
     await refreshWorkspaceUsers();
+    await loadUsers(page, search);
   };
 
   return (
@@ -526,10 +580,26 @@ export const WorkspaceUsers = () => {
         </WsGuard>
       </div>
 
+      <div className="mb-4 flex items-center justify-end">
+        <div className="relative w-full max-w-xs">
+          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            placeholder="Search members..."
+            className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
       {/* User List */}
      <div className="space-y-3">
-  {workspaceUsers?.length > 0 ? (
-    workspaceUsers.map((user: any) => (
+  {loading ? (
+    <div className="border border-dashed border-gray-300 rounded-2xl p-10 text-center">
+      <p className="text-gray-600 font-medium">Loading users...</p>
+    </div>
+  ) : users?.length > 0 ? (
+    users.map((user: any) => (
       <div
         key={user.id}
         className="flex justify-between items-center border border-gray-200 p-4 rounded-xl hover:bg-gray-50 transition gap-4"
@@ -600,6 +670,15 @@ export const WorkspaceUsers = () => {
     </div>
   )}
 </div>
+
+      <ListPagination
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        total={pagination.total}
+        limit={pagination.limit}
+        itemLabel="members"
+        onPageChange={setPage}
+      />
 
       {/* Invite Modal */}
       <InviteUserModal

@@ -1,0 +1,95 @@
+import type { BroadcastRunStatus } from "../../lib/broadcastApi";
+
+export function templateVariableKeys(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.filter((value): value is string => typeof value === "string");
+  }
+  if (typeof raw === "object" && raw !== null && "length" in raw) {
+    try {
+      return Array.from(raw as string[]).filter((value) => typeof value === "string");
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+export function statusLabel(status: string) {
+  if (status === "partial_failure") return "Partial failure";
+  if (status === "completed") return "Completed";
+  if (status === "scheduled") return "Scheduled";
+  if (status === "running") return "Running";
+  return status;
+}
+
+export function statusBadgeClass(status: string) {
+  if (status === "partial_failure") return "bg-amber-100 text-amber-800";
+  if (status === "completed") return "bg-emerald-100 text-emerald-800";
+  if (status === "scheduled") return "bg-blue-100 text-blue-800";
+  if (status === "running") return "bg-sky-100 text-sky-800";
+  return "bg-slate-100 text-slate-700";
+}
+
+export function formatDateTime(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "-";
+}
+
+export function formatTime(value?: string | null) {
+  return value
+    ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "";
+}
+
+export function toDateTimeLocal(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+export function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function addMonths(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+export function calendarEventClass(status: string) {
+  if (status === "completed" || status === "sent") {
+    return "border-l-emerald-500 bg-emerald-50 text-emerald-900 hover:bg-emerald-100";
+  }
+  if (status === "partial_failure" || status === "failed") {
+    return "border-l-red-500 bg-red-50 text-red-900 hover:bg-red-100";
+  }
+  if (status === "scheduled") {
+    return "border-l-blue-500 bg-blue-50 text-blue-900 hover:bg-blue-100";
+  }
+  return "border-l-amber-500 bg-amber-50 text-amber-900 hover:bg-amber-100";
+}
+
+export function calendarStatusLabel(status: string) {
+  if (status === "completed") return "Sent";
+  if (status === "partial_failure") return "Failed";
+  return statusLabel(status);
+}
+
+export function canMutateBroadcast(status?: string) {
+  return status === "scheduled";
+}
+
+export function statusFilterToApiStatus(value: string): BroadcastRunStatus | undefined {
+  if (value === "Scheduled") return "scheduled";
+  if (value === "Running") return "running";
+  if (value === "Completed") return "completed";
+  if (value === "Partial failure") return "partial_failure";
+  return undefined;
+}

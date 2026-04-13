@@ -30,7 +30,6 @@
  */
 
 import { api } from "./api";
-import { apiFetch } from "./apiClient";
 
 
 
@@ -166,6 +165,25 @@ export interface ApiTimelineItem {
   timestamp: string;
   message?: ApiMessage;
   activity?: ApiActivity;
+}
+
+export interface TimelineWindowOptions {
+  cursor?: string;
+  limit?: number;
+  anchorMessageId?: string;
+  aroundMessageId?: string;
+  direction?: "older" | "newer";
+  before?: number;
+  after?: number;
+}
+
+export interface TimelineWindowResult {
+  data: ApiTimelineItem[];
+  nextCursor?: string;
+  hasMoreOlder?: boolean;
+  hasMoreNewer?: boolean;
+  targetFound?: boolean;
+  targetMessageId?: string | null;
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -314,11 +332,16 @@ export const inboxApi = {
   getTimeline(
     workspaceId: string,
     conversationId: string,
-    cursor?: string,
-    limit = 30
-  ): Promise<{ data: ApiTimelineItem[]; nextCursor?: string }> {
-    const params = new URLSearchParams({ limit: String(limit) });
-    if (cursor) params.set("cursor", cursor);
+    options: TimelineWindowOptions = {},
+  ): Promise<TimelineWindowResult> {
+    const params = new URLSearchParams();
+    if (options.limit !== undefined) params.set("limit", String(options.limit));
+    if (options.cursor) params.set("cursor", options.cursor);
+    if (options.anchorMessageId) params.set("anchorMessageId", options.anchorMessageId);
+    if (options.aroundMessageId) params.set("aroundMessageId", options.aroundMessageId);
+    if (options.direction) params.set("direction", options.direction);
+    if (options.before !== undefined) params.set("before", String(options.before));
+    if (options.after !== undefined) params.set("after", String(options.after));
     return api.get(
       `/conversations/${conversationId}/timeline?${params}`
     );

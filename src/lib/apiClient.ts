@@ -26,18 +26,24 @@ export async function apiFetch(
 
   // remove the localStorage read, use param instead
   const activeWorkspace = workspace ?? null;
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(activeWorkspace ? { "X-Workspace-Id": activeWorkspace.id } : {}),
+    ...(activeWorkspace?.organizationId
+      ? { "x-organization-id": activeWorkspace.organizationId }
+      : {}),
+  };
+
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(activeWorkspace ? { "X-Workspace-Id": activeWorkspace.id } : {}),
-      ...(activeWorkspace?.organizationId
-        ? { "x-organization-id": activeWorkspace.organizationId }
-        : {}),
-    },
+    headers,
   });
 
     let json: any = null;

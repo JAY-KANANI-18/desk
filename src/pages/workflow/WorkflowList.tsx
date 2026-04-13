@@ -6,6 +6,7 @@ import {
 import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
+import { ListPagination } from '../../components/ui/ListPagination';
 
 type FilterStatus = 'all' | WorkflowStatus;
 
@@ -19,6 +20,16 @@ export function WorkflowList() {
   const [loading, setLoading]         = useState(true);
   const [filter, setFilter]           = useState<FilterStatus>('all');
   const [search, setSearch]           = useState('');
+  const [searchDraft, setSearchDraft] = useState('');
+  const [page, setPage]               = useState(1);
+  const [pagination, setPagination]   = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
   const [openMenuId, setOpenMenuId]   = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [renameId, setRenameId]       = useState<string | null>(null);
@@ -26,27 +37,44 @@ export function WorkflowList() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const load = async () => {
+  const load = async (nextPage = page, nextSearch = search, nextFilter = filter) => {
     setLoading(true);
-    setWorkflows(await workspaceApi.getWorkflows());
+    const response = await workspaceApi.listWorkflows({
+      page: nextPage,
+      limit: pagination.limit,
+      search: nextSearch || undefined,
+      status: nextFilter === 'all' ? undefined : nextFilter,
+    });
+    setWorkflows(Array.isArray(response?.items) ? response.items : []);
+    setPagination(
+      response?.pagination ?? {
+        total: Array.isArray(response?.items) ? response.items.length : 0,
+        page: nextPage,
+        limit: pagination.limit,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    );
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchDraft.trim());
+    }, 300);
 
-  const filtered = workflows.filter((wf) => {
-    const matchStatus = filter === 'all' || wf.status === filter;
-    const matchSearch = !search
-    || wf.name.toLowerCase().includes(search.toLowerCase())
-      || (wf.description ?? '').toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchSearch;
-  });
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
+
+  useEffect(() => { load(page, search, filter); }, [page, search, filter]);
 
   const counts: Record<string, number> = {
-    all:       workflows.length,
-    published: workflows.filter((w) => w.status === 'published').length,
-    draft:     workflows.filter((w) => w.status === 'draft').length,
-    stopped:   workflows.filter((w) => w.status === 'stopped').length,
+    all:       filter === 'all' ? pagination.total : workflows.length,
+    published: filter === 'published' ? pagination.total : workflows.filter((w) => w.status === 'published').length,
+    draft:     filter === 'draft' ? pagination.total : workflows.filter((w) => w.status === 'draft').length,
+    stopped:   filter === 'stopped' ? pagination.total : workflows.filter((w) => w.status === 'stopped').length,
   };
 
   const doAction = async (id: string, action: () => Promise<unknown>) => {
@@ -108,7 +136,7 @@ export function WorkflowList() {
             {(['all', 'published', 'draft', 'stopped'] as FilterStatus[]).map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPage(1); }}
                 className={`px-2.5 py-1.5 text-sm rounded-md transition-colors capitalize ${
                   filter === f ? 'bg-indigo-100 text-indigo-600 font-medium' : 'text-gray-500 hover:text-gray-700'
                 }`}
@@ -126,8 +154,8 @@ export function WorkflowList() {
             <input
               type="text"
               placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
               className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 w-48 placeholder:text-gray-300"
             />
           </div>
@@ -141,7 +169,7 @@ export function WorkflowList() {
               <Loader2 className="animate-spin mr-2" size={18} />
               Loading workflows...
             </div>
-        ) : filtered.length === 0 ? (
+        ) : workflows.length === 0 ? (
           <EmptyState hasSearch={!!search || filter !== 'all'} onCreateNew={handleCreateNew} />
         ) : (
           <>
@@ -153,7 +181,7 @@ export function WorkflowList() {
             </div>
 
             {/* Rows */}
-            {filtered.map((wf) => (
+            {workflows.map((wf) => (
               <div
                 key={wf.id}
                 className="grid grid-cols-[1fr_120px_160px_52px] items-center px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group"
@@ -255,6 +283,14 @@ export function WorkflowList() {
                 </div>
               </div>
             ))}
+            <ListPagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              limit={pagination.limit}
+              itemLabel="workflows"
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

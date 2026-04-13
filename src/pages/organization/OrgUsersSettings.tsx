@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Pencil, X, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Pencil, X, ChevronDown, Search } from "lucide-react";
 
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
 import { organizationApi } from "../../lib/organizationApi";
 import { DataLoader } from "../Loader";
+import { ListPagination } from "../../components/ui/ListPagination";
 
 const UserAvatar = ({
   avatarUrl,
@@ -432,6 +433,18 @@ export const OrgUsersSettings = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   const workspaceMap = useMemo(() => {
     const map = new Map();
@@ -446,6 +459,7 @@ export const OrgUsersSettings = () => {
   }) => {
     await inviteUser(user.email, user.orgRole, user.workspaceAccess);
     await refreshOrganizationsUsers();
+    await loadUsers(1, search);
   };
 
   const handleSave = async (user: {
@@ -455,24 +469,63 @@ export const OrgUsersSettings = () => {
   }) => {
     await updateUser(user.email, user.orgRole, user.workspaceAccess);
     await refreshOrganizationsUsers();
+    await loadUsers(page, search);
   };
 
   const handleDelete = async (userId: string) => {
     await organizationApi.deleteUser(userId);
     await refreshOrganizationsUsers();
+    await loadUsers(page, search);
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchDraft.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
+
+  const loadUsers = async (nextPage = page, nextSearch = search) => {
+    if (!activeOrganization) return;
+    setLoading(true);
+    try {
+      const response = await organizationApi.listUsers({
+        page: nextPage,
+        limit: pagination.limit,
+        search: nextSearch || undefined,
+      });
+      setUsers(Array.isArray(response?.items) ? response.items : []);
+      setPagination(
+        response?.pagination ?? {
+          total: Array.isArray(response?.items) ? response.items.length : 0,
+          page: nextPage,
+          limit: pagination.limit,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     const init = async () => {
       if (activeOrganization) {
-        setLoading(true);
-        await refreshOrganizationsUsers();
-        setLoading(false);
+        await loadUsers(1, search);
       }
     };
 
     init();
   }, [activeOrganization]);
+
+  useEffect(() => {
+    if (!activeOrganization) return;
+    loadUsers(page, search);
+  }, [page, search]);
 
   return (
     <div>
@@ -499,6 +552,18 @@ export const OrgUsersSettings = () => {
         </button>
       </div>
 
+      <div className="mb-4 flex items-center justify-end">
+        <div className="relative w-full max-w-xs">
+          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            placeholder="Search organization users..."
+            className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
       {/* Content */}
     {loading ? (
   <div className="space-y-3 ">
@@ -506,8 +571,8 @@ export const OrgUsersSettings = () => {
   </div>
 ) : (
   <div className="space-y-3 ">
-    {orgUsers?.length > 0 ? (
-      orgUsers.map((user: any) => {
+    {users?.length > 0 ? (
+      users.map((user: any) => {
         const normalizedWorkspaceAccess = normalizeWorkspaceAccess(user);
 
         return (
@@ -612,6 +677,15 @@ export const OrgUsersSettings = () => {
     )}
   </div>
 )}
+
+      <ListPagination
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        total={pagination.total}
+        limit={pagination.limit}
+        itemLabel="users"
+        onPageChange={setPage}
+      />
 
       {/* Modal */}
       <InviteEditUserModal

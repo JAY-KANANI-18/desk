@@ -59,6 +59,14 @@ connectSelectedPages: async (payload: {
 
 ,
     getChannels: () => api.get('/channels'),
+    listChannels: (params?: { search?: string; page?: number; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.search?.trim()) searchParams.set('search', params.search.trim());
+        if (params?.page) searchParams.set('page', String(params.page));
+        if (params?.limit) searchParams.set('limit', String(params.limit));
+        const query = searchParams.toString();
+        return api.get(`/channels${query ? `?${query}` : ''}`);
+    },
     createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
         api.post(`/channels?workspaceId=${workspaceId}`, payload),
     deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),

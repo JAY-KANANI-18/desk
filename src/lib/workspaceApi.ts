@@ -41,6 +41,14 @@ export const workspaceApi = {
 
   users: () =>
     api.get(`/workspaces/users`),
+  listUsers: (params?: { search?: string; page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search?.trim()) searchParams.set('search', params.search.trim());
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    return api.get(`/workspaces/users${query ? `?${query}` : ''}`);
+  },
 
   inviteMember: (email: string, role: string) =>
     api.post(`/workspaces/users/invite`, { email, role }),
@@ -234,6 +242,14 @@ export const workspaceApi = {
 
   getTags: () =>
     api.get(`/workspaces/tags`),
+  listTags: (params?: { search?: string; page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search?.trim()) searchParams.set('search', params.search.trim());
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    return api.get(`/workspaces/tags${query ? `?${query}` : ''}`);
+  },
 
   addTag: (tag: any) =>
     api.post(`/workspaces/tags`, tag),
@@ -333,6 +349,15 @@ export const workspaceApi = {
   ========================================================= */
   getWorkflows: () =>
     api.get(`/workflows`),
+  listWorkflows: (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search?.trim()) searchParams.set('search', params.search.trim());
+    if (params?.status && params.status !== 'all') searchParams.set('status', params.status);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    return api.get(`/workflows${query ? `?${query}` : ''}`);
+  },
   getWorkflow: (id: string) =>
     api.get(`/workflows/${id}`),
   createWorkflow: (payload: { name: string; description?: string }) =>

@@ -11,6 +11,8 @@ import { ConnectChannelPage } from "../pages/channels/ConnectChannelPage";
 import { ManageChannelPage } from "../pages/channels/ManageChannelPage";
 import { ChannelCatalogView } from "../pages/ConnectChannel";
 import { Contacts } from "../pages/Contacts";
+import ImportContactsPage from "../modules/import/ImportContactsPage";
+import ImportJobsPage from "../modules/import/ImportJobsPage";
 import { Dashboard } from "../pages/Dashboard";
 import { InboxLayout, InboxPage } from "../pages/Inbox";
 import InstagramCallback from "../pages/InstagramCallback";
@@ -97,6 +99,22 @@ export const WorkspaceRouter = () => {
           element={
             <ProtectedRoute ws="ws:contacts:view">
               <Contacts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="contacts/import"
+          element={
+            <ProtectedRoute ws="ws:contacts:manage">
+              <ImportContactsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="contacts/import-jobs"
+          element={
+            <ProtectedRoute ws="ws:contacts:manage">
+              <ImportJobsPage />
             </ProtectedRoute>
           }
         />

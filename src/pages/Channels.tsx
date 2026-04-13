@@ -2,26 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
-  ArrowLeft,
   Plus,
   Settings,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  MoreVertical,
-  Trash2,
-  RefreshCw,
-  ExternalLink,
-  MessageSquare,
-  Zap,
   Globe,
   Plug,
   Loader2,
 } from "lucide-react";
-import { CHANNEL_TYPE_TO_SLUG } from "./channels/ManageChannelPage";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
-import { useChannel } from "../context/ChannelContext";
+import { ListPagination } from "../components/ui/ListPagination";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ConnectedChannel {
@@ -51,17 +40,28 @@ interface CatalogChannel {
 const ConnectedChannelsView = ({
   loading,
   channels,
+  search,
+  onSearchChange,
+  pagination,
+  onPageChange,
   onConnectNew,
 }: {
   loading: boolean;
   channels: ConnectedChannel[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  onPageChange: (page: number) => void;
   onConnectNew: () => void;
 }) => {
   const navigate = useNavigate();
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   const handleManage = (ch: ConnectedChannel) => {
-    // const slug = CHANNEL_TYPE_TO_SLUG[ch.type] ?? 'whatsapp_cloud';
     navigate(`/channel/manage/${ch.type}/${ch.id}`);
   };
 
@@ -90,6 +90,17 @@ const ConnectedChannelsView = ({
               <Plus size={14} />
               Add Channel
             </button>
+          </div>
+        </div>
+        <div className="px-6 pb-2">
+          <div className="relative max-w-xs">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search channels..."
+              className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
         </div>
 
@@ -163,6 +174,14 @@ const ConnectedChannelsView = ({
             )}
           </>
         )}
+        <ListPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          itemLabel="channels"
+          onPageChange={onPageChange}
+        />
       </div>
 
       {/* Connect new channel CTA */}
@@ -173,7 +192,63 @@ const ConnectedChannelsView = ({
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export const Channels = () => {
   const navigate = useNavigate();
-  const {channels,loading} =  useChannel()
+  const [channels, setChannels] = useState<ConnectedChannel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 9,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchDraft.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchDraft]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadChannels() {
+      setLoading(true);
+      try {
+        const response = await ChannelApi.listChannels({
+          page,
+          limit: pagination.limit,
+          search: search || undefined,
+        });
+        if (!active) return;
+        setChannels(Array.isArray(response?.items) ? response.items : []);
+        setPagination(
+          response?.pagination ?? {
+            total: Array.isArray(response?.items) ? response.items.length : 0,
+            page,
+            limit: pagination.limit,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        );
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadChannels();
+
+    return () => {
+      active = false;
+    };
+  }, [page, search]);
 
   // Pick up newly connected channel coming back from a connect page
   // useEffect(() => {
@@ -201,6 +276,10 @@ export const Channels = () => {
     <ConnectedChannelsView
       channels={channels}
       loading={loading}
+      search={searchDraft}
+      onSearchChange={setSearchDraft}
+      pagination={pagination}
+      onPageChange={setPage}
       onConnectNew={() => navigate("/channels/connect")}
     />
   );

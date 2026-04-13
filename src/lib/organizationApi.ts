@@ -24,6 +24,14 @@ export const organizationApi = {
 
     getusers : (organizationId: string) =>
         api.get(`/organizations/users`),
+    listUsers: (params?: { search?: string; page?: number; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+        if (params?.page) searchParams.set("page", String(params.page));
+        if (params?.limit) searchParams.set("limit", String(params.limit));
+        const query = searchParams.toString();
+        return api.get(`/organizations/users${query ? `?${query}` : ""}`);
+    },
 
     me: () => api.get("/user/organizations"),
     deleteUser: (userId: string) => api.delete(`/organizations/users/${userId}`),
