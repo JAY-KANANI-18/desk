@@ -7,10 +7,11 @@ import React, {
   useRef,
 } from "react";
 import { authApi } from "../lib/authApi";
-import type { AuthUser } from "../lib/authApi";
-import { organizationApi } from "../lib/organizationApi";
+import {
+  organizationApi,
+  type OrganizationSetupOnboardingData,
+} from "../lib/organizationApi";
 import { useAuth } from "./AuthContext";
-import { useWorkspace } from "./WorkspaceContext";
 
 interface Workspace {
   id: string;
@@ -39,12 +40,14 @@ interface OrganizationContextType {
     workspaceAccess: any
   ) => Promise<any>;
   orgUsers: any;
-  updateOrganization:() => Promise<any>;
+  updateOrganization: (id: string, payload: any) => Promise<any>;
   refreshOrganizationsUsers: () => Promise<any>;
-  organizationSetup: () => Promise<any>;
-  setActiveOrganizationFunc: (
-    org: Organization
+  organizationSetup: (
+    organizationName: string,
+    workspaceName?: string,
+    onboardingData?: OrganizationSetupOnboardingData,
   ) => Promise<any>;
+  setActiveOrganizationFunc: (org: Organization) => void;
   refreshOrganizations: () => Promise<any>;
 }
 
@@ -60,11 +63,10 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [orgUsers, setOrgUsers] = useState<any>();
 
   const { user } = useAuth();
-    const initialized = useRef(false);
-  
+  const initialized = useRef(false);
 
   useEffect(() => {
-        if (initialized.current) return;
+    if (initialized.current) return;
     initialized.current = true;
     if (user) {
       console.log("organization change", organizations);
@@ -80,22 +82,23 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setOrgLoading(false);
     }
-    
   }, [user]);
 
- 
-
-  // setOrgsLoaded(true);
-  // setOrganizations(orgs);
-  // setWorkspaces(workspaces);
-
-  const organizationSetup = useCallback(async (organizationName: string) => {
-    const result = await organizationApi.setup(
-      organizationName,
-      "Default Workspace"
-    );
-    return result;
-  }, []);
+  const organizationSetup = useCallback(
+    async (
+      organizationName: string,
+      workspaceName?: string,
+      onboardingData?: OrganizationSetupOnboardingData,
+    ) => {
+      const result = await organizationApi.setup(
+        organizationName,
+        workspaceName ?? organizationName,
+        onboardingData,
+      );
+      return result;
+    },
+    []
+  );
   const refreshOrganizations = useCallback(async () => {
     setOrgLoading(true);
     const result = await organizationApi.me();
@@ -134,30 +137,27 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const setActiveOrganizationFunc = (org: Organization) => {
     setActiveOrganization(org);
     localStorage.setItem("active_organization", JSON.stringify(org));
-  }
+  };
 
   const refreshOrganizationsUsers = useCallback(async () => {
     const result = await organizationApi.getusers(activeOrganization?.id);
     setOrgUsers(result);
-    console.log({orgUsers});
-    
+    console.log({ orgUsers });
   }, [activeOrganization]);
 
-const updateOrganization = async (id: string, payload: any) => {
-  const res = await organizationApi.updateOrganization(id,payload);
+  const updateOrganization = async (id: string, payload: any) => {
+    const res = await organizationApi.updateOrganization(id, payload);
 
-  setOrganizations((prev) =>
-    prev.map((org) => (org.id === id ? res.data : org))
-  );
+    setOrganizations((prev) =>
+      prev.map((org) => (org.id === id ? res.data : org))
+    );
 
-  setActiveOrganization((prev) =>
-    prev?.id === id ? res.data : prev
-  );
+    setActiveOrganization((prev) =>
+      prev?.id === id ? res.data : prev
+    );
 
-  return res.data;
-};
-
-    // setOrganizations(result.data);
+    return res.data;
+  };
 
   useEffect(() => {
     // console.log({ organizations });

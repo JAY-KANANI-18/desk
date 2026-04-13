@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  MessageSquare,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { DUMMY_MODE, MOCK_USERS } from "../../lib/authApi";
+import {
+  AuthDivider,
+  AuthField,
+  AuthNotice,
+  AuthPrimaryButton,
+  AuthShell,
+} from "./components/AuthShell";
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -41,8 +40,12 @@ export const Login = () => {
   };
 
   const handleGoogle = async () => {
-    // setGoogleLoading(true);
-    await loginWithGoogle();
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const fillDemo = (demoEmail: string) => {
@@ -51,7 +54,7 @@ export const Login = () => {
     setError("");
   };
 
-  const ROLE_COLORS: Record<string, string> = {
+  const roleColors: Record<string, string> = {
     owner: "bg-purple-100 text-purple-700",
     admin: "bg-indigo-100 text-indigo-700",
     supervisor: "bg-amber-100 text-amber-700",
@@ -59,135 +62,100 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          {/* Google SSO */}
-          <div className="flex flex-col justify-center text-center mb-8">
-            {/* logo */}
-            <div className="flex items-center justify-center ">
-
-            <img
-              src="/axodesk-full.png"
-              alt="logo"
-              className={`w-32 h-24 `}
-              />
-              </div>
-            
-          </div>
+    <AuthShell
+      eyebrow="Welcome back"
+      title="Sign in to AxoDesk"
+      subtitle="Pick up where your team left off and keep customer conversations moving."
+      footer={
+        <p className="text-center text-sm text-gray-500">
+          Don&apos;t have an account?{" "}
+          <Link
+            to="/auth/signup"
+            className="font-semibold text-indigo-600 transition hover:text-indigo-700"
+          >
+            Create one
+          </Link>
+        </p>
+      }
+    >
+      <div className="space-y-4">
           <button
             type="button"
             onClick={handleGoogle}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors mb-6"
+            className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {googleLoading ? (
-              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
             ) : (
               <img
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="Google"
-                className="w-5 h-5"
+                className="h-5 w-5"
               />
             )}
             Continue with Google
           </button>
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">
-              or sign in with email
-            </span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
+          <AuthDivider label="or sign in with email" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email address
-              </label>
-              <div className="relative">
-                <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
+            <AuthField
+              label="Email address"
+              icon={Mail}
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError("");
+              }}
+              placeholder="you@company.com"
+              autoComplete="email"
+            />
 
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <Link
-                  to="/auth/forgot-password"
-                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
+            <AuthField
+              label="Password"
+              icon={Lock}
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError("");
+              }}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              trailing={
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="text-gray-400 transition hover:text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
-              </div>
-            </div>
+              }
+              helpText={
+                <Link
+                  to="/auth/forgot-password"
+                  className="font-medium text-indigo-600 transition hover:text-indigo-700"
+                >
+                  Forgot password?
+                </Link>
+              }
+            />
 
-            {/* Error */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
-                {error}
-              </div>
-            )}
+            {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
-            >
+            <AuthPrimaryButton type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   Signing in...
                 </>
               ) : (
                 "Sign in"
               )}
-            </button>
+            </AuthPrimaryButton>
           </form>
 
           {/* SSO */}
@@ -199,7 +167,7 @@ export const Login = () => {
           </button> */}
 
           {/* ── Demo credentials (only shown when DUMMY_MODE = true) ── */}
-          {DUMMY_MODE && (
+          {DUMMY_MODE ? (
             <div className="mt-5 border border-amber-200 rounded-xl overflow-hidden">
               <button
                 type="button"

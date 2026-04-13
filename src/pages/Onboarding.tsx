@@ -1,30 +1,7 @@
-// src/pages/Onboarding.tsx
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  User,
-  MessageSquare,
-  Building2,
-  Briefcase,
-  Users,
-  Globe,
-  ChevronRight,
-  ArrowLeft,
-} from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { useOrganization } from "../context/OrganizationContext";
+/*
+Legacy onboarding implementation kept only as a compatibility shim.
 
-interface OrgData {
-  orgName: string;
-  role: string;
-  companySize: string;
-  industry: string;
-  website: string;
-}
+import { useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────
 const ROLES = [
@@ -123,6 +100,9 @@ const getPasswordStrength = (pw: string) => {
     return { label: "Strong", color: "bg-green-500", width: "100%" };
   return { label: "Good", color: "bg-indigo-400", width: "75%" };
 };
+*/
+
+export { OnboardingFlow as Onboarding } from "./onboarding/OnboardingFlow";
 
 // ─── Field wrapper ────────────────────────────────────────────
 const Field = ({

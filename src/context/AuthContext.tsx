@@ -36,7 +36,11 @@ interface AuthContextType {
   resendCode: () => Promise<void>;
   resetPassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   setPendingEmail: (email: string) => void;
-  organizationSetup: (organizationName: string) => Promise<{ success: boolean; error?: string }>;
+  organizationSetup: (
+    organizationName: string,
+    workspaceName?: string,
+    onboardingData?: Record<string, unknown>
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -197,9 +201,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
 
-  const organizationSetup = useCallback(async (organizationName: string) => {
-    return authApi.organizationSetup(organizationName, 'Default Workspace');
-  }, []);
+  const organizationSetup = useCallback(
+    async (
+      organizationName: string,
+      workspaceName?: string,
+      onboardingData?: Record<string, unknown>,
+    ) => {
+      return authApi.organizationSetup(
+        organizationName,
+        workspaceName ?? organizationName,
+        onboardingData,
+      );
+    },
+    []
+  );
 
   return (
     <AuthContext.Provider value={{

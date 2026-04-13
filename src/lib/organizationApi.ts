@@ -1,10 +1,28 @@
 import { api } from "./api";
 
+export interface OrganizationSetupOnboardingData {
+    businessType: string;
+    industry: string;
+    teamSize: string;
+    monthlyConversations: string;
+    channels: string[];
+    primaryGoal: string;
+    painPoint: string;
+    workspaceName: string;
+    firstName: string;
+    lastName: string;
+}
+
 export const organizationApi = {
-    setup: (organizationName: string, workspaceName: string) =>
+    setup: (
+        organizationName: string,
+        workspaceName: string,
+        onboardingData?: OrganizationSetupOnboardingData,
+    ) =>
         api.post("/organizations/setup", {
             organizationName,
             workspaceName,
+            onboardingData,
         }),
     inviteUser: ( email: string, role: string, workspaceAccess: any) =>
         api.post("/organizations/invite", {

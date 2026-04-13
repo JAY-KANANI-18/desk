@@ -185,7 +185,8 @@ export const authApi = {
   // ── Organization Setup ────────────────────
   organizationSetup: async (
     organizationName: string,
-    workspaceName: string
+    workspaceName: string,
+    onboardingData?: Record<string, unknown>
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       await apiFetch("/organizations/setup", {
@@ -193,6 +194,7 @@ export const authApi = {
         body: JSON.stringify({
           organizationName,
           workspaceName,
+          onboardingData,
         }),
       });
 
