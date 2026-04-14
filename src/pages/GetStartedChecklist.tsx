@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { ElementType, ReactNode } from "react";
 import {
   Plug,
   Users,
@@ -9,11 +10,6 @@ import {
   CheckCircle2,
   X,
   Zap,
-  PlayCircle,
-  MessageCircleQuestion,
-  CalendarDays,
-  LifeBuoy,
-  Clapperboard,
 } from "lucide-react";
 
 interface GetStartedSteps {
@@ -25,10 +21,10 @@ interface GetStartedSteps {
 
 interface Step {
   key: string;
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   subtitle: string;
-  description: React.ReactNode;
+  description: ReactNode;
   cta: string;
   path: string;
   visual: string;
@@ -127,7 +123,6 @@ export const GetStartedChecklist = ({
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
-  console.log({ completedSteps });
 
   const completedCount = useMemo(
     () => STEPS.filter((s) => completedSteps[s.key]).length,
@@ -155,24 +150,27 @@ export const GetStartedChecklist = ({
 
   const circumference = 2 * Math.PI * 40;
   const strokeDashoffset = circumference - (pct / 100) * circumference;
+  const mobileCircumference = 2 * Math.PI * 28;
+  const mobileStrokeDashoffset =
+    mobileCircumference - (pct / 100) * mobileCircumference;
 
   return (
     <div
-      className={`min-h-screen bg-[var(--color-bg,#f8fafc)] text-[var(--color-text,#0f172a)] px-4 sm:px-6 py-10 sm:py-14 transition-all duration-500 ${
+      className={`min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg,#f8fafc)] px-3 py-6 text-[var(--color-text,#0f172a)] transition-all duration-500 sm:px-4 sm:py-8 md:px-6 md:py-14 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
     >
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mb-6 flex flex-col gap-4 md:mb-10 md:gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="mb-2 flex items-center gap-3">
+            <div className="mb-2 flex items-center gap-2 md:gap-3">
               <span className="text-3xl">👋</span>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-text,#0f172a)]">
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-[var(--color-text,#0f172a)] sm:text-2xl md:text-3xl">
                 Hey {userName}, let’s get you set up.
               </h1>
             </div>
-            <p className="ml-11 text-sm text-[var(--color-text-secondary,#64748b)]">
+            <p className="ml-9 text-sm text-[var(--color-text-secondary,#64748b)] md:ml-11">
               Three steps. Takes under 5 minutes.
             </p>
           </div>
@@ -181,7 +179,7 @@ export const GetStartedChecklist = ({
             {onDismiss && (
               <button
                 onClick={onDismiss}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary,#64748b)] transition hover:border-indigo-600 hover:text-indigo-600"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary,#64748b)] transition hover:border-indigo-600 hover:text-indigo-600 sm:w-auto md:py-2"
               >
                 <X size={16} />
                 Don't Show Again
@@ -191,9 +189,89 @@ export const GetStartedChecklist = ({
         </div>
 
         {/* Body */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: Steps */}
           <div className="space-y-4">
+            <div className="rounded-2xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] p-4 shadow-sm md:hidden">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary,#94a3b8)]">
+                    Progress
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-[var(--color-text,#0f172a)]">
+                    {completedCount} of {totalCount} completed
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary,#64748b)]">
+                    {allDone
+                      ? "Everything is ready for your team."
+                      : "Finish the next step to unlock your full workspace."}
+                  </p>
+                </div>
+
+                <svg
+                  width="72"
+                  height="72"
+                  viewBox="0 0 72 72"
+                  className="shrink-0"
+                >
+                  <defs>
+                    <linearGradient
+                      id="mobile-pg"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                    >
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="28"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    strokeWidth="6"
+                  />
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="28"
+                    fill="none"
+                    stroke="url(#mobile-pg)"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={mobileCircumference}
+                    strokeDashoffset={mobileStrokeDashoffset}
+                    transform="rotate(-90 36 36)"
+                    style={{
+                      transition:
+                        "stroke-dashoffset 0.9s cubic-bezier(.34,1.56,.64,1)",
+                    }}
+                  />
+
+                  <text
+                    x="36"
+                    y="34"
+                    textAnchor="middle"
+                    className="fill-slate-900 text-[12px] font-bold"
+                  >
+                    {pct}%
+                  </text>
+                  <text
+                    x="36"
+                    y="46"
+                    textAnchor="middle"
+                    className="fill-slate-400 text-[7px]"
+                  >
+                    done
+                  </text>
+                </svg>
+              </div>
+            </div>
+
             {STEPS.map((step, i) => {
               const done = completedSteps[step.key];
               const isOpen = expanded === step.key && !done;
@@ -202,15 +280,15 @@ export const GetStartedChecklist = ({
               return (
                 <div
                   key={step.key}
-                  className="flex gap-4"
+                  className="flex gap-3 md:gap-4"
                   style={{
                     animation: `fadeInUp 0.45s ease ${i * 0.08}s both`,
                   }}
                 >
                   {/* Timeline */}
-                  <div className="flex w-10 flex-col items-center pt-5">
+                  <div className="flex w-8 flex-col items-center pt-4 md:w-10 md:pt-5">
                     <div
-                      className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold transition-all duration-300
+                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 md:h-9 md:w-9 md:text-sm
                         ${
                           done
                             ? "border-transparent bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md"
@@ -235,7 +313,7 @@ export const GetStartedChecklist = ({
 
                   {/* Card */}
                   <div
-                    className={`flex-1 overflow-hidden rounded-2xl border bg-[var(--color-card,#ffffff)] transition-all duration-300
+                    className={`flex-1 overflow-hidden rounded-[20px] border bg-[var(--color-card,#ffffff)] transition-all duration-300 md:rounded-2xl
                       ${
                         isOpen
                           ? "border-indigo-600 shadow-xl shadow-slate-200/50"
@@ -248,12 +326,12 @@ export const GetStartedChecklist = ({
                     <button
                       type="button"
                       onClick={() => toggle(step.key, done)}
-                      className={`flex w-full items-center gap-4 px-5 py-5 text-left ${
+                      className={`flex w-full items-start gap-3 px-4 py-4 text-left md:items-center md:gap-4 md:px-5 md:py-5 ${
                         done ? "cursor-default" : "cursor-pointer"
                       }`}
                     >
                       <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all md:h-11 md:w-11
                           ${
                             done
                               ? "bg-slate-100 text-slate-300"
@@ -266,7 +344,7 @@ export const GetStartedChecklist = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center gap-2">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
                           <h3
                             className={`text-sm sm:text-[15px] font-semibold ${
                               done
@@ -292,7 +370,7 @@ export const GetStartedChecklist = ({
                       {!done && (
                         <ChevronDown
                           size={18}
-                          className={`shrink-0 text-slate-400 transition-transform duration-300 ${
+                          className={`mt-1 shrink-0 text-slate-400 transition-transform duration-300 md:mt-0 ${
                             isOpen ? "rotate-180" : ""
                           }`}
                         />
@@ -308,19 +386,19 @@ export const GetStartedChecklist = ({
                       }`}
                     >
                       <div className="overflow-hidden">
-                        <div className="px-5 pb-5 pt-5">
-                          <div className="mb-5 flex items-start gap-4  p-4">
+                        <div className="px-4 pb-4 pt-1 md:px-5 md:pb-5 md:pt-5">
+                          <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-slate-50/80 p-4 md:mb-5 md:flex-row md:items-start md:gap-4 md:bg-transparent">
                             <span className="text-3xl leading-none">
                               {step.visual}
                             </span>
-                            <p className="text-sm leading-7 text-[var(--color-text,#475569)]">
+                            <div className="min-w-0 text-sm leading-7 text-[var(--color-text,#475569)]">
                               {step.description}
-                            </p>
+                            </div>
                           </div>
 
                           <button
                             onClick={() => navigate(step.path)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600  px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:translate-y-[-1px] hover:shadow-lg"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:translate-y-[-1px] hover:shadow-lg sm:w-auto"
                           >
                             {step.cta}
                             <ArrowRight size={16} strokeWidth={2.4} />
@@ -335,7 +413,7 @@ export const GetStartedChecklist = ({
 
             {/* All done banner */}
             {allDone && (
-              <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-950 p-6 text-white shadow-2xl sm:flex-row sm:items-center">
+              <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-950 p-5 text-white shadow-2xl sm:mt-6 sm:flex-row sm:items-center sm:p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                   <Zap size={22} className="text-violet-300" />
                 </div>
@@ -354,7 +432,7 @@ export const GetStartedChecklist = ({
                     onComplete();
                     navigate("/inbox");
                   }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:shadow-lg"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:shadow-lg sm:w-auto"
                 >
                   Open inbox
                   <ArrowRight size={15} />
@@ -364,7 +442,7 @@ export const GetStartedChecklist = ({
           </div>
 
           {/* Right Panel */}
-          <div className="space-y-4">
+          <div className="hidden space-y-4 md:block">
             {/* Progress Card */}
             <div className="rounded-2xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] p-5 shadow-sm">
               <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary,#94a3b8)]">

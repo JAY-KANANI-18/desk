@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { BookCheck, Settings } from "lucide-react";
 import {
   useEffect,
   useLayoutEffect,
@@ -9,6 +9,7 @@ import {
 import { NavLink, matchPath, useLocation } from "react-router-dom";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useAuthorization } from "../context/AuthorizationContext";
+import { useGetStarted } from "../context/GetStartedContext";
 import { useSettingsLinks } from "./settingsLinks";
 
 type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
@@ -16,6 +17,7 @@ type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
 export function MobileBottomNav() {
   const location = useLocation();
   const { canWs } = useAuthorization();
+  const { dismissed, isComplete } = useGetStarted();
   const settingsLinks = useSettingsLinks();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
@@ -35,13 +37,47 @@ export function MobileBottomNav() {
       location.pathname.startsWith(`${link.path}/`),
   );
 
-  const items = useMemo(
+  const showGetStartedTab = !dismissed && !isComplete;
+
+  const isPathActive = (paths: string[]) =>
+    paths.some(
+      (path) =>
+        location.pathname === path ||
+        location.pathname.startsWith(`${path}/`),
+    );
+
+  const baseItems = useMemo(
     () =>
       APP_NAV_ITEMS.filter(
         (item) => item.mobile && (!item.ws || canWs(item.ws)),
       ),
     [canWs],
   );
+
+  const items = useMemo(() => {
+    if (!showGetStartedTab) {
+      return baseItems;
+    }
+
+    const getStartedItem = {
+      icon: BookCheck,
+      label: "Get Started",
+      path: "/get-started",
+      activePaths: ["/get-started"],
+    };
+
+    const dashboardIndex = baseItems.findIndex(
+      (item) => item.path === "/dashboard",
+    );
+
+    if (dashboardIndex === -1) {
+      return [getStartedItem, ...baseItems];
+    }
+
+    return baseItems.map((item, index) =>
+      index === dashboardIndex ? { ...item, ...getStartedItem } : item,
+    );
+  }, [baseItems, showGetStartedTab]);
 
   const navItems = useMemo(
     () => [
@@ -57,7 +93,9 @@ export function MobileBottomNav() {
     [items],
   );
 
-  const isSettingsTabActive = isSettingsRouteActive ;
+  const isSettingsTabActive = isSettingsRouteActive;
+  const shouldHideForGetStarted =
+    location.pathname.startsWith("/get-started") && !showGetStartedTab;
 
   const activeIndex = navItems.findIndex((item) => {
     if ("isSettings" in item && item.isSettings) {
@@ -65,11 +103,7 @@ export function MobileBottomNav() {
     }
 
     const paths = "activePaths" in item ? item.activePaths : [item.path];
-    return paths.some(
-      (path) =>
-        location.pathname === path ||
-        location.pathname.startsWith(`${path}/`),
-    );
+    return isPathActive(paths);
   });
 
   const updateIndicator = () => {
@@ -93,7 +127,7 @@ export function MobileBottomNav() {
   }, [activeIndex]);
 
   if (
-    location.pathname.startsWith("/get-started") ||
+    shouldHideForGetStarted ||
     isInboxConversationView ||
     navItems.length === 0
   ) {
@@ -117,10 +151,8 @@ export function MobileBottomNav() {
           const isActive =
             "isSettings" in item && item.isSettings
               ? isSettingsTabActive
-              : ("activePaths" in item ? item.activePaths : [item.path]).some(
-                  (path) =>
-                    location.pathname === path ||
-                    location.pathname.startsWith(`${path}/`),
+              : isPathActive(
+                  "activePaths" in item ? item.activePaths : [item.path],
                 );
 
           const iconClassName = `relative z-10 transition-all duration-300 ${
