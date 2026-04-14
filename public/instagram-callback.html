@@ -1,42 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Instagram Auth</title>
+  <title>Instagram Auth Debug</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .success { color: #22c55e; }
+    .error { color: #ef4444; }
+    .warn { color: #f59e0b; }
+  </style>
 </head>
 <body>
+
+<h2>Instagram OAuth Debug</h2>
+
+<div id="log"></div>
+
 <script>
+  const logEl = document.getElementById("log");
+
+  function log(message, type = "") {
+    const div = document.createElement("div");
+    div.className = "box " + type;
+    div.innerText = message;
+    logEl.appendChild(div);
+    console.log(message);
+  }
+
+  log("🚀 Callback loaded");
+
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const error = params.get("error");
 
-  console.log({ code, error });
+  log("URL: " + window.location.href);
+  log("Code: " + code, code ? "success" : "warn");
+  log("Error: " + error, error ? "error" : "");
 
-  if (window.opener) {
-    // ✅ Desktop popup flow
-    window.opener.postMessage(
-      {
-        type: "instagram_oauth",
-        code,
-        error
-      },
-      window.location.origin
-    );
+  log("Has opener: " + !!window.opener, window.opener ? "success" : "warn");
 
-    window.close();
-  } else {
-    // ✅ Mobile fallback (NO opener)
+  try {
+    if (window.opener) {
+      log("📩 Sending postMessage to opener...");
 
-    if (code) {
-      sessionStorage.setItem("instagram_oauth_code", code);
+      window.opener.postMessage(
+        {
+          type: "instagram_oauth",
+          code,
+          error
+        },
+        window.location.origin
+      );
+
+      log("✅ Message sent, closing window...");
+      setTimeout(() => window.close(), 1000);
+
+    } else {
+      log("⚠️ No opener → Mobile fallback triggered");
+
+      if (code) {
+        sessionStorage.setItem("instagram_oauth_code", code);
+        log("✅ Code stored in sessionStorage");
+      }
+
+      if (error) {
+        sessionStorage.setItem("instagram_oauth_error", error);
+        log("❌ Error stored in sessionStorage");
+      }
+
+      log("🔁 Redirecting to /channels...");
+
+      setTimeout(() => {
+        window.location.href = "/channels?instagram=callback";
+      }, 1500);
     }
-
-    if (error) {
-      sessionStorage.setItem("instagram_oauth_error", error);
-    }
-
-    // 🔁 Redirect back to your app
-    window.location.href = "/channels?instagram=callback";
+  } catch (e) {
+    log("💥 Exception: " + e.message, "error");
   }
 </script>
+
 </body>
 </html>

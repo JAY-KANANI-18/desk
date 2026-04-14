@@ -5,6 +5,7 @@ import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";
 import { useIsMobile } from "../hooks/useIsMobile";
+import toast from "react-hot-toast";
 
 interface ConnectedChannel {
   id: number;
@@ -224,6 +225,8 @@ export const Channels = () => {
   useEffect(() => {
   const code = sessionStorage.getItem("instagram_oauth_code");
   const error = sessionStorage.getItem("instagram_oauth_error");
+     toast.success(code);
+     toast.error(error);
 
   if (code) {
     sessionStorage.removeItem("instagram_oauth_code");
