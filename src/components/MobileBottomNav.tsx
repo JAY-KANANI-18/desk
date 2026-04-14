@@ -65,7 +65,7 @@ export function MobileBottomNav() {
                 }`}
               >
                 <item.icon
-                  size={24}
+                  size={30}
                   className={
                     isSettingsActive || showSettingsMenu
                       ? "text-white"
@@ -94,7 +94,7 @@ export function MobileBottomNav() {
               }`}
             >
               <item.icon
-                size={24}
+                size={30}
                 className={isActive ? "text-white" : "text-slate-500"}
               />
             </NavLink>
