@@ -202,7 +202,7 @@ export const WorkspaceRouter = () => {
           }
         />
         <Route
-          path="channel/connect/:channelId"
+          path="channels/connect/:channelId"
           element={
             <ProtectedRoute ws="ws:channels:manage">
               <ConnectChannelPage />

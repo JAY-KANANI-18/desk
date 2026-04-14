@@ -225,7 +225,7 @@ export const ChannelCatalogView = () => {
     const slug = CHANNEL_CONNECT_SLUGS[chId];
     if (slug) {
       // Navigate to dedicated connect page
-      navigate(`/channel/connect/${slug}`);
+      navigate(`/channels/connect/${slug}`);
       return;
     }
     // Simulate for channels without a dedicated page

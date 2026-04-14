@@ -176,7 +176,7 @@ const PAGES: PageEntry[] = [
     id: 'connect-channel',
     title: 'Connect Channel',
     description: 'Step-by-step guided setup page for connecting a new channel. Each channel type has its own tailored configuration flow.',
-    url: '/channel/connect/:channelId',
+    url: '/channels/connect/:channelId',
     category: 'channels',
     icon: <Globe size={22} />,
     color: 'bg-teal-100',
