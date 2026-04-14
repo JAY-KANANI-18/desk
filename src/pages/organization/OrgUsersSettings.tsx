@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Pencil, X, ChevronDown, Search } from "lucide-react";
 
+import { MobileSheet } from "../../components/topbar/MobileSheet";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { organizationApi } from "../../lib/organizationApi";
 import { DataLoader } from "../Loader";
 import { ListPagination } from "../../components/ui/ListPagination";
@@ -118,6 +120,7 @@ const InviteEditUserModal = ({
   editUser: any;
 }) => {
   const { workspaces } = useWorkspace();
+  const isMobile = useIsMobile();
 
   const [email, setEmail] = useState("");
   const [orgRole, setOrgRole] = useState("ORG_MEMBER");
@@ -201,6 +204,214 @@ const InviteEditUserModal = ({
       setLoading(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={open}
+        onClose={onClose}
+        title={
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Organization Users
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-slate-900">
+              {editUser ? "Edit User" : "Invite User"}
+            </h2>
+          </div>
+        }
+        footer={
+          <div className="flex flex-col-reverse gap-3">
+            <button
+              onClick={onClose}
+              className="rounded-xl px-5 py-2.5 font-medium text-gray-700 transition hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading || (!editUser && !email.trim())}
+              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading
+                ? editUser
+                  ? "Saving..."
+                  : "Inviting..."
+                : editUser
+                  ? "Save"
+                  : "Invite"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-6 p-4">
+          {editUser && (
+            <div className="flex items-center gap-4">
+              <UserAvatar
+                avatarUrl={editUser.avatarUrl}
+                firstName={editUser.firstName}
+                lastName={editUser.lastName}
+                email={editUser.email}
+                size="lg"
+              />
+
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-gray-900">
+                  {[editUser.firstName, editUser.lastName]
+                    .filter(Boolean)
+                    .join(" ") || editUser.email}
+                </p>
+                <p className="truncate text-sm text-gray-500">
+                  {editUser.email}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <p className="text-[15px] leading-7 text-gray-600">
+            {editUser
+              ? "Update this user's organization role and workspace access."
+              : "Invite a user to your organization and assign their workspace access."}
+          </p>
+
+          <div className="grid grid-cols-1 gap-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Email Address
+              </label>
+              <input
+                disabled={!!editUser}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter user email"
+                className={`h-11 w-full rounded-xl border px-4 text-[15px] outline-none ${
+                  editUser
+                    ? "cursor-not-allowed border-gray-300 bg-gray-100 text-gray-500"
+                    : "border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                }`}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Organization Role
+              </label>
+              <div className="relative">
+                <select
+                  value={orgRole}
+                  onChange={(e) => setOrgRole(e.target.value)}
+                  className="h-11 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 pr-10 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {orgRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-3 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Workspace Access
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Assign this user to one or more workspaces and choose their role
+                  in each.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={addWorkspace}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+              >
+                <Plus size={15} />
+                Add Workspace
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {workspaceAccess.map((ws, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 p-3"
+                >
+                  <div className="relative">
+                    <select
+                      value={ws.workspaceId}
+                      onChange={(e) =>
+                        updateWorkspace(index, "workspaceId", e.target.value)
+                      }
+                      className="h-11 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 pr-10 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Select workspace</option>
+                      {workspaces.map((workspace: any) => {
+                        const isAlreadySelected =
+                          selectedWorkspaceIds.includes(workspace.id) &&
+                          workspace.id !== ws.workspaceId;
+
+                        return (
+                          <option
+                            key={workspace.id}
+                            value={workspace.id}
+                            disabled={isAlreadySelected}
+                          >
+                            {workspace.name}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown
+                      size={18}
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <select
+                      value={ws.role}
+                      onChange={(e) =>
+                        updateWorkspace(index, "role", e.target.value)
+                      }
+                      className="h-11 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 pr-10 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {workspaceRoles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={18}
+                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeWorkspace(index)}
+                    disabled={workspaceAccess.length === 1}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/30 backdrop-blur-[2px] flex justify-center items-start overflow-y-auto px-4 pt-20 pb-10">
@@ -429,6 +640,7 @@ export const OrgUsersSettings = () => {
     updateUser,
   } = useOrganization();
   const { workspaces } = useWorkspace();
+  const isMobile = useIsMobile();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
@@ -530,7 +742,7 @@ export const OrgUsersSettings = () => {
   return (
     <div>
       {/* Header */}
-      <div className="border-b border-gray-200 pb-4 mb-6 flex justify-between items-start">
+      <div className={`mb-6 border-b border-gray-200 pb-4 ${isMobile ? "space-y-4" : "flex items-start justify-between"}`}>
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
             Organization Users
@@ -545,7 +757,7 @@ export const OrgUsersSettings = () => {
             setEditUser(null);
             setInviteOpen(true);
           }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition"
+          className={`flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 ${isMobile ? "w-full" : ""}`}
         >
           <Plus size={16} />
           Invite User
@@ -553,7 +765,7 @@ export const OrgUsersSettings = () => {
       </div>
 
       <div className="mb-4 flex items-center justify-end">
-        <div className="relative w-full max-w-xs">
+        <div className={`relative w-full ${isMobile ? "" : "max-w-xs"}`}>
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={searchDraft}
@@ -578,10 +790,9 @@ export const OrgUsersSettings = () => {
         return (
           <div
             key={user.id}
-            className="flex justify-between items-center border border-gray-200 p-4 rounded-xl hover:bg-gray-50 transition gap-4"
+            className={`rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50 ${isMobile ? "space-y-4" : "flex items-center justify-between gap-4"}`}
           >
-            {/* Left */}
-            <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className="flex min-w-0 items-start gap-3">
               <UserAvatar
                 avatarUrl={user.avatarUrl}
                 firstName={user.firstName}
@@ -638,8 +849,7 @@ export const OrgUsersSettings = () => {
               </div>
             </div>
 
-            {/* Right */}
-            <div className="flex gap-4 items-center shrink-0">
+            <div className={`flex shrink-0 ${isMobile ? "gap-4 border-t border-slate-100 pt-3" : "items-center gap-4"}`}>
               <button
                 className="text-indigo-600 text-sm flex items-center gap-1 hover:underline"
                 onClick={() => {

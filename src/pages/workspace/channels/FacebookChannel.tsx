@@ -446,7 +446,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
 
         <SetupGuide />
 
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-900">Disconnect channel</p>
             <p className="text-xs text-gray-400 mt-0.5">Stops all incoming Messenger messages.</p>
@@ -471,17 +471,17 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
         <p className="text-sm text-gray-400 mt-1">Manage Messenger conversations from your Facebook Business Page.</p>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-6">
         {/* Main card */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex-1">
           {/* Tabs */}
-          <div className="flex border-b border-gray-100">
+          <div className="flex overflow-x-auto border-b border-gray-100">
             {[
               { id: 'meta' as const,        label: 'Connect with Meta' },
               { id: 'credentials' as const, label: 'API Credentials'   },
             ].map(({ id, label }) => (
               <button key={id} onClick={() => { setTab(id); setError(null); }}
-                className={`px-5 py-3.5 text-xs font-semibold border-none cursor-pointer transition-colors relative bg-transparent
+                className={`relative whitespace-nowrap px-5 py-3.5 text-xs font-semibold border-none cursor-pointer transition-colors bg-transparent
                   ${tab === id ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
                 {label}
                 {tab === id && <span className="absolute bottom-0 left-5 right-5 h-px bg-gray-900 block" />}
@@ -570,7 +570,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {CRED_FIELDS.map((field) => {
                     const isPwd = field.type === 'password';
                     const isVisible = showPasswords[field.key];
@@ -607,7 +607,7 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 flex-wrap gap-3">
+                <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   {/* <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
                     <Lock size={10} /> Encrypted at rest
                   </p> */}

@@ -25,6 +25,8 @@ import {
   Users2,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { SettingsLayout } from "../components/settings/SettingsLayout";
+import { organizationSettingsConfig } from "../config/settingsNavigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SectionId =
@@ -510,46 +512,9 @@ export const BillingUsageSection = () => {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export const Organization = () => {
-  const navigate = useNavigate();
   return (
-    <div className="h-full flex overflow-hidden bg-white">
-      {/* Left sidebar */}
-      <aside className="w-56 flex-shrink-0 border-r border-gray-200 overflow-y-auto py-5 px-3">
-        <h1 className="text-sm font-semibold text-gray-900 px-2 mb-4">
-          Organization settings
-        </h1>
-
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="mb-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-2 mb-1">
-              {group.label}
-            </p>
-            {group.items.map((item) => {
-              return (
-                <NavLink
-                  key={item.id}
-                  to={`/organization/${item.id}`}
-                  className={({ isActive }) =>
-                    `w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`
-                  }
-                >
-                  <item.icon size={16} />
-                  {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-        ))}
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-8">
+    <SettingsLayout config={organizationSettingsConfig}>
         <Outlet />
-      </main>
-    </div>
+    </SettingsLayout>
   );
 };

@@ -193,7 +193,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
             {connected.msgs?.toLocaleString()} messages
           </span>
         </div>
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-900">Disconnect channel</p>
             <p className="text-xs text-gray-400 mt-0.5">Stops all incoming website chat messages.</p>
@@ -252,7 +252,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
                   onFocus={() => setDropdown(true)}
                   onBlur={() => setTimeout(() => setDropdown(false), 150)}
                   placeholder={websites.length === 0 ? 'e.g. www.apple.com' : ''}
-                  className="flex-1 min-w-[180px] text-[13px] text-gray-700 placeholder:text-gray-300 outline-none bg-transparent"
+                  className="flex-1 min-w-0 text-[13px] text-gray-700 placeholder:text-gray-300 outline-none bg-transparent sm:min-w-[180px]"
                 />
                 <ChevronDown size={14} className="text-gray-300 shrink-0 ml-auto" />
               </div>
@@ -291,7 +291,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
             {/* Icon picker */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold text-gray-500">Launcher Icon</label>
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
                 {CHAT_ICONS.map((IconFn, i) => (
                   <button
                     key={i}
@@ -316,7 +316,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
                 <Lock size={10} /> Token generated securely on our servers
               </p>
@@ -353,7 +353,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
         <div className="p-6 space-y-5">
 
           {/* Embed code block */}
-          <div className="bg-slate-900 rounded-xl p-4 flex items-start gap-3">
+          <div className="flex flex-col gap-3 rounded-xl bg-slate-900 p-4 sm:flex-row sm:items-start">
             <code className="flex-1 text-xs text-emerald-300 font-mono break-all leading-relaxed">
               {embedCode}
             </code>
@@ -403,7 +403,7 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
             </label>
           </div>
 
-          <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+          <div className="flex flex-col gap-3 border-t border-gray-100 pt-2 sm:flex-row sm:items-center">
             <button
               onClick={() => setStep(1)}
               className="px-5 py-2.5 text-[12px] font-semibold border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors bg-transparent cursor-pointer"
@@ -423,4 +423,3 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
     </div>
   );
 };
-

@@ -1,542 +1,54 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import {
-  Bell,
-  HelpCircle,
-  Volume2,
-  VolumeX,
-  X,
-  Trash2,
-  User,
-  LogOut,
-  Settings,
-  ExternalLink,
-  BookOpen,
-  MessageSquare,
-  CheckSquare,
-  Phone,
-  ChevronDown,
-  Building2,
-  Check,
-  Plus,
-  Key,
-  CircleUserRound,
-  Sparkles,
-  BadgeCheck,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { BadgeCheck, Bell, HelpCircle, Menu } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useNotifications } from "../context/NotificationContext";
-import { useOrganization } from "../context/OrganizationContext";
-import { useWorkspace } from "../context/WorkspaceContext";
-import { AvailabilityStatus } from "../pages/workspace/types";
-import { workspaceApi } from "../lib/workspaceApi";
 import { useGetStarted } from "../context/GetStartedContext";
+import { useNotifications } from "../context/NotificationContext";
+import { useWorkspace } from "../context/WorkspaceContext";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { workspaceApi } from "../lib/workspaceApi";
+import { HelpPanel } from "./topbar/HelpPanel";
+import { NotificationPanel } from "./topbar/NotificationPanel";
+import { UserMenu } from "./topbar/UserMenu";
+import { WorkspaceSwitcher } from "./topbar/WorkspaceSwitcher";
+import { ACTIVITY_STATUSES } from "./topbar/constants";
+import type { ActivityStatusOption } from "./topbar/types";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Workspace Switcher
-// ─────────────────────────────────────────────────────────────────────────────
-interface Workspace {
-  id: string;
-  name: string;
-  plan: string;
-  initial: string;
-  color: string;
+interface TopBarProps {
+  onOpenSidebar?: () => void;
 }
 
-interface Organization {
-  id: string;
-  name: string;
-  workspaces: Workspace[];
-}
-
-const MOCK_ORGS: Organization[] = [
-  {
-    id: "org1",
-    name: "Nirmala’s",
-    workspaces: [
-      {
-        id: "ws1",
-        name: "India Ops",
-        plan: "Growth",
-        initial: "AC",
-        color: "from-blue-500 to-indigo-600",
-      },
-      {
-        id: "ws2",
-        name: "US Ops",
-        plan: "Pro",
-        initial: "AC",
-        color: "from-blue-500 to-indigo-600",
-      },
-    ],
-  },
-  {
-    id: "org2",
-    name: "NA",
-    workspaces: [
-      {
-        id: "ws3",
-        name: "Main Workspace",
-        plan: "Starter",
-        initial: "AC",
-        color: "from-blue-500 to-indigo-600",
-      },
-    ],
-  },
-];
-
-const WorkspaceSwitcher = () => {
-  const [open, setOpen] = useState(false);
-  const { organizations } = useOrganization();
-  const { workspaces, setActiveWorkspaceFunc, activeWorkspace } =
-    useWorkspace();
-  const navigate = useNavigate();
-
-  // const [activeOrg, setActiveOrg] = useState<Organization>(MOCK_ORGS[0]);
-  // const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(
-  //   MOCK_ORGS[0].workspaces[0]
-  // );
-
-  const select = (ws: Workspace) => {
-    setActiveWorkspaceFunc(ws);
-    setOpen(false);
-  };
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 h-9 px-2.5 rounded-lg transition-colors ${
-          open ? "bg-gray-100" : "hover:bg-gray-100"
-        }`}
-      >
-        {/* Workspace avatar */}
-        <div
-          className={`w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold flex-shrink-0`}
-        >
-          {activeWorkspace?.initial || activeWorkspace?.name?.slice(0, 1)}
-        </div>
-
-        <span className="text-sm font-semibold text-gray-800 max-w-[140px] truncate hidden sm:block">
-          {activeWorkspace?.name}
-        </span>
-        <ChevronDown
-          size={14}
-          className={`text-gray-400 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-            <div className="px-3 py-2 border-b border-gray-100">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                Workspaces
-              </p>
-            </div>
-            <div className="p-2 max-h-80 overflow-y-auto">
-              {organizations?.map((org) => (
-                <div key={org.id} className="mb-3">
-                  {/* Organization name */}
-                  <div className="px-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                    {org.name}
-                  </div>
-
-                  {/* Workspaces under org */}
-                  {org.workspaces?.map((ws) => (
-                    <button
-                      key={ws.id}
-                      onClick={() => {
-                        // setActiveOrg(org);
-                        setActiveWorkspaceFunc(ws);
-                        setOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">
-                          {ws.name}
-                        </div>
-                        {/* <div className="text-xs text-gray-400">
-                          {ws.plan} plan
-                        </div> */}
-                      </div>
-
-                      {activeWorkspace.id === ws.id && (
-                        <Check size={14} className="text-indigo-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
-            <div
-              className="border-t border-gray-100 p-1.5"
-              onClick={() => {
-                navigate("/organization/workspaces");
-                setOpen(false);
-              }}
-            >
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                <div className="w-8 h-8 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center flex-shrink-0">
-                  <Plus size={14} className="text-gray-400" />
-                </div>
-                <span className="text-sm text-gray-500 font-medium">
-                  Add workspace
-                </span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Notification panel helpers
-// ─────────────────────────────────────────────────────────────────────────────
-function relativeTime(ts: number): string {
-  const diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Notification Panel (drops down from TopBar)
-// ─────────────────────────────────────────────────────────────────────────────
-interface NotificationPanelProps {
-  onClose: () => void;
-  onNavigateToInbox: (conversationId?: string | null) => void;
-  onOpenPreferences: () => void;
-}
-
-const NotificationPanel = ({
-  onClose,
-  onNavigateToInbox,
-  onOpenPreferences,
-}: NotificationPanelProps) => {
-  const {
-    activeTab,
-    center,
-    setActiveTab,
-    loadTab,
-    updateNotificationState,
-    archiveAll,
-    markAllRead,
-    soundEnabled,
-    toggleSound,
-  } = useNotifications();
-  const items = center[activeTab].items;
-
-  useEffect(() => {
-    if (
-      !center[activeTab].loaded &&
-      !center[activeTab].loading &&
-      !center[activeTab].error
-    ) {
-      void loadTab(activeTab, true);
-    }
-  }, [activeTab, center, loadTab]);
-
-  const getTypeLabel = (type: string) =>
-    type
-      .toLowerCase()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char: string) => char.toUpperCase());
-
-  return (
-    <>
-      <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div
-        className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-20 flex flex-col overflow-hidden"
-        style={{ maxHeight: "480px" }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <Bell size={16} className="text-gray-700" />
-            <span className="text-sm font-semibold text-gray-800">
-              Notifications
-            </span>
-            {items.length > 0 && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
-                {items.length}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleSound}
-              title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            </button>
-            {activeTab === "new" && items.length > 0 && (
-              <button
-                onClick={() => void markAllRead()}
-                title="Mark all read"
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <Check size={14} />
-              </button>
-            )}
-            {items.length > 0 && (
-              <button
-                onClick={() => void archiveAll(activeTab)}
-                title="Archive all"
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-
-        <div className="px-3 pt-2 pb-1 flex items-center gap-1 border-b border-gray-100">
-          {(["new", "archived", "all"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
-                activeTab === tab
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              {tab === "new" ? "New" : tab === "archived" ? "Archived" : "All"}
-            </button>
-          ))}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto">
-          {center[activeTab].loading && items.length === 0 ? (
-            <div className="py-10 text-center text-sm text-gray-500">
-              Loading notifications...
-            </div>
-          ) : center[activeTab].error && items.length === 0 ? (
-            <div className="py-10 px-4 text-center">
-              <p className="text-sm font-medium text-gray-600">
-                Could not load notifications
-              </p>
-              <button
-                onClick={() => void loadTab(activeTab, true)}
-                className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-              >
-                Try again
-              </button>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                <Bell size={20} className="text-gray-400" />
-              </div>
-              <p className="text-sm font-medium text-gray-600">
-                No notifications yet
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {activeTab === "archived"
-                  ? "Archived notifications will show here"
-                  : "New activity will show here"}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {items.map((n) => {
-                return (
-                  <div
-                    key={n.id}
-                    className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group cursor-pointer ${
-                      !n.readAt && !n.archivedAt ? "bg-indigo-50/40" : ""
-                    }`}
-                    onClick={() => {
-                      const conversationId =
-                        typeof n.metadata?.conversationId === "string"
-                          ? n.metadata.conversationId
-                          : null;
-                      if (conversationId) {
-                        onNavigateToInbox(conversationId);
-                        void updateNotificationState(n.id, { read: true });
-                        onClose();
-                      }
-                    }}
-                  >
-                    <div className="flex-shrink-0 mt-0.5">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600">
-                        {getTypeLabel(n.type)}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 leading-tight">
-                        {n.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug">
-                        {n.body}
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {relativeTime(new Date(n.createdAt).getTime())}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      {activeTab === "new" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void updateNotificationState(n.id, { archived: true });
-                          }}
-                          className="text-[11px] text-gray-500 hover:text-gray-700"
-                        >
-                          Archive
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void updateNotificationState(n.id, { read: !!n.readAt ? false : true });
-                        }}
-                        className="text-[11px] text-gray-500 hover:text-gray-700"
-                      >
-                        {n.readAt ? "Unread" : "Read"}
-                      </button>
-                      {n.archivedAt && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void updateNotificationState(n.id, { archived: false });
-                          }}
-                          className="text-[11px] text-gray-500 hover:text-gray-700"
-                        >
-                          Unarchive
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between">
-          <span className="text-xs text-gray-400">
-            {soundEnabled ? "Sound on" : "Sound off"}
-          </span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onOpenPreferences}
-              className="text-xs text-gray-500 hover:text-gray-700 font-medium transition-colors"
-            >
-              Preferences
-            </button>
-            {center[activeTab].nextCursor && (
-              <button
-                onClick={() => void loadTab(activeTab)}
-                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-              >
-                Load more
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Help Panel
-// ─────────────────────────────────────────────────────────────────────────────
-const HelpPanel = ({ onClose }: { onClose: () => void }) => (
-  <>
-    <div className="fixed inset-0 z-10" onClick={onClose} />
-    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100">
-        <span className="text-sm font-semibold text-gray-800">
-          Help & Resources
-        </span>
-      </div>
-      <div className="p-2">
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-        >
-          <BookOpen size={16} className="text-gray-400" />
-          Documentation
-          <ExternalLink size={12} className="ml-auto text-gray-300" />
-        </a>
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-        >
-          <MessageSquare size={16} className="text-gray-400" />
-          Chat with support
-        </a>
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-        >
-          <CheckSquare size={16} className="text-gray-400" />
-          Onboarding checklist
-        </a>
-      </div>
-      <div className="px-4 py-2.5 border-t border-gray-100">
-        <p className="text-xs text-gray-400">Version 1.0.0</p>
-      </div>
-    </div>
-  </>
-);
-
-const STATUSES: { key: string; label: string; color: string }[] = [
-  { key: "online", label: "Online", color: "bg-green-500" },
-  { key: "offline", label: "Offline", color: "bg-gray-400" },
-  { key: "away", label: "Away", color: "bg-yellow-400" },
-  { key: "busy", label: "Busy", color: "bg-orange-500" },
-  { key: "dnd", label: "Do not disturb", color: "bg-red-500" },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TopBar
-// ─────────────────────────────────────────────────────────────────────────────
-export const TopBar = () => {
+export const TopBar = ({ onOpenSidebar }: TopBarProps) => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { workspaceUsers } = useWorkspace();
-  const { unreadCount, browserPermission, requestBrowserPermission } = useNotifications();
-
+  const { unreadCount, browserPermission, requestBrowserPermission } =
+    useNotifications();
   const { dismissed, isComplete, completedCount, totalCount } = useGetStarted();
+
   const showOnboarding = !dismissed && !isComplete;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [activityStatus, setActivityStatus] =
+    useState<ActivityStatusOption | null>(null);
 
-  const [activityStatus, setActivityStatus] = useState<{
-    key: string;
-    label: string;
-    color: string;
-  } | null>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!workspaceUsers || !user) return;
 
-    const currentUser = workspaceUsers.find((u) => u.id === user.id);
+    const currentUser = workspaceUsers.find(
+      (workspaceUser) => workspaceUser.id === user.id,
+    );
 
     if (!currentUser?.activityStatus) return;
 
-    const status = STATUSES.find((s) => s.key === currentUser.activityStatus);
+    const status = ACTIVITY_STATUSES.find(
+      (item) => item.key === currentUser.activityStatus,
+    );
 
     if (status) {
       setActivityStatus(status);
@@ -544,76 +56,91 @@ export const TopBar = () => {
   }, [workspaceUsers, user]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        statusMenuRef.current &&
+        !statusMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusMenu(false);
+      }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
-  const handleLogout = () => {
-    logout();
+
+  const closeUserMenu = useCallback(() => {
+    setShowStatusMenu(false);
     setShowUserMenu(false);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    closeUserMenu();
     navigate("/auth/login");
-  };
+  }, [closeUserMenu, logout, navigate]);
 
   const openNotifications = useCallback(() => {
     if (browserPermission === "default") {
       void requestBrowserPermission();
     }
+
     setShowNotifications(true);
     setShowHelp(false);
-    setShowUserMenu(false);
-  }, [browserPermission, requestBrowserPermission]);
+    closeUserMenu();
+  }, [browserPermission, closeUserMenu, requestBrowserPermission]);
 
-  const handleAvailabilityChange = async (status: any) => {
-    const prev = activityStatus;
-    setActivityStatus(status);
-    try {
-      await workspaceApi.updateAvailability(status.key);
-    } catch {
-      setActivityStatus(prev);
-    }
-  };
+  const handleAvailabilityChange = useCallback(
+    async (status: ActivityStatusOption) => {
+      const previousStatus = activityStatus;
+      setActivityStatus(status);
+
+      try {
+        await workspaceApi.updateAvailability(status.key);
+      } catch {
+        setActivityStatus(previousStatus);
+      }
+    },
+    [activityStatus],
+  );
+
+  const handleStatusSelect = useCallback(
+    (status: ActivityStatusOption) => {
+      setShowStatusMenu(false);
+      void handleAvailabilityChange(status);
+    },
+    [handleAvailabilityChange],
+  );
+
+  const handleUserMenuNavigation = useCallback(
+    (path: string) => {
+      closeUserMenu();
+      navigate(path);
+    },
+    [closeUserMenu, navigate],
+  );
 
   return (
-    <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-      {/* Left — workspace switcher */}
-      <WorkspaceSwitcher />
-
-      {/* Right — action icons */}
-      <div className="flex items-center gap-1">
-        {/* Simulate incoming call (demo) */}
+    <div className="flex min-h-[4rem] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur sm:px-4 md:px-6">
+      <div className="flex min-w-0 items-center gap-2">
         {/* <button
-          onClick={() => simulateIncomingCall()}
-          title="Simulate incoming call (demo)"
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-green-600 transition-colors relative"
+          type="button"
+          onClick={onOpenSidebar}
+          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
+          aria-label="Open navigation"
         >
-          <Phone size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white" />
+          <Menu size={18} />
         </button> */}
-        {/* Center — onboarding CTA */}
+        <WorkspaceSwitcher isMobile={isMobile} />
+      </div>
+
+      <div className="flex items-center gap-1 sm:gap-2">
         {showOnboarding && (
           <button
             onClick={() => navigate("/get-started")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "7px 14px",
-              borderRadius: 999,
-              border: "none",
-              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-              color: "white",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              position: "relative",
-              boxShadow: "0 0 0 0 rgba(99,102,241,0.5)",
-              animation: "topbarPulse 2.5s ease infinite",
-            }}
+            className="hidden min-[390px]:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-500 px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_30px_rgba(99,102,241,0.28)] transition-transform hover:-translate-y-0.5"
+            style={{ animation: "topbarPulse 2.5s ease infinite" }}
           >
-            {/* Animated ring */}
             <style>{`
       @keyframes topbarPulse {
         0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); }
@@ -625,34 +152,25 @@ export const TopBar = () => {
       }
     `}</style>
 
-            <BadgeCheck size={20} style={{ animation: "sparkSpin 3s " }} />
-
-            <span>How to Start ?</span>
-
-            {/* Progress pill */}
-            <span
-              style={{
-                background: "rgba(255,255,255,0.2)",
-                borderRadius: 999,
-                padding: "2px 7px",
-                fontSize: 11,
-                fontWeight: 700,
-                marginLeft: 2,
-              }}
-            >
+            <BadgeCheck
+              size={18}
+              style={{ animation: "sparkSpin 3s linear infinite" }}
+            />
+            <span className="hidden sm:inline">How to Start?</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
               {completedCount}/{totalCount}
             </span>
           </button>
         )}
-        {/* Help */}
+
         <div className="relative">
           <button
             onClick={() => {
-              setShowHelp(!showHelp);
+              setShowHelp((value) => !value);
               setShowNotifications(false);
-              setShowUserMenu(false);
+              closeUserMenu();
             }}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
               showHelp
                 ? "bg-gray-100 text-gray-700"
                 : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -661,14 +179,18 @@ export const TopBar = () => {
           >
             <HelpCircle size={20} />
           </button>
-          {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
+          {showHelp && (
+            <HelpPanel
+              isMobile={isMobile}
+              onClose={() => setShowHelp(false)}
+            />
+          )}
         </div>
 
-        {/* Notifications */}
         <div className="relative">
           <button
             onClick={openNotifications}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative ${
+            className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
               showNotifications
                 ? "bg-gray-100 text-gray-700"
                 : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -677,170 +199,72 @@ export const TopBar = () => {
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+              <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </button>
-          {showNotifications && (
-            <NotificationPanel
-              onClose={() => setShowNotifications(false)}
-              onNavigateToInbox={(conversationId) =>
-                navigate(conversationId ? `/inbox/${conversationId}` : "/inbox")
-              }
-              onOpenPreferences={() => {
-                setShowNotifications(false);
-                navigate("/user/settings/notifications");
-              }}
-            />
-          )}
+          <NotificationPanel
+            open={showNotifications}
+            isMobile={isMobile}
+            onClose={() => setShowNotifications(false)}
+            onNavigateToInbox={(conversationId) =>
+              navigate(conversationId ? `/inbox/${conversationId}` : "/inbox")
+            }
+            onOpenPreferences={() => {
+              setShowNotifications(false);
+              navigate("/user/settings/notifications");
+            }}
+          />
         </div>
 
-        {/* Divider */}
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="mx-1 hidden h-6 w-px bg-gray-200 sm:block" />
 
-        {/* User Avatar */}
         <div className="relative">
           <button
             onClick={() => {
-              setShowUserMenu(!showUserMenu);
+              setShowUserMenu((value) => {
+                const nextValue = !value;
+                if (!nextValue) {
+                  setShowStatusMenu(false);
+                }
+                return nextValue;
+              });
               setShowNotifications(false);
               setShowHelp(false);
             }}
-            className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex h-9 items-center gap-2 rounded-lg px-2 transition-colors hover:bg-gray-100"
             title={user?.firstName || user?.lastName || "User"}
           >
-            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xs font-semibold text-white">
               {user?.avatarUrl && (
                 <img
-                  src={user?.avatarUrl}
-                  alt={"avatar"}
-                  className="w-full rounded-full h-full object-cover"
+                  src={user.avatarUrl}
+                  alt="avatar"
+                  className="h-full w-full rounded-full object-cover"
                 />
               )}
             </div>
-            <span className="text-sm font-medium text-gray-700 hidden md:block max-w-[120px] truncate">
+            <span className="hidden max-w-[120px] truncate text-sm font-medium text-gray-700 md:block">
               {user?.firstName || user?.lastName || user?.email || "User"}
             </span>
           </button>
 
-          {showUserMenu && (
-            <>
-              <div
-                className={`fixed inset-0 z-10 transition-opacity duration-500
-      ${showUserMenu ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-                onClick={() => setShowUserMenu(false)}
-              />
-              <div
-                className={`absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-20
-    transition-all duration-200 origin-top-right
-    ${showUserMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
-              >
-                <div className="p-4 border-b border-gray-100">
-                  <div className="font-semibold text-gray-800">
-                    {user?.firstName ?? "User"}
-                  </div>
-                  <div className="text-sm text-gray-500 truncate">
-                    {user?.email ?? ""}
-                  </div>
-                  <div className="relative" ref={ref}>
-                    <button
-                      onClick={() => setOpen((o) => !o)}
-                      className="flex items-center gap-2 mt-2 group"
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${activityStatus?.color}`}
-                      />
-                      <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
-                        {activityStatus?.label}
-                      </span>
-                      <ChevronDown
-                        size={13}
-                        className={`text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-                      />
-                    </button>
-
-                    <div
-                      className={`absolute top-0 right-full mr-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden
-                                                  transition-all duration-200 origin-top-left
-                                                ${open ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
-                    >
-                      {STATUSES.map((s) => (
-                        <button
-                          key={s.key}
-                          onClick={() => {
-                            handleAvailabilityChange(s);
-                            setOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors"
-                        >
-                          <div
-                            className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color}`}
-                          />
-                          <span className="text-sm text-gray-700 flex-1 text-left">
-                            {s.label}
-                          </span>
-                          {status.key === s.key && (
-                            <Check size={13} className="text-indigo-600" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2">
-                  <button
-                    onClick={() => {
-                      navigate("/user/settings");
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                  >
-                    <CircleUserRound size={16} className="text-gray-400" />
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate("/user/settings/notifications");
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                  >
-                    <Bell size={16} className="text-gray-400" />
-                    Notifications
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate("/auth/reset-password");
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                  >
-                    <Key size={16} className="text-gray-400" />
-                    Reset Password
-                  </button>
-                  {/* <button
-                    onClick={() => {
-                      navigate("/workspace-settings");
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                  >
-                    <Settings size={16} className="text-gray-400" />
-                    Settings
-                  </button> */}
-                  <div className="border-t border-gray-100 my-2" />
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-50 rounded-lg text-sm text-red-600 transition-colors"
-                  >
-                    <LogOut size={16} />
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          <UserMenu
+            open={showUserMenu}
+            isMobile={isMobile}
+            user={user}
+            activityStatus={activityStatus}
+            showStatusMenu={showStatusMenu}
+            statusMenuRef={statusMenuRef}
+            onToggleStatusMenu={() =>
+              setShowStatusMenu((value) => !value)
+            }
+            onSelectStatus={handleStatusSelect}
+            onClose={closeUserMenu}
+            onNavigate={handleUserMenuNavigation}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
     </div>

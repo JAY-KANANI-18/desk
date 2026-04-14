@@ -11,6 +11,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { useChannel } from '../../context/ChannelContext';
 import { useState } from 'react';
 import { ChannelApi } from '../../lib/channelApi';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // ─── Channel metadata ─────────────────────────────────────────────────────────
 const CHANNEL_META: Record<string, {
@@ -187,7 +188,7 @@ const CHANNEL_COMPONENTS: Record<string, React.ComponentType<SetupProps>> = {
   msg91_sms: Msg91SmsChannel,
 };
 
-interface ConnectedChannel {
+export interface ConnectedChannel {
   id: number;
   name: string;
   type: string;
@@ -240,8 +241,9 @@ const GenericSidebar = ({ meta }: { meta: (typeof CHANNEL_META)[string] }) => (
 export const ConnectChannelPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
-  const {activeWorkspace} = useWorkspace();
-  const {refreshChannels} = useChannel()
+  const isMobile = useIsMobile();
+  const { activeWorkspace } = useWorkspace();
+  const { refreshChannels } = useChannel();
  
   const meta = channelId ? CHANNEL_META[channelId] : null;
   const Component = channelId ? CHANNEL_COMPONENTS[channelId] : null;
@@ -264,71 +266,66 @@ export const ConnectChannelPage = () => {
     );
   }
 
-  const handleConnect = async (wsChannel: WsChannel) => {
-    const connected: ConnectedChannel = {
-      id: wsChannel.id,
-      name: wsChannel.name,
-      type: meta.name,
-      identifier: wsChannel.identifier,
-      status: wsChannel.status as 'Connected' | 'Error' | 'Disconnected',
-      icon: wsChannel.icon,
-      color: wsChannel.color,
-      msgs: wsChannel.msgs,
-      connectedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    };
-   await refreshChannels()
+  const handleConnect = async (_wsChannel: WsChannel) => {
+    await refreshChannels();
     navigate('/channels');
   };
 
   const SidebarContent = meta.SidebarContent;
+  const renderSidebarPanel = () =>
+    SidebarContent ? <SidebarContent /> : <GenericSidebar meta={meta} />;
 
   return (
-    <div className="h-full flex flex-col bg-white overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+      <div className="border-b border-gray-100 bg-white px-4 py-3 md:px-6 md:py-4">
+        <div className="flex items-start gap-3 md:items-center">
+          <button
+            onClick={() => navigate('/channels/connect')}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-900"
+            type="button"
+          >
+            <ArrowLeft size={16} />
+          </button>
 
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-white shrink-0">
-  <button
-  onClick={() => navigate('/channels/connect')}
-  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all border-none bg-transparent cursor-pointer"
->
-  <ArrowLeft size={15} />
-  <span className="font-medium">Back</span>
-</button>
-        {/* <div className={`w-8 h-8 ${meta.color} rounded-lg flex items-center justify-center shrink-0`}>
-          <img
-            src={`https://cdn.simpleicons.org/${meta.icon}/white`}
-            className="w-4 h-4"
-          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400 md:hidden">
+              Channel Setup
+            </p>
+            <h1 className="truncate text-base font-semibold text-gray-900 md:text-lg">
+              Connect {meta.name}
+            </h1>
+            <p className="mt-0.5 text-xs text-gray-500 md:text-sm">
+              {meta.description}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 leading-none">Connect {meta.name}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">{meta.description}</p>
-        </div> */}
       </div>
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 px-6 py-2 border-b border-gray-100 bg-white shrink-0">
+      <div className="hidden items-center gap-1.5 border-b border-gray-100 bg-white px-6 py-2 md:flex">
         <button
           onClick={() => navigate('/channels/connect')}
-          className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors border-none bg-transparent cursor-pointer p-0 font-medium"
+          className="border-none bg-transparent p-0 text-[11px] font-medium text-gray-400 transition-colors hover:text-gray-700"
+          type="button"
         >
           Channels
         </button>
-        <span className="text-gray-300 text-[11px]">/</span>
+        <span className="text-[11px] text-gray-300">/</span>
         <span className="text-[11px] font-medium text-gray-600">{meta.name}</span>
       </div>
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* Sidebar */}
-        <aside className="w-60 border-r border-gray-100 overflow-y-auto shrink-0 bg-white">
-          {SidebarContent ? <SidebarContent /> : <GenericSidebar meta={meta} />}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+        <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-gray-100 bg-white md:block">
+          {renderSidebarPanel()}
         </aside>
 
-        {/* Main */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="p-8 ">
+        <main className="min-w-0 flex-1 overflow-y-auto bg-gray-50">
+          <div className="mx-auto w-full max-w-5xl px-4 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
+            {isMobile ? (
+              <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                {renderSidebarPanel()}
+              </div>
+            ) : null}
+
             <Component
               workspaceId={activeWorkspace?.id ?? ''}
               connected={null}
@@ -336,13 +333,6 @@ export const ConnectChannelPage = () => {
               onDisconnect={() => navigate('/channels')}
             />
           </div>
-          {/* <div className="border-t border-gray-100 py-4 text-center">
-            <p className="text-[11px] text-gray-400">
-              Visit our{' '}
-              <a href="#" className="text-gray-600 hover:text-gray-900 underline transition-colors">Help Center</a>
-              {' '}if you need step-by-step guidance.
-            </p>
-          </div> */}
         </main>
       </div>
     </div>

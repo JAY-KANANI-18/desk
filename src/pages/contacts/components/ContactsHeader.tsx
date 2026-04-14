@@ -1,4 +1,6 @@
 import { AlertCircle, CheckCircle2, MoreVertical, Plus, Search, X } from "lucide-react";
+import { MobileSheet } from "../../../components/topbar/MobileSheet";
+import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { ContactsToast, SortOption } from "../types";
 
 interface ContactsHeaderProps {
@@ -38,6 +40,42 @@ export function ContactsHeader({
   onOpenImportJobs,
   onNewContact,
 }: ContactsHeaderProps) {
+  const isMobile = useIsMobile();
+
+  const closeActionsMenu = () => setShowActionsMenu(false);
+
+  const actionItems = (
+    <>
+      <button
+        onClick={() => {
+          closeActionsMenu();
+          onOpenImport();
+        }}
+        className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50"
+      >
+        Import
+      </button>
+      <button
+        onClick={() => {
+          closeActionsMenu();
+          onExport();
+        }}
+        className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50"
+      >
+        Export
+      </button>
+      <button
+        onClick={() => {
+          closeActionsMenu();
+          onOpenImportJobs();
+        }}
+        className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50"
+      >
+        Import Process
+      </button>
+    </>
+  );
+
   return (
     <div className="border-b border-gray-200 bg-white p-3 md:p-4">
       {toast && (
@@ -56,7 +94,7 @@ export function ContactsHeader({
         </div>
       )}
 
-      <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center md:gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
         <div className="relative w-full md:w-72 lg:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
@@ -76,55 +114,31 @@ export function ContactsHeader({
           )}
         </div>
 
-        <div className="relative ml-auto">
+        <div className="grid grid-cols-[68px_1fr] gap-2 md:ml-auto md:flex md:items-center">
+          <div className="relative md:flex-none">
+            <button
+              onClick={() => setShowActionsMenu((prev) => !prev)}
+              className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-gray-700 transition-colors hover:bg-gray-50 md:w-auto"
+              aria-label="Open contact actions"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {!isMobile && showActionsMenu && (
+              <div className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                {actionItems}
+              </div>
+            )}
+          </div>
+
           <button
-            onClick={() => setShowActionsMenu((prev) => !prev)}
-            className="flex items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-gray-700 transition-colors hover:bg-gray-50"
-            aria-label="Open contact actions"
+            onClick={onNewContact}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm text-white transition-colors hover:bg-indigo-700"
           >
-            <MoreVertical size={16} />
+            <Plus size={15} />
+            <span>{isMobile ? "New Contact" : "New Contact"}</span>
           </button>
-
-          {showActionsMenu && (
-            <div className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-              <button
-                onClick={() => {
-                  setShowActionsMenu(false);
-                  onOpenImport();
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Import
-              </button>
-              <button
-                onClick={() => {
-                  setShowActionsMenu(false);
-                  onExport();
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Export
-              </button>
-              <button
-                onClick={() => {
-                  setShowActionsMenu(false);
-                  onOpenImportJobs();
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Import Process
-              </button>
-            </div>
-          )}
         </div>
-
-        <button
-          onClick={onNewContact}
-          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white transition-colors hover:bg-indigo-700"
-        >
-          <Plus size={15} />
-          <span>New Contact</span>
-        </button>
       </div>
 
       {(selectedLifecycle || sortOption) && (
@@ -146,11 +160,34 @@ export function ContactsHeader({
               </button>
             </span>
           )}
-          <span className="ml-auto text-xs text-gray-400">
+          <span className="w-full text-xs text-gray-400 md:ml-auto md:w-auto">
             {contactsCount} on this page of {totalContacts} contacts
           </span>
         </div>
       )}
+
+      {isMobile && showActionsMenu ? (
+        <MobileSheet
+          open={showActionsMenu}
+          onClose={closeActionsMenu}
+          title={
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Contacts
+              </p>
+              <h2 className="mt-1 text-base font-semibold text-slate-900">
+                Actions
+              </h2>
+            </div>
+          }
+        >
+          <div className="p-4">
+            <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+              {actionItems}
+            </div>
+          </div>
+        </MobileSheet>
+      ) : null}
     </div>
   );
 }

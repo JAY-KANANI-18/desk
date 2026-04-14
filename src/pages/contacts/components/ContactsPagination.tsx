@@ -37,12 +37,12 @@ export function ContactsPagination({
   const paginationItems = buildPagination(currentPage, totalPages);
 
   return (
-    <div className="sticky bottom-0 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 text-sm">
+    <div className="sticky bottom-0 flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 text-sm md:flex-row md:items-center md:justify-between">
       <span className="text-xs text-gray-500">
         Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min((currentPage - 1) * PAGE_SIZE + visibleCount, totalContacts)} of{" "}
         {totalContacts} contacts
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
           disabled={currentPage === 1}

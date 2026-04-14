@@ -174,9 +174,9 @@ function SectionCard({
 }) {
   return (
     <div
-      className={`bg-white rounded-xl border  flex flex-col ${className}`}
+      className={`flex flex-col rounded-2xl border border-slate-200 bg-white ${className}`}
     >
-      <div className="flex items-center justify-between px-4 py-3  flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-5">
         <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
         {rightSlot}
       </div>
@@ -352,21 +352,25 @@ export const Dashboard = () => {
     return !dismissed.has(key);
   });
 
+  const updatedLabel = timeAgo(lastUpdated.toISOString());
+  const lastUpdatedLabel =
+    updatedLabel === "now"
+      ? "Last updated just now"
+      : `Last updated ${updatedLabel} ago`;
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col bg-white overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-white border-b flex-shrink-0">
+      <div className="flex flex-shrink-0 flex-col gap-3 border-b bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <h1 className="text-sm font-semibold text-gray-900">Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">
-            Last updated {timeAgo(lastUpdated.toISOString())} ago
-          </span>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <span className="text-xs text-gray-400">{lastUpdatedLabel}</span>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
           >
             <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
             Refresh
@@ -375,10 +379,10 @@ export const Dashboard = () => {
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
         {/* ── Lifecycle — single horizontal row ────────────────────── */}
         <SectionCard title="Lifecycle">
-          <div className="overflow-x-auto px-4 py-3 scrollbar-thin scrollbar-thumb-gray-200">
+          <div className="overflow-x-auto px-3 py-3 scrollbar-thin scrollbar-thumb-gray-200 sm:px-4">
             <div className="flex gap-3" style={{ minWidth: "max-content" }}>
               {(lifecycle?.stages ?? []).length === 0 ? (
                 <p className="text-xs text-gray-400 py-2">
@@ -389,11 +393,11 @@ export const Dashboard = () => {
                   <button
                     key={stage.id}
                     onClick={() => navigate(`/contacts?lifecycle=${stage.id}`)}
-                    className="w-56 flex-shrink-0 flex flex-col gap-2 p-3.5 rounded-xl border   hover:bg-indigo-50 hover:border-indigo-200 transition-all text-left group"
+                    className="flex w-[13rem] flex-shrink-0 flex-col gap-2 rounded-2xl border border-slate-200 p-3.5 text-left transition-all hover:border-indigo-200 hover:bg-indigo-50 sm:w-56"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-lg">{stage.emoji}</span>
-                      <span className="text-[10px] font-medium text-gray-400 group-hover:text-indigo-500">
+                      <span className="text-[10px] font-medium text-gray-400">
                         {stage.percent}%
                       </span>
                     </div>
@@ -416,9 +420,9 @@ export const Dashboard = () => {
         {/* ── Middle row: Contacts + Members ───────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Contacts */}
-          <SectionCard title="Contacts" className="h-[420px]">
+          <SectionCard title="Contacts" className="min-h-[360px] lg:h-[420px]">
             {/* Tabs */}
-            <div className="flex border-b border-gray-100 flex-shrink-0">
+            <div className="flex flex-shrink-0 overflow-x-auto border-b border-gray-100">
               {(
                 [
                   { key: "open", label: "Open", count: contactCounts.open },
@@ -437,7 +441,7 @@ export const Dashboard = () => {
                 <button
                   key={t.key}
                   onClick={() => setContactTab(t.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+                  className={`flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
                     contactTab === t.key
                       ? "border-indigo-600 text-indigo-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
@@ -476,8 +480,6 @@ export const Dashboard = () => {
                         (u: any) => u.id === conv.assigneeId,
                       )
                     : null;
-                    console.log({conv});
-                    
                   const preview = previewMessage(conv.conversation);
                   return (
                     <div
@@ -590,7 +592,7 @@ export const Dashboard = () => {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-100 px-3 py-2 sm:px-4">
               <button
                 onClick={contactPrevPage}
                 disabled={!hasPrevContact || contactLoading}
@@ -611,7 +613,7 @@ export const Dashboard = () => {
           {/* Team Members */}
           <SectionCard
             title="Team Members"
-            className="h-[420px]"
+            className="min-h-[360px] lg:h-[420px]"
             rightSlot={
               <select
                 value={memberFilter}
@@ -689,7 +691,7 @@ export const Dashboard = () => {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-100 px-3 py-2 sm:px-4">
               <button
                 onClick={() => setMemberPage((p) => Math.max(1, p - 1))}
                 disabled={memberPage <= 1 || memberLoading}
@@ -718,7 +720,10 @@ export const Dashboard = () => {
           <SectionCard title="Merge Suggestions">
             <div className="divide-y divide-gray-50">
               {visibleSuggestions.map((s, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <div
+                  key={i}
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center"
+                >
                   {/* Contact 1 */}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className="relative">
@@ -767,7 +772,7 @@ export const Dashboard = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0 sm:ml-auto">
                     <button
                       onClick={() => handleMerge(s)}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"

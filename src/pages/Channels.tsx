@@ -1,18 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Search,
-  Plus,
-  Settings,
-  Globe,
-  Plug,
-  Loader2,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Plus, Settings, Globe, Plug, Loader2 } from "lucide-react";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";
+import { useIsMobile } from "../hooks/useIsMobile";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface ConnectedChannel {
   id: number;
   name: string;
@@ -25,7 +18,7 @@ interface ConnectedChannel {
   connectedAt: string;
 }
 
-interface CatalogChannel {
+export interface CatalogChannel {
   id: string;
   name: string;
   description: string;
@@ -36,7 +29,6 @@ interface CatalogChannel {
   category: string;
 }
 
-// ─── Connected Channels View ──────────────────────────────────────────────────
 const ConnectedChannelsView = ({
   loading,
   channels,
@@ -59,6 +51,7 @@ const ConnectedChannelsView = ({
   onPageChange: (page: number) => void;
   onConnectNew: () => void;
 }) => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const handleManage = (ch: ConnectedChannel) => {
@@ -66,114 +59,138 @@ const ConnectedChannelsView = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto  space-y-5">
-      <div className="bg-white overflow-hidden px-3 py-3 ">
-        <div className=" flex justify-between px-6 py-4  border-gray-100">
-          <div className="flex justify-center items-center gap-4">
-            <div>
-              <Plug size={20} />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                Connected Channels
-              </h1>
-              {/* <p className="text-sm text-gray-500 mt-0.5">
-                Discover and connect new messaging channels to your workspace.
-              </p> */}
-            </div>
+    <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+      <div className="px-4 py-4 md:px-6">
+        <div className="flex items-start gap-3">
+          <div className="pt-1 text-slate-700">
+            <Plug size={20} />
           </div>
-          <div className="flex justify-end">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-gray-900 md:text-xl">
+              Connected Channels
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage every connected inbox and entry point from one place.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
+          <div className="relative w-full md:max-w-sm">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search channels..."
+              className="w-full rounded-xl border border-gray-300 py-2.5 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="flex w-full justify-end md:w-auto">
             <button
               onClick={onConnectNew}
-              className="group relative px-4 py-2 rounded-xl text-sm font-medium border flex items-center justify-center gap-1.5 transition-all duration-300 overflow-hidden text-sm flex items-center gap-1 bg-indigo-600 text-white"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 md:w-auto"
             >
               <Plus size={14} />
               Add Channel
             </button>
           </div>
         </div>
-        <div className="px-6 pb-2">
-          <div className="relative max-w-xs">
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search channels..."
-              className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20 text-gray-500">
-              <Loader2 className="animate-spin mr-2" size={18} />
-              Loading channels...
+            <Loader2 className="mr-2 animate-spin" size={18} />
+            Loading channels...
+          </div>
+        ) : channels.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
+              <Globe size={28} className="text-gray-400" />
             </div>
+            <p className="text-base font-medium text-gray-700">
+              No channels connected yet
+            </p>
+            <p className="mb-4 mt-1 text-sm text-gray-500">
+              Connect your first channel to start receiving messages.
+            </p>
+            <button
+              onClick={onConnectNew}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              <Plus size={15} /> Connect a channel
+            </button>
+          </div>
         ) : (
-          <>
-            {" "}
-            {channels.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                  <Globe size={28} className="text-gray-400" />
+          <div className="grid grid-cols-1 gap-4 py-4 sm:grid-cols-2 xl:grid-cols-3">
+            {channels.map((ch) => (
+              <div
+                key={ch.id}
+                className={`rounded-[24px] border border-gray-200 bg-white p-4 transition-all hover:border-gray-300 hover:shadow-sm ${
+                  isMobile ? "space-y-4" : "space-y-5"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
+                    <img
+                      src={channelConfig[ch.type]?.icon}
+                      className="h-10 w-10 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold text-gray-900">
+                      {ch.name}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-gray-500">
+                      {channelConfig[ch.type]?.label} � {ch.identifier}
+                    </p>
+                    <div
+                      className={`mt-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                        ch.status === "Connected"
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : ch.status === "Error"
+                            ? "border border-amber-200 bg-amber-50 text-amber-700"
+                            : "border border-slate-200 bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {ch.status}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-base font-medium text-gray-700">
-                  No channels connected yet
-                </p>
-                <p className="text-sm text-gray-500 mt-1 mb-4">
-                  Connect your first channel to start receiving messages.
-                </p>
+
+                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500">
+                  <div>
+                    <p>Messages</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {ch.msgs}
+                    </p>
+                  </div>
+                  <div>
+                    <p>Connected</p>
+                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                      {ch.connectedAt}
+                    </p>
+                  </div>
+                </div>
+
                 <button
-                  onClick={onConnectNew}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+                  onClick={() => handleManage(ch)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:bg-indigo-600 hover:text-white"
                 >
-                  <Plus size={15} /> Connect a channel
+                  <Settings size={14} />
+                  Manage
                 </button>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-                {channels.map((ch) => (
-                  <div
-                    key={ch.id}
-                    className="relative flex flex-col gap-10 p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all group bg-white"
-                  >
-                    {/* Header row: name + status + menu */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center flex-shrink-0">
-                          <img
-                            src={channelConfig[ch.type]?.icon}
-                            className="w-10 h-10 object-contain"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {ch.name}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate mt-0.5">
-                            {channelConfig[ch.type]?.label} · {ch.identifier}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Manage button */}
-                    <button
-                      onClick={() => handleManage(ch)}
-                      className="flex items-center justify-center  gap-1.5 w-full px-3 py-1.5 border border-indigo-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-300 transition-colors "
-                    >
-                      <Settings size={13} />
-                      Manage
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
+
         <ListPagination
           page={pagination.page}
           totalPages={pagination.totalPages}
@@ -183,13 +200,10 @@ const ConnectedChannelsView = ({
           onPageChange={onPageChange}
         />
       </div>
-
-      {/* Connect new channel CTA */}
     </div>
   );
 };
 
-// ─── Main Export ──────────────────────────────────────────────────────────────
 export const Channels = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<ConnectedChannel[]>([]);
@@ -250,28 +264,6 @@ export const Channels = () => {
     };
   }, [page, search]);
 
-  // Pick up newly connected channel coming back from a connect page
-  // useEffect(() => {
-  //   const state = location.state as {
-  //     newChannel?: ConnectedChannel;
-  //     disconnectedId?: number;
-  //   } | null;
-  //   if (state?.newChannel) {
-  //     setChannels((prev) => {
-  //       const filtered = prev.filter((c) => c.id !== state.newChannel!.id);
-  //       return [...filtered, state.newChannel!];
-  //     });
-  //     window.history.replaceState({}, "");
-  //   }
-  //   if (state?.disconnectedId) {
-  //     setChannels((prev) => prev.filter((c) => c.id !== state.disconnectedId));
-  //     window.history.replaceState({}, "");
-  //   }
-  // }, [location.state]);
-
-  // const handleChannelConnected = (ch: ConnectedChannel) => {
-  //   setChannels((prev) => [...prev.filter((c) => c.id !== ch.id), ch]);
-  // };
   return (
     <ConnectedChannelsView
       channels={channels}

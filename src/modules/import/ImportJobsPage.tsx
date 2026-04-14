@@ -25,7 +25,7 @@ export default function ImportJobsPage() {
   }, []);
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-5.5rem)] max-w-7xl flex-col overflow-hidden px-6 py-6">
+    <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
       <button
         type="button"
         onClick={() => navigate("/contacts")}
@@ -35,13 +35,13 @@ export default function ImportJobsPage() {
         Back
       </button>
 
-      <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm lg:flex-row lg:items-start lg:justify-between">
-        <div>
+      <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
             <BriefcaseBusiness size={14} />
             Background imports
           </div>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900">
+          <h1 className="mt-3 text-xl font-semibold text-gray-900 sm:text-2xl">
             Import Process
           </h1>
           <p className="mt-2 text-sm text-gray-500">
@@ -49,18 +49,18 @@ export default function ImportJobsPage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => navigate("/contacts/import")}
-            className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
           >
             Go to import
           </button>
           <button
             type="button"
             onClick={() => loadJobs().catch(() => setJobs([]))}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
           >
             {loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
             Refresh
@@ -69,7 +69,7 @@ export default function ImportJobsPage() {
       </div>
 
       <div className="mt-4 min-h-0 flex-1 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-        <div className="grid grid-cols-[1.2fr_140px_120px_160px_120px] bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="grid min-w-[760px] grid-cols-[minmax(220px,1.2fr)_140px_120px_160px_120px] bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
           <div>Job</div>
           <div>Status</div>
           <div>Progress</div>
@@ -77,7 +77,7 @@ export default function ImportJobsPage() {
           <div className="text-right">Action</div>
         </div>
 
-        <div className="min-h-0 overflow-y-auto">
+        <div className="min-h-0 overflow-x-auto overflow-y-auto">
           {loading ? (
             <div className="flex h-40 items-center justify-center text-sm text-gray-500">
               <Loader2 size={18} className="mr-2 animate-spin" />
@@ -96,7 +96,7 @@ export default function ImportJobsPage() {
             jobs.map((job) => (
               <div
                 key={job.id}
-                className="grid grid-cols-[1.2fr_140px_120px_160px_120px] items-center border-t border-gray-100 px-5 py-4 text-sm"
+                className="grid min-w-[760px] grid-cols-[minmax(220px,1.2fr)_140px_120px_160px_120px] items-center border-t border-gray-100 px-5 py-4 text-sm"
               >
                 <div>
                   <div className="font-medium text-gray-900">{job.type}</div>

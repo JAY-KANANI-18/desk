@@ -604,11 +604,14 @@ function MergeModal({
 export function ContactSidebarHybrid({
   selectedConversation,
   contactDetails,
+  mode = 'desktop',
 }: {
   selectedConversation: Conversation;
   contactDetails: Contact | null;
+  mode?: 'desktop' | 'mobile';
 }) {
   const { convList, refreshContact, refreshConversations, selectConversation } = useInbox();
+  const isMobileMode = mode === 'mobile';
   const [activeField, setActiveField] = useState<string | null>(null);
   const [duplicateSuggestions, setDuplicateSuggestions] = useState<ContactDuplicateSuggestion[]>([]);
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null);
@@ -917,11 +920,17 @@ export function ContactSidebarHybrid({
     onActivate: setActiveField,
     onDeactivate: () => setActiveField(null),
   };
+  const containerClassName = isMobileMode
+    ? 'flex min-h-0 flex-1 flex-col overflow-y-auto bg-white'
+    : 'hidden xl:flex flex-col w-[248px] bg-white border-l overflow-y-auto flex-shrink-0';
+  const loadingClassName = isMobileMode
+    ? 'flex min-h-[18rem] flex-col bg-white'
+    : 'hidden xl:flex flex-col w-[248px] bg-white border-l flex-shrink-0';
 
   if (!contactDetails || contactLoading) {
     return (
       <div
-        className="hidden xl:flex flex-col w-[248px] bg-white border-l flex-shrink-0"
+        className={loadingClassName}
         style={{ borderColor: '#edf0f8', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}
       >
         <div className="flex flex-1 items-center justify-center px-6">
@@ -942,7 +951,7 @@ export function ContactSidebarHybrid({
   return (
     <>
       <div
-        className="hidden xl:flex flex-col w-[248px] bg-white border-l overflow-y-auto flex-shrink-0"
+        className={containerClassName}
         style={{ borderColor: '#edf0f8', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}
       >
         <div className="relative flex flex-col items-center pt-8 pb-5 px-5">

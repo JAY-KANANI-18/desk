@@ -49,7 +49,7 @@ export const WebsiteChatConfiguration = ({
         </div>
         <div className="px-5 py-4">
           <p className="text-xs text-slate-500 mb-3">Add this script to the <code className="bg-slate-100 px-1 rounded text-xs">&lt;head&gt;</code> of every page where you want the chat widget to appear.</p>
-          <div className="bg-slate-900 rounded-xl p-4 flex items-start gap-3">
+          <div className="flex flex-col gap-3 rounded-xl bg-slate-900 p-4 sm:flex-row sm:items-start">
             <code className="flex-1 text-xs text-emerald-300 font-mono break-all leading-relaxed">{scriptTag}</code>
             <button onClick={copy}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>
@@ -68,7 +68,7 @@ export const WebsiteChatConfiguration = ({
         <div className="space-y-4">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Primary Color</label>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
                 className="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer p-1" />
               <input value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
@@ -77,7 +77,7 @@ export const WebsiteChatConfiguration = ({
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-600">Widget Position</label>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {(['bottom-right', 'bottom-left'] as const).map(pos => (
                 <label key={pos} className="flex items-center gap-2 cursor-pointer">
                   <div onClick={() => setPosition(pos)}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 
+import { MobileSheet } from "../../../components/topbar/MobileSheet";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 import { organizationApi } from "../../../lib/organizationApi";
 import { WsGuard } from "../../../context/AuthorizationContext";
+import { useIsMobile } from "../../../hooks/useIsMobile";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { ListPagination } from "../../../components/ui/ListPagination";
 
@@ -34,6 +36,7 @@ const InviteUserModal = ({
   onClose: () => void;
   onInvite: (payload: { email: string; role: string }) => Promise<void>;
 }) => {
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("WS_AGENT");
   const [loading, setLoading] = useState(false);
@@ -63,6 +66,86 @@ const InviteUserModal = ({
       setLoading(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={open}
+        onClose={onClose}
+        title={
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Workspace Users
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-slate-900">
+              Invite User
+            </h2>
+          </div>
+        }
+        footer={
+          <div className="flex flex-col-reverse gap-3">
+            <button
+              onClick={onClose}
+              className="rounded-xl px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleInvite}
+              disabled={!email.trim() || loading}
+              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Inviting..." : "Invite"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-6 p-4">
+          <p className="text-[15px] leading-7 text-gray-600">
+            Invite a user to this workspace by email and assign their access
+            level.
+          </p>
+
+          <div className="grid grid-cols-1 gap-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="Enter user email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Access Level
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {workspaceRoles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-[15px] text-gray-500">
+            Agents only have access to Messages within the workspace.
+          </p>
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/30 backdrop-blur-[2px] flex justify-center items-start overflow-y-auto px-4 pt-24 pb-10">
@@ -170,6 +253,7 @@ const EditWorkspaceUserModal = ({
     };
   }) => Promise<void>;
 }) => {
+  const isMobile = useIsMobile();
   const [role, setRole] = useState("WS_AGENT");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -222,6 +306,108 @@ const EditWorkspaceUserModal = ({
       setLoading(false);
     }
   };
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={open}
+        onClose={onClose}
+        title={
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Workspace Users
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-slate-900">
+              Edit User
+            </h2>
+          </div>
+        }
+        footer={
+          <div className="flex flex-col-reverse gap-3">
+            <button className="text-sm font-medium text-indigo-600 hover:underline">
+              Learn more
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-xl px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleUpdate}
+              disabled={loading}
+              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {loading ? "Updating..." : "Update"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-6 p-4">
+          <div className="flex items-center gap-4">
+            <UserAvatar
+              avatarUrl={editUser.avatarUrl}
+              firstName={editUser.firstName}
+              lastName={editUser.lastName}
+              email={editUser.email}
+              size="lg"
+            />
+
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-gray-900">
+                {[editUser.firstName, editUser.lastName]
+                  .filter(Boolean)
+                  .join(" ") || editUser.email}
+              </p>
+              <p className="truncate text-sm text-gray-500">{editUser.email}</p>
+            </div>
+          </div>
+
+          <p className="text-[15px] leading-7 text-gray-600">
+            To edit this user select a new access level and click{" "}
+            <span className="font-medium text-gray-800">"Update"</span>. The
+            Access Level defines what the user can do on the workspace.
+          </p>
+
+          <div className="grid grid-cols-1 gap-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Email Address
+              </label>
+              <input
+                disabled
+                value={editUser.email || ""}
+                className="h-11 w-full cursor-not-allowed rounded-xl border border-gray-300 bg-gray-100 px-4 text-[15px] text-gray-500 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-500">
+                Access Level
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {workspaceRoles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-[15px] text-gray-500">
+            Agents only have access to Messages within the workspace. Optionally
+            you can limit the visibility on Contacts.
+          </p>
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/30 backdrop-blur-[2px] flex justify-center items-start overflow-y-auto px-4 pt-24 pb-10">
@@ -465,6 +651,7 @@ const EditWorkspaceUserModal = ({
 ========================= */
 export const WorkspaceUsers = () => {
   const { refreshWorkspaceUsers, inviteUser, updateUser } = useWorkspace();
+  const isMobile = useIsMobile();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -561,7 +748,7 @@ export const WorkspaceUsers = () => {
   return (
     <div className="">
       {/* Top */}
-      <div className="flex justify-between items-center mb-6">
+      <div className={`mb-6 ${isMobile ? "space-y-4" : "flex items-center justify-between"}`}>
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -572,7 +759,7 @@ export const WorkspaceUsers = () => {
         <WsGuard permission="ws:settings:manage">
           <button
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition"
+            className={`flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 ${isMobile ? "w-full" : ""}`}
           >
             <Plus size={16} />
             Invite User
@@ -581,7 +768,7 @@ export const WorkspaceUsers = () => {
       </div>
 
       <div className="mb-4 flex items-center justify-end">
-        <div className="relative w-full max-w-xs">
+        <div className={`relative w-full ${isMobile ? "" : "max-w-xs"}`}>
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={searchDraft}
@@ -602,10 +789,9 @@ export const WorkspaceUsers = () => {
     users.map((user: any) => (
       <div
         key={user.id}
-        className="flex justify-between items-center border border-gray-200 p-4 rounded-xl hover:bg-gray-50 transition gap-4"
+        className={`rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50 ${isMobile ? "space-y-4" : "flex items-center justify-between gap-4"}`}
       >
-        {/* Left */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex min-w-0 items-center gap-3">
           <UserAvatar
             avatarUrl={user.avatarUrl}
             firstName={user.firstName}
@@ -638,8 +824,7 @@ export const WorkspaceUsers = () => {
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex gap-4 items-center shrink-0">
+        <div className={`flex shrink-0 ${isMobile ? "gap-4 border-t border-slate-100 pt-3" : "items-center gap-4"}`}>
           <button
             onClick={() => {
               setEditUser(user);

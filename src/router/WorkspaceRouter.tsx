@@ -1,6 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { Layout } from "../components/Layout";
+import { SettingsIndexRedirect } from "../components/settings/navigation";
+import {
+  organizationSettingsConfig,
+  reportsSettingsConfig,
+  userSettingsConfig,
+  workspaceSettingsConfig,
+} from "../config/settingsNavigation";
 import { AppSitemap } from "../pages/AppSitemap";
 import { ResetPassword } from "../pages/auth/ResetPassword";
 import { Billing } from "../pages/Billing";
@@ -12,7 +19,7 @@ import { ManageChannelPage } from "../pages/channels/ManageChannelPage";
 import { ChannelCatalogView } from "../pages/ConnectChannel";
 import { Contacts } from "../pages/Contacts";
 import ImportContactsPage from "../modules/import/ImportContactsPage";
-import ImportJobsPage from "../modules/import/ImportJobsPage";
+import ImportJobsPage from "../modules/import/ImportJobsPageResponsive";
 import { Dashboard } from "../pages/Dashboard";
 import { InboxLayout, InboxPage } from "../pages/Inbox";
 import InstagramCallback from "../pages/InstagramCallback";
@@ -22,7 +29,11 @@ import { GeneralOrgInfo } from "../pages/organization/GeneralOrgInfo";
 import { OrgUsersSettings } from "../pages/organization/OrgUsersSettings";
 import { WhatsAppFees } from "../pages/organization/WhatsAppFees";
 import { WorkspacesManage } from "../pages/organization/WorkspacesManage";
-import { Reports } from "../pages/Reports";
+import { ContactsReportSection } from "../pages/reports/ContactsReportSection";
+import { ConversationsReportSection } from "../pages/reports/ConversationsReportSection";
+import { LifecycleReportSection } from "../pages/reports/LifecycleReportSection";
+import { MessagesReportSection } from "../pages/reports/MessagesReportSection";
+import { ReportsLayout } from "../pages/reports/ReportsLayout";
 import { TemplateGallery } from "../pages/workflow/TemplateGallery";
 import { WorkflowCanvas } from "../pages/workflow/WorkflowCanvas";
 import { WorkflowList } from "../pages/workflow/WorkflowList";
@@ -157,10 +168,22 @@ export const WorkspaceRouter = () => {
           path="reports"
           element={
             <ProtectedRoute ws="ws:reports:view">
-              <Reports />
+              <ReportsLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route
+            index
+            element={<SettingsIndexRedirect config={reportsSettingsConfig} />}
+          />
+          <Route path="messages" element={<MessagesReportSection />} />
+          <Route
+            path="conversations"
+            element={<ConversationsReportSection />}
+          />
+          <Route path="contacts" element={<ContactsReportSection />} />
+          <Route path="lifecycle" element={<LifecycleReportSection />} />
+        </Route>
 
         <Route
           path="channels"
@@ -213,7 +236,10 @@ export const WorkspaceRouter = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="general-info" replace />} />
+          <Route
+            index
+            element={<SettingsIndexRedirect config={workspaceSettingsConfig} />}
+          />
           <Route path="general-info" element={<WorkspaceGeneralInfo />} />
 
           <Route
@@ -240,7 +266,10 @@ export const WorkspaceRouter = () => {
 
         {/* Profile — everyone */}
         <Route path="user/settings" element={<UserSettingsLayout />}>
-          <Route index element={<Navigate to="profile" replace />} />
+          <Route
+            index
+            element={<SettingsIndexRedirect config={userSettingsConfig} />}
+          />
           <Route path="profile" element={<UserSettings />} />
           <Route path="notifications" element={<NotificationPreferences />} />
         </Route>
@@ -255,7 +284,10 @@ export const WorkspaceRouter = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="account-info" replace />} />
+          <Route
+            index
+            element={<SettingsIndexRedirect config={organizationSettingsConfig} />}
+          />
           <Route path="account-info" element={<GeneralOrgInfo />} />
           <Route
             path="users-settings"

@@ -104,8 +104,8 @@ export function AiPromptMenu({
   if (!open) return null;
 
   return (
-    <div className="absolute bottom-full left-0 mb-2 flex gap-2 z-50">
-      <div className="w-80 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+    <div className="absolute bottom-full left-0 z-50 mb-2 flex max-w-[calc(100vw-2rem)] flex-col gap-2 sm:max-w-none sm:flex-row">
+      <div className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden sm:w-80">
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-sm font-semibold text-gray-800">AI Prompts</p>
         </div>
@@ -130,7 +130,7 @@ export function AiPromptMenu({
       </div>
 
       {activePromptParent && Array.isArray(activePromptParent.options) && activePromptParent.options.length > 0 && (
-        <div className="w-72 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+        <div className="w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden sm:w-72">
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-800">{activePromptParent.name}</p>
           </div>

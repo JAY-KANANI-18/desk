@@ -3,6 +3,7 @@ import { DataLoader } from "../../Loader";
 import type { Contact, SortField, SortOption, WorkspaceUser } from "../types";
 import type { LifecycleStage } from "../../workspace/types";
 import { ContactsPagination } from "./ContactsPagination";
+import { ContactsMobileList } from "./ContactsMobileList";
 import { ContactsTableRow } from "./ContactsTableRow";
 
 interface ContactsTableProps {
@@ -62,7 +63,7 @@ export function ContactsTable({
   return (
     <>
       {someSelected && (
-        <div className="flex items-center gap-3 bg-indigo-600 px-4 py-2 text-sm text-white">
+        <div className="flex flex-wrap items-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
           <span className="font-medium">{selectedIds.size} selected</span>
           <button
             onClick={handleDeleteSelected}
@@ -85,71 +86,88 @@ export function ContactsTable({
         {loading ? (
           <DataLoader type="contacts" />
         ) : (
-          <div className="min-w-[800px]">
-            <table className="w-full">
-              <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
-                <tr>
-                  <th className="w-8 px-3 py-2">
-                    <input
-                      type="checkbox"
-                      className="cursor-pointer rounded"
-                      checked={allFilteredSelected}
-                      ref={(element) => {
-                        if (element) {
-                          element.indeterminate = someSelected && !allFilteredSelected;
-                        }
-                      }}
-                      onChange={toggleSelectAll}
-                    />
-                  </th>
-                  {columns.map(({ label, field, align }) => (
-                    <th
-                      key={label}
-                      onClick={() => field && handleColSort(field)}
-                      className={`whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${
-                        field ? "cursor-pointer select-none hover:text-gray-700" : ""
-                      } ${align === "center" ? "text-center" : "text-left"}`}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {label}
-                        {field && (
-                          <ArrowUpDown
-                            size={11}
-                            className={sortOption?.field === field ? "text-indigo-500" : "text-gray-300"}
-                          />
-                        )}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+          <div>
+            {contacts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-sm text-gray-400">
+                <Search size={28} className="text-gray-300" />
+                <span className="mt-2">No contacts match your search.</span>
+              </div>
+            ) : (
+              <>
+                <ContactsMobileList
+                  contacts={contacts}
+                  workspaceUsers={workspaceUsers}
+                  stages={stages}
+                  selectedIds={selectedIds}
+                  toggleSelectOne={toggleSelectOne}
+                  openEditModal={openEditModal}
+                  handleDeleteOne={handleDeleteOne}
+                />
 
-              <tbody className="divide-y divide-gray-100">
-                {contacts.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-gray-400">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search size={28} className="text-gray-300" />
-                        No contacts match your search.
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  contacts.map((contact) => (
-                    <ContactsTableRow
-                      key={contact.id}
-                      contact={contact}
-                      workspaceUsers={workspaceUsers}
-                      stages={stages}
-                      selected={selectedIds.has(contact.id)}
-                      onToggleSelect={toggleSelectOne}
-                      onEdit={openEditModal}
-                      onDelete={handleDeleteOne}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
+                <div className="hidden min-w-[800px] md:block">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
+                      <tr>
+                        <th className="w-8 px-3 py-2">
+                          <input
+                            type="checkbox"
+                            className="cursor-pointer rounded"
+                            checked={allFilteredSelected}
+                            ref={(element) => {
+                              if (element) {
+                                element.indeterminate =
+                                  someSelected && !allFilteredSelected;
+                              }
+                            }}
+                            onChange={toggleSelectAll}
+                          />
+                        </th>
+                        {columns.map(({ label, field, align }) => (
+                          <th
+                            key={label}
+                            onClick={() => field && handleColSort(field)}
+                            className={`whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${
+                              field
+                                ? "cursor-pointer select-none hover:text-gray-700"
+                                : ""
+                            } ${align === "center" ? "text-center" : "text-left"}`}
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              {label}
+                              {field && (
+                                <ArrowUpDown
+                                  size={11}
+                                  className={
+                                    sortOption?.field === field
+                                      ? "text-indigo-500"
+                                      : "text-gray-300"
+                                  }
+                                />
+                              )}
+                            </span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-gray-100">
+                      {contacts.map((contact) => (
+                        <ContactsTableRow
+                          key={contact.id}
+                          contact={contact}
+                          workspaceUsers={workspaceUsers}
+                          stages={stages}
+                          selected={selectedIds.has(contact.id)}
+                          onToggleSelect={toggleSelectOne}
+                          onEdit={openEditModal}
+                          onDelete={handleDeleteOne}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
             <ContactsPagination
               totalContacts={totalContacts}

@@ -25,8 +25,11 @@ import { ChatHeader }       from "./inbox/ChatHeader";
 import { MessageArea }      from "./inbox/MessageArea";
 import { InputArea }        from "./inbox/InputArea";
 import { ContactSidebarHybrid } from "./inbox/ContactSidebarHybrid";
+import { MobileCategoryDrawer } from "./inbox/MobileCategoryDrawer";
+import { MobileContactSheet } from "./inbox/MobileContactSheet";
 import type { ReplyContext } from "./inbox/MessageArea";
 import type { ApiConversation } from "../lib/inboxApi";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 export function InboxPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -36,6 +39,7 @@ export function InboxPage() {
   const targetMessageId = searchParams.get("targetMessageId");
   const navTargetMessageId = (location.state as any)?.targetMessageId ?? null;
   const navPreserveSearch = (location.state as any)?.preserveSearch ?? false;
+  const isMobile = useIsMobile();
 
   const {
     convList,
@@ -62,6 +66,8 @@ export function InboxPage() {
 
   // ── Reply context: set when user clicks "Reply" on a bubble ──────────────────
   const [replyContext, setReplyContext] = useState<ReplyContext | null>(null);
+  const [showMobileCategories, setShowMobileCategories] = useState(false);
+  const [showMobileContact, setShowMobileContact] = useState(false);
 
   const handleReply = useCallback((ctx: ReplyContext) => {
     setReplyContext(ctx);
@@ -81,8 +87,16 @@ export function InboxPage() {
   );
 
   useEffect(() => {
-    if (!conversationId && convList.length > 0) navigate(`/inbox/${convList[0].id}`, { replace: true });
-  }, [conversationId, convList, navigate]);
+    if (!conversationId && convList.length > 0 && !isMobile) {
+      navigate(`/inbox/${convList[0].id}`, { replace: true });
+    }
+  }, [conversationId, convList, isMobile, navigate]);
+
+  useEffect(() => {
+    if (!conversationId) {
+      setShowMobileContact(false);
+    }
+  }, [conversationId]);
 
   const resolvedTargetMessageId =
     targetMessageId ?? navTargetMessageId ?? loadedTargetMessageId ?? null;
@@ -115,16 +129,23 @@ export function InboxPage() {
     navigate(`/inbox/${conv.id}`);
   }, [selectConversation, navigate]);
 
+  const hasConversationRoute = Boolean(conversationId);
+  const showConversationView = hasConversationRoute && Boolean(selectedConversation);
+
   return (
-    <div className="flex h-full flex-col md:flex-row bg-white">
-      <SubSidebar />
+    <div className="flex h-full min-h-0 bg-slate-50 md:bg-white">
+      <div className={`${showConversationView && isMobile ? "hidden" : "flex"} min-h-0 w-full md:w-auto`}>
+        <div className="hidden md:flex">
+          <SubSidebar />
+        </div>
+        <ConversationList
+          onSelectConversation={handleSelectConversation}
+          onOpenCategories={() => setShowMobileCategories(true)}
+        />
+      </div>
 
-      <ConversationList
-        onSelectConversation={handleSelectConversation}
-      />
-
-      {selectedConversation ? (
-        <div className="flex-1 flex flex-col bg-white min-w-0">
+      {showConversationView ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50 md:bg-white">
           <ChatHeader
             selectedConversation={selectedConversation as any}
             snoozedUntil={snoozedUntil}
@@ -133,6 +154,8 @@ export function InboxPage() {
             chatStatus={selectedConversation.status === "closed" ? "closed" : "open"}
             msgSearchOpen={msgSearchOpen}
             onToggleMsgSearch={toggleMsgSearch}
+            onBack={() => navigate("/inbox")}
+            onOpenContactDetails={() => setShowMobileContact(true)}
           />
 
           <MessageArea
@@ -163,19 +186,37 @@ export function InboxPage() {
             onClearReplyContext={handleClearReplyContext}
           />
         </div>
+      ) : hasConversationRoute ? (
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-sm text-gray-400">Loading conversation…</p>
+        </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="hidden flex-1 items-center justify-center md:flex">
           <p className="text-gray-500">Select a conversation to start messaging</p>
         </div>
       )}
 
-      {selectedConversation?.id && (
+      {!isMobile && selectedConversation?.id && (
         <ContactSidebarHybrid
           key={selectedConversation?.id}
           selectedConversation={selectedConversation as any}
           contactDetails={selectedContact}
         />
       )}
+
+      <MobileCategoryDrawer
+        open={showMobileCategories}
+        onClose={() => setShowMobileCategories(false)}
+      />
+
+      {selectedConversation ? (
+        <MobileContactSheet
+          open={showMobileContact}
+          onClose={() => setShowMobileContact(false)}
+          selectedConversation={selectedConversation as any}
+          contactDetails={selectedContact}
+        />
+      ) : null}
     </div>
   );
 }

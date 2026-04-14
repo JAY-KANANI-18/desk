@@ -16,12 +16,12 @@ export const GmailConfiguration = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-white">
+        <div className="flex flex-col gap-2 px-5 py-3.5 border-b border-slate-100 bg-white sm:flex-row sm:items-center">
           <span className={`w-2.5 h-2.5 rounded-full shadow ${connected ? 'bg-green-400 shadow-green-200' : 'bg-gray-300'}`} />
           <span className="text-sm font-semibold text-slate-800">Gmail Configuration</span>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 sm:ml-auto">
             <Mail size={13} className="text-red-500" />
-            <span>{email || '—'}</span>
+            <span className="break-all">{email || '—'}</span>
           </div>
         </div>
         <div className="px-5 py-4">
@@ -38,10 +38,10 @@ export const GmailConfiguration = ({
           <CheckCircle size={15} className="text-indigo-600 flex-shrink-0" />
           <p className="text-sm font-medium text-indigo-900">Connected via Google OAuth</p>
         </div>
-        <p className="text-xs text-indigo-700 pl-6">
+        <p className="text-xs text-indigo-700 sm:pl-6">
           Gmail channels use OAuth 2.0. To reconnect or change the account, click the button below to re-authenticate with Google.
         </p>
-        <div className="pl-6 pt-1">
+        <div className="pt-1 sm:pl-6">
           <a
             href={`/auth/gmail/connect?channelId=${channel.id}`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors"

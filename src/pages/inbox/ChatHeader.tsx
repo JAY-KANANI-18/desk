@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  Search, Phone, ChevronDown, UserCircle2,
-  CheckCircle2, LockOpen,
+  Search, Phone, ChevronDown, ChevronLeft, UserCircle2,
+  CheckCircle2, LockOpen, MoreVertical,
 } from 'lucide-react';
-import { teams ,teamMembers, snoozeOptions, channelConfig} from './data';
-import type { Conversation, Assignee } from './types';
+import { teams } from './data';
+import type { Conversation } from './types';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useInbox } from '../../context/InboxContext';
 import { inboxApi } from '../../lib/inboxApi';
@@ -18,6 +18,8 @@ interface ChatHeaderProps {
   chatStatus: 'open' | 'closed';
   msgSearchOpen: boolean;
   onToggleMsgSearch: () => void;
+  onBack?: () => void;
+  onOpenContactDetails?: () => void;
 }
 export type ConvStatus = "open" | "closed";
 export type ConvPriority = "low" | "normal" | "high" | "urgent";
@@ -38,9 +40,17 @@ interface LifecycleSelectorProps {
   currentStageId: string | number | null | undefined;
   lifecycles: LifecycleStage[];
   onSelect: (stageId: string | number | null) => Promise<void>;
+  className?: string;
+  chevronClassName?: string;
 }
 
-function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSelectorProps) {
+function LifecycleSelector({
+  currentStageId,
+  lifecycles,
+  onSelect,
+  className,
+  chevronClassName,
+}: LifecycleSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -61,7 +71,7 @@ function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSe
       <button
         type="button"
         onClick={() => setOpen(p => !p)}
-        className="group flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors leading-none"
+        className={className ?? "group flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors leading-none"}
       >
         {current ? (
           <>
@@ -75,7 +85,7 @@ function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSe
         )}
         <ChevronDown
           size={10}
-          className="opacity-0 group-hover:opacity-50 transition-opacity -mb-px"
+          className={chevronClassName ?? "opacity-0 group-hover:opacity-50 transition-opacity -mb-px"}
         />
       </button>
 
@@ -162,23 +172,18 @@ function LifecycleSelector({ currentStageId, lifecycles, onSelect }: LifecycleSe
 
 export function ChatHeader({
   selectedConversation,
-   snoozedUntil,
-  onSnooze,
-  onUnsnooze,
   msgSearchOpen,
   onToggleMsgSearch,
+  onBack,
+  onOpenContactDetails,
 }: ChatHeaderProps) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignSearch, setAssignSearch] = useState('');
-   const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const [closeMenuOpen, setCloseMenuOpen] = useState(false);
-  const [closeCategory, setCloseCategory] = useState('');
-  const [closeSummary, setCloseSummary] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatStatus, setChatStatus] = useState<"open" | "closed" | null>(null);
 
   const assignRef = useRef<HTMLDivElement>(null);
-  const snoozeRef = useRef<HTMLDivElement>(null);
-  const closeMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const { workspaceUsers } = useWorkspace();
 
@@ -197,8 +202,9 @@ export function ChatHeader({
       if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
         setAssignOpen(false); setAssignSearch('');
       }
-      if (snoozeRef.current && !snoozeRef.current.contains(e.target as Node)) setSnoozeOpen(false);
-      if (closeMenuRef.current && !closeMenuRef.current.contains(e.target as Node)) setCloseMenuOpen(false);
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -216,9 +222,40 @@ export function ChatHeader({
       ) || null,
     [workspaceUsers, selectedConversation?.contact?.assigneeId],
   );
+  const currentLifecycle = useMemo(
+    () =>
+      (lifecycles ?? []).find(
+        (stage: LifecycleStage) =>
+          String(stage.id) === String(selectedConversation?.contact?.lifecycleId),
+      ) ?? null,
+    [lifecycles, selectedConversation?.contact?.lifecycleId],
+  );
+  const contactName =
+    [selectedConversation?.contact?.firstName, selectedConversation?.contact?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || 'Contact';
+  const mobileContactName =
+    contactName.length > 7 ? `${contactName.slice(0, 7)}...` : contactName;
+  const mobileAssigneeLabel = assignee
+    ? [assignee.firstName, assignee.lastName]
+      .filter(Boolean)
+      .map((part) => part.split(' ')[0])
+      .join(' ')
+      .trim() || assignee.email || 'Assigned'
+    : 'Unassigned';
+  const fallbackLifecycleName =
+    selectedConversation?.contact?.lifecycleStage?.trim() || '';
+  const mobileLifecycleLabel = currentLifecycle
+    ? `${currentLifecycle.emoji} ${currentLifecycle.name}`
+    : fallbackLifecycleName
+      ? `Lifecycle: ${fallbackLifecycleName}`
+      : 'Lifecycle details';
+  const mobileStatusLabel = chatStatus === 'closed' ? 'Open conversation' : 'Close conversation';
 
   const handleStatusAction = async (s: ConvStatus) => {
     setChatStatus(null);
+    setMobileMenuOpen(false);
     if (s === "closed") await closeConversation();
     else if (s === "open") await openConversation();
   };
@@ -257,11 +294,43 @@ export function ChatHeader({
   };
 
   return (
-    <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
-      {/* Left: contact info */}
-      <div className="flex items-center gap-3">
+    <div className="flex min-h-[3rem] shrink-0 flex-nowrap items-center gap-1.5 border-b border-gray-200 bg-white px-2 py-1.5 sm:gap-2 sm:px-4 md:min-h-[3.75rem] md:flex-wrap md:px-6 md:py-2.5">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 md:hidden"
+            aria-label="Back to inbox"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        ) : null}
+
         <div className="relative">
-          <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold">
+          {onOpenContactDetails ? (
+            <button
+              type="button"
+              onClick={onOpenContactDetails}
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold transition-opacity hover:opacity-90 md:hidden"
+              aria-label="Open contact details"
+              title="Open contact details"
+            >
+              {selectedConversation?.contact?.avatarUrl ? (
+                <img
+                  src={selectedConversation.contact.avatarUrl}
+                  alt={selectedConversation.contact.firstName || "avatar"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>
+                  {selectedConversation?.contact?.firstName?.charAt(0)?.toUpperCase() || "C"}
+                </span>
+              )}
+            </button>
+          ) : null}
+
+          <div className={`${onOpenContactDetails ? 'hidden md:flex' : 'flex'} h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold md:h-10 md:w-10`}>
             {selectedConversation?.contact?.avatarUrl ? (
               <img
                 src={selectedConversation.contact.avatarUrl}
@@ -283,41 +352,59 @@ export function ChatHeader({
   */}
         </div>
 
-        {/* Name + lifecycle selector stacked vertically */}
-        <div className="flex flex-col gap-0.5">
-          <h3 className="font-semibold leading-tight">
-            {selectedConversation?.contact?.firstName} {selectedConversation?.contact?.lastName}
-          </h3>
-          {/* Lifecycle stage — looks like the tag line, reveals chevron on hover */}
-          <LifecycleSelector
-            currentStageId={selectedConversation?.contact?.lifecycleId}
-            lifecycles={lifecycles ?? []}
-            onSelect={handleLifecycleChange}
-          />
+        <div className="min-w-0 max-w-[calc(100%-9rem)] flex-1 md:max-w-none">
+          {onOpenContactDetails ? (
+            <div
+              className="flex min-w-0 max-w-full flex-col items-start rounded-lg px-0.5 py-0 text-left md:hidden"
+              title={contactName}
+            >
+              <span className="block min-w-0 max-w-full whitespace-nowrap text-[14px] font-semibold leading-tight text-gray-900">
+                {mobileContactName}
+              </span>
+              <LifecycleSelector
+                currentStageId={selectedConversation?.contact?.lifecycleId}
+                lifecycles={lifecycles ?? []}
+                onSelect={handleLifecycleChange}
+                className="group mt-0.5 flex items-center gap-1 text-[10px] leading-none text-gray-400 hover:text-gray-600 transition-colors"
+                chevronClassName="opacity-70 transition-opacity -mb-px"
+              />
+            </div>
+          ) : null}
+
+          <div className={`${onOpenContactDetails ? 'hidden md:flex' : 'flex'} min-w-0 flex-col gap-0.5`}>
+            <h3 className="truncate text-[15px] font-semibold leading-tight text-gray-900 sm:text-base">
+              {contactName}
+            </h3>
+            <LifecycleSelector
+              currentStageId={selectedConversation?.contact?.lifecycleId}
+              lifecycles={lifecycles ?? []}
+              onSelect={handleLifecycleChange}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Right: actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1 md:ml-auto md:w-auto md:flex-wrap md:justify-end md:gap-2">
 
         {/* Assign dropdown */}
-        <div className="relative" ref={assignRef}>
+        <div className="relative min-w-0 max-w-[108px] flex-shrink md:max-w-none md:flex-none" ref={assignRef}>
           <button
+            type="button"
             onClick={() => { setAssignOpen(!assignOpen); setAssignSearch(''); }}
-            className=" py-1.5 text-sm  rounded-lg hover:bg-gray-50 flex items-center gap-2 "
+            className="flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg border border-gray-200 px-2 text-[12px] text-gray-700 transition-colors hover:bg-gray-50 md:h-auto md:w-auto md:gap-2 md:rounded-2xl md:px-3 md:py-2 md:text-sm"
           >
             {assignee === null ? (
-              <><UserCircle2 size={16} className="text-gray-400" /><span className="text-gray-500">Unassigned</span></>
+              <><UserCircle2 size={16} className="text-gray-400" /><span className="truncate text-gray-500">{mobileAssigneeLabel}</span></>
             ) :
               // assignee.kind === 'user' ? (
               <>
                 <div className="relative flex-shrink-0">
-                  <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="w-5 h-5 rounded-full object-cover" />
+                  <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="h-[18px] w-[18px] rounded-full object-cover md:h-5 md:w-5" />
 
                   {/* <div className="w-5 h-5 bg-indigo-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-indigo-700">{assignee?.firstName?.charAt(0) || assignee.lastName.charAt(0)}</div> */}
                   {assignee.activityStatus === 'online' && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />}
                 </div>
-                <span className="truncate max-w-[80px]">{assignee?.firstName?.split(' ')[0]} {assignee?.lastName?.split(' ')[0]}</span>
+                <span className="truncate max-w-[74px] md:max-w-[120px]">{mobileAssigneeLabel}</span>
               </>
               // ) : (
               //   <>
@@ -326,7 +413,7 @@ export function ChatHeader({
               //   </>
               // )
             }
-            <ChevronDown size={14} className="text-black font-bold  flex-shrink-0" />
+            <ChevronDown size={12} className="flex-shrink-0 text-black" />
           </button>
 
           {assignOpen && (
@@ -403,13 +490,23 @@ export function ChatHeader({
           )}
         </div>
 
-        {/* Message search toggle */}
         <button
+          type="button"
+          onClick={() => handleStatusAction(chatStatus === 'closed' ? 'open' : 'closed')}
+          className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition-colors hover:bg-gray-50 md:hidden"
+          aria-label={mobileStatusLabel}
+          title={mobileStatusLabel}
+        >
+          {chatStatus === 'closed' ? <LockOpen size={16} /> : <CheckCircle2 size={16} />}
+        </button>
+
+        <button
+          type="button"
           onClick={onToggleMsgSearch}
-          className={`p-2 rounded-lg transition-colors ${msgSearchOpen ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-gray-100'}`}
+          className={`hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-gray-200 transition-colors md:flex md:h-10 md:w-10 md:rounded-2xl ${msgSearchOpen ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:bg-gray-100'}`}
           title="Search messages"
         >
-          <Search size={20} />
+          <Search size={18} />
         </button>
 
         {/* Snooze */}
@@ -448,22 +545,23 @@ export function ChatHeader({
 
         {selectedChannel?.type === 'exotel_call' && (
           <button
+            type="button"
             onClick={handleStartCall}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-gray-100 md:flex md:h-10 md:w-10 md:rounded-2xl"
             title="Start call"
           >
-            <Phone size={20} />
+            <Phone size={18} />
           </button>
         )}
 
         {/* Open / Close */}
-        <div className="relative">
+        <div className="relative hidden md:block">
           {chatStatus === 'closed' ? (
-            <button onClick={() => handleStatusAction('open')} className="px-3 py-1.5 text-sm  rounded-lg border flex items-center gap-2">
+            <button type="button" onClick={() => handleStatusAction('open')} className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 px-3 py-2 text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50 md:rounded-2xl md:text-sm">
               <LockOpen size={16} />Open
             </button>
           ) : (
-            <button onClick={() => handleStatusAction('closed')} className="px-3 py-1.5 text-sm  rounded-lg border flex items-center gap-2">
+            <button type="button" onClick={() => handleStatusAction('closed')} className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 px-3 py-2 text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50 md:rounded-2xl md:text-sm">
               <CheckCircle2 size={16} />Close
               {/* <ChevronDown size={14} className={`transition-transform ${closeMenuOpen ? 'rotate-180' : ''}`} /> */}
             </button>
@@ -510,7 +608,57 @@ export function ChatHeader({
           )} */}
         </div>
 
-        {/* <button className="p-2 hover:bg-gray-100 rounded-lg"><MoreVertical size={20} /></button> */}
+        <div className="relative md:hidden" ref={mobileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 transition-colors ${mobileMenuOpen ? 'bg-gray-100 text-gray-700' : 'text-gray-500 hover:bg-gray-100'}`}
+            aria-label="More actions"
+          >
+            <MoreVertical size={16} />
+          </button>
+
+          {mobileMenuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleMsgSearch();
+                  setMobileMenuOpen(false);
+                }}
+                className={`flex w-full items-center gap-2.5 px-3 py-3 text-left text-sm transition-colors ${msgSearchOpen ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                <Search size={16} />
+                Search messages
+              </button>
+
+              {selectedChannel?.type === 'exotel_call' && (
+                <button
+                  type="button"
+                  onClick={handleStartCall}
+                  className="flex w-full items-center gap-2.5 px-3 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <Phone size={16} />
+                  Start call
+                </button>
+              )}
+
+              {onOpenContactDetails && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenContactDetails();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-3 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <ChevronDown size={16} />
+                  {mobileLifecycleLabel}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

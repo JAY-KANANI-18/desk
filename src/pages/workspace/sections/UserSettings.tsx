@@ -8,6 +8,7 @@ import { workspaceApi } from '../../../lib/workspaceApi';
 import { useWorkspace } from '../../../context/WorkspaceContext';
 import { DataLoader } from '../../Loader';
 import { useAuth } from '../../../context/AuthContext';
+import { Card } from '../../../components/ui/Card';
 
 export const UserSettings = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -156,9 +157,9 @@ export const UserSettings = () => {
   // if (error || !profile || !notifs) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (
-    <div className="space-y-6 overflow-y-auto h-[calc(100vh-120px)] p-5">
+    <div className="space-y-6">
       {/* Profile */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <Card className="rounded-[28px] border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-semibold text-gray-900 mb-5">Profile</h2>
 
         <div className="flex items-center gap-5 mb-5">
@@ -286,7 +287,7 @@ export const UserSettings = () => {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

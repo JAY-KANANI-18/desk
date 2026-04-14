@@ -16,11 +16,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Search, X, ArrowDownLeft, ArrowUpRight,
-  ChevronDown, SlidersHorizontal, Users,
-  UserCircle2,
+  UserCircle2, PanelLeftOpen,
   Filter,
 } from "lucide-react";
 import { channelConfig } from "./data";
+import { getActiveCategoryLabel } from "./MobileCategoryDrawer";
 import { useInbox } from "../../context/InboxContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import type { ApiConversation, ConvStatus, ConvPriority } from "../../lib/inboxApi";
@@ -109,12 +109,21 @@ function FilterPill({
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════ */
 
-export function ConversationList({onSelectConversation}:{onSelectConversation: (conversation: ApiConversation) => void}) {
+interface ConversationListProps {
+  onSelectConversation: (conversation: ApiConversation) => void;
+  onOpenCategories?: () => void;
+}
+
+export function ConversationList({
+  onSelectConversation,
+  onOpenCategories,
+}: ConversationListProps) {
   const {
     convList, convLoading, hasMoreConvs, loadMoreConversations,
     filters, setFilters, resetFilters,
     convSearch, setConvSearch,
     selectedConversation, selectConversation,
+    lifecycles, fetchLifecycles,
   } = useInbox();
 
   const { workspaceUsers } = useWorkspace();
@@ -153,8 +162,14 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
     if (scrollTop + clientHeight >= scrollHeight - 80) loadMoreConversations();
   }, [convLoading, hasMoreConvs, loadMoreConversations]);
 
+  useEffect(() => {
+    if (filters.lifecycleId == null || lifecycles.length > 0) return;
+    void fetchLifecycles();
+  }, [fetchLifecycles, filters.lifecycleId, lifecycles.length]);
+
   /* Total unread */
   const totalUnread = convList.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+  const activeCategoryLabel = getActiveCategoryLabel(filters, lifecycles as any);
 
   /* Active filter pills */
   const activePills: Array<{ label: string; clear: () => void }> = [];
@@ -170,23 +185,42 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
     activePills.push({ label: filters.direction, clear: () => setFilters({ direction: "all" }) });
 
   return (
-    <div className="w-full md:w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <div className="flex min-h-0 w-full flex-col bg-white md:w-80 md:flex-shrink-0 md:border-r md:border-gray-200">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-800">Inbox</span>
-          {/* {totalUnread > 0 && (
-            <span className="min-w-[18px] h-[18px] bg-indigo-600 text-white text-[10px]
-              font-bold rounded-full flex items-center justify-center px-1">
-              {totalUnread > 99 ? "99+" : totalUnread}
-            </span>
-          )} */}
+      <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-3 py-3 md:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          {onOpenCategories ? (
+            <button
+              type="button"
+              onClick={onOpenCategories}
+              className="inline-flex min-w-0 items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-slate-700 transition-colors hover:bg-slate-200 md:hidden"
+            >
+              <PanelLeftOpen size={16} className="flex-shrink-0 text-slate-500" />
+              <span className="max-w-[7.5rem] truncate text-sm font-semibold">
+                {activeCategoryLabel}
+              </span>
+              {totalUnread > 0 ? (
+                <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {totalUnread > 99 ? "99+" : totalUnread}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
+
+          <div className={`${onOpenCategories ? "hidden md:flex" : "flex"} min-w-0 items-center gap-2`}>
+            <span className="text-sm font-bold text-gray-800">Inbox</span>
+            {totalUnread > 0 ? (
+              <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                {totalUnread > 99 ? "99+" : totalUnread}
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => { setSearchOpen((o) => !o); if (searchOpen) setSearchInput(""); }}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+            className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors md:h-8 md:w-8
               ${searchOpen ? "bg-indigo-100 text-indigo-600" : "text-gray-500 hover:bg-gray-100"}`}
           >
             <Search size={18} />
@@ -194,7 +228,7 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
           <div className="relative" ref={filterRef}>
             <button
               onClick={() => setFilterOpen((o) => !o)}
-              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors md:h-8 md:w-8
                 ${activePills.length > 0 || filterOpen
                   ? "bg-indigo-100 text-indigo-600"
                   : "text-gray-500 hover:bg-gray-100"}`}
@@ -349,8 +383,8 @@ export function ConversationList({onSelectConversation}:{onSelectConversation: (
       )}
 
       {/* ── Status tab row ── */}
-      <div className="flex  justify-between border-b border-gray-200 overflow-x-auto scrollbar-hide">
-        <div>
+      <div className="flex items-center justify-between gap-2 border-b border-gray-200 overflow-x-auto scrollbar-hide">
+        <div className="flex">
           {STATUS_OPTIONS.filter((o) => o.value !== "all").map((opt) => {
             const isActive = (filters.status ?? "open") === opt.value;
 

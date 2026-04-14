@@ -27,11 +27,10 @@ import { Template, TemplateModal } from './TemplateModal';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
-import { workspaceApi } from '../../lib/workspaceApi';
-import { inboxApi } from '../../lib/inboxApi';
-import type { AIPrompt } from '../workspace/types';
+import { AiPromptMenu, useInboxAiComposer } from './composerShared';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { extractMentionIds } from './utils';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
@@ -81,7 +80,7 @@ function QuotedReplyBanner({
   const q = ctx.quotedMessage;
 
   return (
-    <div className="flex items-start gap-2 px-3 pt-2.5 pb-0">
+    <div className="flex items-start gap-2 px-2.5 pb-0 pt-2 sm:px-3 sm:pt-2.5">
       <div className="flex-1 flex items-start gap-2 bg-gray-50 border-l-[3px] border-indigo-500 rounded-r-lg px-3 py-2 min-w-0">
         {/* attachment thumb */}
         {q.attachmentType === 'image' && q.attachmentUrl && (
@@ -127,6 +126,7 @@ export function ReplyInput({
   replyContext,
   onClearReplyContext,
 }: SharedInputProps) {
+  const isMobile = useIsMobile();
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -137,10 +137,6 @@ export function ReplyInput({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionHighlight, setMentionHighlight] = useState(0);
   const [templateOpen, setTemplateOpen] = useState(false);
-  const [aiPrompts, setAiPrompts] = useState<AIPrompt[]>([]);
-  const [aiPromptMenuOpen, setAiPromptMenuOpen] = useState(false);
-  const [activePromptParent, setActivePromptParent] = useState<AIPrompt | null>(null);
-  const [aiLoadingAction, setAiLoadingAction] = useState<'rewrite' | 'assist' | 'summarize' | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -154,6 +150,16 @@ export function ReplyInput({
 
   const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
+  const aiComposer = useInboxAiComposer({
+    conversationId: selectedConversation?.id ? String(selectedConversation.id) : undefined,
+    getDraft: () => message,
+    setDraft: (text) => {
+      setMessage(text);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    },
+    switchToReply: () => onInputModeChange('reply'),
+    switchToNote: () => onInputModeChange('note'),
+  });
 
   const isNote = inputMode === 'note';
   const channelType = selectedChannel?.type ?? selectedConversation?.channel?.type;
@@ -218,8 +224,8 @@ export function ReplyInput({
       if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setEmojiOpen(false);
       if (channelRef.current && !channelRef.current.contains(e.target as Node)) setChannelMenuOpen(false);
       if (aiPromptMenuRef.current && !aiPromptMenuRef.current.contains(e.target as Node)) {
-        setAiPromptMenuOpen(false);
-        setActivePromptParent(null);
+        aiComposer.setAiPromptMenuOpen(false);
+        aiComposer.setActivePromptParent(null);
       }
       if (
         variableDropdownRef.current && !variableDropdownRef.current.contains(e.target as Node) &&
@@ -232,23 +238,17 @@ export function ReplyInput({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
-    workspaceApi.getAIPrompts()
-      .then((rows) => setAiPrompts(rows))
-      .catch(() => setAiPrompts([]));
-  }, []);
+  }, [aiComposer]);
 
   useEffect(() => {
     if (!isReplyComposerLocked) return;
     setEmojiOpen(false);
-    setAiPromptMenuOpen(false);
-    setActivePromptParent(null);
+    aiComposer.setAiPromptMenuOpen(false);
+    aiComposer.setActivePromptParent(null);
     setShowRecorder(false);
     setVariableQuery(null);
     setMentionQuery(null);
-  }, [isReplyComposerLocked]);
+  }, [aiComposer, isReplyComposerLocked]);
 
   // auto-grow textarea
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -355,8 +355,6 @@ export function ReplyInput({
 
   const hasComposerContent = message.trim().length > 0 || attachedFiles.length > 0;
   const canSend = isNote ? hasComposerContent : hasComposerContent && canSendFreeFormReply;
-  const rewritePrompts = aiPrompts.filter((prompt) => prompt.kind === 'rewrite' && (prompt.isEnabled ?? true));
-
   const handleSend = () => {
     if (!canSend) return;
     const attachments: MediaAttachment[] = attachedFiles.map(af => ({
@@ -397,53 +395,6 @@ export function ReplyInput({
     setAttachedFiles([]);
     onClearReplyContext?.();
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  };
-
-  const handleRewrite = async (prompt: AIPrompt, optionValue?: string) => {
-    if (isReplyComposerLocked) return;
-    if (!selectedConversation?.id || !message.trim()) return;
-    setAiLoadingAction('rewrite');
-    try {
-      const result = await inboxApi.rewriteWithPrompt(String(selectedConversation.id), {
-        draft: message,
-        promptId: String(prompt.id),
-        optionValue,
-      });
-      setMessage(result.text);
-      setAiPromptMenuOpen(false);
-      setActivePromptParent(null);
-      setTimeout(() => textareaRef.current?.focus(), 0);
-    } finally {
-      setAiLoadingAction(null);
-    }
-  };
-
-  const handleAssistDraft = async () => {
-    if (isReplyComposerLocked) return;
-    if (!selectedConversation?.id) return;
-    setAiLoadingAction('assist');
-    try {
-      const result = await inboxApi.generateAiDraft(String(selectedConversation.id));
-      onInputModeChange('reply');
-      setMessage(result.text);
-      setTimeout(() => textareaRef.current?.focus(), 0);
-    } finally {
-      setAiLoadingAction(null);
-    }
-  };
-
-  const handleSummarize = async () => {
-    if (isReplyComposerLocked) return;
-    if (!selectedConversation?.id) return;
-    setAiLoadingAction('summarize');
-    try {
-      const result = await inboxApi.summarizeConversation(String(selectedConversation.id));
-      onInputModeChange('note');
-      setMessage(result.text);
-      setTimeout(() => textareaRef.current?.focus(), 0);
-    } finally {
-      setAiLoadingAction(null);
-    }
   };
 
   const handleAudioSend = async (audioBlob: Blob) => {
@@ -492,6 +443,69 @@ export function ReplyInput({
   const replyBg = 'bg-white';
   const activeBg = isNote ? noteBg : replyBg;
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
+  const channelSelector = !isNote ? (
+    <div className="relative" ref={channelRef}>
+      <button
+        onClick={() => setChannelMenuOpen((open) => !open)}
+        className={`flex min-w-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white/90 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 ${
+          isMobile ? 'max-w-[11.5rem]' : ''
+        }`}
+        title="Switch channel"
+      >
+        <img
+          src={channelConfig[selectedChannel?.type]?.icon}
+          alt={selectedChannel?.name}
+          className="h-3.5 w-3.5 flex-shrink-0"
+        />
+        <span className={`truncate ${isMobile ? 'max-w-[7rem]' : 'hidden max-w-[5rem] sm:inline'}`}>
+          {selectedChannel?.name}
+        </span>
+        <ChevronDown
+          size={12}
+          className={`flex-shrink-0 transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {channelMenuOpen && (
+        <div className="absolute bottom-full left-0 z-50 mb-1.5 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            Send via channel
+          </p>
+          {channels?.map((ch) => (
+            <button
+              key={ch.id}
+              onClick={() => {
+                onChannelChange(ch);
+                setChannelMenuOpen(false);
+              }}
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
+                selectedChannel?.id === ch.id ? 'bg-gray-50' : ''
+              }`}
+            >
+              <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="h-4 w-4" />
+              <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
+              {selectedChannel?.id === ch.id && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  ) : null;
+  const assistButton = !isNote && !isReplyComposerLocked ? (
+    <button
+      onClick={aiComposer.handleAssistDraft}
+      disabled={aiComposer.aiLoadingAction !== null}
+      className={`inline-flex items-center gap-2 rounded-xl bg-violet-50 font-medium text-violet-700 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+        isMobile ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-1.5 text-sm'
+      }`}
+    >
+      {aiComposer.aiLoadingAction === 'assist' ? (
+        <Loader2 size={15} className="animate-spin" />
+      ) : (
+        <Sparkles size={15} />
+      )}
+      AI Assist
+    </button>
+  ) : null;
   return (
     <div className={`${activeBg} transition-colors duration-150 `}>
       <TemplateModal open={templateOpen}  onClose={() => setTemplateOpen(false)} onUse={handleTemplateUse} contextValues={templateContextValues} />
@@ -502,11 +516,11 @@ export function ReplyInput({
       )}
 
       {showRecorder ? (
-        <div className="px-4 py-3">
+        <div className="px-3 py-2.5 sm:px-4 sm:py-3">
           <AudioRecorder onSend={handleAudioSend} onCancel={() => setShowRecorder(false)} />
         </div>
       ) : (
-        <div className={`mx-3 mb-2.5 border ${borderClr} rounded-xl transition-shadow p-1`}>
+        <div className={`mx-2 mb-2 rounded-[20px] border ${borderClr} ${isNote ? 'bg-amber-50/80' : 'bg-white'} p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-shadow sm:mx-3 sm:mb-2.5 sm:rounded-xl`}>
           {showWindowRestrictionWarning && (
             <div className="mx-2 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
               <div className="flex items-start gap-2">
@@ -524,16 +538,16 @@ export function ReplyInput({
             </div>
           )}
 
-          {!isNote && !isReplyComposerLocked && (
+          {isMobile && !isNote && (
+            <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-1.5">
+              {channelSelector}
+              {assistButton}
+            </div>
+          )}
+
+          {!isMobile && assistButton && (
             <div className="flex items-center justify-end px-2 pt-1 pb-1">
-              <button
-                onClick={handleAssistDraft}
-                disabled={aiLoadingAction !== null}
-                className="inline-flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {aiLoadingAction === 'assist' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-                AI Assist
-              </button>
+              {assistButton}
             </div>
           )}
 
@@ -617,12 +631,12 @@ export function ReplyInput({
               onChange={handleMessageChange}
               onKeyDown={handleKeyDown}
               placeholder={isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
-              className={`w-full px-4 py-3 resize-none focus:outline-none text-sm leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
+              className={`w-full resize-none px-3 py-2 text-[13px] leading-6 focus:outline-none sm:px-4 sm:py-3 sm:text-sm sm:leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
               rows={1}
-              style={{ maxHeight: 200, overflowY: 'auto' }}
+              style={{ maxHeight: isMobile ? 132 : 200, overflowY: 'auto' }}
             />
             {isReplyComposerLocked && (
-              <div className="px-4 py-4">
+              <div className="px-3 py-3 sm:px-4 sm:py-4">
                 <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 px-4 py-3">
                   <p className="text-sm font-medium text-amber-900">Reply actions are hidden while this channel window is closed.</p>
                   <p className="mt-1 text-xs text-amber-700">
@@ -635,7 +649,7 @@ export function ReplyInput({
 
           {/* Attached file previews */}
           {attachedFiles.length > 0 && (
-            <div className={`px-3 py-2 border-t ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-white'}`}>
+            <div className={`border-t px-2.5 py-2 sm:px-4 ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-white'}`}>
               <div className="flex flex-wrap gap-2 items-start">
                 {attachedFiles.map((af, i) =>
                   af.type === 'image' ? (
@@ -663,84 +677,28 @@ export function ReplyInput({
           )}
 
           {/* Bottom toolbar */}
-          <div className={`flex items-center justify-between px-2 py-1.5 border-t ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50'}`}>
+          <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50'}`}>
 
             {/* Left: attachments + emoji + mic + template */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pr-1 sm:flex-wrap sm:overflow-visible sm:pr-0">
               {!isNote && !isReplyComposerLocked && (
                 <div className="relative mr-1" ref={aiPromptMenuRef}>
-                  <button onClick={() => setAiPromptMenuOpen((open) => !open)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
+                  <button onClick={() => aiComposer.setAiPromptMenuOpen((open) => !open)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
                     <Wand2 size={16} />
                   </button>
-                  {aiPromptMenuOpen && (
-                    <div className="absolute bottom-full left-0 mb-2 flex gap-2 z-50">
-                      <div className="w-80 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-800">AI Prompts</p>
-                        </div>
-                        <div className="py-2">
-                          {rewritePrompts.map((prompt) => {
-                            const hasOptions = Array.isArray(prompt.options) && prompt.options.length > 0;
-                            return (
-                              <button
-                                key={prompt.id}
-                                onClick={() => hasOptions ? setActivePromptParent(prompt) : handleRewrite(prompt)}
-                                className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${activePromptParent?.id === prompt.id ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
-                              >
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">{prompt.name}</p>
-                                  {prompt.description && <p className="text-xs text-gray-500 mt-0.5">{prompt.description}</p>}
-                                </div>
-                                {hasOptions && <ChevronDown size={14} className="-rotate-90 text-gray-400" />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {activePromptParent && Array.isArray(activePromptParent.options) && activePromptParent.options.length > 0 && (
-                        <div className="w-72 rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-                          <div className="px-4 py-3 border-b border-gray-100">
-                            <p className="text-sm font-semibold text-gray-800">{activePromptParent.name}</p>
-                          </div>
-                          <div className="py-2">
-                            {activePromptParent.options.map((option) => (
-                              <button key={option.value} onClick={() => handleRewrite(activePromptParent, option.value)} className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50">
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <AiPromptMenu
+                    open={aiComposer.aiPromptMenuOpen}
+                    prompts={aiComposer.rewritePrompts}
+                    activePromptParent={aiComposer.activePromptParent}
+                    onClose={() => aiComposer.setAiPromptMenuOpen(false)}
+                    onSelectPrompt={aiComposer.handleRewrite}
+                    onSetActiveParent={aiComposer.setActivePromptParent}
+                  />
                 </div>
               )}
 
               {/* Channel selector (only in reply mode) */}
-              {!isNote && (
-                <div className="relative mr-1" ref={channelRef}>
-                  <button onClick={() => setChannelMenuOpen(o => !o)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
-                    title="Switch channel">
-                    <img src={channelConfig[selectedChannel?.type]?.icon} alt={selectedChannel?.name} className="w-3 h-3" />
-                    <span className="hidden sm:inline max-w-[80px] truncate">{selectedChannel?.name}</span>
-                    <ChevronDown size={10} className={`transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {channelMenuOpen && (
-                    <div className="absolute bottom-full left-0 mb-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 overflow-hidden">
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1.5">Send via channel</p>
-                      {channels?.map((ch) => (
-                        <button key={ch.id} onClick={() => { onChannelChange(ch); setChannelMenuOpen(false); }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedChannel?.id === ch.id ? 'bg-gray-50' : ''}`}>
-                          <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="w-4 h-4" />
-                          <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
-                          {selectedChannel?.id === ch.id && <Check size={13} className="text-indigo-600 flex-shrink-0" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              {!isMobile && channelSelector}
 
               {/* <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
               <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button> */}
@@ -791,40 +749,40 @@ export function ReplyInput({
             </div>
 
             {/* Right: mode pills + send */}
-            <div className="flex items-center gap-1.5">
+            <div className="ml-auto flex flex-shrink-0 items-center gap-1.5 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-2">
 
               {/* ── Mode switcher: two compact pills ── */}
               {!isNote && !isReplyComposerLocked && (
-                <button onClick={handleSummarize} disabled={aiLoadingAction !== null} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-sm font-medium text-violet-600 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60">
-                  {aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  Summarize
+                <button onClick={aiComposer.handleSummarize} disabled={aiComposer.aiLoadingAction !== null} className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:gap-1 sm:rounded-lg sm:px-2 sm:py-1 sm:text-sm sm:font-medium">
+                  {aiComposer.aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  <span className="hidden sm:inline">Summarize</span>
                 </button>
               )}
-              <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+              <div className="flex items-center rounded-xl bg-gray-100 p-0.5">
                 <button
                   onClick={() => onInputModeChange('reply')}
                   title="Reply to customer"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${!isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${!isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
                   <MessageSquare size={11} />
-                  <span>Reply</span>
+                  <span className="hidden sm:inline">Reply</span>
                 </button>
                 <button
                   onClick={() => onInputModeChange('note')}
                   title="Internal note"
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
                   <StickyNote size={11} />
-                  <span>Note</span>
+                  <span className="hidden sm:inline">Note</span>
                 </button>
               </div>
 
               {/* Send button */}
               {(!isReplyComposerLocked || isNote) && (
                 <button onClick={handleSend} disabled={!canSend}
-                  className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${canSend
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-sm font-medium transition-colors sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 ${canSend
                     ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}>

@@ -2,8 +2,10 @@ import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { Users, Plus, Trash2 } from "lucide-react";
+import { MobileSheet } from "../../components/topbar/MobileSheet";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -20,6 +22,7 @@ export const WorkspaceModal = ({
   initialName,
   title,
 }: WorkspaceModalProps) => {
+  const isMobile = useIsMobile();
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -31,6 +34,42 @@ export const WorkspaceModal = ({
   }, [open]);
 
   if (!open) return null;
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={open}
+        onClose={onClose}
+        title={<h3 className="text-base font-semibold text-slate-900">{title}</h3>}
+        footer={
+          <div className="flex flex-col-reverse gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-lg border px-3 py-2 text-sm"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => onSubmit(name)}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+            >
+              Save
+            </button>
+          </div>
+        }
+      >
+        <div className="p-4">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Workspace name"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -85,7 +124,43 @@ export const DeleteWorkspaceModal = ({
   onConfirm,
   workspaceName,
 }: Props) => {
+  const isMobile = useIsMobile();
   if (!open) return null;
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        open={open}
+        onClose={onClose}
+        title={<h3 className="text-base font-semibold text-slate-900">Delete workspace</h3>}
+        footer={
+          <div className="flex flex-col-reverse gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-lg border px-3 py-2 text-sm"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={onConfirm}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="p-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete{" "}
+            <span className="font-medium">{workspaceName}</span>? This action
+            cannot be undone.
+          </p>
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">

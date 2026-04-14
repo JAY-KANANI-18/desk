@@ -1,54 +1,55 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, matchPath, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Sidebar } from './Sidebar';
+import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 import { NotificationListWrapper } from './NotificationList';
 import { IncomingCallWindow } from './IncomingCallWindow';
 import { ActiveCallWindow } from './ActiveCallWindow';
-import { Menu } from 'lucide-react';
+import { MobileBottomNav } from './MobileBottomNav';
 
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const hideTopBarOnMobile = Boolean(
+    matchPath('/inbox/:conversationId', location.pathname),
+  );
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
-      >
-        <Menu size={24} />
-      </button>
+    <div className="flex h-screen min-h-0 bg-slate-50 overflow-hidden">
+      <div className="hidden md:flex md:flex-shrink-0">
+        <AppSidebar />
+      </div>
 
-      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <div
-        className={`fixed md:relative z-40 transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed inset-y-3 left-3 z-50 transition-all duration-300 md:hidden ${
+          sidebarOpen
+            ? 'translate-x-0 opacity-100'
+            : '-translate-x-[calc(100%+1.5rem)] opacity-0'
         }`}
       >
-        <Sidebar onNavigate={() => setSidebarOpen(false)} />
+        <AppSidebar variant="mobile" onNavigate={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden w-full">
-        <TopBar />
-        <main className="flex-1 overflow-hidden">
-          <Outlet />
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className={hideTopBarOnMobile ? 'hidden md:block' : 'block'}>
+          <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
+        </div>
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <Outlet />
+          </div>
         </main>
+        <MobileBottomNav />
       </div>
 
-      {/* Global notification toasts */}
       <NotificationListWrapper />
-
-      {/* Call windows (rendered above everything) */}
       <IncomingCallWindow />
       <ActiveCallWindow />
     </div>

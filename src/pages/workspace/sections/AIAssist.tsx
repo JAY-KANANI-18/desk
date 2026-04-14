@@ -65,27 +65,29 @@ export const AIAssist = () => {
   if (error || !settings || !assistPrompt) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+        <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 sm:h-10 sm:w-10">
               <Wand2 size={20} className="text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base font-semibold text-gray-900">AI Assist</h2>
-              <p className="text-xs text-gray-500">
+              <p className="mt-1 text-sm leading-5 text-gray-500">
                 Configure the one prompt used by the `AI Assist` button in the inbox composer.
               </p>
             </div>
           </div>
-          <Toggle checked={settings.enabled} onChange={v => handleSettingsChange({ enabled: v })} />
+          <div className="self-start sm:self-auto">
+            <Toggle checked={settings.enabled} onChange={v => handleSettingsChange({ enabled: v })} />
+          </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 p-5">
+        <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
           <div className="mb-3">
             <p className="text-sm font-semibold text-gray-900">AI Assist Prompt</p>
-            <p className="text-xs text-gray-500">
+            <p className="mt-1 text-sm leading-5 text-gray-500">
               This prompt is used only for the AI Assist reply action. Summary prompt is internal and not user-editable.
             </p>
           </div>
@@ -93,14 +95,14 @@ export const AIAssist = () => {
             value={assistPrompt.prompt}
             onChange={(e) => setAssistPrompt({ ...assistPrompt, prompt: e.target.value })}
             rows={6}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="min-h-[180px] w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:min-h-0 sm:px-4"
             placeholder="You will be a seasoned customer support agent..."
           />
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               onClick={handlePromptSave}
               disabled={savingPrompt}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
             >
               {savingPrompt ? 'Saving...' : 'Save'}
             </button>

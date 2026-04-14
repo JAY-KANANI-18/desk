@@ -210,7 +210,7 @@ export const ChannelCatalogView = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [connected, setConnected] = useState<Set<string>>(new Set());
+  const [, setConnected] = useState<Set<string>>(new Set());
 
   const filteredChannels = CATALOG_CHANNELS.filter((ch) => {
     const matchesCategory =
@@ -241,24 +241,25 @@ export const ChannelCatalogView = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="bg-white border-b border-gray-200 px-6 md:px-8 py-5">
-        <div className="flex items-center gap-4">
+    <div className="flex h-full min-h-0 flex-col bg-white">
+      <div className="border-b border-gray-200 bg-white px-4 py-4 md:px-8 md:py-5">
+        <div className="flex items-start gap-4">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-800 transition-colors"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+            type="button"
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="flex justify-center items-center gap-4">
-            <div>
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="hidden pt-1 sm:block">
               <Plug size={20} />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <div className="min-w-0">
+              <h1 className="flex items-center gap-2 text-lg font-semibold text-gray-900 md:text-xl">
                 Channel Catalog
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="mt-0.5 text-sm text-gray-500">
                 Discover and connect new messaging channels to your workspace.
               </p>
             </div>
@@ -266,36 +267,37 @@ export const ChannelCatalogView = () => {
         </div>
       </div>
 
-      {/* <div className="bg-white border-b border-gray-200 px-6 md:px-8">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="flex gap-1 overflow-x-auto pb-0">
-            {CATALOG_CATEGORIES.map(cat => (
+      <div className="border-b border-gray-200 bg-white px-4 py-3 md:px-8">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {CATALOG_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`py-4 px-3 border-b-2 text-sm whitespace-nowrap transition-colors ${selectedCategory === cat.id
-                  ? 'border-indigo-600 text-indigo-600 font-medium'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors ${selectedCategory === cat.id
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
                   }`}
+                type="button"
               >
                 {cat.name}
               </button>
             ))}
           </div>
-          <div className="relative pb-2 md:pb-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
               placeholder="Search channels…"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
-      </div> */}
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
         {filteredChannels.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-base font-medium text-gray-600">
@@ -311,13 +313,13 @@ export const ChannelCatalogView = () => {
               {filteredChannels.length} channel
               {filteredChannels.length !== 1 ? "s" : ""}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredChannels.map((ch) => {
                 const isConnecting = connecting === ch.id;
                 return (
                   <div
                     key={ch.id}
-                    className="group bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-all relative flex flex-col"
+                    className="relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md"
                   >
                     {ch.badge && (
                       <span
@@ -335,11 +337,11 @@ export const ChannelCatalogView = () => {
                     <p className="text-xs text-gray-500 line-clamp-3 flex-1">
                       {ch.description}
                     </p>
-                    <div className=" flex  justify-end transition mt-5">
+                    <div className="mt-5 flex justify-stretch transition sm:justify-end">
                       <button
                         onClick={() => handleConnect(ch.id)}
                         disabled={isConnecting}
-                        className={`group relative px-4 py-2 rounded-xl text-sm font-medium border flex items-center justify-center gap-1.5 transition-all duration-300 overflow-hidden
+                        className={`group relative inline-flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-300 sm:w-auto
     ${
       isConnecting
         ? "border-indigo-300 bg-indigo-50 text-indigo-500 cursor-not-allowed"

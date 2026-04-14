@@ -94,7 +94,7 @@ export function InputArea({
   };
 
   return (
-    <div className=" border-gray-200 bg-white flex-shrink-0 ">
+    <div className="flex-shrink-0 border-t border-gray-200 bg-white">
       {isEmail
         ? <EmailInput {...sharedProps} />
         : <ReplyInput  {...sharedProps} />

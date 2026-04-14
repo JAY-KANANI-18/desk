@@ -63,8 +63,8 @@ export function ContactsPageContent({
   handleUpdateContact,
 }: ContactsPageContentProps) {
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-white">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <ContactsHeader
           contactsCount={contacts.length}
           totalContacts={totalContacts}
@@ -78,7 +78,7 @@ export function ContactsPageContent({
           setSelectedLifecycle={setSelectedLifecycle}
           sortOption={sortOption}
           setSortOption={setSortOption}
-          onOpenImport={() => setShowImportModal(true)}
+          onOpenImport={() => navigate("/contacts/import") }
           onExport={() => void handleExport()}
           onOpenImportJobs={() => navigate("/contacts/import-jobs")}
           onNewContact={() => setShowNewContact(true)}

@@ -1,10 +1,10 @@
 // src/pages/channels/ManageChannelPage.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Copy, Check, RefreshCw, QrCode,
-  Info, Settings, FileText, User, Wrench, ShoppingBag,
-  MessageCircle, Plus, Menu, Loader, AlertCircle,
+  ArrowLeft, Copy, Check, RefreshCw,
+  Info, Settings, FileText, Wrench, ShoppingBag,
+  Plus, Loader, AlertCircle,
   ChevronDown, AlertTriangle,
 } from 'lucide-react';
 
@@ -16,11 +16,13 @@ import { EmailConfiguration } from '../workspace/channels/EmailConfigV2';
 import { GmailConfiguration } from '../workspace/channels/GmailConfig';
 import { WebsiteChatConfiguration } from '../workspace/channels/WebsiteChatConfig';
 
-import { useWorkspace } from '../../context/WorkspaceContext';
 import { useChannel } from '../../context/ChannelContext';
 import { InstagramIceBreakersSection } from '../workspace/channels/InstagramIceBreakers';
 import { MessengerChatMenuSection } from '../workspace/channels/MessengerChatMenu';
 import { WhatsAppTemplatesSection } from '../workspace/channels/WhatsAppTemplates';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { SettingsSidebar } from '../../components/settings/SettingsSidebar';
+import { SettingsNavList } from '../../components/settings/SettingsNavList';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ConnectedChannel {
@@ -68,11 +70,11 @@ export const SaveButton = ({
   saving: boolean; saved: boolean; error: string | null;
   onClick: () => void; label?: string; disabled?: boolean;
 }) => (
-  <div className="flex items-center gap-3">
+  <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
     <button
       onClick={onClick}
       disabled={saving || disabled}
-      className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+      className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {saving ? (
         <><Loader size={14} className="animate-spin" />Saving…</>
@@ -114,8 +116,8 @@ export const ReadonlyField = ({ label, value, hint, extra }: {
       <label className="text-sm font-medium text-gray-700">{label}</label>
       {hint && <span title={hint} className="cursor-help"><Info size={13} className="text-gray-400" /></span>}
     </div>
-    <div className="flex items-center gap-2">
-      <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
         <span className="flex-1 text-sm text-gray-700 font-mono truncate">{value}</span>
         <CopyButton value={value} />
       </div>
@@ -174,7 +176,7 @@ export const DangerZone = ({ channelLabel, onDisconnect,channelId }: {
       </button>
       {open && (
         <div className="px-5 py-4 bg-white border-t border-red-100">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-gray-900">Disconnect this channel</p>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -186,19 +188,19 @@ export const DangerZone = ({ channelLabel, onDisconnect,channelId }: {
             {!confirm ? (
               <button
                 onClick={() => setConfirm(true)}
-                className="flex-shrink-0 px-3 py-1.5 border border-red-300 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50"
+                className="w-full rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 sm:w-auto"
               >
                 Disconnect
               </button>
             ) : (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button onClick={() => setConfirm(false)} className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <button onClick={() => setConfirm(false)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
                   Cancel
                 </button>
                 <button
                   onClick={handleDisconnect}
                   disabled={saving}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-60 flex items-center gap-1.5"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
                 >
                   {saving && <Loader size={11} className="animate-spin" />}
                   Confirm
@@ -510,15 +512,88 @@ const SectionContent = ({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export const ManageChannelPage = () => {
-  const { channelType, channelId } = useParams<{ channelType: string; channelId: string }>();
+  const { channelType, channelId, sectionId } = useParams<{
+    channelType: string;
+    channelId: string;
+    sectionId?: string;
+  }>();
   const navigate = useNavigate();
-const { channels, loading, refreshing ,refreshChannels} = useChannel();
-  const [activeSection, setActiveSection] = useState('configuration');
+  const isMobile = useIsMobile();
+  const { channels, loading, refreshing, refreshChannels } = useChannel();
+  const channel = channels.find((item) => String(item.id) === channelId);
+  const meta = channelType ? CHANNEL_META[channelType] : null;
+  const defaultSection = meta?.navItems[0]?.id ?? 'configuration';
+  const hasValidSection = Boolean(
+    sectionId && meta?.navItems.some((item) => item.id === sectionId),
+  );
+  const activeSection = hasValidSection ? sectionId! : defaultSection;
+  const activeNavItem =
+    meta?.navItems.find((item) => item.id === activeSection) ??
+    meta?.navItems[0] ??
+    null;
+  const navSections = useMemo(() => {
+    if (!meta || !channelType || !channelId) {
+      return [];
+    }
 
+    return [
+      {
+        id: 'channel-manage',
+        label: 'Manage',
+        items: meta.navItems.map((item) => ({
+          id: item.id,
+          label: item.label,
+          icon: item.icon,
+          badge: item.badge,
+          to: `/channel/manage/${channelType}/${channelId}/${item.id}`,
+        })),
+      },
+    ];
+  }, [channelId, channelType, meta]);
 
+  useEffect(() => {
+    if (
+      loading ||
+      refreshing ||
+      !meta ||
+      !channel ||
+      !channelType ||
+      !channelId ||
+      !defaultSection
+    ) {
+      return;
+    }
+
+    if (!sectionId) {
+      if (!isMobile) {
+        navigate(`/channel/manage/${channelType}/${channelId}/${defaultSection}`, {
+          replace: true,
+        });
+      }
+      return;
+    }
+
+    if (!hasValidSection) {
+      navigate(`/channel/manage/${channelType}/${channelId}/${defaultSection}`, {
+        replace: true,
+      });
+    }
+  }, [
+    channel,
+    channelId,
+    channelType,
+    defaultSection,
+    hasValidSection,
+    isMobile,
+    loading,
+    meta,
+    navigate,
+    refreshing,
+    sectionId,
+  ]);
   if (loading || refreshing) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
+      <div className="flex h-full items-center justify-center bg-gray-50 px-4">
         <div className="flex flex-col items-center gap-3 text-gray-400">
           <Loader size={28} className="animate-spin" />
           <span className="text-sm">Loading channel…</span>
@@ -527,19 +602,17 @@ const { channels, loading, refreshing ,refreshChannels} = useChannel();
     );
   }
 
-  const channel = channels.find(c => String(c.id) === channelId);
-  const meta = channelType ? CHANNEL_META[channelType] : null;
-  console.log({channel,meta,channelType,channelId,channels});
-  
-
   if (!meta || !channelType || !channel) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
+      <div className="flex h-full items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🔌</div>
           <p className="text-lg font-semibold text-gray-700">Channel not found</p>
-          <p className="text-sm text-gray-400 mt-1">This channel may have been disconnected.</p>
-          <button onClick={() => navigate('/channels')} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+          <p className="mt-1 text-sm text-gray-400">This channel may have been disconnected.</p>
+          <button
+            onClick={() => navigate('/channels')}
+            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
             Back to channels
           </button>
         </div>
@@ -547,107 +620,198 @@ const { channels, loading, refreshing ,refreshChannels} = useChannel();
     );
   }
 
+  const statusBadgeClass =
+    channel.status === 'Connected'
+      ? 'bg-green-50 text-green-700'
+      : channel.status === 'Error'
+        ? 'bg-red-50 text-red-600'
+        : 'bg-gray-100 text-gray-500';
+
+  const statusDotClass =
+    channel.status === 'Connected'
+      ? 'bg-green-500'
+      : channel.status === 'Error'
+        ? 'bg-red-500'
+        : 'bg-gray-400';
+
+  const handleBack = () => {
+    if (isMobile && sectionId) {
+      navigate(`/channel/manage/${channelType}/${channelId}`);
+      return;
+    }
+
+    navigate('/channels');
+  };
+
+  const renderSidebarHeader = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50">
+          <img
+            alt={meta.label}
+            className="h-10 w-10 object-contain"
+            onError={(event) => {
+              (event.target as HTMLImageElement).style.display = 'none';
+            }}
+            src={meta.icon}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900">
+            {channel.name || meta.label}
+          </p>
+          <p className="truncate text-xs text-slate-400">{meta.label}</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Channel ID
+        </p>
+        <p className="mt-1 truncate font-mono text-xs text-slate-600">
+          {channelId ?? channel.id}
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderSidebarFooter = () => (
+    <div className="space-y-4">
+      {channel.connectedAt ? (
+        <div>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Connected
+          </p>
+          <p className="text-xs text-slate-500">{channel.connectedAt}</p>
+        </div>
+      ) : null}
+
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Resources
+        </p>
+        <ul className="space-y-2">
+          {meta.additionalResources.map((resource) => (
+            <li key={resource.label}>
+              <a
+                className="text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline"
+                href={resource.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {resource.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="flex h-full min-h-0 flex-col bg-slate-50">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
-        <button onClick={() => navigate('/channels')} className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-800 transition-colors">
-          <ArrowLeft size={18} />
-        </button>
-        <nav className="flex items-center gap-2 text-sm text-gray-400">
-          <button onClick={() => navigate('/channels')} className="hover:text-indigo-600 transition-colors">Channels</button>
-          <span>/</span>
-          <span className="text-gray-700 font-medium">{meta.label}</span>
-          {channel.name && channel.name !== meta.label && (
-            <><span>/</span><span className="text-gray-500">{channel.name}</span></>
-          )}
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
-            channel.status === 'Connected' ? 'bg-green-50 text-green-700' :
-            channel.status === 'Error'     ? 'bg-red-50 text-red-600' :
-                                             'bg-gray-100 text-gray-500'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              channel.status === 'Connected' ? 'bg-green-500' :
-              channel.status === 'Error'     ? 'bg-red-500' : 'bg-gray-400'
-            }`} />
+      <div className="border-b border-slate-200 bg-white px-4 py-3 md:px-6 md:py-4">
+        <div className="flex items-start gap-3 md:items-center">
+          <button
+            aria-label="Back"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100"
+            onClick={handleBack}
+            type="button"
+          >
+            <ArrowLeft size={18} />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <nav className="hidden items-center gap-2 text-sm text-slate-400 md:flex">
+              <button
+                className="transition-colors hover:text-indigo-600"
+                onClick={() => navigate('/channels')}
+                type="button"
+              >
+                Channels
+              </button>
+              <span>/</span>
+              <span className="font-medium text-slate-700">{meta.label}</span>
+              {channel.name && channel.name !== meta.label ? (
+                <>
+                  <span>/</span>
+                  <span className="truncate text-slate-500">{channel.name}</span>
+                  {activeNavItem ? (
+                    <>
+                      <span>/</span>
+                      <span className="truncate text-slate-500">{activeNavItem.label}</span>
+                    </>
+                  ) : null}
+                </>
+              ) : activeNavItem ? (
+                <>
+                  <span>/</span>
+                  <span className="truncate text-slate-500">{activeNavItem.label}</span>
+                </>
+              ) : null}
+            </nav>
+
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:hidden">
+              {meta.label}
+            </p>
+            <h1 className="truncate text-base font-semibold text-slate-900 md:hidden">
+              {sectionId ? activeNavItem?.label ?? 'Configuration' : channel.name || meta.label}
+            </h1>
+            <p className="mt-0.5 truncate text-xs text-slate-500 md:hidden">
+              {sectionId
+                ? channel.name || meta.label
+                : 'Choose what you want to manage'}
+            </p>
+          </div>
+
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass}`} />
             {channel.status ?? 'Unknown'}
           </span>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Sidebar */}
-        <aside className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
-          {/* Channel identity */}
-          <div className="px-4 pt-5 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <img src={meta.icon} alt={meta.label} className="w-9 h-9 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{channel.name}</p>
-                <p className="text-xs text-gray-400 truncate">{meta.label}</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-400 mt-2 font-mono">ID: {channelId ?? channel.id}</p>
-          </div>
-
-          {/* Nav items */}
-          <nav className="px-2 py-3 flex-1">
-            {meta.navItems.map(item => (
-              <button key={item.id} onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5 ${
-                  activeSection === item.id
-                    ? 'text-indigo-600 font-medium bg-indigo-50'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}>
-                <span className={activeSection === item.id ? 'text-indigo-500' : 'text-gray-400'}>{item.icon}</span>
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded leading-none">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          {/* Connected by */}
-          {channel.connectedAt && (
-            <div className="px-4 py-3 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 mb-0.5">Connected</p>
-              <p className="text-xs text-gray-400">{channel.connectedAt}</p>
-            </div>
-          )}
-
-          {/* Additional resources */}
-          <div className="px-4 py-3 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-2">Resources</p>
-            <ul className="space-y-1.5">
-              {meta.additionalResources.map(r => (
-                <li key={r.label}>
-                  <a href={r.href} target="_blank" rel="noopener noreferrer"
-                    className="flex items-start gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 hover:underline leading-relaxed">
-                    <span className="mt-0.5 flex-shrink-0">•</span>{r.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+        <div className="hidden border-r border-slate-200 md:block md:flex-shrink-0">
+          <SettingsSidebar
+            footerContent={renderSidebarFooter()}
+            headerContent={renderSidebarHeader()}
+            sections={navSections}
+            title={`${meta.label} settings`}
+          />
+        </div>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="px-8 py-8 max-w-3xl">
-            <SectionContent
-              sectionId={activeSection}
-              channelType={channelType}
-              channel={channel}
-              onDisconnect={() => {refreshChannels() 
-                navigate('/channels')}}
-            />
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-4xl px-4 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
+            {isMobile && !sectionId ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  {renderSidebarHeader()}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                  <SettingsNavList sections={navSections} />
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  {renderSidebarFooter()}
+                </div>
+              </div>
+            ) : (
+              <SectionContent
+                sectionId={activeSection}
+                channelType={channelType}
+                channel={channel}
+                onDisconnect={() => {
+                  void refreshChannels();
+                  navigate('/channels');
+                }}
+              />
+            )}
           </div>
         </main>
       </div>

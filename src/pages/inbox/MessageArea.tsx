@@ -489,7 +489,7 @@ export function MessageArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="relative flex-1 overflow-y-auto overflow-x-hidden px-4 py-6"
+        className="relative flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 sm:py-6"
         style={{ scrollBehavior: "auto", overflowAnchor: "none" }}
       >
         {msgSearchOpen && (

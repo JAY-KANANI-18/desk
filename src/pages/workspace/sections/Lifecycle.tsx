@@ -161,7 +161,7 @@ const StageRow = ({
   return (
     <div
   className={[
-    "relative flex flex-col gap-1.5 py-3 transition-all duration-150",
+    "relative flex flex-col gap-2 py-3 transition-all duration-150 sm:gap-1.5",
     isDragging ? "opacity-30 scale-[0.99]" : "opacity-100 scale-100",
     menuOpen ? "z-50" : "z-0",
   ].join(" ")}
@@ -174,11 +174,11 @@ const StageRow = ({
         <div className="absolute -bottom-px left-8 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
       )}
 
-      <div className="text-[11px] text-gray-400 font-semibold tracking-wide uppercase pl-9">
+      <div className="pl-9 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
         Stage {index + 1}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Drag handle */}
         <div
           {...dragHandleProps}
@@ -207,7 +207,7 @@ const StageRow = ({
           placeholder="Stage name…"
           autoComplete="off"
           className={[
-            "flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white transition-all",
+            "min-w-[12rem] flex-1 basis-[12rem] border rounded-lg bg-white px-3 py-2 text-sm transition-all",
             "focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-300",
             !stage.name ? "border-red-300 ring-1 ring-red-100" : "border-gray-200 hover:border-gray-300",
           ].join(" ")}
@@ -230,19 +230,19 @@ const StageRow = ({
 
         {/* New stage actions */}
         {stage._isNew ? (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-1">
             <button
               type="button"
               onClick={() => onCommitNew(stage.id)}
               disabled={!stage.name.trim() || stage._saving}
-              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed sm:flex-none sm:whitespace-nowrap"
             >
               {stage._saving ? "Adding…" : "Add"}
             </button>
             <button
               type="button"
               onClick={() => onDelete(stage.id)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 text-lg leading-none transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 leading-none transition-colors hover:bg-red-50 hover:text-red-500 sm:h-7 sm:w-7 sm:border-0 sm:text-lg"
               aria-label="Cancel"
             >
               ×
@@ -250,7 +250,7 @@ const StageRow = ({
           </div>
         ) : (
           /* 3-dot menu */
-          <div className="relative shrink-0" ref={menuRef}>
+          <div className="relative ml-auto shrink-0" ref={menuRef}>
             <button
               type="button"
               onClick={() => setMenuOpen(p => !p)}
@@ -464,19 +464,19 @@ const StagePanel = ({
 }: PanelProps) => (
   <div className={`rounded-2xl border border-gray-200 overflow-visible flex flex-col ${className}`}>
     {/* Panel header */}
-    <div className="px-5 pt-4 pb-3.5 border-b border-gray-100 flex items-start gap-3 bg-white/60">
-      <span className="text-xl mt-0.5 shrink-0">{icon}</span>
+    <div className="flex flex-wrap items-start gap-3 border-b border-gray-100 bg-white/60 px-4 pb-3.5 pt-4 sm:px-5">
+      <span className="mt-0.5 shrink-0 text-xl">{icon}</span>
       <div className="min-w-0">
         <p className="font-semibold text-gray-900 text-sm leading-tight">{title}</p>
         <p className="text-xs text-gray-500 mt-1 leading-relaxed">{subtitle}</p>
       </div>
-      <span className="ml-auto shrink-0 w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold flex items-center justify-center">
+      <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500">
         {stages.length}
       </span>
     </div>
 
     {/* Stage rows */}
-    <div className="flex-1 px-4 divide-y divide-gray-100/80">
+    <div className="flex-1 divide-y divide-gray-100/80 px-3 sm:px-4">
       {stages.length === 0 && (
         <p className="py-6 text-xs text-center text-gray-400">No stages yet. Add one below.</p>
       )}
@@ -500,7 +500,7 @@ const StagePanel = ({
     </div>
 
     {/* Add button */}
-    <div className="px-4 py-3 border-t border-gray-100 bg-white/60">
+    <div className="border-t border-gray-100 bg-white/60 px-3 py-3 sm:px-4">
       <button
         type="button"
         onClick={() => onAddNew(type)}
@@ -755,14 +755,14 @@ export const Lifecycle = () => {
         }
       `}</style>
 
-      <div className="p-6 space-y-5 ">
+      <div className="space-y-4 px-0 py-1 sm:space-y-5 sm:p-6">
 
         {/* Toast stack */}
-        <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+        <div className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex flex-col gap-2 sm:inset-x-auto sm:right-4">
           {toasts.map(t => (
             <div
               key={t.id}
-              className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2.5 pointer-events-auto border ${
+              className={`pointer-events-auto flex w-full items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg sm:w-auto ${
                 t.ok
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-red-50 text-red-700 border-red-200"
@@ -779,25 +779,27 @@ export const Lifecycle = () => {
         </div>
 
         {/* Page header */}
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2.5">
             <span className="text-xl">🔄</span>
             <h1 className="text-lg font-semibold text-gray-900">Lifecycle</h1>
           </div>
-          <p className="text-sm text-gray-500 ml-9">
+          <p className="text-sm leading-5 text-gray-500 sm:ml-9">
             Track and manage Contacts through every stage of your sales process
           </p>
         </div>
 
         {/* Visibility card */}
-        <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 flex items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800">Show Lifecycle Stages</p>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed ">
+            <p className="mt-1 text-sm leading-5 text-gray-500">
               Display Lifecycle Stages in Inbox and Contacts. Disabling only hides the stages — your contact data remains unchanged.
             </p>
           </div>
-          <Toggle enabled={enabled} disabled={togglingVis} onToggle={handleToggleVisibility} />
+          <div className="self-start sm:self-auto">
+            <Toggle enabled={enabled} disabled={togglingVis} onToggle={handleToggleVisibility} />
+          </div>
         </div>
 
         {/* Section heading */}
@@ -806,7 +808,7 @@ export const Lifecycle = () => {
         </h2>
 
         {/* Panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
           <StagePanel
             title="Lifecycle Stages"
             subtitle="Track Contacts through key milestones. A default inbox is created for each lifecycle stage."

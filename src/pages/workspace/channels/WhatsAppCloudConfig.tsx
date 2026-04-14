@@ -33,12 +33,12 @@ function InfoPill({ icon: Icon, label, value, copyable = false, mono = false }: 
 }) {
   const { copied, copy } = useCopy(value ?? '');
   return (
-    <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex flex-col gap-0.5 min-w-0">
       <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
         <Icon size={10} />{label}
       </span>
       <div className="flex items-center gap-1.5">
-        <span className={`text-sm text-slate-700 truncate max-w-[180px] ${mono ? 'font-mono' : 'font-medium'}`} title={value}>
+        <span className={`max-w-full truncate text-sm text-slate-700 sm:max-w-[180px] ${mono ? 'font-mono' : 'font-medium'}`} title={value}>
           {value || '—'}
         </span>
         {copyable && value && (
@@ -157,7 +157,7 @@ export const WhatsAppConfiguration = ({
     <div className="space-y-6">
       {/* Header info card */}
       <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-white">
+        <div className="flex flex-col gap-2 px-5 py-3.5 border-b border-slate-100 bg-white sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow shadow-emerald-200" />
             <span className="text-sm font-semibold text-slate-800">Configuration</span>
@@ -167,7 +167,7 @@ export const WhatsAppConfiguration = ({
             <QrCode size={13} />Open chat link
           </a> */}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-5 py-4">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 px-5 py-4 sm:grid-cols-2 xl:grid-cols-3">
           <InfoPill icon={Phone}     label="Phone Number"    value={channel?.config?.phoneNumber ?? channel?.identifier}  copyable mono />
           <InfoPill icon={Hash}      label="Phone Number ID" value={channel?.config?.phoneNumberId}  copyable mono />
           <InfoPill icon={Building2}      label="Verified Name" value={channel?.config?.verifiedName}  copyable mono />
