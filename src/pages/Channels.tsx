@@ -54,6 +54,7 @@ const ConnectedChannelsView = ({
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
+
   const handleManage = (ch: ConnectedChannel) => {
     navigate(`/channel/manage/${ch.type}/${ch.id}`);
   };
@@ -148,7 +149,7 @@ const ConnectedChannelsView = ({
                       {ch.name}
                     </p>
                     <p className="mt-1 truncate text-sm text-gray-500">
-                      {channelConfig[ch.type]?.label} · {ch.identifier}
+                      {channelConfig[ch.type]?.label} ï¿½ {ch.identifier}
                     </p>
                     <div
                       className={`mt-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
@@ -219,6 +220,31 @@ export const Channels = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
+
+  useEffect(() => {
+  const code = sessionStorage.getItem("instagram_oauth_code");
+  const error = sessionStorage.getItem("instagram_oauth_error");
+
+  if (code) {
+    sessionStorage.removeItem("instagram_oauth_code");
+
+    // ðŸ”¥ Call your API here
+          const redirectUri =  import.meta.env.VITE_INSTAGRAM_REDIRECT_URI;
+
+    ChannelApi.exchangeInstagramCode(code, redirectUri)
+      .then(res => {
+        // onSuccess(res.channel);
+      })
+      .catch(err => {
+        // onError(err.message);
+      });
+  }
+
+  if (error) {
+    sessionStorage.removeItem("instagram_oauth_error");
+    // onError(error);
+  }
+}, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
