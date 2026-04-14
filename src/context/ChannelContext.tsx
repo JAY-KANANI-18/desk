@@ -8,6 +8,7 @@ import React, {
 
 import { organizationApi } from "../lib/organizationApi";
 import { ChannelApi } from "../lib/channelApi";
+import { useWorkspace } from "./WorkspaceContext";
 
 interface Workspace {
   id: string;
@@ -47,6 +48,7 @@ export const ChannelContextProvider: React.FC<{
   const [loading, setLoading] = useState(true); // initial load
   const [refreshing, setRefreshing] = useState(false); // bg update
 
+  const {activeWorkspace} = useWorkspace()
   const refreshChannels = useCallback(async (isBackground = false) => {
     try {
       if (isBackground) {
@@ -79,7 +81,9 @@ export const ChannelContextProvider: React.FC<{
     refreshChannels(false); // first page load
   }, [refreshChannels]);
 
-  
+  useEffect(()=>{
+refreshChannels(true)
+  },[activeWorkspace])
 
 
 

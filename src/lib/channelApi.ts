@@ -25,12 +25,12 @@ export const ChannelApi = {
             wabaId,
             webhookSecret
         }),
-    exchangeWhatsAppCode: (code: string, workspaceId: string, redirectUri: string) =>
-        api.post("/channels/whatsapp/auth/callback", { code, workspaceId, redirectUri }),
-    exchangeInstagramCode: (code: string, workspaceId: string, redirectUri: string) =>
-        api.post("/channels/instagram/auth/callback", { code, workspaceId, redirectUri }),
-    exchangeMessengerCode: (code: string, workspaceId: string, redirectUri: string) =>
-        api.post("/channels/messenger/auth/callback", { code, workspaceId, redirectUri }),
+    exchangeWhatsAppCode: (code: string, redirectUri: string) =>
+        api.post("/channels/whatsapp/auth/callback", { code, redirectUri }),
+    exchangeInstagramCode: (code: string, redirectUri: string) =>
+        api.post("/channels/instagram/auth/callback", { code, redirectUri }),
+    exchangeMessengerCode: (code: string, redirectUri: string) =>
+        api.post("/channels/messenger/auth/callback", { code, redirectUri }),
     getWhatsAppAuthUrl: (workspaceId: string,redirectUri: string) =>
         api.get(`/channels/whatsapp/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
     getInstagramAuthUrl: (workspaceId: string, redirectUri: string) =>
@@ -40,10 +40,9 @@ export const ChannelApi = {
 // Add these to your ChannelApi
 
 // Get pages after OAuth without connecting
-getMessengerPages: async (code: string, workspaceId: string, redirectUri: string) => 
+getMessengerPages: async (code: string, redirectUri: string) => 
    api.post('/channels/messenger/auth/pages', {
     code,
-    workspaceId,
     redirectUri,
   })
  

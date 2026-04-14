@@ -172,7 +172,7 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
       setStep('exchanging');
 
       // Get pages list — don't connect yet
-      const result = await ChannelApi.getMessengerPages(code, workspaceId, redirectUri);
+      const result = await ChannelApi.getMessengerPages(code, redirectUri);
       
       // Store pages data for later
       setPagesData(result.pages);

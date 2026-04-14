@@ -168,7 +168,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
       // Step 4: Exchange code via BE — POST /webhooks/whatsapp/auth/callback
       setOauthStep('saving');
-      const result = await ChannelApi.exchangeWhatsAppCode(code, workspaceId, redirectUri);
+      const result = await ChannelApi.exchangeWhatsAppCode(code, redirectUri);
 
       // result.channels is array (one per phone number)
       // Pick first or let user choose — here we pick first

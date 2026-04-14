@@ -16,6 +16,7 @@ import {
 } from "../lib/notificationApi";
 import { useSocket } from "../socket/socket-provider";
 import { useAuth } from "./AuthContext";
+import { useWorkspace } from "./WorkspaceContext";
 
 export type NotificationEventType = NotificationSoundType;
 
@@ -104,6 +105,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const heartbeatRef = useRef(0);
   const browserNotificationsRef = useRef<Record<string, Notification>>({});
   const browserPermissionPromptedRef = useRef(false);
+
+    const {activeWorkspace} = useWorkspace()
+  
 
   const dismiss = useCallback((id: string) => {
     clearTimeout(timersRef.current[id]);
@@ -214,7 +218,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     void loadTab("new", true);
     void loadTab("archived", true);
     void loadTab("all", true);
-  }, [refreshUnreadCount]);
+  }, [refreshUnreadCount,activeWorkspace]);
 
   useEffect(() => {
     if (!user) return;
@@ -242,7 +246,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       document.removeEventListener("visibilitychange", handler);
       window.clearInterval(interval);
     };
-  }, [sendHeartbeat, user]);
+  }, [sendHeartbeat, user,activeWorkspace]);
 
   useEffect(() => {
     if (browserPermission !== "default" || browserPermissionPromptedRef.current) {
@@ -373,7 +377,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("notification:updated", handleUpdated);
       socket.off("notification:badge", handleBadge);
     };
-  }, [browserPermission, socket]);
+  }, [browserPermission, socket,activeWorkspace]);
 
   const notify = useCallback(
     (event: Omit<AppNotification, "id" | "timestamp">) => {
