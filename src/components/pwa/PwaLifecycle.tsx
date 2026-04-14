@@ -218,7 +218,7 @@ export function PwaLifecycle() {
         </div>
       )}
 
-      {offlineReady && !needRefresh && (
+      {/* {offlineReady && !needRefresh && (
         <div className="fixed left-3 right-3 top-3 z-[68] rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-sm md:left-auto md:right-6 md:top-6 md:w-[22rem]">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -243,7 +243,7 @@ export function PwaLifecycle() {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {!isOnline && (
         <div className="fixed left-3 right-3 top-3 z-[67] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm md:left-6 md:right-auto md:top-6 md:w-[22rem]">
