@@ -22,8 +22,10 @@ import {
 import { channelConfig } from "./data";
 import { getActiveCategoryLabel } from "./MobileCategoryDrawer";
 import { useInbox } from "../../context/InboxContext";
+import { useChannel } from "../../context/ChannelContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import type { ApiConversation, ConvStatus, ConvPriority } from "../../lib/inboxApi";
+import { InboxAddChannelPrompt } from "./InboxAddChannelPrompt";
 
 /* ─── Skeleton ──────────────────────────────────────────────────── */
 
@@ -125,6 +127,7 @@ export function ConversationList({
     selectedConversation, selectConversation,
     lifecycles, fetchLifecycles,
   } = useInbox();
+  const { channels, loading: channelsLoading } = useChannel();
 
   const { workspaceUsers } = useWorkspace();
 
@@ -170,6 +173,9 @@ export function ConversationList({
   /* Total unread */
   const totalUnread = convList.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
   const activeCategoryLabel = getActiveCategoryLabel(filters, lifecycles as any);
+  const showChannelsLoadingState = channelsLoading && convList.length === 0;
+  const showNoChannelsState =
+    !channelsLoading && channels.length === 0 && convList.length === 0;
 
   /* Active filter pills */
   const activePills: Array<{ label: string; clear: () => void }> = [];
@@ -435,14 +441,21 @@ export function ConversationList({
         className="flex-1 overflow-y-auto"
       >
         {/* First-load skeleton */}
-        {convLoading && convList.length === 0 && (
+        {(convLoading || showChannelsLoadingState) && convList.length === 0 && (
           <>
             <ConvSkeleton /><ConvSkeleton /><ConvSkeleton />
             <ConvSkeleton /><ConvSkeleton />
           </>
         )}
 
-        {!convLoading && convList.length === 0 && (
+        {!convLoading && !showChannelsLoadingState && showNoChannelsState ? (
+          <InboxAddChannelPrompt
+            compact
+            message="Add your first channel and this quiet list turns into your live customer queue."
+          />
+        ) : null}
+
+        {!convLoading && !showChannelsLoadingState && !showNoChannelsState && convList.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             <Search size={28} className="text-gray-300" />
             <p className="text-sm text-gray-400">No conversations found</p>

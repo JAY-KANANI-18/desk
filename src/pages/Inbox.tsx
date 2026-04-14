@@ -19,12 +19,14 @@ import {
   useLocation,
 } from "react-router-dom";
 import { InboxProvider, useInbox } from "../context/InboxContext";
+import { useChannel } from "../context/ChannelContext";
 import { SubSidebar }       from "./inbox/SubSidebar";
 import { ConversationList } from "./inbox/ConversationList";
 import { ChatHeader }       from "./inbox/ChatHeader";
 import { MessageArea }      from "./inbox/MessageArea";
 import { InputArea }        from "./inbox/InputArea";
 import { ContactSidebarHybrid } from "./inbox/ContactSidebarHybrid";
+import { InboxAddChannelPrompt } from "./inbox/InboxAddChannelPrompt";
 import { MobileCategoryDrawer } from "./inbox/MobileCategoryDrawer";
 import { MobileContactSheet } from "./inbox/MobileContactSheet";
 import type { ReplyContext } from "./inbox/MessageArea";
@@ -40,6 +42,7 @@ export function InboxPage() {
   const navTargetMessageId = (location.state as any)?.targetMessageId ?? null;
   const navPreserveSearch = (location.state as any)?.preserveSearch ?? false;
   const isMobile = useIsMobile();
+  const { channels: workspaceChannels, loading: channelsLoading } = useChannel();
 
   const {
     convList,
@@ -131,6 +134,10 @@ export function InboxPage() {
 
   const hasConversationRoute = Boolean(conversationId);
   const showConversationView = hasConversationRoute && Boolean(selectedConversation);
+  const showNoChannelsState =
+    !channelsLoading &&
+    workspaceChannels.length === 0 &&
+    convList.length === 0;
 
   return (
     <div className="flex h-full min-h-0 bg-slate-50 md:bg-white">
@@ -189,6 +196,14 @@ export function InboxPage() {
       ) : hasConversationRoute ? (
         <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-gray-400">Loading conversation…</p>
+        </div>
+      ) : channelsLoading ? (
+        <div className="hidden flex-1 items-center justify-center md:flex">
+          <p className="text-gray-500">Loading inbox...</p>
+        </div>
+      ) : showNoChannelsState ? (
+        <div className="hidden flex-1 items-center justify-center border-l border-slate-100 bg-gradient-to-br from-white via-slate-50 to-indigo-50/40 md:flex">
+          <InboxAddChannelPrompt message="Connect a channel and the next customer hello lands here, ready for your reply." />
         </div>
       ) : (
         <div className="hidden flex-1 items-center justify-center md:flex">

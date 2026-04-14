@@ -159,22 +159,24 @@ export const UserSettings = () => {
   return (
     <div className="space-y-6">
       {/* Profile */}
-      <Card className="rounded-[28px] border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-gray-900 mb-5">Profile</h2>
+      <Card className="rounded-[24px] border-slate-200 p-4 shadow-sm sm:rounded-[28px] sm:p-6">
+        <h2 className="mb-5 text-base font-semibold text-gray-900">Profile</h2>
 
-        <div className="flex items-center gap-5 mb-5">
+        <div className="mb-5 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-5">
           {/* Avatar upload area */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex w-full shrink-0 flex-col items-center gap-2 sm:w-auto sm:items-start">
             <div className="relative group">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl ring-2 ring-offset-2 ring-transparent group-hover:ring-indigo-400 transition-all">
+              <div className="h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xl font-bold text-white ring-2 ring-transparent ring-offset-2 transition-all group-hover:ring-indigo-400 sm:h-24 sm:w-24">
                 {displayAvatarUrl ? (
                   <img
                     src={displayAvatarUrl}
                     alt="Avatar"
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span>{initials}</span>
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span>{initials}</span>
+                  </div>
                 )}
               </div>
 
@@ -220,19 +222,24 @@ export const UserSettings = () => {
 
             {/* Pending upload label */}
             {avatarFile && !avatarUploading && (
-              <span className="text-[11px] text-indigo-600 font-medium max-w-[90px] truncate text-center" title={avatarFile?.name}>
+              <span
+                className="max-w-full truncate text-center text-[11px] font-medium text-indigo-600 sm:max-w-[90px] sm:text-left"
+                title={avatarFile?.name}
+              >
                 {avatarFile?.name}
               </span>
             )}
 
             {/* Avatar error */}
             {avatarError && (
-              <span className="text-[11px] text-red-500 max-w-[90px] text-center">{avatarError}</span>
+              <span className="max-w-full text-center text-[11px] text-red-500 sm:max-w-[90px] sm:text-left">
+                {avatarError}
+              </span>
             )}
           </div>
 
           {/* Fields */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
               <input
@@ -249,7 +256,7 @@ export const UserSettings = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 readOnly
@@ -266,13 +273,13 @@ export const UserSettings = () => {
               />
             </div> */}
 
-            {error && <p className="text-sm text-red-500 col-span-2">{error}</p>}
+            {error && <p className="text-sm text-red-500 md:col-span-2">{error}</p>}
 
-            <div className="flex justify-start col-span-2">
+            <div className="flex md:col-span-2">
               <button
                 onClick={handleSave}
                 disabled={saving || avatarUploading}
-                className={`px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-60 ${
+                className={`flex w-full items-center justify-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-colors disabled:opacity-60 sm:w-auto ${
                   saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'
                 }`}
               >
