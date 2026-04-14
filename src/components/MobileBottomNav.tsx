@@ -48,7 +48,7 @@ export function MobileBottomNav() {
   }
 
   return (
-    <div className=" bg-white px-2  pt-1 md:hidden">
+    <div className=" fixed bottom-0 left-0 right-0 z-30 bg-white px-2 pt-1 md:hidden">
       <nav className="mx-auto flex w-full max-w-xl items-center justify-between gap-1 rounded-[28px] rounded-br-none rounded-bl-none border  border-indigo-600 border-b-0 bg-white px-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         {navItems.map((item) => {
           if (item.label === "Settings") {

@@ -41,11 +41,11 @@ export const Layout = () => {
         <div className={hideTopBarOnMobile ? 'hidden md:block' : 'block'}>
           <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
         </div>
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col">
-            <Outlet />
-          </div>
-        </main>
+     <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+  <div className="flex min-h-0 flex-1 flex-col pb-[4.5rem] md:pb-0">
+    <Outlet />
+  </div>
+</main>
         <MobileBottomNav />
       </div>
 
