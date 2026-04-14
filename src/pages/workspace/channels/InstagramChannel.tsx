@@ -175,7 +175,7 @@ export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: Instagr
       // Step 4: Exchange code via BE
       // POST /webhooks/instagram/auth/callback
       setStep('saving');
-      const result = await ChannelApi.exchangeInstagramCode(code, workspaceId, redirectUri);
+      const result = await ChannelApi.exchangeInstagramCode(code, redirectUri);
 
       onSuccess(result.channel);
     } catch (e: any) {
