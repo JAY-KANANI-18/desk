@@ -125,7 +125,7 @@ export function MobileBottomNav() {
 
           const iconClassName = `relative z-10 transition-all duration-300 ${
             isActive
-              ? " scale-125 text-white"
+              ? " scale-110 text-white"
               : "text-slate-500"
           }`;
 
@@ -172,7 +172,7 @@ export function MobileBottomNav() {
             onClick={() => setShowSettingsMenu(false)}
           />
 
-          <div className="fixed inset-x-3 bottom-[5.75rem] z-50 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.22)] md:hidden">
+          <div className=" fixed inset-x-3 bottom-[5.75rem] z-50 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.22)] md:hidden">
             <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
               Settings
             </p>
