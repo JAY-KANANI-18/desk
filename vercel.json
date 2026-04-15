@@ -1,15 +1,12 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/instagram-callback.html",
-      "dest": "/instagram-callback.html"
+      "source": "/instagram-callback.html",
+      "destination": "/instagram-callback.html"
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
