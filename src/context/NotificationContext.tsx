@@ -327,18 +327,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     [refreshPushDevices],
   );
 
-  const sendHeartbeat = useCallback(async () => {
+  const sendHeartbeat = useCallback(async (
+    module: "app" | "background" = document.visibilityState === "visible"
+      ? "app"
+      : "background",
+    force = false,
+  ) => {
     if (!user) return;
 
     const now = Date.now();
-    if (now - heartbeatRef.current < HEARTBEAT_THROTTLE_MS) {
+    if (!force && module === "app" && now - heartbeatRef.current < HEARTBEAT_THROTTLE_MS) {
       return;
     }
 
     heartbeatRef.current = now;
 
     try {
-      const result = await notificationApi.heartbeat(document.visibilityState === "visible" ? "app" : "background");
+      const result = await notificationApi.heartbeat(module);
       const rawStatus = String(result.status ?? result.activityStatus ?? "").toLowerCase();
       const nextStatus = rawStatus === "active" ? "online" : rawStatus;
 
@@ -448,26 +453,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return;
 
     const handler = () => {
-      if (document.visibilityState === "visible") {
-        void sendHeartbeat();
-      }
+      void sendHeartbeat(
+        document.visibilityState === "visible" ? "app" : "background",
+        true,
+      );
+    };
+    const handlePageHide = () => {
+      void sendHeartbeat("background", true);
     };
 
-    void sendHeartbeat();
+    void sendHeartbeat("app", true);
 
     const interactionEvents: Array<keyof WindowEventMap> = ["focus", "click", "keydown", "mousemove"];
     interactionEvents.forEach((eventName) => window.addEventListener(eventName, handler, { passive: true }));
     document.addEventListener("visibilitychange", handler);
+    window.addEventListener("pagehide", handlePageHide);
 
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        void sendHeartbeat();
+        void sendHeartbeat("app");
       }
     }, 60000);
 
     return () => {
       interactionEvents.forEach((eventName) => window.removeEventListener(eventName, handler));
       document.removeEventListener("visibilitychange", handler);
+      window.removeEventListener("pagehide", handlePageHide);
       window.clearInterval(interval);
     };
   }, [sendHeartbeat, user,activeWorkspace]);
