@@ -8,6 +8,7 @@ import {
 import type { Channel } from '../types';
 import type { WhatsAppConfig } from './types';
 import { ChannelApi } from '../../../lib/channelApi';
+import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,12 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
   const [connecting, setConnecting] = useState(false);
   const [oauthStep, setOauthStep] = useState<'idle' | 'waiting' | 'exchanging' | 'saving'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const { loading: oauthLoading, startAuth } = useChannelOAuth({
+    provider: 'whatsapp',
+    workspaceId,
+    onSuccess: onConnect,
+    onError: setError,
+  });
 
   // ── Manual credentials connect ──────────────────────────────────────────
 
@@ -141,7 +148,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
   // Flow:
   //   1. GET /webhooks/whatsapp/auth/url  → get FB OAuth URL
   //   2. Open popup → user logs in → FB redirects with ?code=xxx
-  //   3. Popup calls window.opener.handleOAuthCode(code)
+  //   3. Legacy browser callback fallback
   //   4. POST /webhooks/whatsapp/auth/callback → BE exchanges code, saves channels
   //
 
@@ -152,8 +159,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
     try {
       // Step 1: Get OAuth URL from BE
-      const redirectUri = import.meta.env.VITE_WHATSAPP_REDIRECT_URI;
-      const { url } = await ChannelApi.getWhatsAppAuthUrl(workspaceId, redirectUri);
+      const { url } = await ChannelApi.getWhatsAppAuthUrl();
 
       // Step 2: Open popup
       const popup = window.open(url, 'whatsapp_oauth', 'width=600,height=700,scrollbars=yes');
@@ -194,14 +200,14 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
         reject(new Error('Login timed out. Please try again.'));
       }, 5 * 60 * 1000); // 5 min timeout
 
-      // Method 1: postMessage from redirect page
+      // Legacy message bridge kept only for temporary compatibility.
       const onMessage = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "instagram_oauth" && event.data?.code) {
+        if (event.data?.type === 'legacy_whatsapp' && event.data?.code) {
           cleanup();
           resolve(event.data.code);
         }
-        if (event.data?.type === 'WHATSAPP_OAUTH_ERROR') {
+        if (event.data?.type === 'legacy_whatsapp_error') {
           cleanup();
           reject(new Error(event.data.error ?? 'OAuth failed'));
         }
@@ -241,7 +247,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
   // ── OAuth step labels ────────────────────────────────────────────────────
 
-  const oauthStepLabel = {
+  const oauthStepLabel = oauthLoading ? 'Waiting for Meta...' : {
     idle: 'Connect with Meta',
     waiting: 'Waiting for login…',
     exchanging: 'Verifying credentials…',
@@ -388,11 +394,13 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
                     <Lock size={10} /> Secured by Meta OAuth
                   </p>
                   <button
-                    onClick={handleMetaConnect}
-                    disabled={connecting}
+                    onClick={() => {
+                      void startAuth();
+                    }}
+                    disabled={oauthLoading}
                     className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {connecting ? (
+                    {oauthLoading ? (
                       <>
                         <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
                         {oauthStepLabel}

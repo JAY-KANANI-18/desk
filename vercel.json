@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/instagram-callback.html",
-      "destination": "/instagram-callback.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

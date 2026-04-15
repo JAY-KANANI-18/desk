@@ -18,8 +18,9 @@ interface CreateChannelPayload {
 
 export const ChannelApi = {
     whatsappManualConnect: (accessToken: string, phoneNumberId
-        : string, wabaId: string, webhookSecret: string) =>
+        : string, wabaId: string, webhookSecret: string, workspaceId: string) =>
         api.post("/channels/whatsapp/connect-manual", {
+            workspaceId,
             accessToken,
             phoneNumberId,
             wabaId,
@@ -31,12 +32,12 @@ export const ChannelApi = {
         api.post("/channels/instagram/auth/callback", { code, redirectUri }),
     exchangeMessengerCode: (code: string, redirectUri: string) =>
         api.post("/channels/messenger/auth/callback", { code, redirectUri }),
-    getWhatsAppAuthUrl: (workspaceId: string,redirectUri: string) =>
-        api.get(`/channels/whatsapp/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
-    getInstagramAuthUrl: (workspaceId: string, redirectUri: string) =>
-        api.get(`/channels/instagram/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
-    getMessengerAuthUrl: (workspaceId: string, redirectUri: string) =>
-        api.get(`/channels/messenger/auth/url?workspaceId=${workspaceId}&redirectUri=${redirectUri}`),
+    getWhatsAppAuthUrl: () =>
+        api.get(`/channels/whatsapp/auth/url`),
+    getInstagramAuthUrl: () =>
+        api.get(`/channels/instagram/auth/url`),
+    getMessengerAuthUrl: () =>
+        api.get(`/channels/messenger/auth/url`),
 // Add these to your ChannelApi
 
 // Get pages after OAuth without connecting

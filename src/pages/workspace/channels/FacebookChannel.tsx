@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { Channel } from '../types';
 import { ChannelApi } from '../../../lib/channelApi';
+import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,13 @@ interface FacebookConfig {
   appId: string;
   webhookSecret: string;
 }
+
+type Page = {
+  id: string;
+  name: string;
+  category?: string;
+  access_token?: string;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -140,6 +148,12 @@ interface MessengerOAuthPopupProps {
 export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: MessengerOAuthPopupProps) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'idle' | 'waiting' | 'exchanging' | 'selecting' | 'saving'>('idle');
+  const { loading: oauthLoading, startAuth } = useChannelOAuth({
+    provider: 'messenger',
+    workspaceId,
+    onSuccess,
+    onError,
+  });
   
   // Page selection state
   const [pages, setPages] = useState<Page[]>([]);
@@ -147,7 +161,7 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
   const [pagesData, setPagesData] = useState<any[]>([]);
   const [showPageSelector, setShowPageSelector] = useState(false);
 
-  const stepLabel = {
+  const stepLabel = oauthLoading ? 'Waiting for Facebook...' : {
     idle:       'Connect with Facebook',
     waiting:    'Waiting for login…',
     exchanging: 'Fetching your pages…',
@@ -201,16 +215,16 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
         reject(new Error('Login timed out. Please try again.'));
       }, 5 * 60 * 1000);
 
-      // Method 1: postMessage from redirect page
+      // Legacy message bridge kept only for temporary compatibility.
       const onMessage = (event: MessageEvent) => {
         console.log({event});
         
         if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "instagram_oauth" && event.data?.code) {
+        if (event.data?.type === 'legacy_messenger' && event.data?.code) {
           cleanup();
           resolve(event.data.code);
         }
-        if (event.data?.type === 'MESSENGER_OAUTH_ERROR') {
+        if (event.data?.type === 'legacy_messenger_error') {
           cleanup();
           reject(new Error(event.data.error ?? 'OAuth failed'));
         }
@@ -377,11 +391,13 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
   // ── Default connect button ──
   return (
     <button
-      onClick={handleConnect}
-      disabled={loading}
+      onClick={() => {
+        void startAuth();
+      }}
+      disabled={oauthLoading}
       className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
     >
-      {loading ? (
+      {oauthLoading ? (
         <>
           <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
           {stepLabel}

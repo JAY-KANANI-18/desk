@@ -22,7 +22,6 @@ import ImportContactsPage from "../modules/import/ImportContactsPage";
 import ImportJobsPage from "../modules/import/ImportJobsPageResponsive";
 import { Dashboard } from "../pages/Dashboard";
 import { InboxLayout, InboxPage } from "../pages/Inbox";
-import InstagramCallback from "../pages/InstagramCallback";
 import { Organization } from "../pages/Organization";
 import { BillingUsage } from "../pages/organization/BillingUsage";
 import { GeneralOrgInfo } from "../pages/organization/GeneralOrgInfo";
@@ -78,10 +77,6 @@ export const WorkspaceRouter = () => {
           }
         />
         <Route index element={<Navigate to="/inbox" replace />} />
-        <Route
-          path="/meta/instagram/callback"
-          element={<InstagramCallback />}
-        />
         <Route path="/meta/ads/callback" element={<MetaAdsCallback />} />
 
         {/* Agents and above */}

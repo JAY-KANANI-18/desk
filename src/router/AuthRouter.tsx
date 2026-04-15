@@ -6,8 +6,6 @@ import { ResetPasswordPremium } from "../pages/auth/ResetPasswordPremium";
 import { SignUpPremium } from "../pages/auth/SignUpPremium";
 import { VerifyEmailPremium } from "../pages/auth/VerifyEmailPremium";
 
-import InstagramCallback from "../pages/InstagramCallback";
-
 export const AuthRouter = () => {
   return (
     <Routes>
@@ -19,11 +17,6 @@ export const AuthRouter = () => {
       <Route path="/auth/verify-email" element={<VerifyEmailPremium />} />
       <Route path="/auth/reset-password" element={<ResetPasswordPremium />} />
       <Route path="/auth/callback" element={<ResetPasswordPremium />} />
-      
-        {/* META CALLBACKS */}
-      <Route path="/meta/instagram/callback" element={<InstagramCallback />} />
-      {/* <Route path="/whatsapp/callback" element={<WhatsAppCallback />} /> */}
-
       {/* FALLBACK */}
 
       <Route path="*" element={<Navigate to="/auth/login" replace />} />

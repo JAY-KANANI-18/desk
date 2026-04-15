@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { Channel } from '../types';
 import { ChannelApi } from '../../../lib/channelApi';
+import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,8 +143,13 @@ interface InstagramOAuthPopupProps {
 }
 
 export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: InstagramOAuthPopupProps) => {
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'idle' | 'waiting' | 'exchanging' | 'saving'>('idle');
+  const { loading, startAuth } = useChannelOAuth({
+    provider: 'instagram',
+    workspaceId,
+    onSuccess,
+    onError,
+  });
+  const step = loading ? 'waiting' : 'idle';
 
   const stepLabel = {
     idle: 'Connect with Instagram',
@@ -151,6 +157,8 @@ export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: Instagr
     exchanging: 'Verifying account…',
     saving: 'Setting up channel…',
   }[step];
+  const setLoading = (_value: boolean) => undefined;
+  const setStep = (_value: 'idle' | 'waiting' | 'exchanging' | 'saving') => undefined;
 
   const handleConnect = async () => {
     setLoading(true);
@@ -159,11 +167,10 @@ export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: Instagr
     try {
       // Step 1: Get OAuth URL from BE
       // GET /webhooks/instagram/auth/url?workspaceId=xxx&redirectUri=xxx
-      const redirectUri =  import.meta.env.VITE_INSTAGRAM_REDIRECT_URI;
-      const { url } = await ChannelApi.getInstagramAuthUrl(workspaceId, redirectUri);
+      const { url } = await ChannelApi.getInstagramAuthUrl();
 
       // Step 2: Open Instagram OAuth popup
-      const popup = window.open(url, 'instagram_oauth', 'width=600,height=700,scrollbars=yes');
+      const popup = window.open(url, 'instagram_connect', 'width=600,height=700,scrollbars=yes');
       if (!popup) {
         throw new Error('Popup blocked. Please allow popups for this site and try again.');
       }
@@ -194,10 +201,10 @@ export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: Instagr
         reject(new Error('Login timed out. Please try again.'));
       }, 5 * 60 * 1000);
 
-      // Method 1: postMessage (works when redirect page sends window.opener.postMessage)
+      // Legacy message bridge kept only for temporary compatibility.
       const onMessage = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
-        if (event.data?.type === "instagram_oauth" && event.data?.code) {
+        if (event.data?.type === 'legacy_instagram' && event.data?.code) {
           cleanup();
           resolve(event.data.code);
         }
@@ -241,7 +248,9 @@ export const InstagramOAuthPopup = ({ workspaceId, onSuccess, onError }: Instagr
 
   return (
     <button
-      onClick={handleConnect}
+      onClick={() => {
+        void startAuth();
+      }}
       disabled={loading}
       className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
     >
