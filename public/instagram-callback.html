@@ -32,10 +32,10 @@
   const logEl = document.getElementById("log");
 
   function log(message, type = "") {
-    // const div = document.createElement("div");
-    // div.className = "box " + type;
-    // div.innerText = message;
-    // logEl.appendChild(div);
+    const div = document.createElement("div");
+    div.className = "box " + type;
+    div.innerText = message;
+    logEl.appendChild(div);
     console.log(message);
   }
 
