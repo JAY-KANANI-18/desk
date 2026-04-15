@@ -4,6 +4,7 @@ import { ChannelApi } from '../lib/channelApi';
 import { useSocket } from '../socket/socket-provider';
 import { useChannel } from '../context/ChannelContext';
 import { useIsMobile } from './useIsMobile';
+import { useAuth } from '../context/AuthContext';
 
 type OAuthProvider = 'instagram' | 'messenger' | 'whatsapp';
 
@@ -47,7 +48,7 @@ export function useChannelOAuth(options: {
   const completionRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
-
+const {user}=useAuth()
   useEffect(() => {
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
@@ -109,7 +110,7 @@ export function useChannelOAuth(options: {
 
     socket.on('channel:connected', handleConnected);
     socket.on('channel:error', handleError);
-    socket.emit('oauth:pending:flush');
+    socket.emit('oauth:pending:flush',{user});
 
     return () => {
       socket.off('channel:connected', handleConnected);
@@ -176,6 +177,36 @@ export function useChannelOAuth(options: {
       onErrorRef.current(message);
     }
   };
+
+  useEffect(() => {
+  const handler = (event: MessageEvent) => {
+    if (!event.data) return;
+
+    if (event.data.type === "OAUTH_CALLBACK") {
+      completionRef.current = true;
+
+      clearWatchers();
+      setLoading(false);
+
+      if (event.data.status === "success") {
+        toast.success(`${PROVIDER_LABELS[provider]} connected`);
+
+        // 🔥 IMPORTANT: refresh channels or trigger socket sync
+        onSuccessRef.current?.(event.data);
+      } else {
+        const message = `${PROVIDER_LABELS[provider]} connection failed`;
+        toast.error(message);
+        onErrorRef.current(message);
+      }
+
+      // close popup if still open
+      popupRef.current?.close();
+    }
+  };
+
+  window.addEventListener("message", handler);
+  return () => window.removeEventListener("message", handler);
+}, []);
 
   const clearWatchers = () => {
     if (timeoutRef.current) {

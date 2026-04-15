@@ -96,7 +96,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   if (!socket || !user) return;
     
   socket.emit("user:join", {
-        workspaceId: user.id,
+        userId: user.id,
       });
 
 
