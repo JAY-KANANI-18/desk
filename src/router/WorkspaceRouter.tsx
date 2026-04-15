@@ -59,7 +59,8 @@ import { useAuth } from "../context/AuthContext";
 export const WorkspaceRouter = () => {
   const { steps, dismiss, complete } = useGetStarted();
   const { user } = useAuth();
-
+  console.log("user");
+  
 
  
   return (
