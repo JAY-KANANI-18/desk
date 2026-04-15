@@ -111,31 +111,49 @@ registerRoute(
 );
 
 self.addEventListener("push", (event) => {
+  event.waitUntil(handlePush(event));
+});
+
+async function handlePush(event) {
   const payload = readPushPayload(event);
+
+  // 🔥 Check if app is already open & visible
+  const clientsList = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+
+  const isVisible = clientsList.some((client) => {
+    return client.visibilityState === "visible";
+  });
+
+  // 🚨 IMPORTANT: Suppress notification if user is already viewing app
+  if (isVisible) {
+    // Optionally send data to app instead of showing notification
+    clientsList.forEach((client) => {
+      client.postMessage({
+        type: "notification:foreground",
+        payload,
+      });
+    });
+    return;
+  }
+
+  // ✅ Show notification only if NOT visible
   const title =
     typeof payload.title === "string" && payload.title.trim()
       ? payload.title
       : "Axodesk";
 
-  const options: NotificationOptions = {
+  const options = {
     body: typeof payload.body === "string" ? payload.body : "",
-    icon:
-      typeof payload.icon === "string" && payload.icon
-        ? payload.icon
-        : "/pwa/icon-192.png",
-    badge:
-      typeof payload.badge === "string" && payload.badge
-        ? payload.badge
-        : "/pwa/icon-192.png",
-    tag: typeof payload.tag === "string" ? payload.tag : undefined,
-    renotify: Boolean(payload.renotify),
-    requireInteraction: Boolean(payload.requireInteraction),
-    data:
-      payload.data && typeof payload.data === "object" ? payload.data : {},
+    icon: payload.icon || "/pwa/icon-192.png",
+    badge: payload.badge || "/pwa/icon-192.png",
+    data: payload.data || {},
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
-});
+  await self.registration.showNotification(title, options);
+}
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
