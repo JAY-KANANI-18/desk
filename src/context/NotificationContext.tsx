@@ -84,6 +84,56 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 const AUTO_DISMISS_MS = 5500;
 const MAX_VISIBLE = 5;
 const HEARTBEAT_THROTTLE_MS = 30000;
+const PUSH_DEBUG_STORAGE_KEY = "axodesk:push-debug";
+
+const isPushDebugEnabled = () => {
+  if (import.meta.env.DEV || import.meta.env.VITE_PUSH_DEBUG === "true") {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(PUSH_DEBUG_STORAGE_KEY);
+    return stored === "1" || stored === "true";
+  } catch {
+    return false;
+  }
+};
+
+const logPushDebug = (event: string, details?: unknown) => {
+  if (!isPushDebugEnabled()) {
+    return;
+  }
+
+  console.info(`[PushDebug][NotificationContext] ${event}`, details ?? "");
+};
+
+const logPushDebugError = (event: string, error: unknown, details?: unknown) => {
+  if (!isPushDebugEnabled()) {
+    return;
+  }
+
+  console.error(`[PushDebug][NotificationContext] ${event}`, {
+    error:
+      error instanceof Error
+        ? {
+            message: error.message,
+            stack: error.stack,
+          }
+        : error,
+    details,
+  });
+};
+
+const summarizeSubscription = (subscription: PushSubscription | null) => ({
+  endpoint: subscription?.endpoint ?? null,
+  expirationTime: subscription?.expirationTime ?? null,
+  hasAuthKey: Boolean(subscription?.getKey("auth")),
+  hasP256dhKey: Boolean(subscription?.getKey("p256dh")),
+});
 
 const emptyFeed = (): NotificationFeedState => ({
   items: [],
@@ -159,11 +209,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const requestBrowserPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) {
       setBrowserPermission("unsupported");
+      logPushDebug("permission:unsupported");
       return "unsupported";
     }
 
     const permission = await Notification.requestPermission();
     setBrowserPermission(permission);
+    logPushDebug("permission:result", {
+      permission,
+    });
     return permission;
   }, []);
 
@@ -174,24 +228,52 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     try {
+      logPushDebug("devices:refresh:start", {
+        userId: user.id,
+      });
       const result = await notificationApi.listDevices();
+      logPushDebug("devices:refresh:success", {
+        count: result.length,
+        devices: result,
+      });
       setPushDevices(result);
-    } catch {
-      // best effort
+    } catch (error) {
+      logPushDebugError("devices:refresh:failed", error, {
+        userId: user.id,
+      });
     }
   }, [user]);
 
   const syncPushSubscription = useCallback(
     async (requestPermissionIfNeeded = false) => {
+      logPushDebug("subscription:sync:start", {
+        requestPermissionIfNeeded,
+        hasUser: Boolean(user),
+        userId: user?.id ?? null,
+        activeWorkspaceId: activeWorkspace?.id ?? null,
+        permission: browserPermission,
+        pushSupported: isPushSupported(),
+        visibilityState:
+          typeof document === "undefined" ? "unknown" : document.visibilityState,
+      });
+
       if (!user || !activeWorkspace || !isPushSupported()) {
         setPushRegistrationStatus("idle");
         if (!isPushSupported()) {
           setPushError("Push notifications are not supported in this browser.");
         }
+        logPushDebug("subscription:sync:aborted", {
+          reason: !user
+            ? "missing-user"
+            : !activeWorkspace
+              ? "missing-workspace"
+              : "push-unsupported",
+        });
         return;
       }
 
       if (pushSyncPromiseRef.current) {
+        logPushDebug("subscription:sync:reuse-inflight");
         await pushSyncPromiseRef.current;
         return;
       }
@@ -203,28 +285,44 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         let permission: NotificationPermission | "unsupported" = browserPermission;
         if (permission !== "granted" && requestPermissionIfNeeded) {
           permission = await requestBrowserPermission();
+          logPushDebug("subscription:permission:requested", {
+            permission,
+          });
         }
 
         if (permission !== "granted") {
           setPushRegistrationStatus("idle");
+          logPushDebug("subscription:permission:not-granted", {
+            permission,
+          });
           return;
         }
 
         const pushConfig = await notificationApi.pushConfig();
+        logPushDebug("subscription:push-config", pushConfig);
         if (!pushConfig.enabled || !pushConfig.publicKey) {
           setPushRegistrationStatus("error");
           setPushError("Background push is not configured on the server.");
+          logPushDebug("subscription:push-config:disabled", pushConfig);
           return;
         }
 
         const registration = await navigator.serviceWorker.ready;
+        logPushDebug("subscription:service-worker-ready", {
+          scope: registration.scope,
+          activeScriptURL: registration.active?.scriptURL ?? null,
+          installingScriptURL: registration.installing?.scriptURL ?? null,
+          waitingScriptURL: registration.waiting?.scriptURL ?? null,
+        });
         let subscription = await registration.pushManager.getSubscription();
+        logPushDebug("subscription:existing", summarizeSubscription(subscription));
 
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: base64UrlToUint8Array(pushConfig.publicKey),
           });
+          logPushDebug("subscription:created", summarizeSubscription(subscription));
         }
 
         const authKey = subscription.getKey("auth");
@@ -237,7 +335,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         const deviceKey = getOrCreatePushDeviceKey();
         pushDeviceKeyRef.current = deviceKey;
 
-        await notificationApi.registerDevice({
+        const response = await notificationApi.registerDevice({
           platform: detectPushPlatform(),
           deviceKey,
           token: subscription.endpoint,
@@ -253,6 +351,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
             },
           },
         });
+        logPushDebug("subscription:register-device:success", {
+          deviceKey,
+          platform: detectPushPlatform(),
+          deviceName: buildPushDeviceName(),
+          permission: Notification.permission,
+          subscription: summarizeSubscription(subscription),
+          response,
+        });
 
         setPushRegistrationStatus("registered");
         setPushError(null);
@@ -264,6 +370,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
             ? error.message
             : "Unable to enable background push notifications.",
         );
+        logPushDebugError("subscription:sync:failed", error, {
+          activeWorkspaceId: activeWorkspace?.id ?? null,
+          permission: browserPermission,
+        });
       });
 
       pushSyncPromiseRef.current = job.finally(() => {
@@ -282,6 +392,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const enableBackgroundPush = useCallback(async () => {
+    logPushDebug("subscription:enable:requested");
     await syncPushSubscription(true);
   }, [syncPushSubscription]);
 
@@ -295,6 +406,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       const deviceKey = pushDeviceKeyRef.current ?? getOrCreatePushDeviceKey();
+      logPushDebug("subscription:disable:start", {
+        userId: user.id,
+        deviceKey,
+        subscription: summarizeSubscription(subscription),
+      });
 
       await notificationApi.unregisterDevice({
         deviceKey,
@@ -312,16 +428,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       setPushRegistrationStatus("error");
       setPushError(
-        error instanceof Error
+          error instanceof Error
           ? error.message
           : "Unable to disable background push notifications.",
       );
+      logPushDebugError("subscription:disable:failed", error, {
+        userId: user.id,
+      });
     }
   }, [refreshPushDevices, user]);
 
   const removePushDevice = useCallback(
     async (deviceId: string) => {
+      logPushDebug("device:remove:start", {
+        deviceId,
+      });
       await notificationApi.removeDevice(deviceId);
+      logPushDebug("device:remove:success", {
+        deviceId,
+      });
       await refreshPushDevices();
     },
     [refreshPushDevices],
@@ -346,12 +471,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const result = await notificationApi.heartbeat(module);
       const rawStatus = String(result.status ?? result.activityStatus ?? "").toLowerCase();
       const nextStatus = rawStatus === "active" ? "online" : rawStatus;
+      logPushDebug("heartbeat:success", {
+        module,
+        force,
+        visibilityState:
+          typeof document === "undefined" ? "unknown" : document.visibilityState,
+        result,
+        nextStatus,
+      });
 
       if (nextStatus && user.activityStatus !== nextStatus) {
         setUserOnce({ ...user, activityStatus: nextStatus });
       }
-    } catch {
-      // best effort
+    } catch (error) {
+      logPushDebugError("heartbeat:failed", error, {
+        module,
+        force,
+      });
     }
   }, [setUserOnce, user]);
 
@@ -405,6 +541,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   useEffect(() => {
+    logPushDebug("bootstrap", {
+      browserPermission,
+      pushSupported: isPushSupported(),
+      activeWorkspaceId: activeWorkspace?.id ?? null,
+      userId: user?.id ?? null,
+      visibilityState:
+        typeof document === "undefined" ? "unknown" : document.visibilityState,
+    });
+  }, [activeWorkspace, browserPermission, user]);
+
+  useEffect(() => {
     void refreshUnreadCount();
     void loadTab("new", true);
     void loadTab("archived", true);
@@ -423,9 +570,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     if (browserPermission !== "granted" || !user || !activeWorkspace) {
+      logPushDebug("subscription:auto-sync:skipped", {
+        browserPermission,
+        hasUser: Boolean(user),
+        activeWorkspaceId: activeWorkspace?.id ?? null,
+      });
       return;
     }
 
+    logPushDebug("subscription:auto-sync:start", {
+      activeWorkspaceId: activeWorkspace.id,
+      userId: user.id,
+    });
     void syncPushSubscription(false);
   }, [activeWorkspace, browserPermission, syncPushSubscription, user]);
 
@@ -436,6 +592,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const handleServiceWorkerMessage = (event: MessageEvent) => {
       const messageType = event.data?.type;
+      logPushDebug("service-worker:message", {
+        messageType,
+        data: event.data ?? null,
+      });
 
       if (messageType === "notification:push-subscription-change") {
         void syncPushSubscription(false);
@@ -453,12 +613,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return;
 
     const handler = () => {
+      logPushDebug("visibility:change", {
+        visibilityState: document.visibilityState,
+      });
       void sendHeartbeat(
         document.visibilityState === "visible" ? "app" : "background",
         true,
       );
     };
     const handlePageHide = () => {
+      logPushDebug("pagehide", {
+        visibilityState: document.visibilityState,
+      });
       void sendHeartbeat("background", true);
     };
 
@@ -542,8 +708,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
           tag: incoming.id,
         });
         browserNotificationsRef.current[incoming.id] = browserNotification;
+        logPushDebug("browser-notification:shown", {
+          notificationId: incoming.id,
+          notificationPath,
+          payload: incoming,
+        });
 
         browserNotification.onclick = () => {
+          logPushDebug("browser-notification:clicked", {
+            notificationId: incoming.id,
+            notificationPath,
+          });
           window.focus();
           window.location.href = notificationPath
             ? `${window.location.origin}${notificationPath}`
@@ -551,6 +726,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
           browserNotification.close();
         };
       }
+
+      logPushDebug("socket:notification:new", {
+        unreadCount: payload.unreadCount ?? null,
+        notification: incoming,
+        visibilityState: document.visibilityState,
+      });
 
       setCenter((prev) => ({
         ...prev,
