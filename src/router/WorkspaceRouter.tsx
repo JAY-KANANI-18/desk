@@ -50,6 +50,7 @@ import { AIAssist } from "../pages/workspace/sections/AIAssist";
 import { AIPrompts } from "../pages/workspace/sections/AIPrompts";
 import MetaAdsCallback from "../pages/MetaAdsCallback";
 import OnboardingPage from "../pages/GetStartedChecklist";
+import { WorkspaceNotFound } from "../pages/WorkspaceNotFound";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -334,9 +335,8 @@ export const WorkspaceRouter = () => {
         />
 
         <Route path="sitemap" element={<AppSitemap />} />
+        <Route path="*" element={<WorkspaceNotFound />} />
       </Route>
-
-      <Route path="*" element={<Navigate to="/inbox" replace />} />
     </Routes>
   );
 };
