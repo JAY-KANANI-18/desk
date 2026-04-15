@@ -23,18 +23,12 @@ clientsClaim();
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// --------------------
-// MESSAGE HANDLER
-// --------------------
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     void self.skipWaiting();
   }
 });
 
-// --------------------
-// ROUTES
-// --------------------
 registerRoute(
   ({ url }) => url.pathname.startsWith("/api/"),
   new NetworkOnly(),
@@ -116,55 +110,8 @@ registerRoute(
   }),
 );
 
-// --------------------
-// 🔥 PUSH HANDLER (FIXED)
-// --------------------
 self.addEventListener("push", (event) => {
-  event.waitUntil(handlePush(event));
-});
-
-async function handlePush(event: PushEvent) {
   const payload = readPushPayload(event);
-
-  // 1️⃣ Check visibility
-  const clientsList = await self.clients.matchAll({
-    type: "window",
-    includeUncontrolled: true,
-  });
-
-  const isVisible = clientsList.some(
-    (client) => client.visibilityState === "visible",
-  );
-
-  // 2️⃣ Check recent activity (CRITICAL FIX)
-  let isRecentlyActive = false;
-
-  try {
-    for (const client of clientsList) {
-      const channel = new MessageChannel();
-
-      client.postMessage({ type: "get-last-active" }, [channel.port2]);
-
-      const lastActive = await new Promise<number | null>((resolve) => {
-        channel.port1.onmessage = (e) => resolve(e.data);
-        setTimeout(() => resolve(null), 200);
-      });
-
-      if (lastActive && Date.now() - lastActive < 3000) {
-        isRecentlyActive = true;
-        break;
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  // 🚨 FINAL DECISION
-  if (isVisible || isRecentlyActive) {
-    return; // ❌ suppress notification
-  }
-
-  // ✅ Show notification
   const title =
     typeof payload.title === "string" && payload.title.trim()
       ? payload.title
@@ -172,8 +119,14 @@ async function handlePush(event: PushEvent) {
 
   const options: NotificationOptions = {
     body: typeof payload.body === "string" ? payload.body : "",
-    icon: payload.icon || "/pwa/icon-192.png",
-    badge: payload.badge || "/pwa/icon-192.png",
+    icon:
+      typeof payload.icon === "string" && payload.icon
+        ? payload.icon
+        : "/pwa/icon-192.png",
+    badge:
+      typeof payload.badge === "string" && payload.badge
+        ? payload.badge
+        : "/pwa/icon-192.png",
     tag: typeof payload.tag === "string" ? payload.tag : undefined,
     renotify: Boolean(payload.renotify),
     requireInteraction: Boolean(payload.requireInteraction),
@@ -181,12 +134,9 @@ async function handlePush(event: PushEvent) {
       payload.data && typeof payload.data === "object" ? payload.data : {},
   };
 
-  await self.registration.showNotification(title, options);
-}
+  event.waitUntil(self.registration.showNotification(title, options));
+});
 
-// --------------------
-// CLICK HANDLER
-// --------------------
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -195,15 +145,11 @@ self.addEventListener("notificationclick", (event) => {
     event.notification.data.deepLink
       ? event.notification.data.deepLink
       : "/inbox";
-
   const targetUrl = new URL(deepLink, self.location.origin).toString();
 
   event.waitUntil(openOrFocusWindow(targetUrl, event.notification.data));
 });
 
-// --------------------
-// SUBSCRIPTION CHANGE
-// --------------------
 self.addEventListener("pushsubscriptionchange", (event) => {
   event.waitUntil(
     (async () => {
@@ -223,11 +169,10 @@ self.addEventListener("pushsubscriptionchange", (event) => {
   );
 });
 
-// --------------------
-// HELPERS
-// --------------------
 function readPushPayload(event: PushEvent) {
-  if (!event.data) return {};
+  if (!event.data) {
+    return {};
+  }
 
   try {
     return event.data.json() as Record<string, unknown>;
@@ -246,8 +191,13 @@ async function openOrFocusWindow(targetUrl: string, payload: unknown) {
   });
 
   for (const client of clients) {
-    if ("focus" in client) await client.focus();
-    if ("navigate" in client) await client.navigate(targetUrl);
+    if ("focus" in client) {
+      await client.focus();
+    }
+
+    if ("navigate" in client) {
+      await client.navigate(targetUrl);
+    }
 
     client.postMessage({
       type: "notification:click",
