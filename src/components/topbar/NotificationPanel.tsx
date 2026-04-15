@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Bell, Check, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
+import { getNotificationPath } from "../../lib/notificationLink";
 import { MobileSheet } from "./MobileSheet";
 import { getNotificationTypeLabel, relativeTime } from "./utils";
 
@@ -8,7 +9,7 @@ interface NotificationPanelProps {
   open: boolean;
   isMobile: boolean;
   onClose: () => void;
-  onNavigateToInbox: (conversationId?: string | null) => void;
+  onNavigateToInbox: (path?: string | null) => void;
   onOpenPreferences: () => void;
 }
 
@@ -163,10 +164,7 @@ export function NotificationPanel({
         ) : (
           <div className="divide-y divide-slate-100">
             {items.map((notification) => {
-              const conversationId =
-                typeof notification.metadata?.conversationId === "string"
-                  ? notification.metadata.conversationId
-                  : null;
+              const notificationPath = getNotificationPath(notification);
 
               const actionButtonClassName = isMobile
                 ? "inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
@@ -179,10 +177,10 @@ export function NotificationPanel({
                     !notification.readAt && !notification.archivedAt
                       ? "bg-indigo-50/40"
                       : ""
-                  } ${conversationId ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                  } ${notificationPath ? "cursor-pointer hover:bg-gray-50" : ""}`}
                   onClick={() => {
-                    if (!conversationId) return;
-                    onNavigateToInbox(conversationId);
+                    if (!notificationPath) return;
+                    onNavigateToInbox(notificationPath);
                     void updateNotificationState(notification.id, { read: true });
                     onClose();
                   }}

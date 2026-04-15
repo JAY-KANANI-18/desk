@@ -15,6 +15,30 @@ export interface NotificationRecord {
   createdAt: string;
 }
 
+export interface NotificationPushConfig {
+  enabled: boolean;
+  publicKey: string | null;
+}
+
+export interface NotificationDeviceRecord {
+  id: string;
+  workspaceId?: string | null;
+  deviceKey?: string | null;
+  platform: string;
+  deviceName?: string | null;
+  metadata?: Record<string, unknown> | null;
+  pushPermission?: string | null;
+  lastSeenAt?: string | null;
+  lastSuccessfulDeliveryAt?: string | null;
+  lastFailureAt?: string | null;
+  failureCount: number;
+  invalidatedAt?: string | null;
+  disabledAt?: string | null;
+  disabledReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const notificationApi = {
   heartbeat: (module?: string) =>
     api.post(`/notifications/activity/heartbeat`, { module }) as Promise<{
@@ -40,4 +64,37 @@ export const notificationApi = {
 
   archiveAll: (tab: NotificationTab) =>
     api.post(`/notifications/archive-all`, { tab }) as Promise<{ success: boolean }>,
+
+  pushConfig: () =>
+    api.get(`/notifications/push/config`) as Promise<NotificationPushConfig>,
+
+  listDevices: () =>
+    api.get(`/notifications/devices`) as Promise<NotificationDeviceRecord[]>,
+
+  registerDevice: (body: {
+    platform: string;
+    deviceKey?: string;
+    token?: string;
+    deviceName?: string;
+    pushPermission?: string;
+    metadata?: Record<string, unknown>;
+    subscription?: {
+      endpoint: string;
+      expirationTime?: number | null;
+      keys: {
+        p256dh: string;
+        auth: string;
+      };
+    };
+  }) => api.post(`/notifications/devices`, body),
+
+  unregisterDevice: (body: {
+    deviceId?: string;
+    deviceKey?: string;
+    token?: string;
+    reason?: string;
+  }) => api.post(`/notifications/devices/unregister`, body) as Promise<{ success: boolean }>,
+
+  removeDevice: (id: string) =>
+    api.delete(`/notifications/devices/${id}`) as Promise<{ success: boolean }>,
 };

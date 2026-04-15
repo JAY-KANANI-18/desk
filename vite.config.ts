@@ -9,6 +9,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "prompt",
       injectRegister: false,
       includeAssets: [
@@ -93,79 +96,8 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        cleanupOutdatedCaches: true,
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
-            handler: "NetworkOnly",
-          },
-          {
-            urlPattern: ({ request }) => request.mode === "navigate",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "app-pages",
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              precacheFallback: {
-                fallbackURL: "/offline.html",
-              },
-            },
-          },
-          {
-            urlPattern: ({ request, sameOrigin }) =>
-              sameOrigin &&
-              ["style", "script", "worker"].includes(request.destination),
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "static-assets",
-              expiration: {
-                maxEntries: 80,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: ({ request }) => request.destination === "image",
-            handler: "CacheFirst",
-            options: {
-              cacheName: "image-assets",
-              expiration: {
-                maxEntries: 120,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-          {
-            urlPattern: ({ request }) =>
-              request.destination === "font" ||
-              /\/fonts?\//.test(request.url),
-            handler: "CacheFirst",
-            options: {
-              cacheName: "font-assets",
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: false,

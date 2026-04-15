@@ -11,9 +11,20 @@ import { playNotificationSound } from "../lib/notificationSound";
 import type { NotificationSoundType } from "../lib/notificationSound";
 import {
   notificationApi,
+  NotificationDeviceRecord,
   NotificationRecord,
   NotificationTab,
 } from "../lib/notificationApi";
+import { getNotificationPath } from "../lib/notificationLink";
+import {
+  base64UrlToUint8Array,
+  buildPushDeviceMetadata,
+  buildPushDeviceName,
+  detectPushPlatform,
+  getOrCreatePushDeviceKey,
+  isPushSupported,
+  uint8ArrayToBase64Url,
+} from "../lib/pushNotifications";
 import { useSocket } from "../socket/socket-provider";
 import { useAuth } from "./AuthContext";
 import { useWorkspace } from "./WorkspaceContext";
@@ -43,6 +54,10 @@ interface NotificationContextType {
   unreadCount: number;
   soundEnabled: boolean;
   browserPermission: NotificationPermission | "unsupported";
+  pushSupported: boolean;
+  pushRegistrationStatus: "idle" | "registering" | "registered" | "error";
+  pushDevices: NotificationDeviceRecord[];
+  pushError: string | null;
   activeTab: NotificationTab;
   center: Record<NotificationTab, NotificationFeedState>;
   notify: (event: Omit<AppNotification, "id" | "timestamp">) => void;
@@ -50,6 +65,10 @@ interface NotificationContextType {
   dismissAll: () => void;
   toggleSound: () => void;
   requestBrowserPermission: () => Promise<NotificationPermission | "unsupported">;
+  enableBackgroundPush: () => Promise<void>;
+  disableBackgroundPush: () => Promise<void>;
+  refreshPushDevices: () => Promise<void>;
+  removePushDevice: (deviceId: string) => Promise<void>;
   setActiveTab: (tab: NotificationTab) => void;
   loadTab: (tab?: NotificationTab, reset?: boolean) => Promise<void>;
   markAllRead: () => Promise<void>;
@@ -85,6 +104,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       ? "unsupported"
       : Notification.permission,
   );
+  const [pushRegistrationStatus, setPushRegistrationStatus] = useState<
+    "idle" | "registering" | "registered" | "error"
+  >(browserPermission === "granted" ? "registering" : "idle");
+  const [pushDevices, setPushDevices] = useState<NotificationDeviceRecord[]>([]);
+  const [pushError, setPushError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<NotificationTab>("new");
   const [center, setCenter] = useState<Record<NotificationTab, NotificationFeedState>>({
     new: emptyFeed(),
@@ -105,6 +129,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const heartbeatRef = useRef(0);
   const browserNotificationsRef = useRef<Record<string, Notification>>({});
   const browserPermissionPromptedRef = useRef(false);
+  const pushSyncPromiseRef = useRef<Promise<void> | null>(null);
+  const pushDeviceKeyRef = useRef<string | null>(null);
 
     const {activeWorkspace} = useWorkspace()
   
@@ -140,6 +166,166 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     setBrowserPermission(permission);
     return permission;
   }, []);
+
+  const refreshPushDevices = useCallback(async () => {
+    if (!user) {
+      setPushDevices([]);
+      return;
+    }
+
+    try {
+      const result = await notificationApi.listDevices();
+      setPushDevices(result);
+    } catch {
+      // best effort
+    }
+  }, [user]);
+
+  const syncPushSubscription = useCallback(
+    async (requestPermissionIfNeeded = false) => {
+      if (!user || !activeWorkspace || !isPushSupported()) {
+        setPushRegistrationStatus("idle");
+        if (!isPushSupported()) {
+          setPushError("Push notifications are not supported in this browser.");
+        }
+        return;
+      }
+
+      if (pushSyncPromiseRef.current) {
+        await pushSyncPromiseRef.current;
+        return;
+      }
+
+      const job = (async () => {
+        setPushRegistrationStatus("registering");
+        setPushError(null);
+
+        let permission: NotificationPermission | "unsupported" = browserPermission;
+        if (permission !== "granted" && requestPermissionIfNeeded) {
+          permission = await requestBrowserPermission();
+        }
+
+        if (permission !== "granted") {
+          setPushRegistrationStatus("idle");
+          return;
+        }
+
+        const pushConfig = await notificationApi.pushConfig();
+        if (!pushConfig.enabled || !pushConfig.publicKey) {
+          setPushRegistrationStatus("error");
+          setPushError("Background push is not configured on the server.");
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: base64UrlToUint8Array(pushConfig.publicKey),
+          });
+        }
+
+        const authKey = subscription.getKey("auth");
+        const p256dhKey = subscription.getKey("p256dh");
+
+        if (!authKey || !p256dhKey) {
+          throw new Error("The browser did not return Push subscription keys.");
+        }
+
+        const deviceKey = getOrCreatePushDeviceKey();
+        pushDeviceKeyRef.current = deviceKey;
+
+        await notificationApi.registerDevice({
+          platform: detectPushPlatform(),
+          deviceKey,
+          token: subscription.endpoint,
+          deviceName: buildPushDeviceName(),
+          pushPermission: Notification.permission,
+          metadata: buildPushDeviceMetadata(),
+          subscription: {
+            endpoint: subscription.endpoint,
+            expirationTime: subscription.expirationTime ?? null,
+            keys: {
+              auth: uint8ArrayToBase64Url(new Uint8Array(authKey)),
+              p256dh: uint8ArrayToBase64Url(new Uint8Array(p256dhKey)),
+            },
+          },
+        });
+
+        setPushRegistrationStatus("registered");
+        setPushError(null);
+        await refreshPushDevices();
+      })().catch((error) => {
+        setPushRegistrationStatus("error");
+        setPushError(
+          error instanceof Error
+            ? error.message
+            : "Unable to enable background push notifications.",
+        );
+      });
+
+      pushSyncPromiseRef.current = job.finally(() => {
+        pushSyncPromiseRef.current = null;
+      });
+
+      await pushSyncPromiseRef.current;
+    },
+    [
+      activeWorkspace,
+      browserPermission,
+      refreshPushDevices,
+      requestBrowserPermission,
+      user,
+    ],
+  );
+
+  const enableBackgroundPush = useCallback(async () => {
+    await syncPushSubscription(true);
+  }, [syncPushSubscription]);
+
+  const disableBackgroundPush = useCallback(async () => {
+    if (!user || !isPushSupported()) {
+      setPushRegistrationStatus("idle");
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      const deviceKey = pushDeviceKeyRef.current ?? getOrCreatePushDeviceKey();
+
+      await notificationApi.unregisterDevice({
+        deviceKey,
+        token: subscription?.endpoint,
+        reason: "user-unregistered",
+      });
+
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
+
+      setPushRegistrationStatus("idle");
+      setPushError(null);
+      await refreshPushDevices();
+    } catch (error) {
+      setPushRegistrationStatus("error");
+      setPushError(
+        error instanceof Error
+          ? error.message
+          : "Unable to disable background push notifications.",
+      );
+    }
+  }, [refreshPushDevices, user]);
+
+  const removePushDevice = useCallback(
+    async (deviceId: string) => {
+      await notificationApi.removeDevice(deviceId);
+      await refreshPushDevices();
+    },
+    [refreshPushDevices],
+  );
 
   const sendHeartbeat = useCallback(async () => {
     if (!user) return;
@@ -221,6 +407,44 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [refreshUnreadCount,activeWorkspace]);
 
   useEffect(() => {
+    if (!user || !activeWorkspace) {
+      setPushDevices([]);
+      setPushRegistrationStatus("idle");
+      return;
+    }
+
+    void refreshPushDevices();
+  }, [activeWorkspace, refreshPushDevices, user]);
+
+  useEffect(() => {
+    if (browserPermission !== "granted" || !user || !activeWorkspace) {
+      return;
+    }
+
+    void syncPushSubscription(false);
+  }, [activeWorkspace, browserPermission, syncPushSubscription, user]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      const messageType = event.data?.type;
+
+      if (messageType === "notification:push-subscription-change") {
+        void syncPushSubscription(false);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
+    };
+  }, [syncPushSubscription]);
+
+  useEffect(() => {
     if (!user) return;
 
     const handler = () => {
@@ -299,10 +523,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         browserPermission === "granted" &&
         document.visibilityState !== "visible"
       ) {
-        const conversationId =
-          typeof incoming.metadata?.conversationId === "string"
-            ? incoming.metadata.conversationId
-            : null;
+        const notificationPath = getNotificationPath(incoming);
 
         browserNotificationsRef.current[incoming.id]?.close();
         const browserNotification = new Notification(incoming.title, {
@@ -313,8 +534,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
         browserNotification.onclick = () => {
           window.focus();
-          window.location.href = conversationId
-            ? `${window.location.origin}/inbox/${conversationId}`
+          window.location.href = notificationPath
+            ? `${window.location.origin}${notificationPath}`
             : `${window.location.origin}/inbox`;
           browserNotification.close();
         };
@@ -447,6 +668,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       unreadCount,
       soundEnabled,
       browserPermission,
+      pushSupported: isPushSupported(),
+      pushRegistrationStatus,
+      pushDevices,
+      pushError,
       activeTab,
       center,
       notify,
@@ -454,6 +679,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       dismissAll,
       toggleSound,
       requestBrowserPermission,
+      enableBackgroundPush,
+      disableBackgroundPush,
+      refreshPushDevices,
+      removePushDevice,
       setActiveTab,
       loadTab,
       markAllRead,
@@ -465,6 +694,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       unreadCount,
       soundEnabled,
       browserPermission,
+      pushRegistrationStatus,
+      pushDevices,
+      pushError,
       activeTab,
       center,
       notify,
@@ -472,6 +704,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       dismissAll,
       toggleSound,
       requestBrowserPermission,
+      enableBackgroundPush,
+      disableBackgroundPush,
+      refreshPushDevices,
+      removePushDevice,
       loadTab,
       markAllRead,
       updateNotificationState,

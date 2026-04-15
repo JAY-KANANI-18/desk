@@ -13,6 +13,7 @@ import { useSocket } from "../socket/socket-provider";
 import { inboxApi } from "../lib/inboxApi";
 import { initApi } from "../lib/api";
 import { useAuth } from "./AuthContext";
+import { useLocation } from "react-router-dom";
 
 export interface Workspace {
   id: string;
@@ -76,6 +77,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   const workspaceRef = useRef<Workspace | null>(null);
   initApi(workspaceRef); // wire once, api always reads latest ref
   const {user} = useAuth()
+  const location = useLocation();
 
 
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
@@ -160,15 +162,32 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   
 
   useEffect(() => {
-    console.log("setting workspace from organization change",{activeWorkspace,activeOrganization});
-    if (!activeWorkspace  && organizations?.length) {
-      
-      setActiveWorkspaceFunc(organizations[0].workspaces[0]);
-      setWorkspaceLoading(false)
-      
+    const flattenedWorkspaces = organizations?.map((org) => org.workspaces).flat() ?? [];
+    setWorkspaces(flattenedWorkspaces);
+
+    if (flattenedWorkspaces.length === 0) {
+      return;
     }
-    setWorkspaces(organizations?.map((org) => org.workspaces).flat());
-  }, [organizations,user]);
+
+    const requestedWorkspaceId =
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(location.search).get("workspaceId");
+    const requestedWorkspace = requestedWorkspaceId
+      ? flattenedWorkspaces.find((workspace) => workspace.id === requestedWorkspaceId)
+      : null;
+
+    if (requestedWorkspace && requestedWorkspace.id !== activeWorkspace?.id) {
+      setActiveWorkspaceFunc(requestedWorkspace);
+      setWorkspaceLoading(false);
+      return;
+    }
+
+    if (!activeWorkspace) {
+      setActiveWorkspaceFunc(flattenedWorkspaces[0]);
+      setWorkspaceLoading(false);
+    }
+  }, [activeWorkspace, location.search, organizations, user]);
 
   const setActiveWorkspaceFunc =  (ws: Workspace) => {
     workspaceRef.current = ws;           // sync, immediate

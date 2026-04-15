@@ -256,7 +256,49 @@ export const authApi = {
 
   // ── Logout ────────────────────────────────
   logout: async (): Promise<void> => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const activeWorkspaceRaw = localStorage.getItem("active_workspace");
+      const activeWorkspace = activeWorkspaceRaw
+        ? JSON.parse(activeWorkspaceRaw)
+        : null;
+
+      if (
+        session &&
+        typeof navigator !== "undefined" &&
+        "serviceWorker" in navigator &&
+        "PushManager" in window
+      ) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        const deviceKey = localStorage.getItem("axodesk:push-device-key");
+
+        if (subscription || deviceKey) {
+          await apiFetch(
+            "/notifications/devices/unregister",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                deviceKey: deviceKey || undefined,
+                token: subscription?.endpoint,
+                reason: "user-logout",
+              }),
+            },
+            activeWorkspace,
+          ).catch(() => undefined);
+        }
+
+        if (subscription) {
+          await subscription.unsubscribe().catch(() => undefined);
+        }
+      }
+    } catch {
+      // best effort cleanup before auth sign-out
+    }
+
     await supabase.auth.signOut();
-    localStorage.clear()
+    localStorage.clear();
   },
 };

@@ -208,8 +208,8 @@ export const TopBar = ({ onOpenSidebar }: TopBarProps) => {
             open={showNotifications}
             isMobile={isMobile}
             onClose={() => setShowNotifications(false)}
-            onNavigateToInbox={(conversationId) =>
-              navigate(conversationId ? `/inbox/${conversationId}` : "/inbox")
+            onNavigateToInbox={(path) =>
+              navigate(path || "/inbox")
             }
             onOpenPreferences={() => {
               setShowNotifications(false);
