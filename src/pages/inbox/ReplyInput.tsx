@@ -741,7 +741,7 @@ export function ReplyInput({
 
               {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
-              {!isNote && selectedChannel?.type == 'whatsapp' && (
+              {!isNote && ['whatsapp', 'messenger'].includes(selectedChannel?.type) && (
                 <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
                   <LayoutTemplate size={16} />
                 </button>

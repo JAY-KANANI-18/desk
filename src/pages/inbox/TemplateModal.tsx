@@ -387,15 +387,18 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
 
     const cats: Template['category'][] = ['MARKETING', 'UTILITY', 'AUTHENTICATION', 'SERVICE'];
 
-    // Fetch templates from API — re-runs on query/tab change with debounce on search
+    // Fetch templates from API - re-runs on query/tab change with debounce on search
     const fetchTemplates = (searchQuery: string, tab: typeof activeTab) => {
         const params: Record<string, string> = { status: 'APPROVED' };
         if (tab !== 'all')          params.category = tab;
         if (searchQuery.trim())     params.search   = searchQuery.trim();
+        const request =
+            selectedChannel?.type === 'messenger'
+                ? ChannelApi.listMessengerTemplates(selectedChannel?.id, params)
+                : ChannelApi.listWhatsAppTemplates(selectedChannel?.id, params);
 
         setLoading(true);
-        ChannelApi.listWhatsAppTemplates(selectedChannel?.id, params)
-            .then((res: ApiTemplate[]) => {
+        request.then((res: ApiTemplate[]) => {
                 setOriginalTemplates(res);
                 setTemplates(res.map(mapApiTemplate));
             })
@@ -452,7 +455,11 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                     </div>
                     <div className="flex-1">
                         <h2 className="text-sm font-semibold text-gray-900">
-                            {step === 'list' ? 'WhatsApp Message Templates' : (
+                            {step === 'list'
+                                ? selectedChannel?.type === 'messenger'
+                                    ? 'Messenger Message Templates'
+                                    : 'WhatsApp Message Templates'
+                                : (
                                 <span className="flex items-center gap-1.5">
                                     <button onClick={() => setStep('list')} className="text-gray-400 hover:text-gray-700 transition-colors">
                                         <ChevronLeft size={16} />

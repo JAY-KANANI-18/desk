@@ -64,6 +64,19 @@ export interface MessengerMenuState {
     syncedAt: string;
 }
 
+export interface MessengerTemplate {
+    id: string;
+    metaId?: string;
+    name: string;
+    language: string;
+    category: 'MARKETING' | 'UTILITY' | 'SERVICE';
+    status: 'APPROVED';
+    templateType: 'text' | 'button' | 'generic' | 'media';
+    description?: string;
+    components: any[];
+    variables: string[];
+}
+
 export interface PrivateRepliesConfig {
     enabled: boolean;
     scope: 'all' | 'selected';
@@ -203,6 +216,17 @@ connectSelectedPages: async (payload: {
         api.post(`/channels/${channelId}/messenger/menu/push`, { menu }),
     pushGetStarted: (channelId: string | number, payload: string) =>
         api.post(`/channels/${channelId}/messenger/menu/get-started`, { payload }),
+
+    listMessengerTemplates: (channelId: string | number | undefined, params?: Record<string, string | undefined>) =>
+        api.get(`/channels/${channelId}/messenger/templates${buildQuery({
+            category: params?.category,
+            language: params?.language,
+            search: params?.search,
+        })}`),
+    previewMessengerTemplate: (channelId: string | number, templateId: string, variables: Record<string, string>) =>
+        api.post(`/channels/${channelId}/messenger/templates/${encodeURIComponent(templateId)}/preview`, { variables }),
+    syncMessengerTemplates: (channelId: string | number) =>
+        api.post(`/channels/${channelId}/messenger/templates/sync`),
 
     listIceBreakers: (channelId: string | number) =>
         api.get(`/channels/${channelId}/instagram/icebreakers`),

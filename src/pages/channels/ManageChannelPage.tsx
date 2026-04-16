@@ -19,6 +19,7 @@ import { WebsiteChatConfiguration } from '../workspace/channels/WebsiteChatConfi
 import { useChannel } from '../../context/ChannelContext';
 import { InstagramIceBreakersSection } from '../workspace/channels/InstagramIceBreakers';
 import { MessengerChatMenuSection } from '../workspace/channels/MessengerChatMenu';
+import { MessengerTemplatesSection } from '../workspace/channels/MessengerTemplates';
 import { MetaAutomationSection } from '../workspace/channels/MetaAutomationSection';
 import { WhatsAppTemplatesSection } from '../workspace/channels/WhatsAppTemplates';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -248,6 +249,7 @@ export const CHANNEL_META: Record<string, {
     color: 'bg-indigo-600',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
+      { id: 'templates',      label: 'Templates',       icon: <FileText size={14} /> },
       { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
       { id: 'chat_menu',      label: 'Chat Menu',        icon: <Menu size={14} /> },
       // { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
@@ -501,7 +503,11 @@ const SectionContent = ({
   if (sectionId === 'story_replies')   return <MetaAutomationSection channel={channel} mode="story_replies" />;
 
   // Channel-specific feature sections
-  if (sectionId === 'templates')       return <WhatsAppTemplatesSection channel={channel} />;
+  if (sectionId === 'templates') {
+    return channelType === 'messenger'
+      ? <MessengerTemplatesSection channel={channel} />
+      : <WhatsAppTemplatesSection channel={channel} />;
+  }
   if (sectionId === 'icebreakers')     return <InstagramIceBreakersSection channel={channel} />;
   if (sectionId === 'chat_menu')       return <MessengerChatMenuSection channel={channel} />;
 
