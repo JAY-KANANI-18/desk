@@ -2,13 +2,13 @@ import { useState } from 'react';
 import {
   Eye, EyeOff, CheckCircle, ExternalLink, AlertCircle,
   Zap, Shield, MessageSquare, Users, BarChart3,
-  Globe, Lock, Phone, Building2, Key, ChevronRight,
-  RefreshCw, Wifi, WifiOff,
+  Globe, Lock, Phone, Building2, Key,
 } from 'lucide-react';
 import type { Channel } from '../types';
 import type { WhatsAppConfig } from './types';
 import { ChannelApi } from '../../../lib/channelApi';
 import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
+import { loginWithWhatsAppBusinessApp } from '../../../integrations/meta/meta-auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,13 +112,27 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
   const [form, setForm] = useState<WhatsAppConfig>({ phoneNumberId: '', wabaId: '', accessToken: '', webhookSecret: '' });
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [connecting, setConnecting] = useState(false);
-  const [oauthStep, setOauthStep] = useState<'idle' | 'waiting' | 'exchanging' | 'saving'>('idle');
+  const [coexistStep, setCoexistStep] = useState<'idle' | 'preparing' | 'waiting' | 'saving'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const handleConnected = (channel: Channel) => {
+    setCoexistStep('idle');
+    onConnect(channel);
+  };
+  const handleOAuthError = (message: string) => {
+    setCoexistStep('idle');
+    setError(message);
+  };
   const { loading: oauthLoading, startAuth } = useChannelOAuth({
     provider: 'whatsapp',
     workspaceId,
-    onSuccess: onConnect,
-    onError: setError,
+    onSuccess: handleConnected,
+    onError: handleOAuthError,
+  });
+  const { loading: coexistLoading, startCustomAuth } = useChannelOAuth({
+    provider: 'whatsapp_coexist',
+    workspaceId,
+    onSuccess: handleConnected,
+    onError: handleOAuthError,
   });
 
   // ── Manual credentials connect ──────────────────────────────────────────
@@ -152,43 +166,37 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
   //   4. POST /webhooks/whatsapp/auth/callback → BE exchanges code, saves channels
   //
 
-  const handleMetaConnect = async () => {
-    setConnecting(true);
-    setOauthStep('waiting');
+  const handleBusinessAppConnect = async () => {
+    setCoexistStep('preparing');
     setError(null);
 
-    try {
-      // Step 1: Get OAuth URL from BE
-      const { url } = await ChannelApi.getWhatsAppAuthUrl();
+    await startCustomAuth(async () => {
+        const configId = import.meta.env.VITE_META_WHATSAPP_CONFIG_ID;
+        if (!configId) {
+          throw new Error('Missing VITE_META_WHATSAPP_CONFIG_ID for WhatsApp Business App signup.');
+        }
 
-      // Step 2: Open popup
-      const popup = window.open(url, 'whatsapp_oauth', 'width=600,height=700,scrollbars=yes');
+        const { state } = await ChannelApi.getWhatsAppCoexistState();
+        setCoexistStep('waiting');
 
-      if (!popup) {
-        throw new Error('Popup blocked. Please allow popups for this site and try again.');
-      }
-
-      // Step 3: Wait for popup to send back the code
-      const code = await waitForOAuthCode(popup);
-      setOauthStep('exchanging');
+        const { code, session } = await loginWithWhatsAppBusinessApp({
+          state,
+          configId,
+        });
+        setCoexistStep('saving');
 
       // Step 4: Exchange code via BE — POST /webhooks/whatsapp/auth/callback
-      setOauthStep('saving');
-      const result = await ChannelApi.exchangeWhatsAppCode(code, redirectUri);
+        await ChannelApi.exchangeWhatsAppCoexistCode({
+          code,
+          state,
+          wabaId: session.wabaId,
+          phoneNumberId: session.phoneNumberId,
+          businessId: session.businessId,
+        });
 
       // result.channels is array (one per phone number)
       // Pick first or let user choose — here we pick first
-      if (result.channels?.length) {
-        onConnect(result.channels[0]);
-      } else {
-        throw new Error('No WhatsApp phone numbers found in your Meta Business account.');
-      }
-    } catch (e: any) {
-      setError(e?.message ?? 'Connection failed. Please try again.');
-    } finally {
-      setConnecting(false);
-      setOauthStep('idle');
-    }
+    });
   };
 
   // ── Wait for popup to post back the OAuth code ───────────────────────────
@@ -244,11 +252,20 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
       window.addEventListener('message', onMessage);
     });
   };
+  void waitForOAuthCode;
 
   // ── OAuth step labels ────────────────────────────────────────────────────
 
-  const oauthStepLabel = oauthLoading ? 'Waiting for Meta...' : {
-    idle: 'Connect with Meta',
+  const oauthStepLabel = oauthLoading ? 'Waiting for Meta...' : 'Connect with Meta';
+  const coexistStepLabel = coexistLoading
+    ? {
+        preparing: 'Preparing Meta...',
+        waiting: 'Waiting for Meta...',
+        saving: 'Setting up channel...',
+        idle: 'Connect WhatsApp Business App (existing number)',
+      }[coexistStep]
+    : 'Connect WhatsApp Business App (existing number)';
+  /*
     waiting: 'Waiting for login…',
     exchanging: 'Verifying credentials…',
     saving: 'Setting up channel…',
@@ -256,6 +273,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
   // ── Connected state ──────────────────────────────────────────────────────
 
+  */
   if (connected) {
     return (
       <div className="space-y-6">
@@ -388,34 +406,68 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
                   </div>
                 )}
 
-                {/* Connect button */}
-                <div className="flex flex-col gap-3 border-t border-gray-100 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                    <Lock size={10} /> Secured by Meta OAuth
-                  </p>
-                  <button
-                    onClick={() => {
-                      void startAuth();
-                    }}
-                    disabled={oauthLoading}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {oauthLoading ? (
-                      <>
-                        <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                        {oauthStepLabel}
-                      </>
-                    ) : (
-                      <>
-                        <img src="https://cdn.simpleicons.org/whatsapp/ffffff" className="w-3 h-3" />
-                        Connect with Meta
-                      </>
-                    )}
-                  </button>
+                <div className="space-y-4 border-t border-gray-100 pt-2">
+                  <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Connect with Meta</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+                        Keeps your existing popup callback flow unchanged for WhatsApp Cloud API onboarding.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        void startAuth();
+                      }}
+                      disabled={oauthLoading}
+                      className="flex items-center gap-2 rounded-lg border-none bg-indigo-600 px-5 py-2.5 text-[12px] font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {oauthLoading ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border border-white/30 border-t-white" />
+                          {oauthStepLabel}
+                        </>
+                      ) : (
+                        <>
+                          <img src="https://cdn.simpleicons.org/whatsapp/ffffff" className="h-3 w-3" />
+                          Connect with Meta
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        Connect WhatsApp Business App (existing number)
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-gray-600">
+                        Uses the Facebook SDK instead of the dialog URL, while keeping the same backend state, channel creation, and socket completion flow.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        void handleBusinessAppConnect();
+                      }}
+                      disabled={coexistLoading}
+                      className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-5 py-2.5 text-[12px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {coexistLoading ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border border-emerald-200 border-t-emerald-700" />
+                          {coexistStepLabel}
+                        </>
+                      ) : (
+                        <>
+                          <img src="https://cdn.simpleicons.org/whatsapp/25D366" className="h-3 w-3" />
+                          Connect WhatsApp Business App (existing number)
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                <p className="text-[10px] text-gray-400 text-center">
-                  A popup will open to Meta's secure authorization page.
+                <p className="text-center text-[10px] text-gray-400">
+                  Cloud API uses your existing popup flow. Business App coexistence opens the official Embedded Signup modal through the Facebook SDK.
                 </p>
               </div>
             )}
@@ -432,7 +484,6 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {CRED_FIELDS.map((field) => {
-                    const FIcon = field.Icon;
                     const isPwd = field.type === 'password';
                     const isVisible = showPasswords[field.key];
                     return (
@@ -506,7 +557,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
 
 // ─── Setup Guide (shared between connected/not-connected) ─────────────────────
 
-const SetupGuide = () => (
+export const SetupGuide = () => (
   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <div className="px-5 py-4 border-b border-gray-100">
       <p className="text-sm font-semibold text-gray-900">Setup guide</p>

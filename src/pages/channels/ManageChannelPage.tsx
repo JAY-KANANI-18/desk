@@ -5,7 +5,7 @@ import {
   ArrowLeft, Copy, Check, RefreshCw,
   Info, Settings, FileText, Wrench, ShoppingBag,
   Plus, Loader, AlertCircle,
-  ChevronDown, AlertTriangle,
+  ChevronDown, AlertTriangle, MessageCircle, Menu,
 } from 'lucide-react';
 
 import { ChannelApi } from '../../lib/channelApi';
@@ -19,6 +19,7 @@ import { WebsiteChatConfiguration } from '../workspace/channels/WebsiteChatConfi
 import { useChannel } from '../../context/ChannelContext';
 import { InstagramIceBreakersSection } from '../workspace/channels/InstagramIceBreakers';
 import { MessengerChatMenuSection } from '../workspace/channels/MessengerChatMenu';
+import { MetaAutomationSection } from '../workspace/channels/MetaAutomationSection';
 import { WhatsAppTemplatesSection } from '../workspace/channels/WhatsAppTemplates';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { SettingsSidebar } from '../../components/settings/SettingsSidebar';
@@ -45,19 +46,23 @@ export function useSave() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = async (fn: () => Promise<{ success: boolean; error?: string }>) => {
+  const save = async (fn: () => Promise<any>) => {
     setSaving(true);
     setError(null);
     setSaved(false);
-    const result = await fn();
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-    // if (result.success) {
-    // } else {
-    //   setError(result.error ?? 'Something went wrong');
-    //   setTimeout(() => setError(null), 4000);
-    // }
+    try {
+      const result = await fn();
+      if (result?.success === false) {
+        setError(result.error ?? 'Something went wrong');
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      setError(err?.message ?? 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return { saving, saved, error, save };
@@ -243,8 +248,8 @@ export const CHANNEL_META: Record<string, {
     color: 'bg-indigo-600',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
-      // { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
-      // { id: 'chat_menu',      label: 'Chat Menu',        icon: <Menu size={14} /> },
+      { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
+      { id: 'chat_menu',      label: 'Chat Menu',        icon: <Menu size={14} /> },
       // { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
     ],
     additionalResources: [
@@ -259,8 +264,9 @@ export const CHANNEL_META: Record<string, {
     color: 'bg-gradient-to-br from-purple-500 to-pink-500',
     navItems: [
       { id: 'configuration',  label: 'Configuration',   icon: <Settings size={14} /> },
-      // { id: 'icebreakers',    label: 'Ice-Breakers',    icon: <MessageCircle size={14} />, badge: 'New' },
-      // { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
+      { id: 'icebreakers',    label: 'Ice-Breakers',    icon: <MessageCircle size={14} />, badge: 'New' },
+      { id: 'private_replies',label: 'Private Replies',  icon: <MessageCircle size={14} /> },
+      { id: 'story_replies',  label: 'Story Replies',    icon: <MessageCircle size={14} /> },
       // { id: 'troubleshoot',   label: 'Troubleshoot',     icon: <Wrench size={14} /> },
     ],
     additionalResources: [
@@ -491,7 +497,8 @@ const SectionContent = ({
   if (sectionId === 'profile')         return <ProfileSection channel={channel} />;
   if (sectionId === 'troubleshoot')    return <TroubleshootSection channel={channel} />;
   if (sectionId === 'catalog')         return <CatalogSection />;
-  if (sectionId === 'private_replies') return <PrivateRepliesSection />;
+  if (sectionId === 'private_replies') return <MetaAutomationSection channel={channel} mode="private_replies" />;
+  if (sectionId === 'story_replies')   return <MetaAutomationSection channel={channel} mode="story_replies" />;
 
   // Channel-specific feature sections
   if (sectionId === 'templates')       return <WhatsAppTemplatesSection channel={channel} />;

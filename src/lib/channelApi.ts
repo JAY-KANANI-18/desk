@@ -1,4 +1,3 @@
-import axios, { AxiosInstance } from 'axios';
 import { api } from './api';
 import { buildEmailChannelPayload, type EmailChannelFormValues } from './emailChannel';
 
@@ -16,6 +15,90 @@ interface CreateChannelPayload {
     type: string;
 }
 
+interface ConnectWhatsAppCoexistPayload {
+    code: string;
+    state: string;
+    wabaId: string;
+    phoneNumberId: string;
+    businessId?: string;
+}
+
+export interface WaTemplate {
+    id: string;
+    metaId?: string | null;
+    name: string;
+    language: string;
+    category: string;
+    status: string;
+    components: any[];
+    variables: string[];
+    rejectedReason?: string | null;
+    syncedAt?: string;
+}
+
+export interface IceBreakerItem {
+    question: string;
+    payload: string;
+}
+
+export interface MessengerMenuItem {
+    type: 'postback' | 'web_url';
+    title: string;
+    payload?: string;
+    url?: string;
+    actionType?: 'payload' | 'quick_reply' | 'url';
+    replyText?: string;
+    actionId?: string;
+}
+
+export interface MessengerMenuLocale {
+    locale: string;
+    composer_input_disabled: boolean;
+    call_to_actions: MessengerMenuItem[];
+}
+
+export interface MessengerMenuState {
+    persistentMenu: MessengerMenuLocale[];
+    getStarted: { payload: string } | null;
+    greeting: Array<{ locale: string; text: string }>;
+    syncedAt: string;
+}
+
+export interface PrivateRepliesConfig {
+    enabled: boolean;
+    scope: 'all' | 'selected';
+    selectedPostIds: string[];
+    message: string;
+    updatedAt?: string | null;
+}
+
+export interface StoryRepliesConfig {
+    enabled: boolean;
+    message: string;
+    updatedAt?: string | null;
+}
+
+export interface AutomationTarget {
+    id: string;
+    title: string;
+    subtitle?: string | null;
+    type: string;
+    permalink?: string | null;
+    thumbnailUrl?: string | null;
+    createdAt?: string | null;
+}
+
+const buildQuery = (params?: Record<string, string | undefined>) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+            searchParams.set(key, value);
+        }
+    });
+    const query = searchParams.toString();
+    return query ? `?${query}` : '';
+};
+
 export const ChannelApi = {
     whatsappManualConnect: (accessToken: string, phoneNumberId
         : string, wabaId: string, webhookSecret: string, workspaceId: string) =>
@@ -28,6 +111,10 @@ export const ChannelApi = {
         }),
     exchangeWhatsAppCode: (code: string, redirectUri: string) =>
         api.post("/channels/whatsapp/auth/callback", { code, redirectUri }),
+    getWhatsAppCoexistState: () =>
+        api.get(`/channels/whatsapp/auth/coexist/state`),
+    exchangeWhatsAppCoexistCode: (payload: ConnectWhatsAppCoexistPayload) =>
+        api.post("/channels/whatsapp/auth/coexist", payload),
     exchangeInstagramCode: (code: string, redirectUri: string) =>
         api.post("/channels/instagram/auth/callback", { code, redirectUri }),
     exchangeMessengerCode: (code: string, redirectUri: string) =>
@@ -59,14 +146,12 @@ connectSelectedPages: async (payload: {
 
 ,
     getChannels: () => api.get('/channels'),
-    listChannels: (params?: { search?: string; page?: number; limit?: number }) => {
-        const searchParams = new URLSearchParams();
-        if (params?.search?.trim()) searchParams.set('search', params.search.trim());
-        if (params?.page) searchParams.set('page', String(params.page));
-        if (params?.limit) searchParams.set('limit', String(params.limit));
-        const query = searchParams.toString();
-        return api.get(`/channels${query ? `?${query}` : ''}`);
-    },
+    listChannels: (params?: { search?: string; page?: number; limit?: number }) =>
+        api.get(`/channels${buildQuery({
+            search: params?.search?.trim(),
+            page: params?.page ? String(params.page) : undefined,
+            limit: params?.limit ? String(params.limit) : undefined,
+        })}`),
     createChannel: (payload: CreateChannelPayload, workspaceId: string) =>
         api.post(`/channels?workspaceId=${workspaceId}`, payload),
     deleteChannel: (channelId: string) => api.delete(`/channels/${channelId}`),
@@ -98,20 +183,44 @@ connectSelectedPages: async (payload: {
             email: auth.email,
             name: auth.name,
         }),
-    listWhatsAppTemplates: (channelId: string) =>
-        api.get(`/channels/${channelId}/whatsapp/templates`),
-    listMessengerMenu: (channelId: string) =>
-        api.get(`/channels/${channelId}/messenger/menu`),
-    syncMessengerMenu: (channelId: string, workspaceId: string) =>
-        api.post(`/channels/${channelId}/messenger/menu/sync?workspaceId=${workspaceId}`),
-    previewTemplate: (channelId: string, templateName: string, language: string) =>
-        api.get(`/channels/whatsapp/${channelId}/templates/preview?name=${templateName}&language=${language}`),
-    syncWhatsAppTemplates: (channelId: string) =>
+    listWhatsAppTemplates: (channelId: string | number | undefined, params?: Record<string, string | undefined>) =>
+        api.get(`/channels/${channelId}/whatsapp/templates${buildQuery({
+            status: params?.status,
+            category: params?.category,
+            language: params?.language,
+            search: params?.search,
+        })}`),
+    previewTemplate: (channelId: string | number, templateId: string, variables: Record<string, string>) =>
+        api.post(`/channels/${channelId}/whatsapp/templates/${templateId}/preview`, { variables }),
+    syncWhatsAppTemplates: (channelId: string | number) =>
         api.post(`/channels/${channelId}/whatsapp/templates/sync`),
-    listIceBreakers: (channelId: string, workspaceId: string) =>
-        api.get(`/channels/${channelId}/instagram/icebreakers?workspaceId=${workspaceId}`),
-    syncIceBreakers: (channelId: string, workspaceId: string) =>
-        api.post(`/channels/${channelId}/instagram/icebreakers/sync?workspaceId=${workspaceId}`),
+
+    listMessengerMenu: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/messenger/menu`),
+    syncMessengerMenu: (channelId: string | number) =>
+        api.post(`/channels/${channelId}/messenger/menu/sync`),
+    pushMessengerMenu: (channelId: string | number, menu: MessengerMenuLocale[]) =>
+        api.post(`/channels/${channelId}/messenger/menu/push`, { menu }),
+    pushGetStarted: (channelId: string | number, payload: string) =>
+        api.post(`/channels/${channelId}/messenger/menu/get-started`, { payload }),
+
+    listIceBreakers: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/instagram/icebreakers`),
+    syncIceBreakers: (channelId: string | number) =>
+        api.post(`/channels/${channelId}/instagram/icebreakers/sync`),
+    pushIceBreakers: (channelId: string | number, items: IceBreakerItem[]) =>
+        api.post(`/channels/${channelId}/instagram/icebreakers/push`, { items }),
+
+    getPrivateRepliesConfig: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/meta/automation/private-replies`),
+    savePrivateRepliesConfig: (channelId: string | number, payload: PrivateRepliesConfig) =>
+        api.put(`/channels/${channelId}/meta/automation/private-replies`, payload),
+    getStoryRepliesConfig: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/meta/automation/story-replies`),
+    saveStoryRepliesConfig: (channelId: string | number, payload: StoryRepliesConfig) =>
+        api.put(`/channels/${channelId}/meta/automation/story-replies`, payload),
+    listMetaAutomationTargets: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/meta/automation/targets`),
 
 
     // Add inside ChannelApi object:

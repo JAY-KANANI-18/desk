@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { RefreshCw, Search, Eye, Loader, AlertCircle, ChevronDown, X, Check } from 'lucide-react';
 import { ChannelApi, WaTemplate } from '../../../lib/channelApi';
 import { ConnectedChannel } from '../../channels/ManageChannelPage';
-import { useWorkspace } from '../../../context/WorkspaceContext';
+import { useSocket } from '../../../socket/socket-provider';
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }: { status: string }) => {
@@ -54,16 +54,22 @@ const PreviewModal = ({ template, channelId, onClose }: {
   const handlePreview = async () => {
     setLoading(true);
     setError(null);
-    const r = await ChannelApi.previewTemplate(channelId, template.id, vars);
-    setLoading(false);
-    if (r.success) setPreview(r.data);
-    else setError(r.error ?? 'Preview failed');
+    try {
+      const nextPreview = await ChannelApi.previewTemplate(channelId, template.id, vars);
+      setPreview(nextPreview);
+    } catch (err: any) {
+      setError(err?.message ?? 'Preview failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Auto-preview when no variables
   useEffect(() => {
-    if (template.variables?.length === 0) handlePreview();
-  }, []);
+    if (template.variables?.length === 0) {
+      void handlePreview();
+    }
+  }, [template.id]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -148,7 +154,7 @@ const PreviewModal = ({ template, channelId, onClose }: {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChannel }) => {
-  const { workspace } = useWorkspace();
+  const { socket } = useSocket();
   const [templates, setTemplates]   = useState<WaTemplate[]>([]);
   const [loading, setLoading]       = useState(true);
   const [syncing, setSyncing]       = useState(false);
@@ -162,28 +168,57 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
   const load = async () => {
     setLoading(true);
     setError(null);
-    const r = await ChannelApi.listWhatsAppTemplates(String(channel.id), workspace?.id ?? '', {
-      status:   statusFilter || undefined,
-      category: catFilter    || undefined,
-      search:   search       || undefined,
-    });
-    setLoading(false);
-    setTemplates(r ?? []);
+    try {
+      const nextTemplates = await ChannelApi.listWhatsAppTemplates(String(channel.id), {
+        status:   statusFilter || undefined,
+        category: catFilter    || undefined,
+        search:   search       || undefined,
+      });
+      setTemplates(nextTemplates ?? []);
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to load templates');
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, [statusFilter, catFilter]);
+  useEffect(() => { void load(); }, [statusFilter, catFilter]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onSync = (event: any) => {
+      if (
+        String(event?.channelId) === String(channel.id) &&
+        event?.feature === 'whatsapp_templates'
+      ) {
+        setSyncMsg(`Synced ${event?.synced ?? 0} templates${event?.errors ? ` (${event.errors} errors)` : ''}`);
+        void load();
+      }
+    };
+
+    socket.on('channel:sync', onSync);
+    return () => {
+      socket.off('channel:sync', onSync);
+    };
+  }, [channel.id, socket, statusFilter, catFilter, search]);
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); load(); };
 
   const handleSync = async () => {
     setSyncing(true);
     setSyncMsg(null);
-    const r = await ChannelApi.syncWhatsAppTemplates(String(channel.id));
-    setSyncing(false);
-    // setSyncMsg(`Synced ${r.data?.synced ?? 0} templates${r.data?.errors ? ` (${r.data.errors} errors)` : ''}`);
-    load();
-    setTimeout(() => setSyncMsg(null), 4000);
-  
+    try {
+      const result = await ChannelApi.syncWhatsAppTemplates(String(channel.id));
+      setSyncMsg(`Synced ${result?.synced ?? 0} templates${result?.errors ? ` (${result.errors} errors)` : ''}`);
+      await load();
+    } catch (err: any) {
+      setError(err?.message ?? 'Sync failed');
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMsg(null), 4000);
+    }
   };
 
   return (

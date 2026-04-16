@@ -48,6 +48,9 @@ export type TriggerType =
   | 'conversation_closed'
   | 'contact_tag_updated'
   | 'contact_field_updated'
+  | 'menu_click'
+  | 'story_reply'
+  | 'template_send'
   | 'shortcut'
   // | 'incoming_webhook'
   // | 'click_to_chat_ads'
@@ -741,6 +744,24 @@ export const FIELD_DEFS_BY_TRIGGER: Record<string, FieldDef[]> = {
     { value: 'source',   label: 'Source',   multi: false, options: CONV_CLOSE_SOURCES },
     { value: 'category', label: 'Category', multi: true,  options: CONV_CLOSE_CATEGORIES },
     { value: 'assignee', label: 'Assignee', multi: false, options: [] },
+  ],
+  menu_click: [
+    { value: 'payload',   label: 'Menu Payload',  multi: false, options: [] },
+    { value: 'title',     label: 'Menu Title',    multi: false, options: [] },
+    { value: 'channelId', label: 'Channel ID',    multi: false, options: [] },
+  ],
+  story_reply: [
+    { value: 'storyId',   label: 'Story ID',      multi: false, options: [] },
+    { value: 'storyUrl',  label: 'Story URL',     multi: false, options: [] },
+    { value: 'text',      label: 'Reply Text',    multi: false, options: [] },
+    { value: 'channelId', label: 'Channel ID',    multi: false, options: [] },
+  ],
+  template_send: [
+    { value: 'templateName',     label: 'Template Name',     multi: false, options: [] },
+    { value: 'templateLanguage', label: 'Template Language', multi: false, options: [] },
+    { value: 'templateCategory', label: 'Template Category', multi: false, options: [] },
+    { value: 'templateStatus',   label: 'Template Status',   multi: false, options: [] },
+    { value: 'channelId',        label: 'Channel ID',        multi: false, options: [] },
   ],
 };
 

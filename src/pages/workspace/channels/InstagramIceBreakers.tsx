@@ -3,14 +3,14 @@ import { useState, useEffect } from 'react';
 import { RefreshCw, Plus, Trash2, Save, Loader, AlertCircle, Info, Check, GripVertical } from 'lucide-react';
 import { ChannelApi, IceBreakerItem } from '../../../lib/channelApi';
 import { ConnectedChannel, useSave, SaveButton } from '../../channels/ManageChannelPage';
-import { useWorkspace } from '../../../context/WorkspaceContext';
+import { useSocket } from '../../../socket/socket-provider';
 
 const MAX_ICEBREAKERS = 4;
 const MAX_QUESTION_LEN = 80;
 const MAX_PAYLOAD_LEN  = 1000;
 
 export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedChannel }) => {
-  const { workspace } = useWorkspace();
+  const { socket } = useSocket();
   const { saving, saved, error: saveError, save } = useSave();
 
   const [items,    setItems]   = useState<IceBreakerItem[]>([]);
@@ -20,30 +20,64 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
   const [loadErr,  setLoadErr] = useState<string | null>(null);
   const [dirty,    setDirty]   = useState(false);
 
-  const wid = workspace?.id ?? '';
-
   const load = async () => {
     setLoading(true);
     setLoadErr(null);
-    const r = await ChannelApi.listIceBreakers(String(channel.id), wid);
-    setLoading(false);
-    if (r.success) { setItems(r.data ?? []); setDirty(false); }
-    else setLoadErr(r.error ?? 'Failed to load ice-breakers');
+    try {
+      const nextItems = await ChannelApi.listIceBreakers(String(channel.id));
+      setItems(nextItems ?? []);
+      setDirty(false);
+    } catch (err: any) {
+      setLoadErr(err?.message ?? 'Failed to load ice-breakers');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load(); }, [channel.id]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onChannelSync = (event: any) => {
+      if (
+        String(event?.channelId) === String(channel.id) &&
+        event?.feature === 'instagram_icebreakers'
+      ) {
+        setSyncMsg(`Synced ${event?.synced ?? 0} ice-breakers`);
+        void load();
+      }
+    };
+
+    const onChannelConfig = (event: any) => {
+      if (
+        String(event?.channelId) === String(channel.id) &&
+        event?.feature === 'instagram_icebreakers'
+      ) {
+        void load();
+      }
+    };
+
+    socket.on('channel:sync', onChannelSync);
+    socket.on('channel:config', onChannelConfig);
+    return () => {
+      socket.off('channel:sync', onChannelSync);
+      socket.off('channel:config', onChannelConfig);
+    };
+  }, [channel.id, socket]);
 
   const handleSync = async () => {
     setSyncing(true);
     setSyncMsg(null);
-    const r = await ChannelApi.syncIceBreakers(String(channel.id), wid);
-    setSyncing(false);
-    if (r.success) {
-      setSyncMsg(`Synced ${r.data?.synced ?? 0} ice-breakers`);
-      load();
+    try {
+      const result = await ChannelApi.syncIceBreakers(String(channel.id));
+      setSyncMsg(`Synced ${result?.synced ?? 0} ice-breakers`);
+      await load();
       setTimeout(() => setSyncMsg(null), 3500);
-    } else {
-      setLoadErr(r.error ?? 'Sync failed');
+    } catch (err: any) {
+      setLoadErr(err?.message ?? 'Sync failed');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -67,7 +101,9 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
     save(async () => {
       const invalid = items.some(it => !it.question.trim());
       if (invalid) return { success: false, error: 'All ice-breakers must have a question' };
-      return ChannelApi.pushIceBreakers(String(channel.id), wid, items);
+      const result = await ChannelApi.pushIceBreakers(String(channel.id), items);
+      setDirty(false);
+      return result;
     });
 
   return (

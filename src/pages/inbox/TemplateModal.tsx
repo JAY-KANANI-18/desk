@@ -66,7 +66,7 @@ type ApiTemplate = {
     language: string;
     status: string;
     components: ApiTemplateComponent[];
-    variables?: { key: string; label: string; description?: string; defaultValue?: string }[];
+    variables?: string[] | { key: string; label: string; description?: string; defaultValue?: string }[];
 };
 
 // ─── API Response Mapper ──────────────────────────────────────────────────────
@@ -96,7 +96,13 @@ function mapApiTemplate(api: ApiTemplate): Template {
 
     const bodyText = bodyComp?.text ?? '';
     const keys = [...new Set([...bodyText.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]))];
-    const variables = api.variables ?? keys.map(k => ({ key: k, label: k }));
+    const variables = Array.isArray(api.variables)
+        ? api.variables.map((entry: any) =>
+            typeof entry === 'string'
+                ? { key: entry, label: entry }
+                : entry,
+          )
+        : keys.map(k => ({ key: k, label: k }));
 
     return {
         id:       api.id,

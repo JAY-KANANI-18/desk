@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { ChannelApi } from '../lib/channelApi';
 import { useSocket } from '../socket/socket-provider';
@@ -6,7 +6,11 @@ import { useChannel } from '../context/ChannelContext';
 import { useIsMobile } from './useIsMobile';
 import { useAuth } from '../context/AuthContext';
 
-type OAuthProvider = 'instagram' | 'messenger' | 'whatsapp';
+type OAuthProvider =
+  | 'instagram'
+  | 'messenger'
+  | 'whatsapp'
+  | 'whatsapp_coexist';
 
 type ChannelConnectedPayload = {
   eventId?: string;
@@ -26,6 +30,7 @@ const PROVIDER_LABELS: Record<OAuthProvider, string> = {
   instagram: 'Instagram',
   messenger: 'Facebook Messenger',
   whatsapp: 'WhatsApp',
+  whatsapp_coexist: 'WhatsApp Business App',
 };
 
 export function useChannelOAuth(options: {
@@ -48,11 +53,16 @@ export function useChannelOAuth(options: {
   const completionRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
-const {user}=useAuth()
+  const { user } = useAuth();
+
   useEffect(() => {
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
   }, [onError, onSuccess]);
+
+  const flushPendingEvents = useCallback(() => {
+    socket?.emit('oauth:pending:flush', { user });
+  }, [socket, user]);
 
   useEffect(() => {
     if (!socket || !workspaceId) {
@@ -110,13 +120,13 @@ const {user}=useAuth()
 
     socket.on('channel:connected', handleConnected);
     socket.on('channel:error', handleError);
-    socket.emit('oauth:pending:flush',{user});
+    flushPendingEvents();
 
     return () => {
       socket.off('channel:connected', handleConnected);
       socket.off('channel:error', handleError);
     };
-  }, [provider, refreshChannels, socket, workspaceId]);
+  }, [flushPendingEvents, provider, refreshChannels, socket, workspaceId]);
 
   useEffect(() => {
     return () => {
@@ -124,19 +134,46 @@ const {user}=useAuth()
     };
   }, []);
 
-  const startAuth = async () => {
+  const prepareAuth = () => {
     if (!workspaceId) {
       const message = 'Select a workspace before connecting a channel.';
       onErrorRef.current(message);
-      return;
+      return false;
     }
 
     completionRef.current = false;
     setLoading(true);
     clearWatchers();
+    timeoutRef.current = window.setTimeout(() => {
+      if (completionRef.current) {
+        return;
+      }
+
+      clearWatchers();
+      setLoading(false);
+      const message = `${PROVIDER_LABELS[provider]} authorization timed out. Please try again.`;
+      toast.error(message);
+      onErrorRef.current(message);
+    }, 5 * 60 * 1000);
+
+    return true;
+  };
+
+  const failAuth = (error: any) => {
+    clearWatchers();
+    setLoading(false);
+    const message =
+      error?.message ?? `${PROVIDER_LABELS[provider]} connection failed.`;
+    toast.error(message);
+    onErrorRef.current(message);
+  };
+
+  const startAuth = async () => {
+    if (!prepareAuth()) {
+      return;
+    }
 
     try {
-;
       const { url } = await getAuthUrl(provider);
 
       if (isMobile) {
@@ -157,24 +194,21 @@ const {user}=useAuth()
 
       popupRef.current = popup;
       watchPopupClose();
-      timeoutRef.current = window.setTimeout(() => {
-        if (completionRef.current) {
-          return;
-        }
-
-        clearWatchers();
-        setLoading(false);
-        const message = `${PROVIDER_LABELS[provider]} authorization timed out. Please try again.`;
-        toast.error(message);
-        onErrorRef.current(message);
-      }, 5 * 60 * 1000);
     } catch (error: any) {
-      clearWatchers();
-      setLoading(false);
-      const message =
-        error?.message ?? `${PROVIDER_LABELS[provider]} connection failed.`;
-      toast.error(message);
-      onErrorRef.current(message);
+      failAuth(error);
+    }
+  };
+
+  const startCustomAuth = async (executor: () => Promise<void>) => {
+    if (!prepareAuth()) {
+      return;
+    }
+
+    try {
+      await executor();
+      flushPendingEvents();
+    } catch (error: any) {
+      failAuth(error);
     }
   };
 
@@ -248,6 +282,7 @@ const {user}=useAuth()
   return {
     loading,
     startAuth,
+    startCustomAuth,
   };
 }
 
@@ -262,5 +297,7 @@ async function getAuthUrl(
       return ChannelApi.getMessengerAuthUrl();
     case 'whatsapp':
       return ChannelApi.getWhatsAppAuthUrl();
+    case 'whatsapp_coexist':
+      throw new Error('WhatsApp Business App auth does not use an OAuth URL.');
   }
 }

@@ -9,7 +9,8 @@ import {
   ContactFieldConfig, 
   // ShortcutConfig, WebhookConfig, ClickToChatConfig,
   // TikTokAdsConfig, 
-  ManualTriggerConfig, LifecycleConfig,
+  ManualTriggerConfig, LifecycleConfig, MenuClickTriggerConfig,
+  StoryReplyTriggerConfig, TemplateSendTriggerConfig,
 } from './triggers';
 
 export function TriggerPanel() {
@@ -125,6 +126,9 @@ export function TriggerPanel() {
           {trigger.type === 'conversation_closed'   && <ConversationClosedConfig  trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'contact_tag_updated'   && <ContactTagConfig          trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'contact_field_updated' && <ContactFieldConfig        trigger={trigger} onChange={handleUpdate} />}
+          {trigger.type === 'menu_click'            && <MenuClickTriggerConfig    trigger={trigger} onChange={handleUpdate} />}
+          {trigger.type === 'story_reply'           && <StoryReplyTriggerConfig   trigger={trigger} onChange={handleUpdate} />}
+          {trigger.type === 'template_send'         && <TemplateSendTriggerConfig trigger={trigger} onChange={handleUpdate} />}
           {/* {trigger.type === 'shortcut'              && <ShortcutConfig            trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'incoming_webhook'      && <WebhookConfig             trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'click_to_chat_ads'     && <ClickToChatConfig         trigger={trigger} onChange={handleUpdate} />}
@@ -157,6 +161,9 @@ function getDefaultData(type: TriggerType): TriggerConfig['data'] {
     case 'conversation_closed':   return { sources: [], categories: [] };
     case 'contact_tag_updated':   return { action: 'added', tags: [] };
     case 'contact_field_updated': return { fieldId: '', fieldName: '' };
+    case 'menu_click':            return {};
+    case 'story_reply':           return {};
+    case 'template_send':         return {};
     case 'shortcut':              return { icon: 'zap', name: '', description: '', formFields: [] };
     // case 'incoming_webhook':      return { webhookUrl: `https://app.yourapp.io/webhook/${Math.random().toString(36).slice(2)}`, contactIdentifierType: 'phone', contactIdentifierJsonKey: '', variables: [] };
     // case 'click_to_chat_ads':     return { facebookAccountId: '', adSelection: 'all', selectedAdIds: [] };

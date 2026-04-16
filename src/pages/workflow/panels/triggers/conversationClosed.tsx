@@ -291,6 +291,18 @@ export function ConditionBuilder({
                   </div>
                 )}
 
+                {!isMulti && valueOpts.length === 0 && (
+                  <div className="mt-1.5">
+                    <input
+                      type="text"
+                      value={singleValue}
+                      onChange={(event) => update(cond.id, { value: event.target.value })}
+                      placeholder="Enter value…"
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 transition-colors focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    />
+                  </div>
+                )}
+
                 {/* AND / OR connector */}
                 {!isLast && (
                   <div className="flex items-center gap-1 mt-2 mb-1">
