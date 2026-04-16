@@ -331,8 +331,9 @@ export const WorkspaceRouter = () => {
         />
 
         <Route path="sitemap" element={<AppSitemap />} />
-        <Route path="*" element={<WorkspaceNotFound />} />
+        {/* <Route path="*" element={<WorkspaceNotFound />} /> */}
       </Route>
+            <Route path="*" element={<Navigate to="/inbox" replace />} />
     </Routes>
   );
 };
