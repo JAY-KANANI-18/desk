@@ -526,6 +526,8 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                       // { perm: 'pages_show_list',        desc: 'List your Facebook Pages' },
                       { perm: 'pages_messaging',        desc: 'Send & receive messages' },
                       { perm: 'pages_read_engagement',  desc: 'Read page engagement' },
+                      // { perm: 'pages_read_user_content', desc: 'Read page post/comment content' },
+                      { perm: 'pages_manage_engagement', desc: 'Send private replies to comments' },
                       { perm: 'pages_manage_metadata',  desc: 'Manage webhook subscriptions' },
                     ].map(({ perm, desc }) => (
                       <div key={perm} className="flex items-start gap-2">
