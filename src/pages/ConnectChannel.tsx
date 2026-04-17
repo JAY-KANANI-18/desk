@@ -97,26 +97,26 @@ const CATALOG_CHANNELS: CatalogChannel[] = [
     badgeColor: "bg-green-100 text-green-700",
     category: "livechat",
   },
-  {
-    id: "exotel_call",
-    name: "Exotel Calling",
-    description:
-      "Connect Exotel cloud telephony for inbound and outbound customer calls.",
-    icon: "https://cdn.simpleicons.org/ringcentral",
-    badge: "New",
-    badgeColor: "bg-blue-100 text-blue-700",
-    category: "calls",
-  },
-  {
-    id: "msg91_sms",
-    name: "MSG91 SMS",
-    description:
-      "Connect MSG91 to send and receive transactional and support SMS.",
-    icon: "https://cdn.simpleicons.org/androidmessages",
-    badge: "New",
-    badgeColor: "bg-emerald-100 text-emerald-700",
-    category: "sms",
-  },
+  // {
+  //   id: "exotel_call",
+  //   name: "Exotel Calling",
+  //   description:
+  //     "Connect Exotel cloud telephony for inbound and outbound customer calls.",
+  //   icon: "https://cdn.simpleicons.org/ringcentral",
+  //   badge: "New",
+  //   badgeColor: "bg-blue-100 text-blue-700",
+  //   category: "calls",
+  // },
+  // {
+  //   id: "msg91_sms",
+  //   name: "MSG91 SMS",
+  //   description:
+  //     "Connect MSG91 to send and receive transactional and support SMS.",
+  //   icon: "https://cdn.simpleicons.org/androidmessages",
+  //   badge: "New",
+  //   badgeColor: "bg-emerald-100 text-emerald-700",
+  //   category: "sms",
+  // },
   // {
   //   id: 'tiktok',
   //   name: 'TikTok',
@@ -267,7 +267,7 @@ export const ChannelCatalogView = () => {
         </div>
       </div>
 
-      <div className="border-b border-gray-200 bg-white px-4 py-3 md:px-8">
+      {/* <div className="border-b border-gray-200 bg-white px-4 py-3 md:px-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex gap-1 overflow-x-auto pb-1">
             {CATALOG_CATEGORIES.map((cat) => (
@@ -295,7 +295,7 @@ export const ChannelCatalogView = () => {
             />
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
         {filteredChannels.length === 0 ? (

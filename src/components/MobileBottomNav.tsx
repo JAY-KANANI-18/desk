@@ -135,65 +135,76 @@ export function MobileBottomNav() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white px-2 pt-1 md:hidden">
-      <nav className="relative mx-auto flex w-full max-w-xl items-center rounded-[28px] rounded-br-none rounded-bl-none border border-indigo-600 border-b-0 bg-white px-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <div
-          className="pointer-events-none absolute bottom-0 top-2 z-0 transition-all duration-300 ease-out"
-          style={{
-            left: indicatorStyle.left,
-            width: indicatorStyle.width,
-          }}
-        >
-          <div className="mx-1 h-full rounded-[20px] rounded-br-none rounded-bl-none bg-indigo-600 shadow-[0_8px_24px_rgba(79,70,229,0.28)]" />
-        </div>
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white pt-1 md:hidden">
+    <nav className="relative mx-auto flex w-full max-w-xl items-stretch rounded-t-[28px] border border-b-0 bg-white px-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+  <div
+    className="pointer-events-none absolute top-2 bottom-0 z-0 transition-all duration-300 ease-out"
+    style={{
+      left: indicatorStyle.left,
+      width: indicatorStyle.width,
+    }}
+  >
+    <div className=" h-full rounded-t-[20px] bg-indigo-600 shadow-[0_8px_24px_rgba(79,70,229,0.22)]" />
+  </div>
 
-        {navItems.map((item, index) => {
-          const isActive =
-            "isSettings" in item && item.isSettings
-              ? isSettingsTabActive
-              : isPathActive(
-                  "activePaths" in item ? item.activePaths : [item.path],
-                );
-
-          const iconClassName = `relative z-10 transition-all duration-300 ${
-            isActive
-              ? " scale-110 text-white"
-              : "text-slate-500"
-          }`;
-
-          if ("isSettings" in item && item.isSettings) {
-            return (
-              <button
-                key="mobile-settings"
-                ref={(el) => {
-                  tabRefs.current[index] = el;
-                }}
-                type="button"
-                aria-label="Settings"
-                onClick={() => setShowSettingsMenu((prev) => !prev)}
-                className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-[20px] rounded-br-none rounded-bl-none px-3 py-3"
-              >
-                <item.icon size={30} className={iconClassName} />
-              </button>
-            );
-          }
-
-          return (
-            <NavLink
-              key={`${item.label}-${item.path}`}
-              ref={(el) => {
-                tabRefs.current[index] = el;
-              }}
-              to={item.path}
-              aria-label={item.label}
-              onClick={() => setShowSettingsMenu(false)}
-              className=" relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-[20px] rounded-br-none rounded-bl-none px-3 py-3"
-            >
-              <item.icon size={30} className={iconClassName} />
-            </NavLink>
+  {navItems.map((item, index) => {
+    const isActive =
+      "isSettings" in item && item.isSettings
+        ? isSettingsTabActive
+        : isPathActive(
+            "activePaths" in item ? item.activePaths : [item.path],
           );
-        })}
-      </nav>
+
+    const iconClassName = `relative z-10 transition-colors duration-300 ${
+      isActive ? "text-white" : "text-slate-500"
+    }`;
+
+    const labelClassName = `relative z-10 text-[11px] leading-none whitespace-nowrap transition-colors duration-300 ${
+      isActive ? "text-white" : "text-slate-500"
+    }`;
+
+    const content = (
+      <div className="flex h-[64px] flex-col items-center justify-center gap-1.5">
+        <item.icon size={22} className={iconClassName} />
+        <span className={labelClassName}>
+          {"isSettings" in item && item.isSettings ? "Settings" : item.label}
+        </span>
+      </div>
+    );
+
+    if ("isSettings" in item && item.isSettings) {
+      return (
+        <button
+          key="mobile-settings"
+          ref={(el) => {
+            tabRefs.current[index] = el;
+          }}
+          type="button"
+          aria-label="Settings"
+          onClick={() => setShowSettingsMenu((prev) => !prev)}
+          className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
+        >
+          {content}
+        </button>
+      );
+    }
+
+    return (
+      <NavLink
+        key={`${item.label}-${item.path}`}
+        ref={(el) => {
+          tabRefs.current[index] = el;
+        }}
+        to={item.path}
+        aria-label={item.label}
+        onClick={() => setShowSettingsMenu(false)}
+        className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
+      >
+        {content}
+      </NavLink>
+    );
+  })}
+</nav>
 
       {showSettingsMenu && (
         <>
