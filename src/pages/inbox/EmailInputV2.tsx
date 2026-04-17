@@ -29,7 +29,7 @@ import { useInbox } from '../../context/InboxContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import type { SharedInputProps } from './InputArea';
 import { EmojiPicker } from './EmojiPicker';
-import { AiPromptMenu, useInboxAiComposer } from './composerShared';
+import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './composerShared';
 import { extractMentionIds } from './utils';
 import { normalizeEmailChannelConfig } from '../../lib/emailChannel';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -105,6 +105,7 @@ export function EmailInput({
     switchToReply: () => onInputModeChange('reply'),
     switchToNote: () => onInputModeChange('note'),
   });
+  const isAiBusy = aiComposer.aiLoadingAction !== null;
 
   const filteredTriggerItems = useMemo(() => {
     if (!trigger) return [];
@@ -161,6 +162,7 @@ export function EmailInput({
   }, [selectedConversation?.id]);
 
   const updateDraftState = useCallback(() => {
+    aiComposer.clearAiComposerNotice();
     const text = editorRef.current?.innerText?.replace(/\n{3,}/g, '\n\n') ?? '';
     setDraftText(text.trimEnd());
     const selection = window.getSelection();
@@ -190,7 +192,7 @@ export function EmailInput({
       return;
     }
     setTrigger(null);
-  }, [isNote]);
+  }, [aiComposer, isNote]);
 
   const insertAtSelection = useCallback((replacement: string, pattern: RegExp) => {
     const selection = window.getSelection();
@@ -251,7 +253,7 @@ export function EmailInput({
     updateDraftState();
   };
 
-  const canSend = draftText.trim().length > 0 || attachedFiles.length > 0;
+  const canSend = !isAiBusy && (draftText.trim().length > 0 || attachedFiles.length > 0);
 
   const handleSend = () => {
     if (!canSend) return;
@@ -486,7 +488,12 @@ export function EmailInput({
             </div>
           )}
 
-          {!draftText && (
+          <AiComposerInlineStatus
+            loadingAction={aiComposer.aiLoadingAction}
+            notice={aiComposer.aiComposerNotice}
+          />
+
+          {!draftText && !aiComposer.aiLoadingAction && !aiComposer.aiComposerNotice && (
             <div className={`absolute left-3 top-3 pr-3 text-[13px] pointer-events-none select-none sm:left-4 sm:text-sm ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
               {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-violet-400">$</span> for variables</>}
             </div>
@@ -494,12 +501,16 @@ export function EmailInput({
 
           <div
             ref={editorRef}
-            contentEditable
+            contentEditable={!isAiBusy}
             suppressContentEditableWarning
             onInput={updateDraftState}
             onKeyUp={updateDraftState}
             onMouseUp={updateDraftState}
             onKeyDown={(e) => {
+              if (isAiBusy) {
+                e.preventDefault();
+                return;
+              }
               if (trigger && filteredTriggerItems.length > 0) {
                 if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIndex((value) => Math.min(value + 1, filteredTriggerItems.length - 1)); return; }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIndex((value) => Math.max(value - 1, 0)); return; }
@@ -517,7 +528,8 @@ export function EmailInput({
                 handleSend();
               }
             }}
-            className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-indigo-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${activeBg}`}
+            aria-busy={isAiBusy}
+            className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-indigo-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
             style={{ wordBreak: 'break-word' }}
           />
         </div>
@@ -545,22 +557,23 @@ export function EmailInput({
           </div>
         )}
 
-        <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${borderClass}`}>
+        <div className="relative" ref={aiMenuRef}>
+          {!isNote && (
+            <AiPromptMenu
+              open={aiMenuOpen}
+              prompts={aiComposer.rewritePrompts}
+              activePromptParent={aiComposer.activePromptParent}
+              onClose={() => setAiMenuOpen(false)}
+              onSelectPrompt={aiComposer.handleRewrite}
+              onSetActiveParent={aiComposer.setActivePromptParent}
+            />
+          )}
+          <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${borderClass}`}>
           <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pr-1 sm:flex-wrap sm:overflow-visible sm:pr-0">
             {!isNote && (
-              <div className="relative mr-1" ref={aiMenuRef}>
-                <button onClick={() => setAiMenuOpen((value) => !value)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
-                  <Wand2 size={16} />
-                </button>
-                <AiPromptMenu
-                  open={aiMenuOpen}
-                  prompts={aiComposer.rewritePrompts}
-                  activePromptParent={aiComposer.activePromptParent}
-                  onClose={() => setAiMenuOpen(false)}
-                  onSelectPrompt={aiComposer.handleRewrite}
-                  onSetActiveParent={aiComposer.setActivePromptParent}
-                />
-              </div>
+              <button onClick={() => setAiMenuOpen((value) => !value)} className="mr-1 p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
+                <Wand2 size={16} />
+              </button>
             )}
 
             {!isMobile && channelSelector}
@@ -628,6 +641,7 @@ export function EmailInput({
               <Send size={14} />
             </button>
           </div>
+        </div>
         </div>
       </div>
 

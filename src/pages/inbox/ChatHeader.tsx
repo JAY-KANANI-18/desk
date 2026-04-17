@@ -9,6 +9,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { useInbox } from '../../context/InboxContext';
 import { inboxApi } from '../../lib/inboxApi';
 import { useCall } from '../../context/CallContext';
+import { MobileSheet } from '../../components/topbar/MobileSheet';
 
 interface ChatHeaderProps {
   selectedConversation: Conversation;
@@ -178,11 +179,13 @@ export function ChatHeader({
   onOpenContactDetails,
 }: ChatHeaderProps) {
   const [assignOpen, setAssignOpen] = useState(false);
+  const [assignSheetOpen, setAssignSheetOpen] = useState(false);
   const [assignSearch, setAssignSearch] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatStatus, setChatStatus] = useState<"open" | "closed" | null>(null);
 
   const assignRef = useRef<HTMLDivElement>(null);
+  const assignSheetRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const { workspaceUsers } = useWorkspace();
@@ -199,7 +202,11 @@ export function ChatHeader({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (assignRef.current && !assignRef.current.contains(e.target as Node)) {
+      if (
+        assignRef.current &&
+        !assignRef.current.contains(e.target as Node) &&
+        !assignSheetRef.current?.contains(e.target as Node)
+      ) {
         setAssignOpen(false); setAssignSearch('');
       }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
@@ -262,6 +269,7 @@ export function ChatHeader({
 
   const handleAssign = async (userId: string | null) => {
     setAssignOpen(false);
+    setAssignSheetOpen(false);
     setAssignSearch("");
     await assignUser(userId);
   };
@@ -387,11 +395,39 @@ export function ChatHeader({
       <div className="flex min-w-0 items-center gap-1 md:ml-auto md:w-auto md:flex-wrap md:justify-end md:gap-2">
 
         {/* Assign dropdown */}
-        <div className="relative min-w-0 max-w-[108px] flex-shrink md:max-w-none md:flex-none" ref={assignRef}>
+        <button
+          type="button"
+          onClick={() => {
+            setAssignSheetOpen(true);
+            setAssignSearch('');
+          }}
+          className="flex h-8 min-w-0 max-w-[108px] flex-shrink items-center gap-1.5 rounded-lg border border-gray-200 px-2 text-[12px] text-gray-700 transition-colors hover:bg-gray-50 md:hidden"
+        >
+          {assignee === null ? (
+            <><UserCircle2 size={16} className="text-gray-400" /><span className="truncate text-gray-500">{mobileAssigneeLabel}</span></>
+          ) : (
+            <>
+              <div className="relative flex-shrink-0">
+                {assignee.avatarUrl ? (
+                  <img src={assignee.avatarUrl} alt={`${assignee.firstName} ${assignee.lastName}`} className="h-[18px] w-[18px] rounded-full object-cover" />
+                ) : (
+                  <div className="h-[18px] w-[18px] rounded-full bg-indigo-100 text-[9px] font-semibold text-indigo-700 flex items-center justify-center">
+                    {assignee?.lastName?.charAt(0) || assignee?.firstName?.charAt(0)}
+                  </div>
+                )}
+                {assignee.activityStatus === 'online' && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />}
+              </div>
+              <span className="truncate max-w-[74px]">{mobileAssigneeLabel}</span>
+            </>
+          )}
+          <ChevronDown size={12} className="flex-shrink-0 text-black" />
+        </button>
+
+        <div className="relative hidden min-w-0 flex-shrink md:block md:max-w-none md:flex-none" ref={assignRef}>
           <button
             type="button"
             onClick={() => { setAssignOpen(!assignOpen); setAssignSearch(''); }}
-            className="flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg border border-gray-200 px-2 text-[12px] text-gray-700 transition-colors hover:bg-gray-50 md:h-auto md:w-auto md:gap-2 md:rounded-2xl md:px-3 md:py-2 md:text-sm"
+            className="flex w-auto min-w-0 items-center gap-2 rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
           >
             {assignee === null ? (
               <><UserCircle2 size={16} className="text-gray-400" /><span className="truncate text-gray-500">{mobileAssigneeLabel}</span></>
@@ -660,6 +696,91 @@ export function ChatHeader({
           )}
         </div>
       </div>
+
+      <MobileSheet
+        open={assignSheetOpen}
+        onClose={() => {
+          setAssignSheetOpen(false);
+          setAssignSearch('');
+        }}
+        title={
+          <div>
+            <p className="text-base font-semibold text-gray-900">Assign conversation</p>
+            <p className="mt-0.5 truncate text-xs text-gray-500">{contactName}</p>
+          </div>
+        }
+      >
+        <div className="p-4" ref={assignSheetRef}>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              autoFocus
+              type="text"
+              value={assignSearch}
+              onChange={e => setAssignSearch(e.target.value)}
+              placeholder="Search agents or teams..."
+              className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100">
+            {!assignSearch && (
+              <button
+                type="button"
+                onClick={() => { handleAssign(null); }}
+                className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${assignee === null ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100">
+                  <UserCircle2 size={20} className="text-gray-400" />
+                </span>
+                <span className="flex-1 text-sm font-medium text-gray-600">Unassigned</span>
+                {assignee === null && <CheckCircle2 size={16} className="text-indigo-600" />}
+              </button>
+            )}
+
+            {filteredMembers.length > 0 && (
+              <>
+                <div className="border-t border-gray-100 bg-gray-50 px-4 py-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Agents</span>
+                </div>
+                {filteredMembers.map(member => {
+                  const isSelected = assignee?.id === member.id;
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => { handleAssign(member.id); }}
+                      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${isSelected ? 'bg-indigo-50' : 'bg-white hover:bg-gray-50'}`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        {member.avatarUrl ? (
+                          <img src={member.avatarUrl} alt={`${member.firstName} ${member.lastName}`} className="h-9 w-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                            {member?.lastName?.charAt(0) || member?.firstName?.charAt(0)}
+                          </div>
+                        )}
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${member?.activityStatus === 'online' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">{member?.firstName} {member?.lastName}</p>
+                        <p className={`text-xs ${member?.activityStatus === 'online' ? 'text-green-600' : 'text-gray-400'}`}>
+                          {member?.activityStatus === 'online' ? 'Online' : 'Offline'}
+                        </p>
+                      </div>
+                      {isSelected && <CheckCircle2 size={16} className="flex-shrink-0 text-indigo-600" />}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+
+            {filteredMembers.length === 0 && filteredTeams.length === 0 && (
+              <p className="bg-white py-8 text-center text-sm text-gray-400">No results</p>
+            )}
+          </div>
+        </div>
+      </MobileSheet>
     </div>
   );
 }

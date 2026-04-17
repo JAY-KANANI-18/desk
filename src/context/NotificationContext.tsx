@@ -460,35 +460,35 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     if (!user) return;
 
-    const now = Date.now();
-    if (!force && module === "app" && now - heartbeatRef.current < HEARTBEAT_THROTTLE_MS) {
-      return;
-    }
+    // const now = Date.now();
+    // if (!force && module === "app" && now - heartbeatRef.current < HEARTBEAT_THROTTLE_MS) {
+    //   return;
+    // }
 
-    heartbeatRef.current = now;
+    // heartbeatRef.current = now;
 
-    try {
-      const result = await notificationApi.heartbeat(module);
-      const rawStatus = String(result.status ?? result.activityStatus ?? "").toLowerCase();
-      const nextStatus = rawStatus === "active" ? "online" : rawStatus;
-      logPushDebug("heartbeat:success", {
-        module,
-        force,
-        visibilityState:
-          typeof document === "undefined" ? "unknown" : document.visibilityState,
-        result,
-        nextStatus,
-      });
+    // try {
+    //   const result = await notificationApi.heartbeat(module);
+    //   const rawStatus = String(result.status ?? result.activityStatus ?? "").toLowerCase();
+    //   const nextStatus = rawStatus === "active" ? "online" : rawStatus;
+    //   logPushDebug("heartbeat:success", {
+    //     module,
+    //     force,
+    //     visibilityState:
+    //       typeof document === "undefined" ? "unknown" : document.visibilityState,
+    //     result,
+    //     nextStatus,
+    //   });
 
-      if (nextStatus && user.activityStatus !== nextStatus) {
-        setUserOnce({ ...user, activityStatus: nextStatus });
-      }
-    } catch (error) {
-      logPushDebugError("heartbeat:failed", error, {
-        module,
-        force,
-      });
-    }
+    //   if (nextStatus && user.activityStatus !== nextStatus) {
+    //     setUserOnce({ ...user, activityStatus: nextStatus });
+    //   }
+    // } catch (error) {
+    //   logPushDebugError("heartbeat:failed", error, {
+    //     module,
+    //     force,
+    //   });
+    // }
   }, [setUserOnce, user]);
 
   const loadTab = useCallback(

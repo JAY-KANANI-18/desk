@@ -11,7 +11,7 @@
  * 5. Note mode turns the composer background amber; send builds type:"comment"
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Send, Paperclip, Smile, Mic, X, ChevronDown, Check,
   Video, FileText, DollarSign, LayoutTemplate,
@@ -27,7 +27,7 @@ import { Template, TemplateModal } from './TemplateModal';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
-import { AiPromptMenu, useInboxAiComposer } from './composerShared';
+import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './composerShared';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { extractMentionIds } from './utils';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -148,6 +148,15 @@ export function ReplyInput({
   const aiPromptMenuRef = useRef<HTMLDivElement>(null);
   const mentionDropdownRef = useRef<HTMLDivElement>(null);
 
+  const resizeTextarea = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const maxHeight = isMobile ? 132 : 200;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+  }, [isMobile]);
+
   const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
   const aiComposer = useInboxAiComposer({
@@ -155,11 +164,15 @@ export function ReplyInput({
     getDraft: () => message,
     setDraft: (text) => {
       setMessage(text);
-      setTimeout(() => textareaRef.current?.focus(), 0);
+      requestAnimationFrame(() => {
+        resizeTextarea();
+        textareaRef.current?.focus();
+      });
     },
     switchToReply: () => onInputModeChange('reply'),
     switchToNote: () => onInputModeChange('note'),
   });
+  const isAiBusy = aiComposer.aiLoadingAction !== null;
 
   const isNote = inputMode === 'note';
   const channelType = selectedChannel?.type ?? selectedConversation?.channel?.type;
@@ -250,9 +263,14 @@ export function ReplyInput({
     setMentionQuery(null);
   }, [aiComposer, isReplyComposerLocked]);
 
+  useEffect(() => {
+    resizeTextarea();
+  }, [message, resizeTextarea]);
+
   // auto-grow textarea
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (isReplyComposerLocked) return;
+    aiComposer.clearAiComposerNotice();
     const val = e.target.value;
     setMessage(val);
     const cursorPos = e.target.selectionStart ?? val.length;
@@ -273,14 +291,15 @@ export function ReplyInput({
       else setVariableQuery(null);
     }
     // auto-grow
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
+    resizeTextarea();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isReplyComposerLocked) return;
+    if (isAiBusy) {
+      e.preventDefault();
+      return;
+    }
     if (mentionQuery !== null && filteredMentionUsers.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setMentionHighlight(h => Math.min(h + 1, filteredMentionUsers.length - 1)); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setMentionHighlight(h => Math.max(h - 1, 0)); return; }
@@ -354,7 +373,7 @@ export function ReplyInput({
   const removeFile = (index: number) => setAttachedFiles(prev => prev.filter((_, i) => i !== index));
 
   const hasComposerContent = message.trim().length > 0 || attachedFiles.length > 0;
-  const canSend = isNote ? hasComposerContent : hasComposerContent && canSendFreeFormReply;
+  const canSend = !isAiBusy && (isNote ? hasComposerContent : hasComposerContent && canSendFreeFormReply);
   const handleSend = () => {
     if (!canSend) return;
     const attachments: MediaAttachment[] = attachedFiles.map(af => ({
@@ -625,13 +644,18 @@ export function ReplyInput({
             )}
 
             {/* Textarea */}
+            <AiComposerInlineStatus
+              loadingAction={aiComposer.aiLoadingAction}
+              notice={aiComposer.aiComposerNotice}
+            />
             <textarea
               ref={textareaRef}
               value={message}
               onChange={handleMessageChange}
               onKeyDown={handleKeyDown}
-              placeholder={isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
-              className={`w-full resize-none px-3 py-2 text-[13px] leading-6 focus:outline-none sm:px-4 sm:py-3 sm:text-sm sm:leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
+              readOnly={isAiBusy}
+              placeholder={isAiBusy ? "AI is working..." : isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
+              className={`w-full resize-none px-3 py-2 text-[13px] leading-6 focus:outline-none sm:px-4 sm:py-3 sm:text-sm sm:leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isAiBusy ? 'cursor-wait text-gray-500' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
               rows={1}
               style={{ maxHeight: isMobile ? 132 : 200, overflowY: 'auto' }}
             />
@@ -677,24 +701,25 @@ export function ReplyInput({
           )}
 
           {/* Bottom toolbar */}
-          <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50'}`}>
+          <div className="relative" ref={aiPromptMenuRef}>
+            {!isNote && !isReplyComposerLocked && (
+              <AiPromptMenu
+                open={aiComposer.aiPromptMenuOpen}
+                prompts={aiComposer.rewritePrompts}
+                activePromptParent={aiComposer.activePromptParent}
+                onClose={() => aiComposer.setAiPromptMenuOpen(false)}
+                onSelectPrompt={aiComposer.handleRewrite}
+                onSetActiveParent={aiComposer.setActivePromptParent}
+              />
+            )}
+            <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50'}`}>
 
             {/* Left: attachments + emoji + mic + template */}
             <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pr-1 sm:flex-wrap sm:overflow-visible sm:pr-0">
               {!isNote && !isReplyComposerLocked && (
-                <div className="relative mr-1" ref={aiPromptMenuRef}>
-                  <button onClick={() => aiComposer.setAiPromptMenuOpen((open) => !open)} className="p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
-                    <Wand2 size={16} />
-                  </button>
-                  <AiPromptMenu
-                    open={aiComposer.aiPromptMenuOpen}
-                    prompts={aiComposer.rewritePrompts}
-                    activePromptParent={aiComposer.activePromptParent}
-                    onClose={() => aiComposer.setAiPromptMenuOpen(false)}
-                    onSelectPrompt={aiComposer.handleRewrite}
-                    onSetActiveParent={aiComposer.setActivePromptParent}
-                  />
-                </div>
+                <button onClick={() => aiComposer.setAiPromptMenuOpen((open) => !open)} className="mr-1 p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
+                  <Wand2 size={16} />
+                </button>
               )}
 
               {/* Channel selector (only in reply mode) */}
@@ -790,6 +815,7 @@ export function ReplyInput({
                 </button>
               )}
             </div>
+          </div>
           </div>
 
         </div>
