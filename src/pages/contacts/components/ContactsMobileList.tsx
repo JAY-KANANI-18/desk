@@ -60,7 +60,7 @@ export function ContactsMobileList({
   }
 
   return (
-    <div className="grid gap-3 p-3 md:hidden">
+    <div className="grid min-w-0 max-w-full gap-3 overflow-x-hidden p-3 md:hidden">
       {contacts.map((contact) => {
         const assigneeName = getAssigneeName(contact, workspaceUsers) || "Unassigned";
         const lifecycleLabel = getLifecycleLabel(contact, stages);
@@ -69,16 +69,16 @@ export function ContactsMobileList({
         return (
           <article
             key={contact.id}
-            className={`rounded-[26px] border p-4 shadow-sm transition-colors ${
+            className={`min-w-0 max-w-full overflow-hidden rounded-[26px] border p-4 shadow-sm transition-colors ${
               selected
                 ? "border-indigo-200 bg-indigo-50/70"
                 : "border-slate-200 bg-white"
             }`}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <input
                 type="checkbox"
-                className="mt-1 cursor-pointer rounded"
+                className="mt-1 flex-shrink-0 cursor-pointer rounded"
                 checked={selected}
                 onChange={() => toggleSelectOne(contact.id)}
               />
@@ -157,27 +157,27 @@ export function ContactsMobileList({
                   </div>
                 ) : null}
 
-                <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
-                  <div className="grid grid-cols-[84px_1fr] items-start gap-3">
+                <div className="mt-4 grid min-w-0 gap-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
+                  <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[84px_minmax(0,1fr)]">
                     <span className="text-slate-400">Assignee</span>
-                    <span className="truncate font-medium text-slate-700">
+                    <span className="min-w-0 truncate font-medium text-slate-700">
                       {assigneeName}
                     </span>
                   </div>
 
                   {contact.email ? (
-                    <div className="grid grid-cols-[84px_1fr] items-start gap-3">
+                    <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[84px_minmax(0,1fr)]">
                       <span className="text-slate-400">Email</span>
-                      <span className="break-all font-medium text-slate-700">
+                      <span className="min-w-0 break-all font-medium text-slate-700">
                         {contact.email}
                       </span>
                     </div>
                   ) : null}
 
                   {contact.phone ? (
-                    <div className="grid grid-cols-[84px_1fr] items-start gap-3">
+                    <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[84px_minmax(0,1fr)]">
                       <span className="text-slate-400">Phone</span>
-                      <span className="font-medium text-slate-700">
+                      <span className="min-w-0 break-all font-medium text-slate-700">
                         {contact.phone}
                       </span>
                     </div>
@@ -185,11 +185,11 @@ export function ContactsMobileList({
                 </div>
 
                 {contact.tags?.length ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                     {contact.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600"
+                        className="max-w-full break-words rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600"
                       >
                         {tag}
                       </span>

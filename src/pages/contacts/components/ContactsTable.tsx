@@ -82,11 +82,11 @@ export function ContactsTable({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto">
+      <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto">
         {loading ? (
           <DataLoader type="contacts" />
         ) : (
-          <div>
+          <div className="min-w-0 max-w-full overflow-x-hidden">
             {contacts.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-sm text-gray-400">
                 <Search size={28} className="text-gray-300" />

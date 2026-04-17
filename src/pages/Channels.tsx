@@ -149,9 +149,9 @@ const ConnectedChannelsView = ({
                       {ch.name}
                     </p>
                     <p className="mt-1 truncate text-sm text-gray-500">
-                      {channelConfig[ch.type]?.label} � {ch.identifier}
+                      {channelConfig[ch.type]?.label} · {ch.identifier}
                     </p>
-                    <div
+                    {/* <div
                       className={`mt-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
                         ch.status === "Connected"
                           ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -161,12 +161,12 @@ const ConnectedChannelsView = ({
                       }`}
                     >
                       {ch.status}
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500">
-                  <div>
+                <div className="grid grid-cols-2 gap-3 rounded-2xl  p-3 text-xs text-slate-500">
+                  {/* <div>
                     <p>Messages</p>
                     <p className="mt-1 text-sm font-semibold text-slate-900">
                       {ch.msgs}
@@ -177,7 +177,7 @@ const ConnectedChannelsView = ({
                     <p className="mt-1 truncate text-sm font-semibold text-slate-900">
                       {ch.connectedAt}
                     </p>
-                  </div>
+                  </div> */}
                 </div>
 
                 <button
