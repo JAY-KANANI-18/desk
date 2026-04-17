@@ -558,7 +558,7 @@ export const ManageChannelPage = () => {
           label: item.label,
           icon: item.icon,
           badge: item.badge,
-          to: `/channel/manage/${channelType}/${channelId}/${item.id}`,
+          to: `/channels/manage/${channelType}/${channelId}/${item.id}`,
         })),
       },
     ];
@@ -579,7 +579,7 @@ export const ManageChannelPage = () => {
 
     if (!sectionId) {
       if (!isMobile) {
-        navigate(`/channel/manage/${channelType}/${channelId}/${defaultSection}`, {
+        navigate(`/channels/manage/${channelType}/${channelId}/${defaultSection}`, {
           replace: true,
         });
       }
@@ -587,7 +587,7 @@ export const ManageChannelPage = () => {
     }
 
     if (!hasValidSection) {
-      navigate(`/channel/manage/${channelType}/${channelId}/${defaultSection}`, {
+      navigate(`/channels/manage/${channelType}/${channelId}/${defaultSection}`, {
         replace: true,
       });
     }
@@ -649,7 +649,7 @@ export const ManageChannelPage = () => {
 
   const handleBack = () => {
     if (isMobile && sectionId) {
-      navigate(`/channel/manage/${channelType}/${channelId}`);
+      navigate(`/channels/manage/${channelType}/${channelId}`);
       return;
     }
 

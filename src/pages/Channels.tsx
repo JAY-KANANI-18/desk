@@ -56,7 +56,7 @@ const ConnectedChannelsView = ({
 
 
   const handleManage = (ch: ConnectedChannel) => {
-    navigate(`/channel/manage/${ch.type}/${ch.id}`);
+    navigate(`/channels/manage/${ch.type}/${ch.id}`);
   };
 
   return (

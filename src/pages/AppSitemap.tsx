@@ -196,7 +196,7 @@ const PAGES: PageEntry[] = [
     id: 'manage-channel',
     title: 'Manage Channel',
     description: 'Full channel management page with sidebar navigation, configuration forms, templates, troubleshooting, and danger zone.',
-    url: '/channel/manage/:channelType/:channelId',
+    url: '/channels/manage/:channelType/:channelId',
     category: 'channels',
     icon: <Settings size={22} />,
     color: 'bg-lime-100',
