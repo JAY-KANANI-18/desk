@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   Info,
@@ -130,47 +130,69 @@ export const ReportsDateRangeBar = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:min-w-[360px]">
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            From
-          </span>
-          <div className="relative">
-            <Calendar
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={16}
-            />
-            <input
-              className="input border-slate-200 pl-10"
-              onChange={(event) =>
-                setFilters({ ...filters, from: event.target.value })
-              }
-              type="date"
-              value={filters.from}
-            />
-          </div>
-        </label>
+        <ReportDateInput
+          label="From"
+          value={filters.from}
+          onChange={(value) => setFilters({ ...filters, from: value })}
+        />
 
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            To
-          </span>
-          <div className="relative">
-            <Calendar
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={16}
-            />
-            <input
-              className="input border-slate-200 pl-10"
-              onChange={(event) =>
-                setFilters({ ...filters, to: event.target.value })
-              }
-              type="date"
-              value={filters.to}
-            />
-          </div>
-        </label>
+        <ReportDateInput
+          label="To"
+          value={filters.to}
+          onChange={(value) => setFilters({ ...filters, to: value })}
+        />
       </div>
     </div>
+  );
+};
+
+const ReportDateInput = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+
+    input.focus();
+  };
+
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </span>
+      <div className="relative min-w-0">
+        <input
+          ref={inputRef}
+          className="h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 pr-11 text-sm text-slate-800 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 [&::-webkit-calendar-picker-indicator]:opacity-0"
+          onChange={(event) => onChange(event.target.value)}
+          type="date"
+          value={value}
+        />
+        <button
+          type="button"
+          onClick={openPicker}
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          aria-label={`Choose ${label.toLowerCase()} date`}
+          tabIndex={-1}
+        >
+          <Calendar size={16} />
+        </button>
+      </div>
+    </label>
   );
 };
 
