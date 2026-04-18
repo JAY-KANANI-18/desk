@@ -152,9 +152,10 @@ export function ReplyInput({
     const textarea = textareaRef.current;
     if (!textarea) return;
 
+    const minHeight = isMobile ? 52 : 44;
     const maxHeight = isMobile ? 132 : 200;
     textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)}px`;
   }, [isMobile]);
 
   const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
@@ -657,7 +658,7 @@ export function ReplyInput({
               placeholder={isAiBusy ? "AI is working..." : isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
               className={`w-full resize-none px-3 py-2 text-[13px] leading-6 focus:outline-none sm:px-4 sm:py-3 sm:text-sm sm:leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isAiBusy ? 'cursor-wait text-gray-500' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
               rows={1}
-              style={{ maxHeight: isMobile ? 132 : 200, overflowY: 'auto' }}
+              style={{ minHeight: isMobile ? 52 : 44, maxHeight: isMobile ? 132 : 200, overflowY: 'auto' }}
             />
             {isReplyComposerLocked && (
               <div className="px-3 py-3 sm:px-4 sm:py-4">
