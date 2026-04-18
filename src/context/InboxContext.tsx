@@ -39,6 +39,7 @@ import {
 } from "../lib/inboxApi";
 import { workspaceApi } from "../lib/workspaceApi";
 import { useChannel } from "./ChannelContext";
+import { getContactScopedChannels, isSameChannel } from "../pages/inbox/channelUtils";
 
 /* ══════════════════════════════════════════════════════════════════
    TYPES
@@ -805,6 +806,10 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const sendMessage = useCallback(
     async (msg: any) => {
+      const resolvedChannelId =
+        msg.channelId ??
+        msg.channel?.id ??
+        selectedChannel?.id;
       const quotedMessage = msg.metadata?.quotedMessage ?? msg.metadata?.replyTo;
       const payload: any = {
         ...(msg.text && { text: msg.text }),
@@ -829,7 +834,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const message = await inboxApi.sendMessage(
         selectedConversation?.id!,
-        selectedChannel?.id,
+        resolvedChannelId,
         payload,
       );
 
@@ -1054,6 +1059,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     (conv: ApiConversation, options?: { targetMessageId?: string | null; preserveSearch?: boolean }) => {
       setSelectedConversation({ ...conv, unreadCount: 0 });
       selectedConvIdRef.current = conv.id;
+      setSelectedContact(null);
 
       setTimeline([]);
       setNextTimelineCursor(undefined);
@@ -1083,7 +1089,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           (inferredId && c.id === inferredId) ||
           (inferredType && c.type === inferredType),
       );
-      setSelectedChannel(matchedChannel ?? channels?.[0] ?? null);
+      const contactScopedChannels = getContactScopedChannels(
+        channels,
+        (conv as any)?.contact?.contactChannels,
+      );
+      setSelectedChannel(matchedChannel ?? contactScopedChannels[0] ?? channels?.[0] ?? null);
 
       // Mark read
       if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => {});
@@ -1102,8 +1112,36 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       // Load contact detail
       contactsApi
         .getContact(conv.contactId)
-        .then(setSelectedContact)
-        .catch(() => {});
+        .then((contact) => {
+          if (selectedConvIdRef.current !== conv.id) return;
+
+          setSelectedContact(contact);
+
+          const nextContactChannels = getContactScopedChannels(
+            channels,
+            (contact as any)?.contactChannels,
+          );
+          if (nextContactChannels.length === 0) return;
+
+          setSelectedChannel((current: any) => {
+            if (nextContactChannels.some((channel) => isSameChannel(channel, current))) {
+              return current;
+            }
+
+            const inferredMatch = nextContactChannels.find(
+              (channel: any) =>
+                (inferredId && String(channel.id) === String(inferredId)) ||
+                (inferredType &&
+                  String(channel.type).toLowerCase() === String(inferredType).toLowerCase()),
+            );
+
+            return inferredMatch ?? nextContactChannels[0];
+          });
+        })
+        .catch(() => {
+          if (selectedConvIdRef.current !== conv.id) return;
+          setSelectedContact(null);
+        });
 
       // Auto-select channel matching the conversation's channel type
       // if (conv.channelId) {

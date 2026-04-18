@@ -33,6 +33,7 @@ import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './comp
 import { extractMentionIds } from './utils';
 import { normalizeEmailChannelConfig } from '../../lib/emailChannel';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { getContactScopedChannels, isSameChannel } from './channelUtils';
 
 type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
@@ -67,7 +68,7 @@ export function EmailInput({
   onClearReplyContext,
 }: SharedInputProps) {
   const isMobile = useIsMobile();
-  const { uploadFile, channels, selectedConversation, selectedChannel } = useInbox();
+  const { uploadFile, channels, selectedConversation, selectedChannel, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
 
   const emailReply = replyContext?.type === 'email' ? replyContext.emailReply : null;
@@ -93,7 +94,36 @@ export function EmailInput({
   const aiMenuRef = useRef<HTMLDivElement>(null);
 
   const isNote = inputMode === 'note';
-  const normalizedChannel = useMemo(() => normalizeEmailChannelConfig(selectedChannel), [selectedChannel]);
+  const selectedConversationContactId =
+    selectedConversation?.contactId ?? selectedConversation?.contact?.id ?? null;
+  const hasLoadedSelectedContact =
+    selectedContact?.id !== undefined &&
+    selectedContact?.id !== null &&
+    selectedConversationContactId !== null &&
+    String(selectedContact.id) === String(selectedConversationContactId);
+  const selectorContactChannels = useMemo(
+    () =>
+      (hasLoadedSelectedContact
+        ? (selectedContact?.contactChannels as any[] | undefined)
+        : (selectedConversation?.contact?.contactChannels as any[] | undefined)) ?? [],
+    [
+      hasLoadedSelectedContact,
+      selectedContact?.contactChannels,
+      selectedConversation?.contact?.contactChannels,
+    ],
+  );
+  const availableEmailChannels = useMemo(
+    () => getContactScopedChannels(channels, selectorContactChannels),
+    [channels, selectorContactChannels],
+  );
+  const activeComposerChannel = useMemo(() => {
+    if (availableEmailChannels.length === 0) return selectedChannel ?? null;
+    return (
+      availableEmailChannels.find((channel) => isSameChannel(channel, selectedChannel)) ??
+      availableEmailChannels[0]
+    );
+  }, [availableEmailChannels, selectedChannel]);
+  const normalizedChannel = useMemo(() => normalizeEmailChannelConfig(activeComposerChannel), [activeComposerChannel]);
 
   const aiComposer = useInboxAiComposer({
     conversationId: selectedConversation?.id,
@@ -160,6 +190,12 @@ export function EmailInput({
     if (editorRef.current) editorRef.current.innerHTML = '';
     onClearReplyContext?.();
   }, [selectedConversation?.id]);
+
+  useEffect(() => {
+    if (isNote || availableEmailChannels.length === 0) return;
+    if (availableEmailChannels.some((channel) => isSameChannel(channel, selectedChannel))) return;
+    onChannelChange(availableEmailChannels[0]);
+  }, [availableEmailChannels, isNote, onChannelChange, selectedChannel]);
 
   const updateDraftState = useCallback(() => {
     aiComposer.clearAiComposerNotice();
@@ -284,7 +320,8 @@ export function EmailInput({
         initials: 'ME',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         direction: 'outgoing',
-        channel: 'email',
+        channel: activeComposerChannel,
+        channelId: activeComposerChannel?.id,
         attachments: attachments.length > 0 ? attachments : undefined,
         metadata: {
           email: {
@@ -314,7 +351,7 @@ export function EmailInput({
   const toolbarButtonClass = 'p-1.5 rounded text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors';
   const activeBg = isNote ? 'bg-amber-50' : 'bg-white';
   const borderClass = isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50';
-  const channelSelector = !isNote ? (
+  const channelSelector = !isNote && activeComposerChannel ? (
     <div className="relative" ref={channelRef}>
       <button
         onClick={() => setChannelMenuOpen((open) => !open)}
@@ -323,9 +360,9 @@ export function EmailInput({
         }`}
         title="Switch channel"
       >
-        <img src={channelConfig[selectedChannel?.type]?.icon} alt={selectedChannel?.name} className="h-3.5 w-3.5 flex-shrink-0" />
+        <img src={channelConfig[activeComposerChannel?.type]?.icon} alt={activeComposerChannel?.name} className="h-3.5 w-3.5 flex-shrink-0" />
         <span className={`truncate ${isMobile ? 'max-w-[7rem]' : 'hidden max-w-[5rem] sm:inline'}`}>
-          {selectedChannel?.name}
+          {activeComposerChannel?.name}
         </span>
         <ChevronDown size={10} className={`flex-shrink-0 transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -334,15 +371,15 @@ export function EmailInput({
           <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             Send via channel
           </p>
-          {channels?.map((channel) => (
+          {availableEmailChannels.map((channel) => (
             <button
               key={channel.id}
               onClick={() => { onChannelChange(channel); setChannelMenuOpen(false); }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${selectedChannel?.id === channel.id ? 'bg-gray-50' : ''}`}
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${isSameChannel(activeComposerChannel, channel) ? 'bg-gray-50' : ''}`}
             >
               <img src={channelConfig[channel.type]?.icon} alt={channel.name} className="h-4 w-4" />
               <span className="flex-1 text-left font-medium text-gray-700">{channel.name || 'Unnamed'}</span>
-              {selectedChannel?.id === channel.id && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
+              {isSameChannel(activeComposerChannel, channel) && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
             </button>
           ))}
         </div>

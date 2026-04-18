@@ -11,7 +11,7 @@
  * 5. Note mode turns the composer background amber; send builds type:"comment"
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Send, Paperclip, Smile, Mic, X, ChevronDown, Check,
   Video, FileText, DollarSign, LayoutTemplate,
@@ -31,6 +31,7 @@ import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './comp
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { extractMentionIds } from './utils';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { findMatchingContactChannel, getContactScopedChannels, isSameChannel } from './channelUtils';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
@@ -176,29 +177,66 @@ export function ReplyInput({
   const isAiBusy = aiComposer.aiLoadingAction !== null;
 
   const isNote = inputMode === 'note';
-  const channelType = selectedChannel?.type ?? selectedConversation?.channel?.type;
-  const selectedContactChannels =
-    (selectedContact?.contactChannels as any[] | undefined) ??
-    (selectedConversation?.contact?.contactChannels as any[] | undefined) ??
-    [];
-  const selectedContactChannel = selectedContactChannels.find((contactChannel) =>
-    contactChannel?.channelId === selectedChannel?.id ||
-    contactChannel?.channelType === channelType,
+  const selectedConversationContactId =
+    selectedConversation?.contactId ?? selectedConversation?.contact?.id ?? null;
+  const hasLoadedSelectedContact =
+    selectedContact?.id !== undefined &&
+    selectedContact?.id !== null &&
+    selectedConversationContactId !== null &&
+    String(selectedContact.id) === String(selectedConversationContactId);
+  const selectorContactChannels = useMemo(
+    () =>
+      (hasLoadedSelectedContact
+        ? (selectedContact?.contactChannels as any[] | undefined)
+        : (selectedConversation?.contact?.contactChannels as any[] | undefined)) ?? [],
+    [
+      hasLoadedSelectedContact,
+      selectedContact?.contactChannels,
+      selectedConversation?.contact?.contactChannels,
+    ],
   );
+  const availableReplyChannels = useMemo(
+    () => getContactScopedChannels(channels, selectorContactChannels),
+    [channels, selectorContactChannels],
+  );
+  const activeComposerChannel = useMemo(() => {
+    if (availableReplyChannels.length === 0) return selectedChannel ?? null;
+    return (
+      availableReplyChannels.find((channel) => isSameChannel(channel, selectedChannel)) ??
+      availableReplyChannels[0]
+    );
+  }, [availableReplyChannels, selectedChannel]);
+  const validatedContactChannels = hasLoadedSelectedContact
+    ? ((selectedContact?.contactChannels as any[] | undefined) ?? [])
+    : [];
+  const channelType = activeComposerChannel?.type ?? selectedConversation?.channel?.type;
+  const selectedContactChannel = useMemo(
+    () => findMatchingContactChannel(validatedContactChannels, activeComposerChannel),
+    [activeComposerChannel, validatedContactChannels],
+  );
+  const hasValidatedSelectedContactChannel = hasLoadedSelectedContact && Boolean(selectedContactChannel);
   const normalizedChannelType = String(channelType ?? '').toLowerCase();
   const hasChannelIdentifier = Boolean(selectedContactChannel?.identifier);
   const messageWindowExpiry = parseTimestamp(selectedContactChannel?.messageWindowExpiry);
   const isWindowRestrictedChannel = WINDOW_RESTRICTED_CHANNELS.has(normalizedChannelType);
   const requiresInboundFirst = FIRST_MESSAGE_RESTRICTED_CHANNELS.has(normalizedChannelType);
-  const isChannelInitiationBlocked = requiresInboundFirst && !hasChannelIdentifier;
-  const isMessageWindowClosed = isWindowRestrictedChannel && messageWindowExpiry !== null && messageWindowExpiry <= Date.now();
+  const isChannelInitiationBlocked =
+    hasValidatedSelectedContactChannel && requiresInboundFirst && !hasChannelIdentifier;
+  const isMessageWindowClosed =
+    hasValidatedSelectedContactChannel &&
+    isWindowRestrictedChannel &&
+    messageWindowExpiry !== null &&
+    messageWindowExpiry <= Date.now();
   const isFreeFormReplyBlocked =
-    isChannelInitiationBlocked ||
-    (normalizedChannelType === 'whatsapp' && isWindowRestrictedChannel && messageWindowExpiry === null) ||
-    isMessageWindowClosed;
+    hasValidatedSelectedContactChannel &&
+    (
+      isChannelInitiationBlocked ||
+      (normalizedChannelType === 'whatsapp' && isWindowRestrictedChannel && messageWindowExpiry === null) ||
+      isMessageWindowClosed
+    );
   const canSendFreeFormReply = !isFreeFormReplyBlocked;
-  const showWindowRestrictionWarning = !isNote && isFreeFormReplyBlocked;
-  const isReplyComposerLocked = !isNote && isFreeFormReplyBlocked;
+  const showWindowRestrictionWarning = !isNote && hasValidatedSelectedContactChannel && isFreeFormReplyBlocked;
+  const isReplyComposerLocked = !isNote && hasValidatedSelectedContactChannel && isFreeFormReplyBlocked;
   const formattedWindowExpiry = formatWindowExpiry(messageWindowExpiry);
   const restrictionCopy = isChannelInitiationBlocked
     ? normalizedChannelType === 'instagram'
@@ -263,6 +301,12 @@ export function ReplyInput({
     setVariableQuery(null);
     setMentionQuery(null);
   }, [aiComposer, isReplyComposerLocked]);
+
+  useEffect(() => {
+    if (isNote || availableReplyChannels.length === 0) return;
+    if (availableReplyChannels.some((channel) => isSameChannel(channel, selectedChannel))) return;
+    onChannelChange(availableReplyChannels[0]);
+  }, [availableReplyChannels, isNote, onChannelChange, selectedChannel]);
 
   useEffect(() => {
     resizeTextarea();
@@ -391,7 +435,8 @@ export function ReplyInput({
         initials: 'ME',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         direction: 'outgoing',
-        channel: selectedChannel?.type,
+        channel: activeComposerChannel,
+        channelId: activeComposerChannel?.id,
         attachments: attachments.length > 0 ? attachments : undefined,
         // attach quoted context for BE
         metadata:{
@@ -431,7 +476,8 @@ export function ReplyInput({
       initials: 'ME',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       direction: 'outgoing',
-      channel: selectedChannel,
+      channel: activeComposerChannel,
+      channelId: activeComposerChannel?.id,
       attachments: [{ type: 'audio', filename: file.name, url, mimeType: file.type }],
     } as any);
     setShowRecorder(false);
@@ -444,7 +490,8 @@ export function ReplyInput({
       conversationId: selectedConversation?.id,
       type: isNote ? 'comment' : 'reply',
       author: 'You',
-      channel: selectedChannel,
+      channel: activeComposerChannel,
+      channelId: activeComposerChannel?.id,
       metadata:{
         template
       }
@@ -463,7 +510,7 @@ export function ReplyInput({
   const replyBg = 'bg-white';
   const activeBg = isNote ? noteBg : replyBg;
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
-  const channelSelector = !isNote ? (
+  const channelSelector = !isNote && activeComposerChannel ? (
     <div className="relative" ref={channelRef}>
       <button
         onClick={() => setChannelMenuOpen((open) => !open)}
@@ -473,12 +520,12 @@ export function ReplyInput({
         title="Switch channel"
       >
         <img
-          src={channelConfig[selectedChannel?.type]?.icon}
-          alt={selectedChannel?.name}
+          src={channelConfig[activeComposerChannel?.type]?.icon}
+          alt={activeComposerChannel?.name}
           className="h-3.5 w-3.5 flex-shrink-0"
         />
         <span className={`truncate ${isMobile ? 'max-w-[7rem]' : 'hidden max-w-[5rem] sm:inline'}`}>
-          {selectedChannel?.name}
+          {activeComposerChannel?.name}
         </span>
         <ChevronDown
           size={12}
@@ -490,7 +537,7 @@ export function ReplyInput({
           <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             Send via channel
           </p>
-          {channels?.map((ch) => (
+          {availableReplyChannels.map((ch) => (
             <button
               key={ch.id}
               onClick={() => {
@@ -498,12 +545,12 @@ export function ReplyInput({
                 setChannelMenuOpen(false);
               }}
               className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
-                selectedChannel?.id === ch.id ? 'bg-gray-50' : ''
+                isSameChannel(activeComposerChannel, ch) ? 'bg-gray-50' : ''
               }`}
             >
               <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="h-4 w-4" />
               <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
-              {selectedChannel?.id === ch.id && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
+              {isSameChannel(activeComposerChannel, ch) && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
             </button>
           ))}
         </div>
@@ -767,7 +814,7 @@ export function ReplyInput({
 
               {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
-              {!isNote && ['whatsapp', 'messenger'].includes(selectedChannel?.type) && (
+              {!isNote && ['whatsapp', 'messenger'].includes(activeComposerChannel?.type) && (
                 <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
                   <LayoutTemplate size={16} />
                 </button>
