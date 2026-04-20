@@ -1,10 +1,5 @@
-import { supabase } from "./supabase";
-import { apiFetch } from "./apiClient";
-import { api } from "./api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
 export interface AuthUser {
   id: string;
   email: string;
@@ -13,79 +8,197 @@ export interface AuthUser {
 }
 
 export const DUMMY_MODE = false;
+export const MOCK_USERS: (AuthUser & { password: string })[] = [];
 
-// ─── Mock users ───────────────────────────────────────────────────────────────
-// Each entry maps to a role in the authorization system.
-// Password for all demo accounts: demo123
-// OTP for email verification / password reset: 123456
-export const MOCK_USERS: (AuthUser & { password: string })[] = [
-  { id: 'u1', email: 'owner@demo.com', password: 'demo123', name: 'Owen Owner', role: 'owner' },
-  { id: 'u2', email: 'admin@demo.com', password: 'demo123', name: 'Alex Admin', role: 'admin' },
-  { id: 'u3', email: 'supervisor@demo.com', password: 'demo123', name: 'Sara Supervisor', role: 'supervisor' },
-  { id: 'u4', email: 'agent@demo.com', password: 'demo123', name: 'Amy Agent', role: 'agent' },
-];
-
-// ─────────────────────────────────────────────
-// Supabase → AuthUser mapper
-// ─────────────────────────────────────────────
-const fromSupabase = (
-  u: {
+type AuthSession = {
+  access_token: string;
+  expires_at: number;
+  expires_in: number;
+  token_type: "Bearer";
+  user: {
     id: string;
-    email?: string | null;
-    user_metadata?: Record<string, any>;
+    email: string;
+    user_metadata: {
+      full_name?: string;
+      name?: string;
+      role?: string;
+      passwordSet?: boolean;
+      emailVerified?: boolean;
+      currentOrganizationId?: string | null;
+      currentWorkspaceId?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      avatarUrl?: string | null;
+    };
+  };
+};
+
+type AuthEnvelope = {
+  session: AuthSession | null;
+  user: AuthUser | null;
+  csrfToken?: string | null;
+  accessToken?: string | null;
+};
+
+let currentSession: AuthSession | null = null;
+let currentUser: AuthUser | null = null;
+let csrfToken: string | null = null;
+let refreshPromise: Promise<AuthEnvelope> | null = null;
+const listeners = new Set<(user: AuthUser | null, session: AuthSession | null) => void>();
+
+function notify() {
+  for (const listener of listeners) {
+    listener(currentUser, currentSession);
   }
-): AuthUser => ({
-  id: u.id,
-  email: u.email ?? "",
-  name:
-    u.user_metadata?.full_name ||
-    u.user_metadata?.name ||
-    u.email?.split("@")[0] ||
-    "User",
-  role: u.user_metadata?.role ?? "agent",
-});
+}
 
-// ─────────────────────────────────────────────
-// AUTH API
-// ─────────────────────────────────────────────
-export const authApi = {
-  // ── Session ───────────────────────────────
-  getSession: async (): Promise<{
-    session: any | null;
-    user: AuthUser | null;
-  }> => {
-    console.log("GET SESSION CALLED");
+function applyEnvelope(payload: AuthEnvelope) {
+  currentSession = payload.session;
+  currentUser = payload.user ?? (payload.session ? fromSession(payload.session) : null);
+  csrfToken = payload.csrfToken ?? csrfToken;
+  notify();
+  return {
+    session: currentSession,
+    user: currentUser,
+  };
+}
 
-    const { data, error } = await supabase.auth.getSession();
+function clearAuthState() {
+  currentSession = null;
+  currentUser = null;
+  csrfToken = null;
+  notify();
+}
 
-    console.log("SESSION RESULT", data, error);
+function fromSession(session: AuthSession): AuthUser {
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    name:
+      session.user.user_metadata?.full_name ||
+      session.user.user_metadata?.name ||
+      session.user.email.split("@")[0] ||
+      "User",
+    role: session.user.user_metadata?.role ?? "agent",
+  };
+}
 
-    const session = data?.session ?? null;
+async function authFetch(path: string, options: RequestInit = {}, requireAuth = false) {
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
 
+  if (
+    options.body &&
+    typeof FormData !== "undefined" &&
+    !(options.body instanceof FormData) &&
+    !headers["Content-Type"]
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (requireAuth) {
+    const token = await authApi.getAccessToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  let payload: any = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || payload?.message || "Request failed");
+  }
+
+  return payload?.data ?? payload;
+}
+
+async function ensureSession(forceRefresh = false): Promise<AuthEnvelope> {
+  const now = Math.floor(Date.now() / 1000);
+  const isFresh = currentSession && currentSession.expires_at - 30 > now;
+
+  if (!forceRefresh && isFresh) {
     return {
-      session, // ✅ FIXED
-      user: session?.user ? fromSupabase(session.user) : null,
+      session: currentSession,
+      user: currentUser,
+      csrfToken,
+      accessToken: currentSession?.access_token,
+    };
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = authFetch("/auth/session", {
+      method: "GET",
+      headers: csrfToken ? { "x-csrf-token": csrfToken } : undefined,
+    }).then((payload) => {
+      if (!payload?.session) {
+        clearAuthState();
+        return {
+          session: null,
+          user: null,
+          csrfToken: null,
+          accessToken: null,
+        };
+      }
+
+      applyEnvelope(payload);
+      return payload as AuthEnvelope;
+    }).finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
+export const authApi = {
+  getSession: async (): Promise<{ session: AuthSession | null; user: AuthUser | null }> => {
+    const result = await ensureSession();
+    return {
+      session: result.session ?? null,
+      user: result.user ?? null,
     };
   },
 
-  onAuthStateChange: (
-    callback: (user: AuthUser | null, session: any | null) => void
-  ): (() => void) => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        callback(null, session);
-        return;
-      }
-
-      callback(session?.user ? fromSupabase(session.user) : null, session);
-    });
-
-    return () => subscription.unsubscribe();
+  getAccessToken: async (): Promise<string | null> => {
+    const result = await ensureSession();
+    return result.session?.access_token ?? null;
   },
 
-  // ── Login ───────────────────────────────
+  refreshSession: async () => {
+    const payload = await authFetch(
+      "/auth/refresh",
+      {
+        method: "POST",
+        headers: csrfToken ? { "x-csrf-token": csrfToken } : undefined,
+      },
+      false,
+    );
+
+    applyEnvelope(payload);
+    return payload as AuthEnvelope;
+  },
+
+  onAuthStateChange: (
+    callback: (user: AuthUser | null, session: AuthSession | null) => void
+  ): (() => void) => {
+    listeners.add(callback);
+    return () => {
+      listeners.delete(callback);
+    };
+  },
+
   login: async (
     email: string,
     password: string
@@ -93,212 +206,162 @@ export const authApi = {
     success: boolean;
     error?: string;
     user?: AuthUser;
-    session?: any;
+    session?: AuthSession;
   }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error?.code === "email_not_confirmed") {
-      await supabase.auth.resend({ type: "signup", email });
-      return { success: false, error: "Email not confirmed" };
+    try {
+      const payload = await authFetch("/auth/signin", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      const { session, user } = applyEnvelope(payload);
+      return { success: true, user: user ?? undefined, session: session ?? undefined };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Login failed" };
     }
-
-    if (error) return { success: false, error: error.message };
-
-    return {
-      success: true,
-      user: data?.user ? fromSupabase(data.user) : undefined,
-      session: data?.session
-    };
   },
 
-  // ── Sign-up ───────────────────────────────
   signup: async (
-    name: string,
     email: string,
     password: string,
-    orgData?: any
+    _orgData?: any
   ): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          passwordSet: true,
-        },
-      },
-    });
-
-    if (error) return { success: false, error: error.message };
-
-    return { success: true };
+    try {
+      await authFetch("/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Sign up failed" };
+    }
   },
 
-  // ── Google OAuth ──────────────────────────
   loginWithGoogle: async (): Promise<void> => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
+    const redirectTo = `${window.location.origin}/dashboard`;
+    window.location.href = `${API_BASE}/auth/oauth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
   },
 
-  // ── Forgot password ───────────────────────
   forgotPassword: async (
     email: string
   ): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-
-    if (error) return { success: false, error: error.message };
-
-    return { success: true };
+    try {
+      await authFetch("/auth/password/forgot", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Request failed" };
+    }
   },
 
-  // ── Verify OTP ────────────────────────────
   verifyCode: async (
     code: string,
     email: string,
     flow: "signup" | "forgot-password" | null
   ): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
-    const type = flow === "forgot-password" ? "recovery" : "email";
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type,
-    });
-
-    if (error) return { success: false, error: error.message };
-
-    return {
-      success: true,
-      user: data?.user ? fromSupabase(data.user) : undefined,
-    };
+    try {
+      const payload = await authFetch("/auth/otp/verify", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          code,
+          flow: flow ?? "signup",
+        }),
+      });
+      const { user } = applyEnvelope(payload);
+      return {
+        success: true,
+        user: user ?? undefined,
+      };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Verification failed" };
+    }
   },
 
-  // ── Organization Setup ────────────────────
+  resendCode: async (
+    email: string,
+    flow: "signup" | "forgot-password" | null
+  ): Promise<void> => {
+    await authFetch("/auth/otp/resend", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        flow: flow ?? "signup",
+      }),
+    });
+  },
+
+  resetPassword: async (
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const payload = await authFetch(
+        "/auth/password/reset",
+        {
+          method: "POST",
+          body: JSON.stringify({ newPassword }),
+        },
+        true,
+      );
+
+      if (payload?.session) {
+        applyEnvelope(payload);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Reset failed" };
+    }
+  },
+
   organizationSetup: async (
     organizationName: string,
     workspaceName: string,
     onboardingData?: Record<string, unknown>
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      await apiFetch("/organizations/setup", {
-        method: "POST",
-        body: JSON.stringify({
-          organizationName,
-          workspaceName,
-          onboardingData,
-        }),
-      });
+      await authFetch(
+        "/organizations/setup",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            organizationName,
+            workspaceName,
+            onboardingData,
+          }),
+        },
+        true,
+      );
+
+      await authApi.refreshSession();
 
       return { success: true };
     } catch (error) {
-      console.error("Organization setup failed", error);
-      return { success: false, error: "Failed to setup organization" };
+      return { success: false, error: error instanceof Error ? error.message : "Failed to setup organization" };
     }
   },
 
-  // ── Resend OTP ────────────────────────────
-  resendCode: async (
-    email: string,
-    flow: "signup" | "forgot-password" | null
-  ): Promise<void> => {
-    if (flow === "forgot-password") {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-    } else {
-      await supabase.auth.resend({ type: "signup", email });
-    }
-  },
+  getOrganizations: async () => authFetch("/user/organizations", { method: "GET" }, true),
 
-  // ── Reset password ────────────────────────
-  resetPassword: async (
-    newPassword: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-      data: { passwordSet: true },
-    });
+  getUser: async () => authFetch("/user", { method: "GET" }, true),
 
-    if (error) return { success: false, error: error.message };
+  getWorkspace: async () => authFetch("/user/workspaces", { method: "GET" }, true),
 
-    return { success: true };
-  },
-
-  getOrganizations: async (): Promise<{
-    success: boolean;
-    data?: any;
-    error?: string;
-  }> => await api.get("/user/organizations"),
-
-
-
-
-  getUser: async () =>
-    api.get("/user")
-
-
-  ,
-
-  getWorkspace: async (): Promise<{
-    success: boolean;
-    data?: any;
-    error?: string;
-  }> =>  await api.get("/user/workspaces"),
-
-  // ── Logout ────────────────────────────────
   logout: async (): Promise<void> => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const activeWorkspaceRaw = localStorage.getItem("active_workspace");
-      const activeWorkspace = activeWorkspaceRaw
-        ? JSON.parse(activeWorkspaceRaw)
-        : null;
-
-      if (
-        session &&
-        typeof navigator !== "undefined" &&
-        "serviceWorker" in navigator &&
-        "PushManager" in window
-      ) {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        const deviceKey = localStorage.getItem("axodesk:push-device-key");
-
-        if (subscription || deviceKey) {
-          await apiFetch(
-            "/notifications/devices/unregister",
-            {
-              method: "POST",
-              body: JSON.stringify({
-                deviceKey: deviceKey || undefined,
-                token: subscription?.endpoint,
-                reason: "user-logout",
-              }),
-            },
-            activeWorkspace,
-          ).catch(() => undefined);
-        }
-
-        if (subscription) {
-          await subscription.unsubscribe().catch(() => undefined);
-        }
-      }
+      await authFetch("/auth/signout", { method: "POST" }, true);
     } catch {
-      // best effort cleanup before auth sign-out
+      // best effort
+    } finally {
+      clearAuthState();
+      localStorage.clear();
     }
-
-    await supabase.auth.signOut();
-    localStorage.clear();
   },
 };
+
+(authApi as any).signUp = authApi.signup;
+(authApi as any).signIn = authApi.login;
+(authApi as any).signOut = authApi.logout;
+(authApi as any).verifyOtp = authApi.verifyCode;
+(authApi as any).signInWithGoogle = authApi.loginWithGoogle;

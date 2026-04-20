@@ -10,6 +10,7 @@ import { useInbox } from '../../context/InboxContext';
 import { inboxApi } from '../../lib/inboxApi';
 import { useCall } from '../../context/CallContext';
 import { MobileSheet } from '../../components/topbar/MobileSheet';
+import { AiConversationBadges } from '../../modules/ai-agents/components/AiConversationBadges';
 
 interface ChatHeaderProps {
   selectedConversation: Conversation;
@@ -380,9 +381,12 @@ export function ChatHeader({
           ) : null}
 
           <div className={`${onOpenContactDetails ? 'hidden md:flex' : 'flex'} min-w-0 flex-col gap-0.5`}>
-            <h3 className="truncate text-[15px] font-semibold leading-tight text-gray-900 sm:text-base">
-              {contactName}
-            </h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="truncate text-[15px] font-semibold leading-tight text-gray-900 sm:text-base">
+                {contactName}
+              </h3>
+              <AiConversationBadges conversationId={selectedConversation?.id} />
+            </div>
             <LifecycleSelector
               currentStageId={selectedConversation?.contact?.lifecycleId}
               lifecycles={lifecycles ?? []}

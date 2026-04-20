@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Socket } from "socket.io-client";
 import { connectSocket, disconnectSocket } from "./socket";
-import { supabase } from "../lib/supabase";
+import { authApi } from "../lib/authApi";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -11,37 +11,56 @@ const SocketContext = createContext<SocketContextType | null>(null);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const connectingRef = useRef(false); // ✅ ref-based guard, survives re-renders
+  const connectingRef = useRef(false);
 
   useEffect(() => {
     let cleanup = false;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        const token = session?.access_token ?? null;
+    const syncSocket = async () => {
+      const { session } = await authApi.getSession();
+      const token = session?.access_token ?? null;
 
-        if (!token) {
-          disconnectSocket();
-          setSocket(null);
-          connectingRef.current = false;
-          return;
-        }
-
-        // ✅ Skip if already connecting/connected with same token
-        if (connectingRef.current) return;
-        connectingRef.current = true;
-
-        if (cleanup) return;
-
-        const s = connectSocket(token);
-        setSocket(s);
+      if (!token) {
+        disconnectSocket();
+        setSocket(null);
+        connectingRef.current = false;
+        return;
       }
-    );
+
+      if (connectingRef.current || cleanup) {
+        return;
+      }
+
+      connectingRef.current = true;
+      const nextSocket = connectSocket(token);
+      setSocket(nextSocket);
+    };
+
+    void syncSocket();
+
+    const unsubscribe = authApi.onAuthStateChange((_user, session) => {
+      const token = session?.access_token ?? null;
+
+      if (!token) {
+        disconnectSocket();
+        setSocket(null);
+        connectingRef.current = false;
+        return;
+      }
+
+      if (connectingRef.current || cleanup) {
+        return;
+      }
+
+      connectingRef.current = true;
+      const nextSocket = connectSocket(token);
+      setSocket(nextSocket);
+    });
 
     return () => {
       cleanup = true;
       connectingRef.current = false;
-      subscription.unsubscribe();
+      unsubscribe();
       disconnectSocket();
     };
   }, []);
@@ -58,3 +77,4 @@ export const useSocket = () => {
   if (!ctx) throw new Error("useSocket must be used within SocketProvider");
   return ctx;
 };
+

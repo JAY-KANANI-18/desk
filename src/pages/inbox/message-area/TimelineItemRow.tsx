@@ -95,6 +95,7 @@ export function TimelineItemRow({
     channelConfig[resolvedChannelType as keyof typeof channelConfig] ??
     channelConfig.email;
   const isEmail = resolvedChannelType === "email";
+  const isAiMessage = msg.metadata?.source === "ai_agent";
   const displayTime = formatMsgTime(msg.createdAt, msg.time);
   const hoverKey = `msg-${msg.id}`;
   const isExpanded = !!expanded[msg.id];
@@ -103,7 +104,9 @@ export function TimelineItemRow({
   const outgoingSender = workspaceUsers?.find(
     (user) => user.id === msg.metadata?.sender?.userId,
   );
-  const bubbleColor = isOutgoing
+  const bubbleColor = isAiMessage
+    ? "bg-slate-950 text-white rounded-br-sm ring-1 ring-slate-700"
+    : isOutgoing
     ? "bg-indigo-500 text-white rounded-br-sm"
     : "bg-gray-100 text-gray-900 rounded-bl-sm";
 
@@ -230,6 +233,11 @@ export function TimelineItemRow({
         />
         <div className="mt-1">
           <div className="flex items-center gap-1 text-xs text-gray-400">
+            {isAiMessage ? (
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                AI
+              </span>
+            ) : null}
             <span>{displayTime}</span>
             {isOutgoing && !failedMessageCopy && (
               <MessageStatusIcon status={msg.status} />

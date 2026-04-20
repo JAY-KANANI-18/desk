@@ -41,8 +41,10 @@ export const ResetPasswordPremium = () => {
   }, [navigate, success]);
 
   const requirements = [
-    { label: "At least 6 characters", met: password.length >= 6 },
+    { label: "At least 12 characters", met: password.length >= 12 },
+    { label: "Contains uppercase and lowercase", met: /[A-Z]/.test(password) && /[a-z]/.test(password) },
     { label: "Contains a number", met: /[0-9]/.test(password) },
+    { label: "Contains a symbol", met: /[^A-Za-z0-9]/.test(password) },
   ];
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -58,8 +60,8 @@ export const ResetPasswordPremium = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError("Use 12+ characters with uppercase, lowercase, number, and symbol.");
       return;
     }
 
@@ -85,7 +87,7 @@ export const ResetPasswordPremium = () => {
         title={isExpired ? "Invitation link expired" : "Access denied"}
         subtitle={
           isExpired
-            ? "This invite link was already used or has expired. Ask your administrator for a fresh invite."
+            ? "This invite link has expired. Ask your administrator for a fresh invite."
             : hashParams.error_description?.replace(/\+/g, " ") ||
               "Please contact your administrator if you believe this is a mistake."
         }

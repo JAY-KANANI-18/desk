@@ -114,6 +114,10 @@ export interface Message {
       }>;
     };
     sender?: { userId?: string };
+    source?: string;
+    agentId?: string;
+    agentVersionId?: string;
+    runId?: string;
     event?: {
       type: ConversationEventType;
       actorName?: string;

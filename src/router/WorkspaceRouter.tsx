@@ -52,6 +52,12 @@ import OnboardingPage from "../pages/GetStartedChecklist";
 import { WorkspaceNotFound } from "../pages/WorkspaceNotFound";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useAuth } from "../context/AuthContext";
+import { AiAgentsFeatureRoute } from "../modules/ai-agents/components/AiAgentsFeatureRoute";
+import { AiAgentsListPage } from "../modules/ai-agents/pages/AiAgentsListPage";
+import { CreateAgentWizardPage } from "../modules/ai-agents/pages/CreateAgentWizardPage";
+import { AgentDetailPage } from "../modules/ai-agents/pages/AgentDetailPage";
+import { ApprovalQueuePage } from "../modules/ai-agents/pages/ApprovalQueuePage";
+import { AiUsagePage } from "../modules/ai-agents/pages/AiUsagePage";
 
 // ... all your existing imports ...
 
@@ -157,6 +163,57 @@ export const WorkspaceRouter = () => {
           element={
             <ProtectedRoute ws="ws:workflows:view">
               <TemplateGallery />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="ai-agents"
+          element={
+            <ProtectedRoute ws="ws:ai-agents:view">
+              <AiAgentsFeatureRoute>
+                <AiAgentsListPage />
+              </AiAgentsFeatureRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-agents/new"
+          element={
+            <ProtectedRoute ws="ws:ai-agents:manage">
+              <AiAgentsFeatureRoute>
+                <CreateAgentWizardPage />
+              </AiAgentsFeatureRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-agents/approvals"
+          element={
+            <ProtectedRoute ws="ws:ai-agents:manage">
+              <AiAgentsFeatureRoute>
+                <ApprovalQueuePage />
+              </AiAgentsFeatureRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-agents/usage"
+          element={
+            <ProtectedRoute ws="ws:ai-agents:view">
+              <AiAgentsFeatureRoute>
+                <AiUsagePage />
+              </AiAgentsFeatureRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ai-agents/:agentId"
+          element={
+            <ProtectedRoute ws="ws:ai-agents:view">
+              <AiAgentsFeatureRoute>
+                <AgentDetailPage />
+              </AiAgentsFeatureRoute>
             </ProtectedRoute>
           }
         />

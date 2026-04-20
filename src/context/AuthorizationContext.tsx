@@ -55,7 +55,8 @@ export type WorkspacePermission =
   | "ws:teams:manage"
   | "ws:workflows:view"  | "ws:workflows:manage"
   | "ws:channels:manage"
-  | "ws:files:access";
+  | "ws:files:access"
+  | "ws:ai-agents:view" | "ws:ai-agents:manage";
 
 const WS_ROLE_PERMISSIONS: Record<WorkspaceRole, WorkspacePermission[]> = {
   WS_OWNER: [
@@ -70,6 +71,7 @@ const WS_ROLE_PERMISSIONS: Record<WorkspaceRole, WorkspacePermission[]> = {
     "ws:teams:manage",
     "ws:workflows:view",   "ws:workflows:manage",
     "ws:channels:manage",  "ws:files:access",
+    "ws:ai-agents:view",   "ws:ai-agents:manage",
   ],
   WS_MANAGER: [
     "ws:dashboard:view",
@@ -81,11 +83,13 @@ const WS_ROLE_PERMISSIONS: Record<WorkspaceRole, WorkspacePermission[]> = {
     "ws:settings:view",    "ws:settings:limited",
     "ws:profile:manage",   "ws:notifications:manage",
     "ws:workflows:view",   "ws:files:access",
+    "ws:ai-agents:view",   "ws:ai-agents:manage",
   ],
   WS_AGENT: [
     "ws:messages:view",    "ws:messages:send",
     "ws:shortcuts:use",
     "ws:profile:manage",   "ws:notifications:manage",
+    "ws:ai-agents:view",
   ],
 };
 

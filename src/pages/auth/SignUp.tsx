@@ -5,20 +5,12 @@ import {
   EyeOff,
   Mail,
   Lock,
-  User,
-  MessageSquare,
-  Building2,
-  Briefcase,
-  Users,
-  Globe,
   ChevronRight,
-  ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 // ─── Types ────────────────────────────────────────────────────
 interface AccountData {
-  name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -69,7 +61,6 @@ export const SignUp = () => {
 
   // Step 1 state
   const [account, setAccount] = useState<AccountData>({
-    name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -81,7 +72,6 @@ export const SignUp = () => {
 
   // ── Step 1 validation ──────────────────────────────────────
   const validateStep1 = () => {
-    if (!account.name.trim()) return "Please enter your full name.";
     if (!account.email.trim()) return "Please enter your email address.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email))
       return "Please enter a valid email address.";
@@ -104,7 +94,7 @@ export const SignUp = () => {
 
     setLoading(true);
     setError("");
-    const result = await signup(account.name, account.email, account.password);
+    const result = await signup(account.email, account.password);
     setLoading(false);
     if (result.success) {
       navigate("/auth/verify-email");
@@ -173,23 +163,6 @@ export const SignUp = () => {
               </div> */}
 
               <div className="space-y-4">
-                {/* Name */}
-                <Field label="Full name">
-                  <div className="relative">
-                    <User
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      size={16}
-                    />
-                    <input
-                      type="text"
-                      value={account.name}
-                      onChange={setAcc("name")}
-                      placeholder="John Wilson"
-                      className={iconInputCls()}
-                    />
-                  </div>
-                </Field>
-
                 {/* Email */}
                 <Field label="Work email">
                   <div className="relative">

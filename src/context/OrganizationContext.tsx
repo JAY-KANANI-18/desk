@@ -4,7 +4,6 @@ import React, {
   useState,
   useCallback,
   useEffect,
-  useRef,
 } from "react";
 import { authApi } from "../lib/authApi";
 import {
@@ -63,26 +62,34 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [orgUsers, setOrgUsers] = useState<any>();
 
   const { user } = useAuth();
-  const initialized = useRef(false);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (user) {
-      console.log("organization change", organizations);
-      authApi.getOrganizations().then((u) => {
-        console.log({ u });
-        setOrgLoading(false);
-        setOrganizations(u);
+    if (!user) {
+      setOrganizations(null);
+      setActiveOrganization(null);
+      setOrgLoading(false);
+      return;
+    }
 
-        // refreshOrganizations();
+    let cancelled = false;
+    setOrgLoading(true);
+
+    authApi.getOrganizations()
+      .then((result) => {
+        if (!cancelled) {
+          setOrganizations(result);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setOrgLoading(false);
+        }
       });
 
-      return;
-    } else {
-      setOrgLoading(false);
-    }
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const organizationSetup = useCallback(
     async (
@@ -90,7 +97,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
       workspaceName?: string,
       onboardingData?: OrganizationSetupOnboardingData,
     ) => {
-      const result = await organizationApi.setup(
+      const result = await authApi.organizationSetup(
         organizationName,
         workspaceName ?? organizationName,
         onboardingData,

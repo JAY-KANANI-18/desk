@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "./auth.utils";
 import {
@@ -14,7 +14,6 @@ import {
 export const SignUpPremium = () => {
   const navigate = useNavigate();
   const { signup, loginWithGoogle } = useAuth();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,11 +28,6 @@ export const SignUpPremium = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!name.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-
     if (!email.trim()) {
       setError("Please enter your email address.");
       return;
@@ -44,8 +38,8 @@ export const SignUpPremium = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError("Use 12+ characters with uppercase, lowercase, number, and symbol.");
       return;
     }
 
@@ -56,7 +50,7 @@ export const SignUpPremium = () => {
 
     setLoading(true);
     setError("");
-    const result = await signup(name, email, password);
+    const result = await signup(email, password);
     setLoading(false);
 
     if (result.success) {
@@ -116,19 +110,6 @@ export const SignUpPremium = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <AuthField
-            label="Full name"
-            icon={User}
-            type="text"
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value);
-              setError("");
-            }}
-            placeholder="John Wilson"
-            autoComplete="name"
-          />
-
-          <AuthField
             label="Work email"
             icon={Mail}
             type="email"
@@ -151,7 +132,7 @@ export const SignUpPremium = () => {
                 setPassword(event.target.value);
                 setError("");
               }}
-              placeholder="At least 6 characters"
+              placeholder="12+ chars, mixed case, number, symbol"
               autoComplete="new-password"
               trailing={
                 <button

@@ -4,6 +4,7 @@ import { BookCheck, Settings } from "lucide-react";
 import { Tooltip } from "./ui/Tooltip";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
+import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useSettingsLinks } from "./settingsLinks";
 
@@ -19,6 +20,7 @@ export const AppSidebar = ({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const { canWs } = useAuthorization();
   const { dismissed, isComplete } = useGetStarted();
+  const { flags } = useFeatureFlags();
   const settingsLinks = useSettingsLinks();
 
   const isMobileDrawer = variant === "mobile";
@@ -33,7 +35,7 @@ export const AppSidebar = ({
   };
 
   const visibleNavItems = APP_NAV_ITEMS.filter(
-    (item) => !item.ws || canWs(item.ws),
+    (item) => (!item.ws || canWs(item.ws)) && (!item.feature || flags[item.feature]),
   );
 
   const renderPrimaryLink = (

@@ -3,7 +3,7 @@ import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { useAuth } from "../context/AuthContext";
 import { WorkspaceRouter } from "./WorkspaceRouter";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { SetPasswordPremium } from "../pages/auth/SetPasswordPremium";
 import { ChannelContextProvider } from "../context/ChannelContext";
 import { Toaster } from "react-hot-toast";
@@ -14,12 +14,17 @@ import { RingSpinner } from "../pages/Loader";
 import { OnboardingMinimalFlow } from "../pages/onboarding/OnboardingMinimalFlow";
 
 export const AppGate = () => {
+  const location = useLocation();
   const { user, isLoading, passwordSet } = useAuth();
   const { organizations, orgLoading, activeOrganization } = useOrganization();
   const { activeWorkspace, workspaceLoading } = useWorkspace();
 
   if (isLoading) {
     return <RingSpinner size={48} color="#4f46e5" />;
+  }
+
+  if (location.pathname === "/auth/callback") {
+    return <AuthRouter />;
   }
 
   if (!user) {

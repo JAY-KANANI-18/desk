@@ -44,8 +44,8 @@ export const SetPasswordPremium = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError("Use 12+ characters with uppercase, lowercase, number, and symbol.");
       return;
     }
 

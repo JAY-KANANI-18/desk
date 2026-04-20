@@ -25,6 +25,7 @@ import {
 } from '../../lib/contactApi';
 import { useInbox } from '../../context/InboxContext';
 import { workspaceApi } from '../../lib/workspaceApi';
+import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
 import { getTagSurfaceStyle, TAG_COLOR_OPTIONS } from '../../lib/tagAppearance';
 import type { Contact, Conversation } from './types';
 import { EmojiPicker } from './EmojiPicker';
@@ -1209,6 +1210,8 @@ export function ContactSidebarHybrid({
             )}
           </div>
         </div>
+
+        <AiConversationPanel conversationId={selectedConversation?.id} />
 
       
       </div>

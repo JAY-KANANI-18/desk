@@ -28,7 +28,7 @@ interface AuthContextType {
   authFlow: "signup" | "forgot-password" | null;
   setUserOnce:(data:User | null) => void
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string, orgData?: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, orgData?: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loginWithGoogle: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -145,9 +145,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signup = useCallback(async (
-    name: string, email: string, password: string, orgData?: Record<string, string>
+    email: string, password: string, orgData?: Record<string, string>
   ) => {
-    const result = await authApi.signup(name, email, password, orgData);
+    const result = await authApi.signup(email, password, orgData);
     if (result.success) {
       setPendingEmail(email);
       setAuthFlow('signup');

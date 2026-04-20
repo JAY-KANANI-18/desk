@@ -10,6 +10,7 @@ import { NavLink, matchPath, useLocation } from "react-router-dom";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
+import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import { useSettingsLinks } from "./settingsLinks";
 
 type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
@@ -18,6 +19,7 @@ export function MobileBottomNav() {
   const location = useLocation();
   const { canWs } = useAuthorization();
   const { dismissed, isComplete } = useGetStarted();
+  const { flags } = useFeatureFlags();
   const settingsLinks = useSettingsLinks();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
@@ -49,9 +51,9 @@ export function MobileBottomNav() {
   const baseItems = useMemo(
     () =>
       APP_NAV_ITEMS.filter(
-        (item) => item.mobile && (!item.ws || canWs(item.ws)),
+        (item) => item.mobile && (!item.ws || canWs(item.ws)) && (!item.feature || flags[item.feature]),
       ),
-    [canWs],
+    [canWs, flags],
   );
 
   const items = useMemo(() => {

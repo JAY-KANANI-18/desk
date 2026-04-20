@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ChartColumnBig,
+  Bot,
   ContactRound,
   LayoutDashboard,
   Megaphone,
@@ -16,6 +17,7 @@ export type AppNavItem = {
   path: string;
   ws?: WorkspacePermission;
   mobile?: boolean;
+  feature?: "aiAgents";
 };
 
 export const APP_NAV_ITEMS: AppNavItem[] = [
@@ -51,6 +53,14 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: "Workflows",
     path: "/workflows",
     ws: "ws:workflows:view",
+  },
+  {
+    icon: Bot,
+    label: "AI Agents",
+    path: "/ai-agents",
+    ws: "ws:ai-agents:view",
+    feature: "aiAgents",
+    mobile: true,
   },
   {
     icon: ChartColumnBig,
