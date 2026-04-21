@@ -121,7 +121,7 @@ export const TopBar = ({ onOpenSidebar }: TopBarProps) => {
   );
 
   return (
-    <div className="flex min-h-[4rem] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur sm:px-4 md:px-6">
+    <div className="flex min-h-[4rem] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur sm:px-4 md:relative md:z-40 md:px-6">
       <div className="flex min-w-0 items-center gap-2">
         {/* <button
           type="button"
