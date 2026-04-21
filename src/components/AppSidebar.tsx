@@ -87,7 +87,7 @@ export const AppSidebar = ({
         className={`flex items-center ${
           isExpanded
             ? "justify-start gap-3 border-b border-slate-100 px-5 py-5"
-            : "justify-center px-3 py-3"
+            : "justify-center  py-3"
         }`}
       >
         <img
