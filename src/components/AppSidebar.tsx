@@ -112,7 +112,7 @@ export const AppSidebar = ({
           }`}
         >
           {showOnboarding &&
-            renderPrimaryLink("/get-started", "Getting started", BookCheck)}
+            renderPrimaryLink("/get-started", "Get started", BookCheck)}
 
           {visibleNavItems.map((item) =>
             renderPrimaryLink(item.path, item.label, item.icon),
