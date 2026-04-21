@@ -3,9 +3,9 @@ import type { BroadcastStatusFilter } from "./types";
 export const BROADCAST_PAGE_SIZE = 25;
 
 export const STATUS_FILTERS: BroadcastStatusFilter[] = [
-  { name: "All", color: "bg-slate-400" },
-  { name: "Scheduled", color: "bg-blue-400" },
-  { name: "Running", color: "bg-sky-500" },
+  { name: "All", color: "bg-gray-400" },
+  { name: "Scheduled", color: "bg-indigo-400" },
+  { name: "Running", color: "bg-violet-500" },
   { name: "Completed", color: "bg-emerald-500" },
   { name: "Partial failure", color: "bg-amber-500" },
 ];

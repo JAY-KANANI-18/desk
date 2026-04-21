@@ -99,12 +99,12 @@ export const InstagramConfiguration = ({
       </div>
 
       {/* Permissions notice */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+      {/* <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
         <Instagram size={15} className="text-indigo-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-indigo-800">
           Instagram messaging requires your Facebook Page to be connected to an Instagram Professional account and the <strong>instagram_manage_messages</strong> permission must be granted.
         </p>
-      </div>
+      </div> */}
 
       {/* Connection fields */}
       <div>

@@ -335,7 +335,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
         {/* Main card */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex-1">
           {/* Tabs */}
-          <div className="flex overflow-x-auto border-b border-gray-100">
+          {/* <div className="flex overflow-x-auto border-b border-gray-100">
             {[
               { id: 'meta' as const, label: 'Connect with Meta' },
               { id: 'credentials' as const, label: 'API Credentials' },
@@ -347,7 +347,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
                 {tab === id && <span className="absolute bottom-0 left-5 right-5 h-px bg-gray-900 block" />}
               </button>
             ))}
-          </div>
+          </div> */}
 
           <div className="p-6">
 
@@ -435,7 +435,7 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
                     </button>
                   </div>
 
-                  <div className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  {/* <div className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
                         Connect WhatsApp Business App (existing number)
@@ -463,11 +463,11 @@ export const WhatsAppCloudChannel = ({ connected, onConnect, onDisconnect, works
                         </>
                       )}
                     </button>
-                  </div>
+                  </div> */}
                 </div>
 
                 <p className="text-center text-[10px] text-gray-400">
-                  Cloud API uses your existing popup flow. Business App coexistence opens the official Embedded Signup modal through the Facebook SDK.
+                  A popup will open to Meta's secure authorization page.
                 </p>
               </div>
             )}

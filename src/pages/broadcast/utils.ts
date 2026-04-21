@@ -25,10 +25,10 @@ export function statusLabel(status: string) {
 
 export function statusBadgeClass(status: string) {
   if (status === "partial_failure") return "bg-amber-100 text-amber-800";
-  if (status === "completed") return "bg-emerald-100 text-emerald-800";
-  if (status === "scheduled") return "bg-blue-100 text-blue-800";
-  if (status === "running") return "bg-sky-100 text-sky-800";
-  return "bg-slate-100 text-slate-700";
+  if (status === "completed") return "bg-emerald-100 text-emerald-700";
+  if (status === "scheduled") return "bg-indigo-100 text-indigo-700";
+  if (status === "running") return "bg-violet-100 text-violet-700";
+  return "bg-gray-100 text-gray-700";
 }
 
 export function formatDateTime(value?: string | null) {
@@ -71,9 +71,12 @@ export function calendarEventClass(status: string) {
     return "border-l-red-500 bg-red-50 text-red-900 hover:bg-red-100";
   }
   if (status === "scheduled") {
-    return "border-l-blue-500 bg-blue-50 text-blue-900 hover:bg-blue-100";
+    return "border-l-indigo-500 bg-indigo-50 text-indigo-900 hover:bg-indigo-100";
   }
-  return "border-l-amber-500 bg-amber-50 text-amber-900 hover:bg-amber-100";
+  if (status === "running") {
+    return "border-l-violet-500 bg-violet-50 text-violet-900 hover:bg-violet-100";
+  }
+  return "border-l-gray-400 bg-gray-50 text-gray-800 hover:bg-gray-100";
 }
 
 export function calendarStatusLabel(status: string) {

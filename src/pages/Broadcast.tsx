@@ -11,7 +11,7 @@ export const Broadcast = () => {
   const page = useBroadcastPage();
 
   return (
-    <div className="flex h-full flex-col bg-slate-50 md:flex-row">
+    <div className="flex h-full flex-col bg-white md:flex-row">
       <BroadcastSidebar
         selectedStatus={page.selectedStatus}
         onSelectStatus={page.setSelectedStatus}
@@ -65,9 +65,9 @@ export const Broadcast = () => {
         </div>
 
         {page.lastSendResult && (
-          <div className="border-t border-slate-200 bg-white px-6 py-3 text-sm text-slate-700">
+          <div className="border-t border-gray-200 bg-white px-6 py-3 text-sm text-gray-600">
             Last run:{" "}
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-gray-900">
               {page.lastSendResult.status === "scheduled"
                 ? `scheduled for ${formatDateTime(page.lastSendResult.scheduledAt)}`
                 : `${page.lastSendResult.queued} queued`}
@@ -77,7 +77,7 @@ export const Broadcast = () => {
             )}
             <button
               type="button"
-              className="ml-3 text-sky-600 transition hover:underline"
+              className="ml-3 text-indigo-600 transition hover:text-indigo-700 hover:underline"
               onClick={() => void page.openLastRun()}
             >
               View run
