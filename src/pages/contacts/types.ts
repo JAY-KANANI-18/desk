@@ -11,23 +11,24 @@ import type { LifecycleStage } from "../workspace/types";
 export interface Contact {
   id: number | string;
   firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
   lifecycle?: string | { id?: string; name?: string; emoji?: string } | null;
   lifecycleStage?: string | null;
-  lifecycleId?: string;
-  assigneeId?: string;
+  lifecycleId?: string | null;
+  assigneeId?: string | null;
   assignee?: {
     id: string;
     firstName: string;
     lastName?: string;
     avatarUrl?: string;
     email?: string;
-  };
-  avatarUrl?: string;
+  } | null;
+  avatarUrl?: string | null;
   company?: string | null;
   status?: string | null;
+  teamId?: string | null;
   contactChannels?: Array<{
     channelType?: string;
     channelId?: string | number;
@@ -35,6 +36,7 @@ export interface Contact {
   }>;
   channel?: string;
   tags?: string[];
+  tagIds?: string[];
 }
 
 export type SortField = "name" | "email" | "lifecycle" | "phone";
@@ -54,15 +56,26 @@ export interface ContactsToast {
 export interface ContactFormState {
   firstName: string;
   lastName: string;
-  phone: string;
+  company: string;
+  phoneCountryCode: string;
+  customPhoneCountryCode: string;
+  phoneLocalNumber: string;
   email: string;
   lifecycle: string;
-  tags: string[];
+  assigneeId: string;
+  tagIds: string[];
 }
 
-export interface EditContactFormState
-  extends Omit<Contact, "id"> {
-  id: number;
+export interface EditContactFormState extends ContactFormState {
+  id: number | string;
+}
+
+export interface ContactTagOption {
+  id: string;
+  name: string;
+  color?: string;
+  emoji?: string;
+  description?: string | null;
 }
 
 export interface WorkspaceUser {
@@ -80,6 +93,7 @@ export interface ContactsPageContentProps {
   contacts: Contact[];
   totalContacts: number;
   loading: boolean;
+  availableTags: ContactTagOption[];
   workspaceUsers: WorkspaceUser[] | null;
   stages: LifecycleStage[];
   toast: ContactsToast | null;

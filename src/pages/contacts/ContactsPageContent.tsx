@@ -10,6 +10,7 @@ export function ContactsPageContent({
   contacts,
   totalContacts,
   loading,
+  availableTags,
   workspaceUsers,
   stages,
   toast,
@@ -111,6 +112,7 @@ export function ContactsPageContent({
         open={showNewContact}
         onClose={() => setShowNewContact(false)}
         stages={stages}
+        availableTags={availableTags}
         value={newContact}
         onChange={setNewContact}
         onSubmit={handleCreateContact}
@@ -136,6 +138,8 @@ export function ContactsPageContent({
       <EditContactModal
         contact={editingContact}
         stages={stages}
+        availableTags={availableTags}
+        workspaceUsers={workspaceUsers}
         value={editForm}
         onChange={setEditForm}
         onClose={() => setEditingContact(null)}

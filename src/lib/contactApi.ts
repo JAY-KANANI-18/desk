@@ -14,13 +14,16 @@ import { apiFetch } from "./apiClient";
 interface Contact {
     id: number | string;
     firstName: string;
-    lastName?: string;
-    email: string;
-    phone: string;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
     lifecycle?: string | { id?: string; name?: string; emoji?: string } | null;
     lifecycleStage?: string | null;
+    lifecycleId?: string | null;
     company?: string | null;
     status?: string | null;
+    assigneeId?: string | null;
+    teamId?: string | null;
     assignee?: {
         id: string;
         firstName?: string;
@@ -35,7 +38,19 @@ interface Contact {
     }>;
     channel?: string;
     tags?: string[];
+    tagIds?: string[];
 }
+
+export interface CreateContactPayload {
+    firstName: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+    lifecycleId?: string;
+}
+
+export interface UpdateContactPayload extends Partial<CreateContactPayload> {}
 
 export interface ContactListParams {
     search?: string;
@@ -306,8 +321,22 @@ export const contactsApi = {
     //     const res = await api.post("/contacts", contact);
     //     return res;
     // },
-    updateContact: async (id: number | string, updates: Partial<Contact>): Promise<Contact> => {
+    updateContact: async (id: number | string, updates: UpdateContactPayload): Promise<Contact> => {
         const res = await api.patch(`/contacts/${id}`, updates);
+        return res;
+    },
+    assignContact: async (
+        contactId: number | string,
+        payload: { assigneeId?: string | null; teamId?: string | null },
+    ): Promise<Contact> => {
+        const res = await api.patch(`/contacts/${contactId}/assign`, payload);
+        return res;
+    },
+    updateContactLifecycle: async (
+        contactId: number | string,
+        lifecycleId?: string | null,
+    ): Promise<Contact> => {
+        const res = await api.put(`/contacts/${contactId}/lifecycle`, { lifecycleId });
         return res;
     },
     addTagToContact: async (
@@ -333,7 +362,7 @@ export const contactsApi = {
         return res;
     },
     /** POST /contacts — creates a new contact */
-    createContact: async (contact: Omit<Contact, "id">): Promise<Contact> => {
+    createContact: async (contact: CreateContactPayload): Promise<Contact> => {
         const res = await api.post("/contacts", contact);
         return res;
     },
@@ -353,7 +382,7 @@ export const contactsApi = {
     // },
 
     /** DELETE /contacts/:id — deletes a single contact */
-    deleteContact: async (id: number): Promise<void> => {
+    deleteContact: async (id: number | string): Promise<void> => {
         const res = await api.delete(`/contacts/${id}`);
         // if (!res.ok) throw new Error("Failed to delete contact");
     },

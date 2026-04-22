@@ -69,7 +69,15 @@ export function ContactsMobileList({
         return (
           <article
             key={contact.id}
-            className={`min-w-0 max-w-full overflow-hidden rounded-[26px] border p-4 shadow-sm transition-colors ${
+            tabIndex={0}
+            onClick={() => openEditModal(contact)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openEditModal(contact);
+              }
+            }}
+            className={`min-w-0 max-w-full cursor-pointer overflow-hidden rounded-[26px] border p-4 shadow-sm transition-colors ${
               selected
                 ? "border-indigo-200 bg-indigo-50/70"
                 : "border-slate-200 bg-white"
@@ -80,6 +88,7 @@ export function ContactsMobileList({
                 type="checkbox"
                 className="mt-1 flex-shrink-0 cursor-pointer rounded"
                 checked={selected}
+                onClick={(event) => event.stopPropagation()}
                 onChange={() => toggleSelectOne(contact.id)}
               />
 
@@ -108,14 +117,20 @@ export function ContactsMobileList({
 
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => openEditModal(contact)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditModal(contact);
+                          }}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
                           title="Edit contact"
                         >
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => void handleDeleteOne(contact.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleDeleteOne(contact.id);
+                          }}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                           title="Delete contact"
                         >
