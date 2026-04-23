@@ -321,7 +321,7 @@ export function ChatHeader({
             <button
               type="button"
               onClick={onOpenContactDetails}
-              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold transition-opacity hover:opacity-90 md:hidden"
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold transition-opacity hover:opacity-90 md:h-10 md:w-10"
               aria-label="Open contact details"
               title="Open contact details"
             >
@@ -337,21 +337,21 @@ export function ChatHeader({
                 </span>
               )}
             </button>
-          ) : null}
-
-          <div className={`${onOpenContactDetails ? 'hidden md:flex' : 'flex'} h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold md:h-10 md:w-10`}>
-            {selectedConversation?.contact?.avatarUrl ? (
-              <img
-                src={selectedConversation.contact.avatarUrl}
-                alt={selectedConversation.contact.firstName || "avatar"}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>
-                {selectedConversation?.contact?.firstName?.charAt(0)?.toUpperCase() || "C"}
-              </span>
-            )}
-          </div>
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-300 text-sm font-semibold md:h-10 md:w-10">
+              {selectedConversation?.contact?.avatarUrl ? (
+                <img
+                  src={selectedConversation.contact.avatarUrl}
+                  alt={selectedConversation.contact.firstName || "avatar"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>
+                  {selectedConversation?.contact?.firstName?.charAt(0)?.toUpperCase() || "C"}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Channel icon if you want */}
           {/* 

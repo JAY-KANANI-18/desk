@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Search, MoreHorizontal, Play, Square, Pencil,
-  Copy, Trash2, Download, Upload, ExternalLink, Loader2, Zap,
+  Copy, Trash2, Download, Upload, ExternalLink, Loader2, Zap, X,
 } from 'lucide-react';
 import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
@@ -114,9 +114,10 @@ export function WorkflowList() {
       actions: [
         {
           id: 'workflows-search',
-          label: 'Search workflows',
-          icon: <Search size={17} />,
-          active: mobileSearchOpen || Boolean(searchDraft),
+          label: mobileSearchOpen ? 'Close search' : 'Search workflows',
+          icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+          active: mobileSearchOpen,
+          hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
           onClick: () => setMobileSearchOpen((value) => !value),
         },
         {

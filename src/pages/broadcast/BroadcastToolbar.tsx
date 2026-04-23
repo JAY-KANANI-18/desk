@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, MoreVertical, Plus, RefreshCw, Search } from "lucide-react";
+import { Calendar, MoreVertical, Plus, RefreshCw, Search, X } from "lucide-react";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import type { BroadcastViewMode } from "./types";
 
@@ -31,9 +31,10 @@ export function BroadcastToolbar({
       actions: [
         {
           id: "broadcast-search",
-          label: "Search broadcasts",
-          icon: <Search size={17} />,
-          active: mobileSearchOpen || Boolean(searchQuery),
+          label: mobileSearchOpen ? "Close search" : "Search broadcasts",
+          icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+          active: mobileSearchOpen,
+          hasIndicator: !mobileSearchOpen && Boolean(searchQuery),
           onClick: () => setMobileSearchOpen((value) => !value),
         },
         {

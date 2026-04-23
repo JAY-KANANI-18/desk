@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Plus, ArrowRight, Search, Loader2, Zap } from 'lucide-react';
+import { ChevronLeft, Plus, ArrowRight, Search, Loader2, Zap, X } from 'lucide-react';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates';
 import { workflowApi } from './workflowApi';
 import { WorkflowTemplate } from './workflow.types';
@@ -70,9 +70,10 @@ export function TemplateGallery() {
       actions: [
         {
           id: 'workflow-template-search',
-          label: 'Search templates',
-          icon: <Search size={17} />,
-          active: mobileSearchOpen || Boolean(search),
+          label: mobileSearchOpen ? 'Close search' : 'Search templates',
+          icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+          active: mobileSearchOpen,
+          hasIndicator: !mobileSearchOpen && Boolean(search),
           onClick: () => setMobileSearchOpen((value) => !value),
         },
         {

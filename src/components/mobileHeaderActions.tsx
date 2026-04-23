@@ -13,6 +13,7 @@ export type MobileHeaderAction = {
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;
+  hasIndicator?: boolean;
 };
 
 export type MobileHeaderRegistration = {
@@ -69,7 +70,7 @@ export function MobileHeaderActionButtons({
       {actions.map((action) => (
         <button
           aria-label={action.label}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 ${
             action.active ? "bg-slate-100 text-indigo-600" : ""
           }`}
           disabled={action.disabled}
@@ -77,6 +78,12 @@ export function MobileHeaderActionButtons({
           onClick={action.onClick}
           type="button"
         >
+          {action.hasIndicator ? (
+            <span
+              aria-hidden="true"
+              className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white"
+            />
+          ) : null}
           {action.icon}
         </button>
       ))}

@@ -26,6 +26,7 @@ import { ChatHeader }       from "./inbox/ChatHeader";
 import { MessageArea }      from "./inbox/MessageArea";
 import { InputArea }        from "./inbox/InputArea";
 import { ContactSidebarHybrid } from "./inbox/ContactSidebarHybrid";
+import { CONTACT_SIDEBAR_WIDTH } from "./inbox/contact-sidebar/DesktopShell";
 import { InboxAddChannelPrompt } from "./inbox/InboxAddChannelPrompt";
 import { MobileCategoryDrawer } from "./inbox/MobileCategoryDrawer";
 import { MobileContactSheet } from "./inbox/MobileContactSheet";
@@ -57,6 +58,8 @@ export function InboxPage() {
     msgSearchOpen,
     msgSearch,
     selectConversation,
+    refreshContact,
+    refreshConversations,
     channels,
     handleChannelChange,
     setInputMode,
@@ -71,6 +74,7 @@ export function InboxPage() {
   const [replyContext, setReplyContext] = useState<ReplyContext | null>(null);
   const [showMobileCategories, setShowMobileCategories] = useState(false);
   const [showMobileContact, setShowMobileContact] = useState(false);
+  const [showDesktopContact, setShowDesktopContact] = useState(true);
 
   const handleReply = useCallback((ctx: ReplyContext) => {
     setReplyContext(ctx);
@@ -162,7 +166,13 @@ export function InboxPage() {
             msgSearchOpen={msgSearchOpen}
             onToggleMsgSearch={toggleMsgSearch}
             onBack={() => navigate("/inbox")}
-            onOpenContactDetails={() => setShowMobileContact(true)}
+            onOpenContactDetails={() => {
+              if (isMobile) {
+                setShowMobileContact(true);
+                return;
+              }
+              setShowDesktopContact(true);
+            }}
           />
 
           <MessageArea
@@ -211,13 +221,29 @@ export function InboxPage() {
         </div>
       )}
 
-      {!isMobile && selectedConversation?.id && (
-        <ContactSidebarHybrid
-          key={selectedConversation?.id}
-          selectedConversation={selectedConversation as any}
-          contactDetails={selectedContact}
-        />
-      )}
+      {!isMobile ? (
+        <div
+          className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out xl:flex"
+          style={{
+            width: selectedConversation?.id && showDesktopContact ? CONTACT_SIDEBAR_WIDTH : 0,
+            opacity: selectedConversation?.id && showDesktopContact ? 1 : 0,
+          }}
+        >
+          {selectedConversation?.id ? (
+            <ContactSidebarHybrid
+              selectedConversation={selectedConversation as any}
+              contactDetails={selectedContact}
+              refreshContact={refreshContact}
+              refreshConversations={refreshConversations}
+              conversationList={convList}
+              onSelectConversation={(conversation) => selectConversation(conversation as any)}
+              desktopTitle="Contact details"
+              onDesktopClose={() => setShowDesktopContact(false)}
+              desktopContainerClassName="flex h-full"
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <MobileCategoryDrawer
         open={showMobileCategories}

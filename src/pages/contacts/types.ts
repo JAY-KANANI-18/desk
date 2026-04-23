@@ -142,7 +142,5 @@ export interface ContactsPageContentProps {
   handleConfirmImport: () => Promise<void>;
   editingContact: Contact | null;
   setEditingContact: Dispatch<SetStateAction<Contact | null>>;
-  editForm: EditContactFormState;
-  setEditForm: Dispatch<SetStateAction<EditContactFormState>>;
-  handleUpdateContact: () => Promise<void>;
+  handlePersistedContact: (contact: Contact) => void | Promise<void>;
 }

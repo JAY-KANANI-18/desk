@@ -8,6 +8,7 @@ interface PhoneNumberFieldProps {
   phoneCountryCode: string;
   customPhoneCountryCode: string;
   phoneLocalNumber: string;
+  variant?: "default" | "sidebar";
   onChange: (value: {
     phoneCountryCode?: string;
     customPhoneCountryCode?: string;
@@ -15,16 +16,22 @@ interface PhoneNumberFieldProps {
   }) => void;
 }
 
-const inputClassName =
+const defaultInputClassName =
   "w-full rounded-lg bg-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 md:border md:border-gray-300 md:bg-white";
+
+const sidebarInputClassName =
+  "w-full rounded-xl border border-[#e0e4ed] bg-[#fafbfc] px-3 py-2.5 text-[13px] text-[#1c2030] placeholder:text-[#c8cdd8] focus:outline-none focus:ring-2 focus:ring-[#1c2030]/10 focus:border-[#1c2030]";
 
 export function PhoneNumberField({
   phoneCountryCode,
   customPhoneCountryCode,
   phoneLocalNumber,
+  variant = "default",
   onChange,
 }: PhoneNumberFieldProps) {
   const showCustomCodeInput = phoneCountryCode === CUSTOM_PHONE_COUNTRY_CODE;
+  const inputClassName =
+    variant === "sidebar" ? sidebarInputClassName : defaultInputClassName;
 
   return (
     <div className="space-y-2">

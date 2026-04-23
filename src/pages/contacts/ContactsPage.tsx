@@ -403,6 +403,24 @@ export function ContactsPage() {
     }
   };
 
+  const handlePersistedContact = useCallback(
+    async (nextContact: Contact) => {
+      setEditingContact(nextContact);
+
+      if (DUMMY_MODE) {
+        setContacts((previous) =>
+          previous.map((contact) =>
+            contact.id === nextContact.id ? { ...contact, ...nextContact } : contact,
+          ),
+        );
+        return;
+      }
+
+      await loadRef.current?.();
+    },
+    [],
+  );
+
   const handleUpdateContact = async () => {
     if (!editingContact || !editForm.firstName.trim()) {
       return;
@@ -748,9 +766,7 @@ export function ContactsPage() {
         handleConfirmImport={handleConfirmImport}
         editingContact={editingContact}
         setEditingContact={setEditingContact}
-        editForm={editForm}
-        setEditForm={setEditForm}
-        handleUpdateContact={handleUpdateContact}
+        handlePersistedContact={handlePersistedContact}
       />
 
       <DeleteContactsModal

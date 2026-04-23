@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Settings, Globe, Plug, Loader2 } from "lucide-react";
+import { Search, Plus, Settings, Globe, Plug, Loader2, X, ChevronRight } from "lucide-react";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";
@@ -67,9 +67,10 @@ const ConnectedChannelsView = ({
           actions: [
             {
               id: "channels-search",
-              label: "Search channels",
-              icon: <Search size={17} />,
-              active: mobileSearchOpen || Boolean(search),
+              label: mobileSearchOpen ? "Close search" : "Search channels",
+              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+              active: mobileSearchOpen,
+              hasIndicator: !mobileSearchOpen && Boolean(search),
               onClick: () => setMobileSearchOpen((value) => !value),
             },
             {
@@ -179,10 +180,18 @@ const ConnectedChannelsView = ({
                     handleManage(ch);
                   }
                 }}
-                className={`cursor-pointer rounded-[24px] bg-white p-4 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:border-gray-300 md:hover:shadow-sm ${
+                className={`relative cursor-pointer rounded-[24px] bg-white p-4 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:border-gray-300 md:hover:shadow-sm ${
                   isMobile ? "space-y-4" : "space-y-5"
                 }`}
               >
+                {isMobile ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300"
+                  >
+                    <ChevronRight size={16} />
+                  </span>
+                ) : null}
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
                     <img
@@ -215,7 +224,13 @@ const ConnectedChannelsView = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl  p-3 text-xs text-slate-500">
+                <div
+                  className={
+                    isMobile
+                      ? "hidden"
+                      : "grid grid-cols-2 gap-3 rounded-2xl p-3 text-xs text-slate-500"
+                  }
+                >
                   {/* <div>
                     <p>Messages</p>
                     <p className="mt-1 text-sm font-semibold text-slate-900">

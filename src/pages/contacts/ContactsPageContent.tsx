@@ -1,8 +1,11 @@
 import type { ContactsPageContentProps } from "./types";
+import { MobileSheet } from "../../components/topbar/MobileSheet";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { ContactSidebarHybrid } from "../inbox/ContactSidebarHybrid";
+import { CONTACT_SIDEBAR_WIDTH } from "../inbox/contact-sidebar/DesktopShell";
 import { ContactsHeader } from "./components/ContactsHeader";
 import { ContactsTable } from "./components/ContactsTable";
 import { CreateContactModal } from "./components/CreateContactModal";
-import { EditContactModal } from "./components/EditContactModal";
 import { ImportContactsModal } from "./components/ImportContactsModal";
 
 export function ContactsPageContent({
@@ -59,12 +62,30 @@ export function ContactsPageContent({
   handleConfirmImport,
   editingContact,
   setEditingContact,
-  editForm,
-  setEditForm,
-  handleUpdateContact,
+  handlePersistedContact,
 }: ContactsPageContentProps) {
+  const isMobile = useIsMobile();
+  const mobileSidebarTitle = (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        Contacts
+      </p>
+      <h2 className="mt-1 text-base font-semibold text-slate-900">
+        Contact Details
+      </h2>
+    </div>
+  );
+  const handleCloseEditingContact = () => setEditingContact(null);
+  const handleDeleteEditingContact = editingContact
+    ? () => {
+        const contactId = editingContact.id;
+        setEditingContact(null);
+        void handleDeleteOne(contactId);
+      }
+    : undefined;
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
+    <div className="relative flex h-full min-h-0 bg-white">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <ContactsHeader
           contactsCount={contacts.length}
@@ -89,6 +110,7 @@ export function ContactsPageContent({
           loading={loading}
           contacts={paginatedContacts}
           totalContacts={totalContacts}
+          availableTags={availableTags}
           workspaceUsers={workspaceUsers}
           stages={stages}
           sortOption={sortOption}
@@ -106,6 +128,32 @@ export function ContactsPageContent({
           totalPages={totalPages}
           setCurrentPage={setCurrentPage}
         />
+      </div>
+
+      <div
+        className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out md:flex"
+        style={{
+          width: editingContact && !isMobile ? CONTACT_SIDEBAR_WIDTH : 0,
+          opacity: editingContact && !isMobile ? 1 : 0,
+        }}
+      >
+        {editingContact && !isMobile ? (
+          <ContactSidebarHybrid
+            contactDetails={editingContact}
+            mode="desktop"
+            workspaceUsers={workspaceUsers}
+            lifecycleStages={stages}
+            onDelete={handleDeleteEditingContact}
+            onContactChange={(nextContact) =>
+              handlePersistedContact(nextContact as any)
+            }
+            showAiPanel={false}
+            desktopVariant="inline"
+            desktopTitle="Contact details"
+            desktopContainerClassName="flex h-full"
+            onDesktopClose={handleCloseEditingContact}
+          />
+        ) : null}
       </div>
 
       <CreateContactModal
@@ -135,16 +183,26 @@ export function ContactsPageContent({
         onConfirmImport={handleConfirmImport}
       />
 
-      <EditContactModal
-        contact={editingContact}
-        stages={stages}
-        availableTags={availableTags}
-        workspaceUsers={workspaceUsers}
-        value={editForm}
-        onChange={setEditForm}
-        onClose={() => setEditingContact(null)}
-        onSubmit={handleUpdateContact}
-      />
+      {editingContact && isMobile ? (
+        <MobileSheet
+          open
+          onClose={handleCloseEditingContact}
+          borderless
+          title={mobileSidebarTitle}
+        >
+          <ContactSidebarHybrid
+            contactDetails={editingContact}
+            mode="mobile"
+            workspaceUsers={workspaceUsers}
+            lifecycleStages={stages}
+            onDelete={handleDeleteEditingContact}
+            onContactChange={(nextContact) =>
+              handlePersistedContact(nextContact as any)
+            }
+            showAiPanel={false}
+          />
+        </MobileSheet>
+      ) : null}
 
       {showActionsMenu && <div className="fixed inset-0 z-10" onClick={() => setShowActionsMenu(false)} />}
     </div>

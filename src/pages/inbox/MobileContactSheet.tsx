@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { ContactSidebarHybrid } from "./ContactSidebarHybrid";
+import { useInbox } from "../../context/InboxContext";
 import type { Contact, Conversation } from "./types";
 
 interface MobileContactSheetProps {
@@ -15,6 +16,9 @@ export function MobileContactSheet({
   selectedConversation,
   contactDetails,
 }: MobileContactSheetProps) {
+  const { convList, refreshContact, refreshConversations, selectConversation } =
+    useInbox();
+
   if (!open) {
     return null;
   }
@@ -43,6 +47,12 @@ export function MobileContactSheet({
               selectedConversation={selectedConversation}
               contactDetails={contactDetails}
               mode="mobile"
+              refreshContact={refreshContact}
+              refreshConversations={refreshConversations}
+              conversationList={convList as any}
+              onSelectConversation={(conversation) =>
+                selectConversation(conversation as any)
+              }
             />
           </div>
         </div>

@@ -109,9 +109,10 @@ export const Tags = () => {
           actions: [
             {
               id: 'tags-search',
-              label: 'Search tags',
-              icon: <Search size={17} />,
-              active: mobileSearchOpen || Boolean(searchDraft),
+              label: mobileSearchOpen ? 'Close search' : 'Search tags',
+              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+              active: mobileSearchOpen,
+              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
               onClick: () => setMobileSearchOpen((value) => !value),
             },
             {

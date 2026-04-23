@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowLeft, ExternalLink, Plug } from "lucide-react";
+import { Search, ArrowLeft, ExternalLink, Plug, ChevronRight } from "lucide-react";
 
 interface CatalogChannel {
   id: string;
@@ -332,6 +332,12 @@ export const ChannelCatalogView = () => {
                     }}
                     className="relative flex cursor-pointer flex-col rounded-2xl bg-white p-5 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:shadow-md"
                   >
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300 md:hidden"
+                    >
+                      <ChevronRight size={16} />
+                    </span>
                     {ch.badge && (
                       <span
                         className={`absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-medium ${ch.badgeColor}`}

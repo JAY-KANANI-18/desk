@@ -1,6 +1,12 @@
 import { ArrowUpDown, Search, Trash2, X } from "lucide-react";
 import { DataLoader } from "../../Loader";
-import type { Contact, SortField, SortOption, WorkspaceUser } from "../types";
+import type {
+  Contact,
+  ContactTagOption,
+  SortField,
+  SortOption,
+  WorkspaceUser,
+} from "../types";
 import type { LifecycleStage } from "../../workspace/types";
 import { ContactsPagination } from "./ContactsPagination";
 import { ContactsMobileList } from "./ContactsMobileList";
@@ -10,6 +16,7 @@ interface ContactsTableProps {
   loading: boolean;
   contacts: Contact[];
   totalContacts: number;
+  availableTags: ContactTagOption[];
   workspaceUsers: WorkspaceUser[] | null;
   stages: LifecycleStage[];
   sortOption: SortOption | null;
@@ -43,6 +50,7 @@ export function ContactsTable({
   loading,
   contacts,
   totalContacts,
+  availableTags,
   workspaceUsers,
   stages,
   sortOption,
@@ -96,12 +104,10 @@ export function ContactsTable({
               <>
                 <ContactsMobileList
                   contacts={contacts}
+                  availableTags={availableTags}
                   workspaceUsers={workspaceUsers}
                   stages={stages}
-                  selectedIds={selectedIds}
-                  toggleSelectOne={toggleSelectOne}
                   openEditModal={openEditModal}
-                  handleDeleteOne={handleDeleteOne}
                 />
 
                 <div className="hidden min-w-[800px] md:block">

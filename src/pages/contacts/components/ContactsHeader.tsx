@@ -85,9 +85,10 @@ export function ContactsHeader({
           actions: [
             {
               id: "contacts-search",
-              label: "Search contacts",
-              icon: <Search size={17} />,
-              active: mobileSearchOpen || Boolean(searchQuery),
+              label: mobileSearchOpen ? "Close search" : "Search contacts",
+              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+              active: mobileSearchOpen,
+              hasIndicator: !mobileSearchOpen && Boolean(searchQuery),
               onClick: () => setMobileSearchOpen((value) => !value),
             },
             {
