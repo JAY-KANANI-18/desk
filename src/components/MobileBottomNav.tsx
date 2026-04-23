@@ -15,12 +15,14 @@ import { useSettingsLinks } from "./settingsLinks";
 
 type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
 
-const PRIMARY_MOBILE_PATHS = new Set([
+const PRIMARY_MOBILE_PATH_ORDER = [
   "/dashboard",
-  "/inbox",
   "/contacts",
+  "/inbox",
   "/channels",
-]);
+];
+
+const PRIMARY_MOBILE_PATHS = new Set(PRIMARY_MOBILE_PATH_ORDER);
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -65,7 +67,13 @@ export function MobileBottomNav() {
 
   const primaryItems = useMemo(
     () =>
-      visibleMobileItems.filter((item) => PRIMARY_MOBILE_PATHS.has(item.path)),
+      visibleMobileItems
+        .filter((item) => PRIMARY_MOBILE_PATHS.has(item.path))
+        .sort(
+          (a, b) =>
+            PRIMARY_MOBILE_PATH_ORDER.indexOf(a.path) -
+            PRIMARY_MOBILE_PATH_ORDER.indexOf(b.path),
+        ),
     [visibleMobileItems],
   );
 
@@ -163,7 +171,7 @@ export function MobileBottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 bg-white pt-1 md:hidden">
-    <nav className="relative z-50 mx-auto flex w-full max-w-xl items-stretch rounded-t-[28px] border border-b-0 bg-white px-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <nav className="relative z-50 mx-auto flex w-full max-w-xl items-stretch rounded-t-[28px] border border-b-0 bg-white px-2 pb-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
   <div
     className="pointer-events-none absolute top-0 z-0 h-1.5 transition-all duration-300 ease-out"
     style={{
@@ -193,7 +201,7 @@ export function MobileBottomNav() {
 
     const content = (
       <div className="flex h-[64px] flex-col items-center justify-center gap-1.5">
-        <item.icon size={26} className={iconClassName} />
+        <item.icon size={22} className={iconClassName} />
         <span className={labelClassName}>
           {item.label}
         </span>
