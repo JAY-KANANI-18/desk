@@ -37,7 +37,7 @@ export function ListPagination({
   const items = buildPagination(page, totalPages);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 text-sm">
+    <div className="flex items-center justify-between bg-white px-4 py-3 text-sm md:border-t md:border-gray-200">
       <span className="text-xs text-gray-500">
         Showing {from}-{to} of {total} {itemLabel}
       </span>
@@ -45,7 +45,7 @@ export function ListPagination({
         <button
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
           {"<-"} Prev
         </button>
@@ -58,8 +58,8 @@ export function ListPagination({
             <button
               key={item}
               onClick={() => onPageChange(item)}
-              className={`h-8 w-8 rounded-lg border text-xs transition-colors ${
-                page === item ? "border-indigo-600 bg-indigo-600 text-white" : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              className={`h-8 w-8 rounded-lg text-xs transition-colors md:border ${
+                page === item ? "bg-indigo-600 text-white md:border-indigo-600" : "bg-slate-100 text-gray-700 hover:bg-slate-200 md:border-gray-300 md:bg-white md:hover:bg-gray-50"
               }`}
             >
               {item}
@@ -69,7 +69,7 @@ export function ListPagination({
         <button
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
           Next {"->"}
         </button>

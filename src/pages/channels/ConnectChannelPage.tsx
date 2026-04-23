@@ -276,7 +276,7 @@ export const ConnectChannelPage = () => {
     SidebarContent ? <SidebarContent /> : <GenericSidebar meta={meta} />;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+    <div className="mobile-borderless flex h-full min-h-0 flex-col overflow-hidden bg-white">
       <div className="border-b border-gray-100 bg-white px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-start gap-3 md:items-center">
           <button

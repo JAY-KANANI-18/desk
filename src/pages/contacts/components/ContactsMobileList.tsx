@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { channelConfig } from "../../inbox/data";
 import { MAX_VISIBLE_CHANNELS, MAX_VISIBLE_TAGS } from "../constants";
 import type { Contact, WorkspaceUser } from "../types";
@@ -77,10 +77,10 @@ export function ContactsMobileList({
                 openEditModal(contact);
               }
             }}
-            className={`min-w-0 max-w-full cursor-pointer overflow-hidden rounded-[26px] border p-4 shadow-sm transition-colors ${
+            className={`min-w-0 max-w-full cursor-pointer overflow-hidden rounded-[26px] p-4 shadow-sm transition-colors ${
               selected
-                ? "border-indigo-200 bg-indigo-50/70"
-                : "border-slate-200 bg-white"
+                ? "bg-indigo-50/80"
+                : "bg-white"
             }`}
           >
             <div className="flex min-w-0 items-start gap-3">
@@ -119,19 +119,9 @@ export function ContactsMobileList({
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
-                            openEditModal(contact);
-                          }}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
-                          title="Edit contact"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
                             void handleDeleteOne(contact.id);
                           }}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-500"
                           title="Delete contact"
                         >
                           <Trash2 size={14} />

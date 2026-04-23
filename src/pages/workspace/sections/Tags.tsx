@@ -10,6 +10,7 @@ import { DataLoader } from '../../Loader';
 import { getTagSurfaceStyle, resolveTagBaseColor, TAG_COLOR_OPTIONS } from '../../../lib/tagAppearance';
 import { EmojiPicker } from '../../inbox/EmojiPicker';
 import { ListPagination } from '../../../components/ui/ListPagination';
+import { useMobileHeaderActions } from '../../../components/mobileHeaderActions';
 
 export const Tags = () => {
   const isMobile = useIsMobile();
@@ -22,6 +23,7 @@ export const Tags = () => {
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -101,13 +103,48 @@ export const Tags = () => {
    
   };
 
+  useMobileHeaderActions(
+    isMobile
+      ? {
+          actions: [
+            {
+              id: 'tags-search',
+              label: 'Search tags',
+              icon: <Search size={17} />,
+              active: mobileSearchOpen || Boolean(searchDraft),
+              onClick: () => setMobileSearchOpen((value) => !value),
+            },
+            {
+              id: 'tags-add',
+              label: 'Add tag',
+              icon: <Plus size={18} />,
+              onClick: () => setShowAdd(true),
+            },
+          ],
+          panel: mobileSearchOpen ? (
+            <div className="relative">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                autoFocus
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Search tags..."
+                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ) : null,
+        }
+      : {},
+    [isMobile, mobileSearchOpen, searchDraft],
+  );
+
   if (loading) return <DataLoader type={"tags"} />;
   if (error && tags.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
     <div className="space-y-6">
       <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-white">
-        <div className={`${isMobile ? "px-4 py-4" : "px-6 py-4"} border-b border-gray-100`}>
+        <div className={`${isMobile ? "hidden" : "px-6 py-4"} border-b border-gray-100`}>
           <div>
             <h2 className="text-base font-semibold text-gray-900">Conversation tags</h2>
             <p className="text-xs text-gray-500 mt-0.5">Organize and filter conversations with tags</p>
@@ -116,7 +153,7 @@ export const Tags = () => {
             <Plus size={16} /> Add tag
           </button>
         </div>
-        <div className={`${isMobile ? "px-4 py-4" : "px-6 py-4"} border-b border-gray-100`}>
+        <div className={`${isMobile ? "hidden" : "px-6 py-4"} border-b border-gray-100`}>
           <div className="relative w-full md:max-w-xs">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input

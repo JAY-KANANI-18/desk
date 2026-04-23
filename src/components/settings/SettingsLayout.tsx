@@ -5,6 +5,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthorization } from "../../context/AuthorizationContext";
 import { useAuth } from "../../context/AuthContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import {
+  MobileHeaderActionButtons,
+  useMobileHeaderActionState,
+} from "../mobileHeaderActions";
 import { SettingsSidebar } from "./SettingsSidebar";
 import {
   buildSettingsStorageKey,
@@ -29,6 +33,8 @@ export const SettingsLayout = ({
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { canOrg, canWs } = useAuthorization();
+  const { registration: mobileHeaderRegistration } =
+    useMobileHeaderActionState();
 
   const visibleSections = useMemo(
     () => filterSettingsSections(config.sections, canOrg, canWs),
@@ -95,7 +101,16 @@ export const SettingsLayout = ({
                   {activeMatch ? activeMatch.item.label : ""}
                 </h1>
               </div>
+
+              <MobileHeaderActionButtons
+                actions={mobileHeaderRegistration.actions}
+              />
             </div>
+            {mobileHeaderRegistration.panel ? (
+              <div className="px-4 pb-3">
+                {mobileHeaderRegistration.panel}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex-1 overflow-y-auto">

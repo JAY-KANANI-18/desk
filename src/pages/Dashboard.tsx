@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   UserCircle2,
 } from "lucide-react";
+import { useMobileHeaderActions } from "../components/mobileHeaderActions";
 import { workspaceApi } from "../lib/workspaceApi";
 import { channelConfig } from "./inbox/data";
 
@@ -174,7 +175,7 @@ function SectionCard({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-2xl border border-slate-200 bg-white ${className}`}
+      className={`flex flex-col rounded-2xl bg-white md:border md:border-slate-200 ${className}`}
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-5">
         <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
@@ -306,7 +307,7 @@ export const Dashboard = () => {
     loadMembers(memberPage, memberFilter);
   }, [memberPage, memberFilter]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       loadLifecycle(),
@@ -316,7 +317,27 @@ export const Dashboard = () => {
     ]);
     setLastUpdated(new Date());
     setRefreshing(false);
-  };
+  }, [contactTab, loadContacts, loadLifecycle, loadMembers, loadMerge, memberFilter, memberPage]);
+
+  useMobileHeaderActions(
+    {
+      actions: [
+        {
+          id: "dashboard-refresh",
+          label: "Refresh dashboard",
+          icon: (
+            <RefreshCw
+              className={refreshing ? "animate-spin" : ""}
+              size={18}
+            />
+          ),
+          disabled: refreshing,
+          onClick: () => void handleRefresh(),
+        },
+      ],
+    },
+    [handleRefresh, refreshing],
+  );
 
   // Contact pagination
   const contactNextPage = () => {
@@ -363,8 +384,8 @@ export const Dashboard = () => {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
       {/* Header */}
-      <div className="flex flex-shrink-0 flex-col gap-3 border-b bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <h1 className="text-sm font-semibold text-gray-900">Dashboard</h1>
+      <div className="hidden flex-shrink-0 flex-col gap-3 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 md:flex md:border-b">
+        <h1 className="hidden text-sm font-semibold text-gray-900 md:block">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <span className="text-xs text-gray-400">{lastUpdatedLabel}</span>
           <button
@@ -393,7 +414,7 @@ export const Dashboard = () => {
                   <button
                     key={stage.id}
                     onClick={() => navigate(`/contacts?lifecycle=${stage.id}`)}
-                    className="flex w-[13rem] flex-shrink-0 flex-col gap-2 rounded-2xl border border-slate-200 p-3.5 text-left transition-all hover:border-indigo-200 hover:bg-indigo-50 sm:w-56"
+                    className="flex w-[13rem] flex-shrink-0 flex-col gap-2 rounded-2xl bg-slate-50 p-3.5 text-left transition-all hover:bg-indigo-50 sm:w-56 md:border md:border-slate-200 md:hover:border-indigo-200"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-lg">{stage.emoji}</span>

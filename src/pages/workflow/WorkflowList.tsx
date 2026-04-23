@@ -7,6 +7,7 @@ import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
 import { ListPagination } from '../../components/ui/ListPagination';
+import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 
 type FilterStatus = 'all' | WorkflowStatus;
 
@@ -35,6 +36,7 @@ export function WorkflowList() {
   const [renameId, setRenameId]       = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const navigate = useNavigate();
 
   const load = async (nextPage = page, nextSearch = search, nextFilter = filter) => {
@@ -106,6 +108,41 @@ export function WorkflowList() {
   const handleCreateNew = () => {
     navigate('/workflows/templates');
   }
+
+  useMobileHeaderActions(
+    {
+      actions: [
+        {
+          id: 'workflows-search',
+          label: 'Search workflows',
+          icon: <Search size={17} />,
+          active: mobileSearchOpen || Boolean(searchDraft),
+          onClick: () => setMobileSearchOpen((value) => !value),
+        },
+        {
+          id: 'workflows-new',
+          label: 'New workflow',
+          icon: <Plus size={18} />,
+          onClick: handleCreateNew,
+        },
+      ],
+      panel: mobileSearchOpen ? (
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            autoFocus
+            type="text"
+            placeholder="Search workflows..."
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      ) : null,
+    },
+    [mobileSearchOpen, searchDraft],
+  );
+
   const handleOpenBuilder = (id: string) => {
     navigate(`/workflows/${id}`);
   }
@@ -113,11 +150,11 @@ export function WorkflowList() {
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="border-b border-gray-100 px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-base font-semibold text-gray-900">Workflows</h1>
+      <div className="px-4 py-3 md:border-b md:border-gray-100 md:px-6 md:py-4">
+        <div className="mb-4 hidden items-center justify-end md:flex md:justify-between">
+          <h1 className="hidden text-base font-semibold text-gray-900 md:block">Workflows</h1>
           <div className="flex items-center gap-2">
-            <button className="p-1.5 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors" title="Import">
+            <button className="rounded-md bg-slate-100 p-1.5 transition-colors hover:bg-slate-200 md:border md:border-gray-200 md:bg-white md:hover:bg-gray-50" title="Import">
               <Upload size={14} className="text-gray-400" />
             </button>
             <button
@@ -131,8 +168,8 @@ export function WorkflowList() {
         </div>
 
         {/* Filters + search */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-0.5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <div className="flex items-center gap-0.5 overflow-x-auto">
             {(['all', 'published', 'draft', 'stopped'] as FilterStatus[]).map((f) => (
               <button
                 key={f}
@@ -149,14 +186,14 @@ export function WorkflowList() {
             ))}
           </div>
 
-          <div className="ml-auto relative">
+          <div className="relative hidden md:ml-auto md:block">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
             <input
               type="text"
               placeholder="Search..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 w-48 placeholder:text-gray-300"
+              className="w-full rounded-md bg-slate-100 py-1.5 pl-8 pr-3 text-sm placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 md:w-48 md:border md:border-gray-200 md:bg-white"
             />
           </div>
         </div>

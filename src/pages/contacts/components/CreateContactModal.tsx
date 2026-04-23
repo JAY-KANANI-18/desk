@@ -34,10 +34,11 @@ export function CreateContactModal({
       <MobileSheet
         open={open}
         onClose={onClose}
+        borderless
         title={<h2 className="text-base font-semibold text-slate-900">New Contact</h2>}
         footer={
           <div className="flex flex-col-reverse gap-2">
-            <button onClick={onClose} className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+            <button onClick={onClose} className="rounded-lg bg-slate-100 px-4 py-2 text-sm hover:bg-slate-200">
               Cancel
             </button>
             <button

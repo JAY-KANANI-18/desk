@@ -12,6 +12,7 @@ interface MobileSheetProps {
   headerActions?: ReactNode;
   footer?: ReactNode;
   fullScreen?: boolean;
+  borderless?: boolean;
 }
 
 export function MobileSheet({
@@ -22,6 +23,7 @@ export function MobileSheet({
   headerActions,
   footer,
   fullScreen = false,
+  borderless = false,
 }: MobileSheetProps) {
   const canUseDom = typeof document !== "undefined";
   const [isRendered, setIsRendered] = useState(open);
@@ -86,12 +88,14 @@ export function MobileSheet({
           } ${
             fullScreen
               ? "h-[100dvh] max-h-[100dvh]"
-              : "max-h-[88vh] min-h-[42vh] rounded-t-[28px] border border-slate-200 shadow-[0_-18px_50px_rgba(15,23,42,0.18)]"
+              : `max-h-[88vh] min-h-[42vh] rounded-t-[28px] shadow-[0_-18px_50px_rgba(15,23,42,0.18)] ${
+                  borderless ? "" : "border border-slate-200"
+                }`
           }`}
           style={{ transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms` }}
         >
           <div
-            className={`border-b border-slate-100 px-4 ${
+            className={`px-4 ${borderless ? "" : "border-b border-slate-100"} ${
               fullScreen
                 ? "pb-3 pt-[max(1rem,env(safe-area-inset-top))]"
                 : "pb-3 pt-4"
@@ -107,7 +111,9 @@ export function MobileSheet({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100"
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl text-slate-500 transition-colors hover:bg-slate-100 ${
+                    borderless ? "" : "border border-slate-200"
+                  }`}
                   aria-label="Close panel"
                 >
                   <X size={16} />
@@ -119,7 +125,11 @@ export function MobileSheet({
             {children}
           </div>
           {footer ? (
-            <div className="border-t border-slate-100 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div
+              className={`px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+                borderless ? "" : "border-t border-slate-100"
+              }`}
+            >
               {footer}
             </div>
           ) : null}

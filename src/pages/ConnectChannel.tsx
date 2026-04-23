@@ -241,8 +241,8 @@ export const ChannelCatalogView = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className="border-b border-gray-200 bg-white px-4 py-4 md:px-8 md:py-5">
+    <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
+      <div className="hidden border-b border-gray-200 bg-white px-4 py-4 md:block md:px-8 md:py-5">
         <div className="flex items-start gap-4">
           <button
             onClick={handleBack}
@@ -317,9 +317,20 @@ export const ChannelCatalogView = () => {
               {filteredChannels.map((ch) => {
                 const isConnecting = connecting === ch.id;
                 return (
-                  <div
+                  <article
                     key={ch.id}
-                    className="relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:shadow-md"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!isConnecting) handleConnect(ch.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        if (!isConnecting) handleConnect(ch.id);
+                      }
+                    }}
+                    className="relative flex cursor-pointer flex-col rounded-2xl bg-white p-5 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:shadow-md"
                   >
                     {ch.badge && (
                       <span
@@ -339,9 +350,12 @@ export const ChannelCatalogView = () => {
                     </p>
                     <div className="mt-5 flex justify-stretch transition sm:justify-end">
                       <button
-                        onClick={() => handleConnect(ch.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleConnect(ch.id);
+                        }}
                         disabled={isConnecting}
-                        className={`group relative inline-flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-300 sm:w-auto
+                        className={`group relative hidden w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-300 sm:w-auto md:inline-flex
     ${
       isConnecting
         ? "border-indigo-300 bg-indigo-50 text-indigo-500 cursor-not-allowed"
@@ -384,7 +398,7 @@ export const ChannelCatalogView = () => {
                         )}
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>

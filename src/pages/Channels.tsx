@@ -5,6 +5,7 @@ import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useMobileHeaderActions } from "../components/mobileHeaderActions";
 
 interface ConnectedChannel {
   id: number;
@@ -53,16 +54,56 @@ const ConnectedChannelsView = ({
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
 
   const handleManage = (ch: ConnectedChannel) => {
     navigate(`/channels/manage/${ch.type}/${ch.id}`);
   };
 
+  useMobileHeaderActions(
+    isMobile
+      ? {
+          actions: [
+            {
+              id: "channels-search",
+              label: "Search channels",
+              icon: <Search size={17} />,
+              active: mobileSearchOpen || Boolean(search),
+              onClick: () => setMobileSearchOpen((value) => !value),
+            },
+            {
+              id: "channels-add",
+              label: "Add channel",
+              icon: <Plus size={18} />,
+              onClick: onConnectNew,
+            },
+          ],
+          panel: mobileSearchOpen ? (
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={15}
+              />
+              <input
+                autoFocus
+                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Search channels..."
+                type="text"
+                value={search}
+              />
+            </div>
+          ) : null,
+        }
+      : {},
+    [isMobile, mobileSearchOpen, search],
+  );
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+    <div className="mobile-borderless min-h-0 flex-1 overflow-y-auto bg-white">
       <div className="px-4 py-4 md:px-6">
-        <div className="flex items-start gap-3">
+        <div className="hidden items-start gap-3 md:flex">
           <div className="pt-1 text-slate-700">
             <Plug size={20} />
           </div>
@@ -76,7 +117,7 @@ const ConnectedChannelsView = ({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
+        <div className="mt-4 hidden grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
           <div className="relative w-full md:max-w-sm">
             <Search
               size={15}
@@ -86,7 +127,7 @@ const ConnectedChannelsView = ({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search channels..."
-              className="w-full rounded-xl border border-gray-300 py-2.5 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-xl bg-slate-100 py-2.5 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500 md:border md:border-gray-300 md:bg-white"
             />
           </div>
 
@@ -127,14 +168,23 @@ const ConnectedChannelsView = ({
         ) : (
           <div className="grid grid-cols-1 gap-4 py-4 sm:grid-cols-2 xl:grid-cols-3">
             {channels.map((ch) => (
-              <div
+              <article
                 key={ch.id}
-                className={`rounded-[24px] border border-gray-200 bg-white p-4 transition-all hover:border-gray-300 hover:shadow-sm ${
+                role="button"
+                tabIndex={0}
+                onClick={() => handleManage(ch)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleManage(ch);
+                  }
+                }}
+                className={`cursor-pointer rounded-[24px] bg-white p-4 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:border-gray-300 md:hover:shadow-sm ${
                   isMobile ? "space-y-4" : "space-y-5"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-100 bg-gray-50">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
                     <img
                       src={channelConfig[ch.type]?.icon}
                       className="h-10 w-10 object-contain"
@@ -145,7 +195,7 @@ const ConnectedChannelsView = ({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-gray-900">
+                    <p className="truncate text-sm font-semibold text-gray-900 md:text-base">
                       {ch.name}
                     </p>
                     <p className="mt-1 truncate text-sm text-gray-500">
@@ -181,13 +231,16 @@ const ConnectedChannelsView = ({
                 </div>
 
                 <button
-                  onClick={() => handleManage(ch)}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:bg-indigo-600 hover:text-white"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleManage(ch);
+                  }}
+                  className="hidden w-full items-center justify-center gap-1.5 rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:bg-indigo-600 hover:text-white md:flex"
                 >
                   <Settings size={14} />
                   Manage
                 </button>
-              </div>
+              </article>
             ))}
           </div>
         )}

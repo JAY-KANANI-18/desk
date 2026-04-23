@@ -4,10 +4,11 @@ import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 import { MobileSheet } from "../../../components/topbar/MobileSheet";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 import { organizationApi } from "../../../lib/organizationApi";
-import { WsGuard } from "../../../context/AuthorizationContext";
+import { useAuthorization, WsGuard } from "../../../context/AuthorizationContext";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { ListPagination } from "../../../components/ui/ListPagination";
+import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
 
 const workspaceRoles = [
   { id: "WS_OWNER", name: "Owner" },
@@ -652,6 +653,7 @@ const EditWorkspaceUserModal = ({
 export const WorkspaceUsers = () => {
   const { refreshWorkspaceUsers, inviteUser, updateUser } = useWorkspace();
   const isMobile = useIsMobile();
+  const { canWs } = useAuthorization();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -659,6 +661,7 @@ export const WorkspaceUsers = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -745,10 +748,52 @@ export const WorkspaceUsers = () => {
     await loadUsers(page, search);
   };
 
+  useMobileHeaderActions(
+    isMobile
+      ? {
+          actions: [
+            {
+              id: "workspace-users-search",
+              label: "Search workspace users",
+              icon: <Search size={17} />,
+              active: mobileSearchOpen || Boolean(searchDraft),
+              onClick: () => setMobileSearchOpen((value) => !value),
+            },
+            ...(canWs("ws:settings:manage")
+              ? [
+                  {
+                    id: "workspace-users-invite",
+                    label: "Invite user",
+                    icon: <Plus size={18} />,
+                    onClick: () => setInviteOpen(true),
+                  },
+                ]
+              : []),
+          ],
+          panel: mobileSearchOpen ? (
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                autoFocus
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Search members..."
+                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ) : null,
+        }
+      : {},
+    [canWs, isMobile, mobileSearchOpen, searchDraft],
+  );
+
   return (
     <div className="">
       {/* Top */}
-      <div className={`mb-6 ${isMobile ? "space-y-4" : "flex items-center justify-between"}`}>
+      <div className="mb-6 hidden items-center justify-between md:flex">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -759,7 +804,7 @@ export const WorkspaceUsers = () => {
         <WsGuard permission="ws:settings:manage">
           <button
             onClick={() => setInviteOpen(true)}
-            className={`flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 ${isMobile ? "w-full" : ""}`}
+            className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
           >
             <Plus size={16} />
             Invite User
@@ -767,7 +812,7 @@ export const WorkspaceUsers = () => {
         </WsGuard>
       </div>
 
-      <div className="mb-4 flex items-center justify-end">
+      <div className="mb-4 hidden items-center justify-end md:flex">
         <div className={`relative w-full ${isMobile ? "" : "max-w-xs"}`}>
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input

@@ -52,13 +52,14 @@ export function DeleteContactsModal({
       <MobileSheet
         open={open}
         onClose={onClose}
+        borderless
         title={<h3 className="text-base font-semibold text-slate-900">{copy.title}</h3>}
         footer={
           <div className="flex flex-col-reverse gap-2">
             <button
               onClick={onClose}
               disabled={isDeleting}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-gray-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -74,7 +75,7 @@ export function DeleteContactsModal({
         }
       >
         <div className="space-y-4 p-4">
-          <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
+          <div className="flex items-start gap-3 rounded-2xl bg-red-50 p-4">
             <div className="mt-0.5 rounded-full bg-red-100 p-2 text-red-600">
               <AlertTriangle size={18} />
             </div>

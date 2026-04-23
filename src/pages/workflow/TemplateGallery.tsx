@@ -6,6 +6,7 @@ import { WorkflowTemplate } from './workflow.types';
 import * as Icons from 'lucide-react';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
+import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 
 
 
@@ -15,6 +16,7 @@ export function TemplateGallery() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState<string | null>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const navigate  = useNavigate();
 
   const filtered = TEMPLATES.filter((t) => {
@@ -62,6 +64,42 @@ export function TemplateGallery() {
     navigate('/workflows');
     
   };
+
+  useMobileHeaderActions(
+    {
+      actions: [
+        {
+          id: 'workflow-template-search',
+          label: 'Search templates',
+          icon: <Search size={17} />,
+          active: mobileSearchOpen || Boolean(search),
+          onClick: () => setMobileSearchOpen((value) => !value),
+        },
+        {
+          id: 'workflow-template-scratch',
+          label: 'Start from scratch',
+          icon: creating === 'scratch' ? <Loader2 size={17} className="animate-spin" /> : <Plus size={18} />,
+          disabled: creating === 'scratch',
+          onClick: () => void handleScratch(),
+        },
+      ],
+      panel: mobileSearchOpen ? (
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            autoFocus={false}
+            type="text"
+            placeholder="Search templates..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      ) : null,
+    },
+    [creating, mobileSearchOpen, search],
+  );
+
   const handleOpen = (workflowId: string) => {
     navigate(`/workflows/${workflowId}`);
   };
@@ -70,7 +108,7 @@ export function TemplateGallery() {
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="border-b border-gray-100 px-6 py-4">
+      <div className="hidden border-b border-gray-100 px-6 py-4 md:block">
         <div className="flex items-center gap-2 mb-0.5">
           <button onClick={handleBack} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors">
             <ChevronLeft size={16} />
@@ -123,9 +161,9 @@ export function TemplateGallery() {
             <button
               onClick={handleScratch}
               disabled={creating === 'scratch'}
-              className="w-full mb-5 group border border-dashed border-gray-200 rounded-lg p-4 flex items-center gap-4 hover:border-gray-400 hover:bg-gray-50 transition-all text-left disabled:opacity-60"
+              className="group mb-5 hidden w-full items-center gap-4 rounded-lg bg-slate-50 p-4 text-left transition-all hover:bg-gray-50 disabled:opacity-60 md:flex md:border md:border-dashed md:border-gray-200 md:hover:border-gray-400"
             >
-              <div className="w-8 h-8 rounded-md border border-dashed border-gray-300 flex items-center justify-center flex-shrink-0 group-hover:border-gray-400 transition-colors">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-white transition-colors group-hover:bg-gray-100 md:border md:border-dashed md:border-gray-300 md:group-hover:border-gray-400">
                 {creating === 'scratch'
                   ? <Loader2 size={15} className="animate-spin text-gray-400" />
                   : <Plus size={15} className="text-gray-400" />
@@ -183,7 +221,7 @@ function TemplateCard({ template, isCreating, onUse }: {
     <button
       onClick={onUse}
       disabled={isCreating}
-      className="group w-full bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-400 hover:shadow-sm transition-all text-left disabled:opacity-60"
+      className="group w-full rounded-lg bg-white p-4 text-left transition-all hover:bg-slate-50 disabled:opacity-60 md:border md:border-gray-200 md:hover:border-gray-400 md:hover:shadow-sm"
     >
       <div className="flex items-start gap-3 mb-3">
         <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-gray-200 transition-colors">
@@ -193,7 +231,7 @@ function TemplateCard({ template, isCreating, onUse }: {
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-medium text-gray-800 leading-tight">{template.name}</p>
             {template.popular && (
-              <span className="text-[10px] text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded font-medium">
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 md:border md:border-gray-200 md:bg-white">
                 Popular
               </span>
             )}

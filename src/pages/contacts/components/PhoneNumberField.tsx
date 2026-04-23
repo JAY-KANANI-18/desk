@@ -16,7 +16,7 @@ interface PhoneNumberFieldProps {
 }
 
 const inputClassName =
-  "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  "w-full rounded-lg bg-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 md:border md:border-gray-300 md:bg-white";
 
 export function PhoneNumberField({
   phoneCountryCode,

@@ -11,7 +11,7 @@ export const Broadcast = () => {
   const page = useBroadcastPage();
 
   return (
-    <div className="flex h-full flex-col bg-white md:flex-row">
+    <div className="mobile-borderless flex h-full flex-col bg-white md:flex-row">
       <BroadcastSidebar
         selectedStatus={page.selectedStatus}
         onSelectStatus={page.setSelectedStatus}

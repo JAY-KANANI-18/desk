@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { AlertCircle, CheckCircle2, MoreVertical, Plus, Search, X } from "lucide-react";
+import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
 import { MobileSheet } from "../../../components/topbar/MobileSheet";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { ContactsToast, SortOption } from "../types";
@@ -41,6 +43,7 @@ export function ContactsHeader({
   onNewContact,
 }: ContactsHeaderProps) {
   const isMobile = useIsMobile();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const closeActionsMenu = () => setShowActionsMenu(false);
 
@@ -76,14 +79,73 @@ export function ContactsHeader({
     </>
   );
 
+  useMobileHeaderActions(
+    isMobile
+      ? {
+          actions: [
+            {
+              id: "contacts-search",
+              label: "Search contacts",
+              icon: <Search size={17} />,
+              active: mobileSearchOpen || Boolean(searchQuery),
+              onClick: () => setMobileSearchOpen((value) => !value),
+            },
+            {
+              id: "contacts-new",
+              label: "New contact",
+              icon: <Plus size={18} />,
+              onClick: onNewContact,
+            },
+            {
+              id: "contacts-actions",
+              label: "Contact actions",
+              icon: <MoreVertical size={17} />,
+              active: showActionsMenu,
+              onClick: () => setShowActionsMenu((prev) => !prev),
+            },
+          ],
+          panel: mobileSearchOpen ? (
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={15}
+              />
+              <input
+                autoFocus
+                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-9 text-[13px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search contacts..."
+                type="text"
+                value={searchQuery}
+              />
+              {searchQuery ? (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setSearchQuery("")}
+                  type="button"
+                >
+                  <X size={13} />
+                </button>
+              ) : null}
+            </div>
+          ) : null,
+        }
+      : {},
+    [isMobile, mobileSearchOpen, searchQuery, showActionsMenu],
+  );
+
   return (
-    <div className="border-b border-gray-200 bg-white p-3 md:p-4">
+    <div
+      className={`bg-white px-3 md:border-b md:border-gray-200 md:p-4 ${
+        toast || selectedLifecycle || sortOption ? "pb-3" : ""
+      }`}
+    >
       {toast && (
         <div
-          className={`mb-3 flex items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
+          className={`mb-3 flex items-center gap-2 rounded-lg px-4 py-2 text-sm md:border ${
             toast.type === "error"
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-green-200 bg-green-50 text-green-700"
+              ? "bg-red-50 text-red-700 md:border-red-200"
+              : "bg-green-50 text-green-700 md:border-green-200"
           }`}
         >
           {toast.type === "success" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
@@ -94,7 +156,7 @@ export function ContactsHeader({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+      <div className="hidden md:flex md:items-center md:gap-3">
         <div className="relative w-full md:w-72 lg:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
@@ -114,11 +176,11 @@ export function ContactsHeader({
           )}
         </div>
 
-        <div className="grid grid-cols-[68px_1fr] gap-2 md:ml-auto md:flex md:items-center">
-          <div className="relative md:flex-none">
+        <div className="ml-auto flex items-center gap-2">
+          <div className="relative flex-none">
             <button
               onClick={() => setShowActionsMenu((prev) => !prev)}
-              className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-gray-700 transition-colors hover:bg-gray-50 md:w-auto"
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-gray-300 px-3 py-2 text-gray-700 transition-colors hover:bg-gray-50"
               aria-label="Open contact actions"
             >
               <MoreVertical size={16} />
@@ -136,7 +198,7 @@ export function ContactsHeader({
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm text-white transition-colors hover:bg-indigo-700"
           >
             <Plus size={15} />
-            <span>{isMobile ? "New Contact" : "New Contact"}</span>
+            <span>New Contact</span>
           </button>
         </div>
       </div>
@@ -145,7 +207,7 @@ export function ContactsHeader({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs text-gray-500">Filters:</span>
           {selectedLifecycle && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700 md:border md:border-indigo-200">
               {selectedLifecycle}
               <button onClick={() => setSelectedLifecycle(null)}>
                 <X size={11} />
@@ -153,7 +215,7 @@ export function ContactsHeader({
             </span>
           )}
           {sortOption && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-xs text-sky-700 md:border md:border-sky-200">
               Sort: {sortOption.label}
               <button onClick={() => setSortOption(null)}>
                 <X size={11} />
@@ -170,6 +232,7 @@ export function ContactsHeader({
         <MobileSheet
           open={showActionsMenu}
           onClose={closeActionsMenu}
+          borderless
           title={
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -182,7 +245,7 @@ export function ContactsHeader({
           }
         >
           <div className="p-4">
-            <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+            <div className="overflow-hidden rounded-[24px] bg-slate-50">
               {actionItems}
             </div>
           </div>

@@ -37,7 +37,7 @@ export function ContactsPagination({
   const paginationItems = buildPagination(currentPage, totalPages);
 
   return (
-    <div className="sticky bottom-0 flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 text-sm md:flex-row md:items-center md:justify-between">
+    <div className="sticky bottom-0 flex flex-col gap-3 bg-white px-4 py-3 text-sm md:flex-row md:items-center md:justify-between md:border-t md:border-gray-200">
       <span className="text-xs text-gray-500">
         Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min((currentPage - 1) * PAGE_SIZE + visibleCount, totalContacts)} of{" "}
         {totalContacts} contacts
@@ -46,7 +46,7 @@ export function ContactsPagination({
         <button
           onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
           disabled={currentPage === 1}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
           {"<-"} Prev
         </button>
@@ -59,8 +59,8 @@ export function ContactsPagination({
             <button
               key={item}
               onClick={() => setCurrentPage(item)}
-              className={`h-8 w-8 rounded-lg border text-xs transition-colors ${
-                currentPage === item ? "border-indigo-600 bg-indigo-600 text-white" : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              className={`h-8 w-8 rounded-lg text-xs transition-colors md:border ${
+                currentPage === item ? "bg-indigo-600 text-white md:border-indigo-600" : "bg-slate-100 text-gray-700 hover:bg-slate-200 md:border-gray-300 md:bg-white md:hover:bg-gray-50"
               }`}
             >
               {item}
@@ -70,7 +70,7 @@ export function ContactsPagination({
         <button
           onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
           disabled={currentPage === totalPages}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
           Next {"->"}
         </button>

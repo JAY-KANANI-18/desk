@@ -333,6 +333,35 @@ body {
   }
 }
 
+@media (max-width: 767px) {
+  .mobile-borderless :where(
+    .border,
+    .border-0,
+    .border-2,
+    .border-t,
+    .border-r,
+    .border-b,
+    .border-l,
+    .border-x,
+    .border-y,
+    .border-dashed
+  ) {
+    border-color: transparent !important;
+  }
+
+  .mobile-borderless :where(.divide-y > :not([hidden]) ~ :not([hidden])) {
+    border-color: transparent !important;
+  }
+
+  .mobile-borderless :where(input.border, select.border, textarea.border) {
+    background-color: #f1f5f9 !important;
+  }
+
+  .mobile-borderless :where(button.border):not(.bg-indigo-600):not(.bg-red-600):not(.bg-gray-900) {
+    background-color: #f1f5f9;
+  }
+}
+
 /* Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 8px;
