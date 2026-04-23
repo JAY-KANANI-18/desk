@@ -34,7 +34,7 @@ export const ResetPasswordPremium = () => {
     if (!success) return;
 
     const timeout = window.setTimeout(() => {
-      navigate("/dashboard", { replace: true });
+      navigate("/inbox", { replace: true });
     }, 900);
 
     return () => window.clearTimeout(timeout);

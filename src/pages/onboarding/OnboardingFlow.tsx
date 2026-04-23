@@ -449,7 +449,7 @@ export const OnboardingFlow = () => {
       }
 
       await wait(180);
-      navigate("/dashboard", { replace: true });
+      navigate("/inbox", { replace: true });
     } catch (submissionError) {
       const message =
         submissionError instanceof Error

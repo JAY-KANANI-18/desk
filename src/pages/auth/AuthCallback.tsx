@@ -62,7 +62,7 @@ export const AuthCallback = () => {
 
   const status = searchParams.get("status") ?? "success";
   const flow = searchParams.get("flow") ?? "magic-link";
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/inbox";
   const message = searchParams.get("message") ?? "";
 
   const copy = useMemo(() => {

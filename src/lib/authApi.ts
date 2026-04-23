@@ -237,7 +237,7 @@ export const authApi = {
   },
 
   loginWithGoogle: async (): Promise<void> => {
-    const redirectTo = `${window.location.origin}/dashboard`;
+    const redirectTo = `${window.location.origin}/inbox`;
     window.location.href = `${API_BASE}/auth/oauth/google/start?redirectTo=${encodeURIComponent(redirectTo)}`;
   },
 

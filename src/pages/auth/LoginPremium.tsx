@@ -36,7 +36,7 @@ export const LoginPremium = () => {
     setLoading(false);
 
     if (result.success) {
-      navigate("/dashboard");
+      navigate("/inbox");
       return;
     }
 

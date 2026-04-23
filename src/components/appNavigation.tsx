@@ -47,12 +47,14 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: "Broadcast",
     path: "/broadcast",
     ws: "ws:broadcasts:view",
+    mobile: true,
   },
   {
     icon: Workflow,
     label: "Workflows",
     path: "/workflows",
     ws: "ws:workflows:view",
+    mobile: true,
   },
   {
     icon: Bot,

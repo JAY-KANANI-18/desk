@@ -472,7 +472,7 @@ export const OnboardingMinimalFlow = () => {
       await Promise.all([persistOnboarding, loadingAnimation]);
       clearLoadingSequence();
       await wait(150);
-      navigate("/dashboard", { replace: true });
+      navigate("/inbox", { replace: true });
     } catch (submissionError) {
       const message =
         submissionError instanceof Error

@@ -112,7 +112,7 @@ export const ResetPassword = () => {
   };
 
   if (success) {
-    navigate('/dashboard');
+    navigate('/inbox');
     // return (
     //   <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
     //     <div className="w-full max-w-md">
