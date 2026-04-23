@@ -47,7 +47,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
   useEffect(() => {
       setChannels([
         { value: "", label: "Last Interacted Channel" },
-        ...chs.map((c) => ({
+        ...ch.map((c) => ({
           value: c.id,
           label: `${c.name} (${c.type})`,
         })),

@@ -93,6 +93,7 @@ export interface ContactsPageContentProps {
   contacts: Contact[];
   totalContacts: number;
   loading: boolean;
+  mobileLoadingMore: boolean;
   availableTags: ContactTagOption[];
   workspaceUsers: WorkspaceUser[] | null;
   stages: LifecycleStage[];

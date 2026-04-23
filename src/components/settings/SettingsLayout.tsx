@@ -113,9 +113,9 @@ export const SettingsLayout = ({
             ) : null}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <div
-              className={`mx-auto w-full max-w-7xl px-4 pb-24 pt-2 md:px-6 md:pb-8 md:pt-8 lg:px-8 ${
+              className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-24 pt-2 md:px-6 md:pb-8 md:pt-8 lg:px-8 ${
                 !isMobile && !activeMatch ? "pt-8" : ""
               } ${contentClassName}`}
             >
@@ -123,6 +123,7 @@ export const SettingsLayout = ({
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={location.pathname}
+                    className="flex min-h-full min-w-0 flex-1 flex-col"
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: isSelectionScreen ? 28 : -28 }}
                     initial={{ opacity: 0, x: isSelectionScreen ? -28 : 28 }}

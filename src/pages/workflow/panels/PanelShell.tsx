@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 // ─── Panel Shell ─────────────────────────────────────────────────────────────
 
@@ -11,6 +12,8 @@ interface PanelShellProps {
 }
 
 export function PanelShell({ title, subtitle, onClose, children }: PanelShellProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       {/* Header — no color, just border */}
@@ -20,8 +23,12 @@ export function PanelShell({ title, subtitle, onClose, children }: PanelShellPro
           {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-md transition-colors ml-3 flex-shrink-0">
-            <X size={14} className="text-gray-400" />
+          <button
+            onClick={onClose}
+            className="ml-3 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label={isMobile ? 'Back to canvas' : 'Close panel'}
+          >
+            {isMobile ? <ArrowLeft size={16} /> : <X size={14} />}
           </button>
         )}
       </div>

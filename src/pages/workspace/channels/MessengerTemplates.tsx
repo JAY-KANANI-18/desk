@@ -1,19 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { AlertCircle, Check, Eye, Loader, RefreshCw, Search, X } from 'lucide-react';
+
 import {
-  AlertCircle,
-  Check,
-  Eye,
-  Loader,
-  RefreshCw,
-  Search,
-  X,
-} from 'lucide-react';
-import {
-  ChannelApi,
-  MessengerTemplate,
-} from '../../../lib/channelApi';
-import { ConnectedChannel } from '../../channels/ManageChannelPage';
+  DataTable,
+  type DataTableColumn,
+  type DataTableSortDirection,
+} from '../../../components/ui/DataTable';
+import { ChannelApi, type MessengerTemplate } from '../../../lib/channelApi';
 import { useSocket } from '../../../socket/socket-provider';
+import { ConnectedChannel } from '../../channels/ManageChannelPage';
+
+type MessengerTemplateSortField = 'name' | 'templateType' | 'category' | 'status';
 
 const CategoryBadge = ({ category }: { category: string }) => {
   const map: Record<string, string> = {
@@ -56,7 +53,7 @@ const TemplatePreview = ({
     });
     setVariables(next);
     setPreview(null);
-  }, [template.id]);
+  }, [template.id, template.variables]);
 
   const loadPreview = async () => {
     setLoading(true);
@@ -85,6 +82,8 @@ const TemplatePreview = ({
     preview?.components?.find?.((component: any) => component.type === 'BODY')?.text ??
     template.components?.find?.((component: any) => component.type === 'BODY')?.text ??
     '';
+  const buttons =
+    preview?.preview?.quick_replies ?? preview?.preview?.attachment?.payload?.buttons ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
@@ -143,9 +142,9 @@ const TemplatePreview = ({
             </p>
             <div className="max-w-[300px] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-gray-800 shadow-sm">
               <p className="whitespace-pre-wrap">{body || template.description}</p>
-              {(preview?.preview?.quick_replies ?? preview?.preview?.attachment?.payload?.buttons ?? []).length > 0 ? (
+              {buttons.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(preview?.preview?.quick_replies ?? preview?.preview?.attachment?.payload?.buttons ?? []).map((button: any, index: number) => (
+                  {buttons.map((button: any, index: number) => (
                     <span
                       className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700"
                       key={`${button.title}-${index}`}
@@ -180,6 +179,8 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [preview, setPreview] = useState<MessengerTemplate | null>(null);
+  const [sortField, setSortField] = useState<MessengerTemplateSortField>('name');
+  const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
 
   const load = async () => {
     setLoading(true);
@@ -236,21 +237,95 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
     }
   };
 
-  const handleSearch = (event: React.FormEvent) => {
+  const handleSearch = (event: FormEvent) => {
     event.preventDefault();
     void load();
   };
 
+  const handleSort = (field: MessengerTemplateSortField) => {
+    setSortField((current) => {
+      if (current === field) {
+        setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'));
+        return current;
+      }
+      setSortDirection('asc');
+      return field;
+    });
+  };
+
+  const sortedTemplates = useMemo(() => {
+    return [...templates].sort((a, b) => {
+      const result = String(a[sortField] ?? '').localeCompare(
+        String(b[sortField] ?? ''),
+        undefined,
+        {
+          numeric: true,
+          sensitivity: 'base',
+        },
+      );
+      return sortDirection === 'asc' ? result : -result;
+    });
+  }, [sortDirection, sortField, templates]);
+
+  const columns: Array<DataTableColumn<MessengerTemplate, MessengerTemplateSortField>> = [
+    {
+      id: 'name',
+      header: 'Name',
+      sortable: true,
+      sortField: 'name',
+      mobile: 'primary',
+      className: 'max-w-[260px]',
+      cell: (template) => (
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs text-gray-800" title={template.name}>
+            {template.name}
+          </p>
+          {template.description ? (
+            <p className="mt-0.5 truncate text-xs text-gray-400">
+              {template.description}
+            </p>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: 'templateType',
+      header: 'Type',
+      sortable: true,
+      sortField: 'templateType',
+      mobile: 'detail',
+      cell: (template) => (
+        <span className="text-xs capitalize text-gray-500">{template.templateType}</span>
+      ),
+    },
+    {
+      id: 'category',
+      header: 'Category',
+      sortable: true,
+      sortField: 'category',
+      mobile: 'secondary',
+      cell: (template) => <CategoryBadge category={template.category} />,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      sortable: true,
+      sortField: 'status',
+      mobile: 'detail',
+      cell: () => <ApprovalBadge />,
+    },
+  ];
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <div className="flex flex-shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Message Templates</h2>
           <p className="mt-0.5 text-sm text-gray-500">
             Meta-provided Messenger templates that are approved and ready to use.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {syncMsg ? (
             <span className="flex items-center gap-1 text-xs font-medium text-green-600">
               <Check size={12} />
@@ -268,7 +343,7 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
         <form className="relative min-w-[200px] flex-1" onSubmit={handleSearch}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
           <input
@@ -293,65 +368,41 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
       </div>
 
       {error ? (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+        <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
           <AlertCircle size={14} />
           {error}
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-gray-400">
-            <Loader className="animate-spin" size={18} />
-            <span className="text-sm">Loading templates...</span>
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm font-medium text-gray-500">No templates found</p>
-            <p className="mt-1 text-xs text-gray-400">Try syncing or adjusting filters</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Category</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {templates.map((template) => (
-                <tr className="transition-colors hover:bg-gray-50" key={template.id}>
-                  <td className="max-w-[240px] px-4 py-3">
-                    <p className="truncate font-mono text-xs text-gray-800" title={template.name}>
-                      {template.name}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-gray-400">
-                      {template.description}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 text-xs capitalize text-gray-500">{template.templateType}</td>
-                  <td className="px-4 py-3"><CategoryBadge category={template.category} /></td>
-                  <td className="px-4 py-3"><ApprovalBadge /></td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                      onClick={() => setPreview(template)}
-                    >
-                      <Eye size={12} />
-                      Preview
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="min-h-[320px] min-w-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <DataTable
+          className="h-full"
+          rows={sortedTemplates}
+          columns={columns}
+          getRowId={(template) => template.id}
+          loading={loading}
+          loadingLabel="Loading templates..."
+          emptyTitle="No templates found"
+          emptyDescription="Try syncing or adjusting filters."
+          sort={{
+            field: sortField,
+            direction: sortDirection,
+            onChange: handleSort,
+          }}
+          rowActions={(template) => [
+            {
+              id: 'preview',
+              label: 'Preview',
+              icon: <Eye size={13} />,
+              onClick: () => setPreview(template),
+            },
+          ]}
+          onRowClick={(template) => setPreview(template)}
+          minTableWidth={760}
+        />
       </div>
 
-      <p className="text-xs text-gray-400">
+      <p className="flex-shrink-0 text-xs text-gray-400">
         {templates.length} template{templates.length !== 1 ? 's' : ''} - Messenger templates are platform formats provided by Meta.
       </p>
 

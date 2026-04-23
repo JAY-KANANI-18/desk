@@ -798,8 +798,8 @@ export const ManageChannelPage = () => {
         </div>
 
         {/* Main content */}
-        <main className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-4xl px-4 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">
             {isMobile && !sectionId ? (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

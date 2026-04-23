@@ -1,3 +1,6 @@
+import { useCallback, useState } from "react";
+import { Radio } from "lucide-react";
+import { MobileSheet } from "../components/topbar/MobileSheet";
 import { BroadcastCalendarView } from "./broadcast/BroadcastCalendarView";
 import { BroadcastComposerModal } from "./broadcast/BroadcastComposerModal";
 import { BroadcastDetailsDrawer } from "./broadcast/BroadcastDetailsDrawer";
@@ -9,15 +12,17 @@ import { formatDateTime } from "./broadcast/utils";
 
 export const Broadcast = () => {
   const page = useBroadcastPage();
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const openStatusMenu = useCallback(() => setShowStatusMenu(true), []);
 
   return (
-    <div className="mobile-borderless flex h-full flex-col bg-white md:flex-row">
+    <div className="mobile-borderless flex h-full min-h-0 flex-col overflow-hidden bg-white md:flex-row">
       <BroadcastSidebar
         selectedStatus={page.selectedStatus}
         onSelectStatus={page.setSelectedStatus}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <BroadcastToolbar
           searchQuery={page.searchQuery}
           onSearchChange={page.setSearchQuery}
@@ -27,9 +32,11 @@ export const Broadcast = () => {
           viewMode={page.viewMode}
           onViewModeChange={page.setViewMode}
           onNewBroadcast={page.openComposer}
+          selectedStatus={page.selectedStatus}
+          onOpenFilters={openStatusMenu}
         />
 
-        <div className="flex-1 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {page.viewMode === "calendar" ? (
             <BroadcastCalendarView
               monthLabel={page.monthLabel}
@@ -65,7 +72,7 @@ export const Broadcast = () => {
         </div>
 
         {page.lastSendResult && (
-          <div className="border-t border-gray-200 bg-white px-6 py-3 text-sm text-gray-600">
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-3 text-sm text-gray-600">
             Last run:{" "}
             <span className="font-medium text-gray-900">
               {page.lastSendResult.status === "scheduled"
@@ -85,6 +92,31 @@ export const Broadcast = () => {
           </div>
         )}
       </div>
+
+      <MobileSheet
+        open={showStatusMenu}
+        onClose={() => setShowStatusMenu(false)}
+        title={
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Broadcasts
+            </p>
+            <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
+              <Radio size={16} className="text-indigo-600" />
+              {page.selectedStatus}
+            </h2>
+          </div>
+        }
+      >
+        <BroadcastSidebar
+          selectedStatus={page.selectedStatus}
+          onSelectStatus={(value) => {
+            page.setSelectedStatus(value);
+            setShowStatusMenu(false);
+          }}
+          variant="mobile"
+        />
+      </MobileSheet>
 
       <BroadcastComposerModal
         open={page.showComposer}

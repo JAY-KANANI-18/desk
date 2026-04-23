@@ -66,10 +66,8 @@ export function StepPanel({ step }: StepPanelProps) {
 
   return (
     <PanelShell
-      icon={meta.icon}
       title={meta.label}
       subtitle={meta.description}
-      accentColor={meta.color}
       onClose={() => selectNode(null, null)}
     >
       {renderConfig()}

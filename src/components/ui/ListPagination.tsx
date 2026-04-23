@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 interface ListPaginationProps {
   page: number;
   totalPages: number;
@@ -5,6 +7,66 @@ interface ListPaginationProps {
   limit: number;
   itemLabel: string;
   onPageChange: (page: number) => void;
+}
+
+function MobilePageSentinel({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const requestedPageRef = useRef(page);
+  const [pendingPage, setPendingPage] = useState<number | null>(null);
+
+  useEffect(() => {
+    requestedPageRef.current = page;
+    setPendingPage((current) => {
+      if (current === null) return current;
+      return page >= current ? null : current;
+    });
+  }, [page]);
+
+  useEffect(() => {
+    if (page >= totalPages) return;
+    const target = sentinelRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const nextPage = page + 1;
+        if (entry.isIntersecting && requestedPageRef.current < nextPage) {
+          requestedPageRef.current = nextPage;
+          setPendingPage(nextPage);
+          onPageChange(nextPage);
+        }
+      },
+      { rootMargin: "160px 0px", threshold: 0.01 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [onPageChange, page, totalPages]);
+
+  return (
+    <div ref={sentinelRef} className="flex min-h-10 items-center justify-center px-4 py-3 md:hidden">
+      {page < totalPages ? (
+        pendingPage && pendingPage > page ? (
+          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-500" />
+            Loading more...
+          </span>
+        ) : (
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-400 shadow-sm">
+            Scroll for more
+          </span>
+        )
+      ) : null}
+    </div>
+  );
 }
 
 function buildPagination(currentPage: number, totalPages: number) {
@@ -37,7 +99,9 @@ export function ListPagination({
   const items = buildPagination(page, totalPages);
 
   return (
-    <div className="flex items-center justify-between bg-white px-4 py-3 text-sm md:border-t md:border-gray-200">
+    <>
+    <MobilePageSentinel page={page} totalPages={totalPages} onPageChange={onPageChange} />
+    <div className="hidden items-center justify-between bg-white px-4 py-3 text-sm md:flex md:border-t md:border-gray-200">
       <span className="text-xs text-gray-500">
         Showing {from}-{to} of {total} {itemLabel}
       </span>
@@ -75,5 +139,6 @@ export function ListPagination({
         </button>
       </div>
     </div>
+    </>
   );
 }

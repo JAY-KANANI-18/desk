@@ -24,6 +24,7 @@ import { getActiveCategoryLabel } from "./MobileCategoryDrawer";
 import { useInbox } from "../../context/InboxContext";
 import { useChannel } from "../../context/ChannelContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
+import { Toggle } from "../../components/ui/Toggle";
 import type { ApiConversation, ConvStatus, ConvPriority } from "../../lib/inboxApi";
 import { InboxAddChannelPrompt } from "./InboxAddChannelPrompt";
 
@@ -343,17 +344,14 @@ export function ConversationList({
                       ))}
                     </select>
                   </div>
-                  <label className="flex items-center gap-2  cursor-pointer ">
-                    <div
-                      onClick={() => setFilters({ unreplied: !filters.unreplied })}
-                      className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5
-                        ${filters.unreplied ? "bg-indigo-600" : "bg-gray-200"}`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform
-                        ${filters.unreplied ? "translate-x-4" : "translate-x-0"}`} />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Toggle
+                      checked={Boolean(filters.unreplied)}
+                      onChange={(value) => setFilters({ unreplied: value })}
+                      ariaLabel={filters.unreplied ? "Show all conversations" : "Show unreplied conversations only"}
+                    />
                     <span className="text-xs font-medium text-gray-700">Unreplied</span>
-                  </label>
+                  </div>
 
                 </div>
               </div>
@@ -412,17 +410,14 @@ export function ConversationList({
         </div>
 
         {/* Unreplied toggle */}
-        <label className="flex items-center gap-2 justify-between cursor-pointer mx-4">
-          <div
-            onClick={() => setFilters({ unreplied: !filters.unreplied })}
-            className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5
-                        ${filters.unreplied ? "bg-indigo-600" : "bg-gray-200"}`}
-          >
-            <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform
-                        ${filters.unreplied ? "translate-x-4" : "translate-x-0"}`} />
-          </div>
+        <div className="mx-4 flex items-center justify-between gap-2">
+          <Toggle
+            checked={Boolean(filters.unreplied)}
+            onChange={(value) => setFilters({ unreplied: value })}
+            ariaLabel={filters.unreplied ? "Show all conversations" : "Show unreplied conversations only"}
+          />
           <span className="text-xs font-medium text-gray-700">Unreplied</span>
-        </label>
+        </div>
       </div>
 
       {/* ── Active filter chips ── */}

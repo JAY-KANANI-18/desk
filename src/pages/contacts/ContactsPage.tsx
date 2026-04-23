@@ -2,6 +2,7 @@ import type { ChangeEvent, DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../context/WorkspaceContext";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import type {
   CreateContactPayload,
   UpdateContactPayload,
@@ -137,11 +138,13 @@ interface PendingDeleteState {
 export function ContactsPage() {
   const navigate = useNavigate();
   const { workspaceUsers } = useWorkspace();
+  const isMobile = useIsMobile();
 
   const [contacts, setContacts] = useState<Contact[]>(
     DUMMY_MODE ? SEED_CONTACTS : [],
   );
   const [loading, setLoading] = useState(!DUMMY_MODE);
+  const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(
     new Set(),
   );
@@ -207,7 +210,12 @@ export function ContactsPage() {
   }, [editingContact]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const append = isMobile && currentPage > 1;
+    if (append) {
+      setMobileLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
 
     try {
       const [lifecycleResult, tagsResult] = await Promise.allSettled([
@@ -240,12 +248,23 @@ export function ContactsPage() {
         limit: PAGE_SIZE,
       });
 
-      setContacts(result.data);
+      setContacts((current) => {
+        if (!append) return result.data;
+        const seen = new Set(current.map((contact) => String(contact.id)));
+        return [
+          ...current,
+          ...result.data.filter((contact) => !seen.has(String(contact.id))),
+        ];
+      });
       setTotalContacts(result.total);
     } finally {
-      setLoading(false);
+      if (append) {
+        setMobileLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [currentPage, debouncedSearchQuery, selectedLifecycle, sortOption]);
+  }, [currentPage, debouncedSearchQuery, isMobile, selectedLifecycle, sortOption]);
 
   useEffect(() => {
     loadRef.current = load;
@@ -717,6 +736,7 @@ export function ContactsPage() {
         contacts={contacts}
         totalContacts={totalContacts}
         loading={loading}
+        mobileLoadingMore={mobileLoadingMore}
         availableTags={availableTags}
         workspaceUsers={workspaceUsers}
         stages={stages}

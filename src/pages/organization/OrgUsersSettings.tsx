@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Pencil, X, ChevronDown, Search } from "lucide-react";
 
 import { MobileSheet } from "../../components/topbar/MobileSheet";
+import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -648,6 +649,7 @@ export const OrgUsersSettings = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -739,10 +741,54 @@ export const OrgUsersSettings = () => {
     loadUsers(page, search);
   }, [page, search]);
 
+  useMobileHeaderActions(
+    isMobile
+      ? {
+          actions: [
+            {
+              id: "organization-users-search",
+              label: mobileSearchOpen
+                ? "Close search"
+                : "Search organization users",
+              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
+              active: mobileSearchOpen,
+              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
+              onClick: () => setMobileSearchOpen((value) => !value),
+            },
+            {
+              id: "organization-users-invite",
+              label: "Invite user",
+              icon: <Plus size={18} />,
+              onClick: () => {
+                setEditUser(null);
+                setInviteOpen(true);
+              },
+            },
+          ],
+          panel: mobileSearchOpen ? (
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                autoFocus
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Search organization users..."
+                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ) : null,
+        }
+      : {},
+    [isMobile, mobileSearchOpen, searchDraft],
+  );
+
   return (
     <div>
       {/* Header */}
-      <div className={`mb-6 border-b border-gray-200 pb-4 ${isMobile ? "space-y-4" : "flex items-start justify-between"}`}>
+      <div className="mb-6 hidden items-start justify-between border-b border-gray-200 pb-4 md:flex">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
             Organization Users
@@ -764,8 +810,8 @@ export const OrgUsersSettings = () => {
         </button>
       </div>
 
-      <div className="mb-4 flex items-center justify-end">
-        <div className={`relative w-full ${isMobile ? "" : "max-w-xs"}`}>
+      <div className="mb-4 hidden items-center justify-end md:flex">
+        <div className="relative w-full max-w-xs">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={searchDraft}

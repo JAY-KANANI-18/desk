@@ -26,11 +26,11 @@ export const AppSidebar = ({
   const isExpanded = isMobileDrawer;
   const showOnboarding = !dismissed && !isComplete;
   const compactItemClass =
-    "flex h-[3.35rem] w-[3.6rem] flex-col items-center justify-center gap-0.5 rounded-[1.15rem] text-center transition-all";
+    "flex h-[3.35rem] w-[3.6rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] text-center transition-all";
   const desktopIconButtonClass = `${compactItemClass} text-slate-500 hover:bg-slate-100 hover:text-slate-900`;
   const activeNavClass = isExpanded
-    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
-    : "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500";
+    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.6rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
+    : "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500";
 
   const handleNavClick = () => {
     onNavigate?.();
@@ -57,16 +57,16 @@ export const AppSidebar = ({
               : `${compactItemClass}`
           } ${
             isActive
-              ? activeNavClass
+              ? activeNavClass 
               : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
           }`
         }
       >
-        <Icon size={17} className="flex-shrink-0" />
+        <Icon size={22} className="flex-shrink-0 " />
         {isExpanded ? (
           <span className="truncate text-sm font-semibold">{label}</span>
         ) : (
-          <span className="line-clamp-2 text-[9.5px] font-semibold leading-tight">
+          <span className="line-clamp-2 text-[10px] font-semibold leading-tight">
             {label}
           </span>
         )}
@@ -107,7 +107,7 @@ export const AppSidebar = ({
 
       <div className="flex min-h-0 flex-1 flex-col">
         <nav
-          className={`flex min-h-0 flex-col gap-1  ${
+          className={`flex min-h-0 flex-col gap-2  ${
             isExpanded ? "px-4 py-4" : "items-center gap-0 px-2 py-1"
           }`}
         >
@@ -124,11 +124,11 @@ export const AppSidebar = ({
                 onClick={() => setShowSettingsMenu((prev) => !prev)}
                 className={`${desktopIconButtonClass} ${
                   showSettingsMenu
-                    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
+                    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
                     : ""
                 }`}
               >
-                <Settings size={17} />
+                <Settings size={22} />
                 <span className="line-clamp-2 text-[9.5px] font-semibold leading-tight">
                   Settings
                 </span>

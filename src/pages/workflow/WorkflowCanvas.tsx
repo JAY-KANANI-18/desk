@@ -19,6 +19,7 @@ import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
 import { StepType, StepConfig, TriggerConfig, InsertCtx, Step } from "./workflow.types";
 import { useNavigate, useParams } from "react-router";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 /* ───────────────────────────────────────────────────────────────────────────
    layout.constants.ts
@@ -424,6 +425,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
 // MAIN COMPONENT
 
 export function WorkflowCanvas() {
+  const isMobile = useIsMobile();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const insertCtxRef = useRef<InsertCtx | null>(null);
   const stepCounter = useRef(1);
@@ -552,12 +554,19 @@ export function WorkflowCanvas() {
   const selectedStep =
     workflow?.config?.steps?.find((s) => s.id === selectedNodeId) ?? null;
 
+  const selectedPanelContent =
+    selectedPanelType === "trigger" ? (
+      <TriggerPanel />
+    ) : selectedPanelType === "step" && selectedStep ? (
+      <StepPanel step={selectedStep} />
+    ) : null;
+
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
       <TopBar onBack={handleBack} />
 
-      <div className="flex-1 flex">
-        <div className="flex-1">
+      <div className="flex min-h-0 flex-1">
+        <div className="min-h-0 flex-1">
           <ReactFlow
             nodes={rfNodes}
             edges={rfEdges}
@@ -572,15 +581,18 @@ export function WorkflowCanvas() {
           </ReactFlow>
         </div>
 
-        {selectedPanelType && (
-          <div className="w-80 border-l">
-            {selectedPanelType === "trigger" && <TriggerPanel />}
-            {selectedPanelType === "step" && selectedStep && (
-              <StepPanel step={selectedStep} />
-            )}
+        {!isMobile && selectedPanelContent && (
+          <div className="w-80 flex-shrink-0 border-l border-gray-200">
+            {selectedPanelContent}
           </div>
         )}
       </div>
+
+      {isMobile && selectedPanelContent ? (
+        <div className="fixed inset-0 z-[100] bg-white md:hidden">
+          {selectedPanelContent}
+        </div>
+      ) : null}
 
       {showAddMenu && (
         <>

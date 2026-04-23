@@ -1,5 +1,18 @@
-import { ArrowUpDown, Search, Trash2, X } from "lucide-react";
-import { DataLoader } from "../../Loader";
+import {
+  Building2,
+  Mail,
+  Pencil,
+  Phone,
+  Trash2,
+  UserRound,
+  X,
+  type LucideIcon,
+  type ReactNode,
+} from "lucide-react";
+import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
+import { Tooltip } from "../../../components/ui/Tooltip";
+import { getTagSurfaceStyle, resolveTagBaseColor } from "../../../lib/tagAppearance";
+import { channelConfig } from "../../inbox/data";
 import type {
   Contact,
   ContactTagOption,
@@ -8,12 +21,12 @@ import type {
   WorkspaceUser,
 } from "../types";
 import type { LifecycleStage } from "../../workspace/types";
+import { MAX_VISIBLE_CHANNELS, MAX_VISIBLE_TAGS } from "../constants";
 import { ContactsPagination } from "./ContactsPagination";
-import { ContactsMobileList } from "./ContactsMobileList";
-import { ContactsTableRow } from "./ContactsTableRow";
 
 interface ContactsTableProps {
   loading: boolean;
+  mobileLoadingMore: boolean;
   contacts: Contact[];
   totalContacts: number;
   availableTags: ContactTagOption[];
@@ -35,19 +48,172 @@ interface ContactsTableProps {
   setCurrentPage: (value: number | ((prev: number) => number)) => void;
 }
 
-const columns: Array<{ label: string; field?: SortField; align?: "left" | "center" }> = [
-  { label: "Name", field: "name" },
-  { label: "Channel" },
-  { label: "Assignee" },
-  { label: "Lifecycle", field: "lifecycle" },
-  { label: "Email", field: "email" },
-  { label: "Phone", field: "phone" },
-  { label: "Tags" },
-  { label: "Actions", align: "center" },
-];
+const LIFECYCLE_COLOR_MAP: Record<string, string> = {
+  "bg-gray-500": "#64748b",
+  "bg-red-500": "#ef4444",
+  "bg-orange-500": "#f97316",
+  "bg-yellow-500": "#eab308",
+  "bg-green-500": "#22c55e",
+  "bg-blue-500": "#3b82f6",
+  "bg-indigo-500": "#6366f1",
+  "bg-purple-500": "#a855f7",
+  "bg-pink-500": "#ec4899",
+};
+
+function getAssigneeName(contact: Contact, workspaceUsers: WorkspaceUser[] | null) {
+  const workspaceAssignee =
+    workspaceUsers?.find((user) => user.id === contact.assigneeId) ?? null;
+  if (workspaceAssignee) {
+    return `${workspaceAssignee.firstName} ${workspaceAssignee.lastName ?? ""}`.trim();
+  }
+
+  if (contact.assignee) {
+    return `${contact.assignee.firstName} ${contact.assignee.lastName ?? ""}`.trim();
+  }
+
+  return "";
+}
+
+function getLifecycleLabel(contact: Contact, stages: LifecycleStage[]) {
+  const stage = stages.find((item) => String(item.id) === String(contact.lifecycleId));
+  if (stage) {
+    return [stage.emoji, stage.name].filter(Boolean).join(" ");
+  }
+
+  if (typeof contact.lifecycle === "string" && contact.lifecycle) {
+    return contact.lifecycle;
+  }
+
+  if (contact.lifecycle && typeof contact.lifecycle === "object") {
+    return [contact.lifecycle.emoji, contact.lifecycle.name].filter(Boolean).join(" ");
+  }
+
+  return "-";
+}
+
+function getLifecycleMeta(contact: Contact, stages: LifecycleStage[]) {
+  const lifecycleName =
+    typeof contact.lifecycle === "string"
+      ? contact.lifecycle
+      : contact.lifecycle?.name;
+  const stage = stages.find(
+    (item) =>
+      String(item.id) === String(contact.lifecycleId) ||
+      (lifecycleName ? item.name === lifecycleName : false),
+  );
+
+  if (stage) {
+    return {
+      label: [stage.emoji, stage.name].filter(Boolean).join(" "),
+      color: stage.color,
+    };
+  }
+
+  if (typeof contact.lifecycle === "string" && contact.lifecycle) {
+    return { label: contact.lifecycle, color: "#6366f1" };
+  }
+
+  if (contact.lifecycle && typeof contact.lifecycle === "object") {
+    return {
+      label: [contact.lifecycle.emoji, contact.lifecycle.name].filter(Boolean).join(" "),
+      color: "#6366f1",
+    };
+  }
+
+  return { label: "No lifecycle", color: "#94a3b8" };
+}
+
+function normalizeVisualColor(color?: string | null) {
+  if (!color) return undefined;
+  return LIFECYCLE_COLOR_MAP[color] ?? color;
+}
+
+function DetailLine({
+  icon: Icon,
+  value,
+  breakWords = false,
+}: {
+  icon: LucideIcon;
+  value: string;
+  breakWords?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5">
+      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center text-slate-400">
+        <Icon size={13} />
+      </span>
+      <span
+        className={`min-w-0 text-[13px] font-medium text-slate-700 ${
+          breakWords ? "break-all" : "truncate"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ContactAvatar({ contact, size = "sm" }: { contact: Contact; size?: "sm" | "lg" }) {
+  const dimension = size === "lg" ? "h-12 w-12 text-sm" : "h-7 w-7 text-xs";
+
+  return (
+    <div className={`flex ${dimension} flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 font-semibold text-slate-500`}>
+      {contact.avatarUrl ? (
+        <img
+          src={contact.avatarUrl}
+          alt={contact.firstName}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span>{contact.firstName?.charAt(0)?.toUpperCase() ?? "?"}</span>
+      )}
+    </div>
+  );
+}
+
+function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?: boolean }) {
+  const visibleChannels = contact.contactChannels?.slice(0, MAX_VISIBLE_CHANNELS) ?? [];
+  const overflowChannels = Math.max(
+    0,
+    (contact.contactChannels?.length ?? 0) - MAX_VISIBLE_CHANNELS,
+  );
+
+  if (visibleChannels.length === 0) {
+    return <span className="text-sm text-gray-300">-</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      {visibleChannels.map((channel, index) => {
+        const icon = channelConfig[channel.channelType ?? ""]?.icon;
+        const label = `${channel.channelType ?? "channel"}: ${channel.channelId ?? channel.identifier ?? ""}`;
+
+        return (
+          <Tooltip key={`${channel.channelType}-${index}`} content={label} side="top">
+            <div className={`flex items-center justify-center rounded-full bg-white ${compact ? "h-7 w-7" : "h-6 w-6"}`}>
+              {icon ? (
+                <img
+                  src={icon}
+                  alt={channel.channelType}
+                  className={compact ? "h-4 w-4 object-contain" : "h-3.5 w-3.5 object-contain"}
+                />
+              ) : null}
+            </div>
+          </Tooltip>
+        );
+      })}
+      {overflowChannels > 0 ? (
+        <span className={`inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-1.5 font-semibold text-slate-500 ${compact ? "h-7 min-w-7 text-[10px]" : "h-6 min-w-6 text-[10px]"}`}>
+          +{overflowChannels}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 export function ContactsTable({
   loading,
+  mobileLoadingMore,
   contacts,
   totalContacts,
   availableTags,
@@ -68,9 +234,219 @@ export function ContactsTable({
   totalPages,
   setCurrentPage,
 }: ContactsTableProps) {
+  const tagMetaById = new Map(availableTags.map((tag) => [String(tag.id), tag]));
+  const tagMetaByName = new Map(availableTags.map((tag) => [tag.name, tag]));
+
+  const renderTags = (contact: Contact, mobile = false) => {
+    if (!contact.tags?.length) {
+      return <span className="text-sm text-gray-300">-</span>;
+    }
+
+    return (
+      <div className={`flex min-w-0 ${mobile ? "flex-wrap gap-1.5" : "items-center gap-1"}`}>
+        {contact.tags.slice(0, MAX_VISIBLE_TAGS).map((tag, index) => {
+          const tagMeta =
+            tagMetaByName.get(tag) ??
+            (contact.tagIds?.[index] ? tagMetaById.get(String(contact.tagIds[index])) : undefined);
+          const tagColor = tagMeta?.color;
+
+          return (
+            <Tooltip key={tag} content={tag} side="top">
+              <span
+                className={`${mobile ? "max-w-full break-words px-2.5 py-1" : "max-w-[72px] truncate px-2 py-0.5"} inline-flex items-center gap-1 rounded-full border text-[11px] font-medium`}
+                style={{
+                  ...getTagSurfaceStyle(tagColor),
+                  color: resolveTagBaseColor(tagColor),
+                }}
+              >
+                {tagMeta?.emoji ? <span>{tagMeta.emoji}</span> : null}
+                <span className={mobile ? "max-w-full break-words" : "truncate"}>{tag}</span>
+              </span>
+            </Tooltip>
+          );
+        })}
+        {contact.tags.length > MAX_VISIBLE_TAGS ? (
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-200 bg-white px-1.5 text-[10px] font-medium text-slate-500">
+            +{contact.tags.length - MAX_VISIBLE_TAGS}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
+
+  const columns: Array<DataTableColumn<Contact, SortField>> = [
+    {
+      id: "select",
+      header: (
+        <input
+          type="checkbox"
+          aria-label="Select all contacts"
+          className="cursor-pointer rounded"
+          checked={allFilteredSelected}
+          ref={(element) => {
+            if (element) {
+              element.indeterminate = someSelected && !allFilteredSelected;
+            }
+          }}
+          onChange={toggleSelectAll}
+        />
+      ),
+      align: "center",
+      className: "w-8",
+      mobile: "hidden",
+      cell: (contact) => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${contact.firstName} ${contact.lastName ?? ""}`.trim()}
+          className="cursor-pointer rounded"
+          checked={selectedIds.has(contact.id)}
+          onClick={(event) => event.stopPropagation()}
+          onChange={() => toggleSelectOne(contact.id)}
+        />
+      ),
+    },
+    {
+      id: "name",
+      header: "Name",
+      sortable: true,
+      sortField: "name",
+      mobile: "primary",
+      cell: (contact) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <ContactAvatar contact={contact} />
+          <span className="truncate whitespace-nowrap text-sm font-medium text-gray-800">
+            {contact.firstName} {contact.lastName}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "channel",
+      header: "Channel",
+      mobile: "detail",
+      cell: (contact) => <ChannelIcons contact={contact} />,
+    },
+    {
+      id: "assignee",
+      header: "Assignee",
+      mobile: "detail",
+      cell: (contact) => {
+        const assigneeName = getAssigneeName(contact, workspaceUsers);
+        return assigneeName ? (
+          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+            {assigneeName}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-300">-</span>
+        );
+      },
+    },
+    {
+      id: "lifecycle",
+      header: "Lifecycle",
+      sortable: true,
+      sortField: "lifecycle",
+      mobile: "secondary",
+      cell: (contact) => (
+        <span className="whitespace-nowrap text-xs text-gray-600">
+          {getLifecycleLabel(contact, stages)}
+        </span>
+      ),
+    },
+    {
+      id: "email",
+      header: "Email",
+      sortable: true,
+      sortField: "email",
+      mobile: "detail",
+      cell: (contact) => <span className="text-xs text-gray-600">{contact.email || "-"}</span>,
+    },
+    {
+      id: "phone",
+      header: "Phone",
+      sortable: true,
+      sortField: "phone",
+      mobile: "detail",
+      cell: (contact) => (
+        <span className="whitespace-nowrap text-xs text-gray-600">{contact.phone || "-"}</span>
+      ),
+    },
+    {
+      id: "tags",
+      header: "Tags",
+      mobile: "detail",
+      cell: (contact) => renderTags(contact),
+    },
+  ];
+
+  const renderMobileCard = (contact: Contact, actions: ReactNode) => {
+    const assigneeName = getAssigneeName(contact, workspaceUsers) || "Unassigned";
+    const lifecycle = getLifecycleMeta(contact, stages);
+    const company = contact.company?.trim();
+
+    return (
+      <article
+        key={contact.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => openEditModal(contact)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openEditModal(contact);
+          }
+        }}
+        className="relative min-w-0 max-w-full cursor-pointer overflow-visible rounded-[28px] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] transition-colors hover:bg-slate-50"
+      >
+        <div className="min-w-0">
+          <div className="min-w-0 space-y-3">
+            <div className="flex items-start gap-3">
+              <ContactAvatar contact={contact} size="lg" />
+
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[17px] font-semibold leading-tight text-slate-900">
+                      {contact.firstName} {contact.lastName}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span
+                        className="inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[11px] font-medium"
+                        style={{
+                          ...getTagSurfaceStyle(normalizeVisualColor(lifecycle.color)),
+                          color: resolveTagBaseColor(normalizeVisualColor(lifecycle.color)),
+                        }}
+                      >
+                        <span className="truncate">{lifecycle.label}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-shrink-0 items-center gap-1">
+                    <ChannelIcons contact={contact} compact />
+                    {actions}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 gap-2.5 rounded-[22px] bg-white p-3">
+              <DetailLine icon={UserRound} value={assigneeName} />
+              {contact.email ? <DetailLine icon={Mail} value={contact.email} breakWords /> : null}
+              {contact.phone ? <DetailLine icon={Phone} value={contact.phone} breakWords /> : null}
+              {company ? <DetailLine icon={Building2} value={company} /> : null}
+            </div>
+
+            {contact.tags?.length ? renderTags(contact, true) : null}
+          </div>
+        </div>
+      </article>
+    );
+  };
+
   return (
     <>
-      {someSelected && (
+      {someSelected ? (
         <div className="flex flex-wrap items-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
           <span className="font-medium">{selectedIds.size} selected</span>
           <button
@@ -88,93 +464,47 @@ export function ContactsTable({
             <X size={15} />
           </button>
         </div>
-      )}
+      ) : null}
 
-      <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto">
-        {loading ? (
-          <DataLoader type="contacts" />
-        ) : (
-          <div className="min-w-0 max-w-full overflow-x-hidden">
-            {contacts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-sm text-gray-400">
-                <Search size={28} className="text-gray-300" />
-                <span className="mt-2">No contacts match your search.</span>
-              </div>
-            ) : (
-              <>
-                <ContactsMobileList
-                  contacts={contacts}
-                  availableTags={availableTags}
-                  workspaceUsers={workspaceUsers}
-                  stages={stages}
-                  openEditModal={openEditModal}
-                />
-
-                <div className="hidden min-w-[800px] md:block">
-                  <table className="w-full">
-                    <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
-                      <tr>
-                        <th className="w-8 px-3 py-2">
-                          <input
-                            type="checkbox"
-                            className="cursor-pointer rounded"
-                            checked={allFilteredSelected}
-                            ref={(element) => {
-                              if (element) {
-                                element.indeterminate =
-                                  someSelected && !allFilteredSelected;
-                              }
-                            }}
-                            onChange={toggleSelectAll}
-                          />
-                        </th>
-                        {columns.map(({ label, field, align }) => (
-                          <th
-                            key={label}
-                            onClick={() => field && handleColSort(field)}
-                            className={`whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${
-                              field
-                                ? "cursor-pointer select-none hover:text-gray-700"
-                                : ""
-                            } ${align === "center" ? "text-center" : "text-left"}`}
-                          >
-                            <span className="inline-flex items-center gap-1">
-                              {label}
-                              {field && (
-                                <ArrowUpDown
-                                  size={11}
-                                  className={
-                                    sortOption?.field === field
-                                      ? "text-indigo-500"
-                                      : "text-gray-300"
-                                  }
-                                />
-                              )}
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-gray-100">
-                      {contacts.map((contact) => (
-                        <ContactsTableRow
-                          key={contact.id}
-                          contact={contact}
-                          workspaceUsers={workspaceUsers}
-                          stages={stages}
-                          selected={selectedIds.has(contact.id)}
-                          onToggleSelect={toggleSelectOne}
-                          onEdit={openEditModal}
-                          onDelete={handleDeleteOne}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
+      <DataTable
+        rows={contacts}
+        columns={columns}
+        getRowId={(contact) => contact.id}
+        loading={loading}
+        loadingLabel="Loading contacts..."
+        emptyTitle="No contacts match your search."
+        sort={{
+          field: sortOption?.field,
+          direction: sortOption?.dir ?? "asc",
+          onChange: handleColSort,
+        }}
+        rowActions={(contact) => [
+          {
+            id: "edit",
+            label: "Edit",
+            icon: <Pencil size={13} />,
+            onClick: () => openEditModal(contact),
+          },
+          {
+            id: "delete",
+            label: "Delete",
+            icon: <Trash2 size={13} />,
+            tone: "danger",
+            onClick: () => handleDeleteOne(contact.id),
+          },
+        ]}
+        onRowClick={openEditModal}
+        getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-indigo-50/60" : "")}
+        renderMobileCard={(contact, helpers) => renderMobileCard(contact, helpers.actions)}
+        minTableWidth={980}
+        mobileLoadMore={{
+          hasMore: safePage < totalPages,
+          loading: mobileLoadingMore,
+          onLoadMore: () => setCurrentPage((page) => Math.min(totalPages, page + 1)),
+          loadingLabel: "Loading more contacts...",
+        }}
+        footer={
+          !loading ? (
             <ContactsPagination
               totalContacts={totalContacts}
               currentPage={safePage}
@@ -182,9 +512,9 @@ export function ContactsTable({
               visibleCount={contacts.length}
               setCurrentPage={setCurrentPage}
             />
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
     </>
   );
 }

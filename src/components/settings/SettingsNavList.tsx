@@ -5,8 +5,8 @@ import { Badge } from "../ui/Badge";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
 
 const navLinkClassName = (isActive: boolean, depth: number) =>
-  `group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors ${
-    depth > 0 ? "pl-10" : ""
+  `group flex min-h-[56px] w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
+    depth > 0 ? "pl-11 md:pl-10" : ""
   } ${
     isActive
       ? "bg-slate-100 text-slate-900"
@@ -66,13 +66,13 @@ export const SettingsNavList = ({
   <div className="space-y-6">
     {sections.map((section) => (
       <div key={section.id}>
-        <div className="mb-2 px-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        <div className="mb-3 px-4 md:mb-2 md:px-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 md:text-[11px] md:tracking-[0.16em]">
             {section.label}
           </p>
         </div>
 
-        <div className="space-y-0.5">
+        <div className="space-y-1 rounded-[22px] bg-slate-50/70 p-1.5 md:space-y-0.5 md:rounded-none md:bg-transparent md:p-0">
           {section.items.map((item) => (
             <SidebarItem
               depth={0}
@@ -98,15 +98,15 @@ const SidebarItem = ({
 }) => {
   if (item.children && item.children.length > 0) {
     return (
-      <div className="space-y-0.5">
+      <div className="space-y-1 md:space-y-0.5">
         <div
-          className={`px-3 py-2 text-sm font-medium text-slate-800 ${
-            depth > 0 ? "pl-10" : ""
+          className={`px-4 py-3 text-[15px] font-medium text-slate-800 md:px-3 md:py-2 md:text-sm ${
+            depth > 0 ? "pl-11 md:pl-10" : ""
           }`}
         >
           <div className="flex items-center gap-3">
             {item.icon && (
-              <span className="flex h-5 w-5 items-center justify-center text-slate-500">
+              <span className="flex h-6 w-6 items-center justify-center text-slate-500 md:h-5 md:w-5">
                 {item.icon}
               </span>
             )}
@@ -114,7 +114,7 @@ const SidebarItem = ({
           </div>
         </div>
 
-        <div className="space-y-0.5">
+        <div className="space-y-1 md:space-y-0.5">
           {item.children.map((child) => (
             <SidebarItem
               depth={depth + 1}
@@ -144,7 +144,11 @@ const SidebarItem = ({
         <>
           <div className="flex min-w-0 items-center gap-3">
             {item.icon && (
-              <span className={isActive ? "text-slate-900" : "text-slate-500"}>
+              <span
+                className={`flex h-6 w-6 items-center justify-center md:h-5 md:w-5 ${
+                  isActive ? "text-slate-900" : "text-slate-500"
+                }`}
+              >
                 {item.icon}
               </span>
             )}
@@ -156,7 +160,7 @@ const SidebarItem = ({
             {item.badge && <Badge variant="primary">{item.badge}</Badge>}
             <ChevronRight
               className={isActive ? "text-slate-500" : "text-slate-300"}
-              size={14}
+              size={16}
             />
           </div>
         </>

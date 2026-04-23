@@ -13,6 +13,7 @@ export function ContactsPageContent({
   contacts,
   totalContacts,
   loading,
+  mobileLoadingMore,
   availableTags,
   workspaceUsers,
   stages,
@@ -108,6 +109,7 @@ export function ContactsPageContent({
 
         <ContactsTable
           loading={loading}
+          mobileLoadingMore={mobileLoadingMore}
           contacts={paginatedContacts}
           totalContacts={totalContacts}
           availableTags={availableTags}
