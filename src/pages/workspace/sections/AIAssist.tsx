@@ -66,7 +66,7 @@ export const AIAssist = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 sm:h-10 sm:w-10">
@@ -84,7 +84,7 @@ export const AIAssist = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+        <div className="rounded-2xl bg-white/80 p-4 sm:p-5">
           <div className="mb-3">
             <p className="text-sm font-semibold text-gray-900">AI Assist Prompt</p>
             <p className="mt-1 text-sm leading-5 text-gray-500">

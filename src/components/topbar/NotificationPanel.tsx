@@ -1,9 +1,20 @@
 import { useEffect } from "react";
-import { Bell, Check, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import {
+  AtSign,
+  Bell,
+  Check,
+  MessageCircle,
+  Trash2,
+  UserCheck,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext";
+import type { NotificationRecord } from "../../lib/notificationApi";
 import { getNotificationPath } from "../../lib/notificationLink";
 import { MobileSheet } from "./MobileSheet";
-import { getNotificationTypeLabel, relativeTime } from "./utils";
+import { relativeTime } from "./utils";
 
 interface NotificationPanelProps {
   open: boolean;
@@ -11,6 +22,160 @@ interface NotificationPanelProps {
   onClose: () => void;
   onNavigateToInbox: (path?: string | null) => void;
   onOpenPreferences: () => void;
+}
+
+type NotificationAppearance = {
+  icon: React.ReactNode;
+  iconClassName: string;
+  chipClassName: string;
+  label: string;
+};
+
+type NotificationCopy = {
+  heading: string;
+  detail?: string | null;
+  preview?: string | null;
+};
+
+const DEFAULT_NOTIFICATION_LABEL = "Activity";
+
+function normalizeText(value?: string | null) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function readMetadataText(
+  notification: NotificationRecord,
+  keys: string[],
+) {
+  const metadata = notification.metadata;
+
+  if (!metadata) {
+    return null;
+  }
+
+  for (const key of keys) {
+    const value = metadata[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return normalizeText(value);
+    }
+  }
+
+  return null;
+}
+
+function resolveNotificationTypeAppearance(type: string): NotificationAppearance {
+  const normalized = type.toLowerCase();
+
+  if (normalized.includes("mention")) {
+    return {
+      icon: <AtSign size={15} />,
+      iconClassName: "bg-violet-100 text-violet-700",
+      chipClassName: "bg-violet-50 text-violet-700",
+      label: "Mention",
+    };
+  }
+
+  if (normalized.includes("assign")) {
+    return {
+      icon: <UserCheck size={15} />,
+      iconClassName: "bg-emerald-100 text-emerald-700",
+      chipClassName: "bg-emerald-50 text-emerald-700",
+      label: "Assignment",
+    };
+  }
+
+  if (normalized.includes("message") || normalized.includes("incoming")) {
+    return {
+      icon: <MessageCircle size={15} />,
+      iconClassName: "bg-blue-100 text-blue-700",
+      chipClassName: "bg-blue-50 text-blue-700",
+      label: "Message",
+    };
+  }
+
+  return {
+    icon: <Bell size={15} />,
+    iconClassName: "bg-slate-100 text-slate-700",
+    chipClassName: "bg-slate-100 text-slate-700",
+    label: DEFAULT_NOTIFICATION_LABEL,
+  };
+}
+
+function buildNotificationCopy(notification: NotificationRecord): NotificationCopy {
+  const normalizedType = notification.type.toLowerCase();
+  const rawTitle = normalizeText(notification.title) || "New notification";
+  const rawBody = normalizeText(notification.body);
+  const preview = rawBody && rawBody !== rawTitle ? rawBody : null;
+  const actorName =
+    readMetadataText(notification, [
+      "senderName",
+      "contactName",
+      "actorName",
+      "subjectName",
+      "userName",
+      "name",
+    ]) ?? null;
+
+  if (normalizedType.includes("message") || normalizedType.includes("incoming")) {
+    const titleMatch =
+      rawTitle.match(/^(?:new\s+)?(?:incoming\s+)?message\s+from\s+(.+)$/i) ??
+      rawTitle.match(/^(.+?)\s+sent you a message$/i);
+    const senderName = actorName ?? titleMatch?.[1]?.trim() ?? null;
+
+    if (senderName) {
+      return {
+        heading: senderName,
+        detail: "sent you a new message",
+        preview,
+      };
+    }
+
+    return {
+      heading: rawTitle,
+      detail: preview ? "Latest message" : null,
+      preview,
+    };
+  }
+
+  if (normalizedType.includes("mention")) {
+    const titleMatch =
+      rawTitle.match(/^(?:new\s+)?mention\s+from\s+(.+)$/i) ??
+      rawTitle.match(/^(.+?)\s+mentioned you$/i);
+    const mentionerName = actorName ?? titleMatch?.[1]?.trim() ?? null;
+
+    if (mentionerName) {
+      return {
+        heading: mentionerName,
+        detail: "mentioned you",
+        preview,
+      };
+    }
+
+    return {
+      heading: rawTitle,
+      detail: preview ? "Mention details" : null,
+      preview,
+    };
+  }
+
+  if (normalizedType.includes("assign")) {
+    return {
+      heading: rawTitle,
+      detail: preview ? "Assignment details" : null,
+      preview,
+    };
+  }
+
+  return {
+    heading: rawTitle,
+    detail: null,
+    preview,
+  };
 }
 
 export function NotificationPanel({
@@ -165,19 +330,23 @@ export function NotificationPanel({
           <div className="divide-y divide-slate-100">
             {items.map((notification) => {
               const notificationPath = getNotificationPath(notification);
+              const typeAppearance = resolveNotificationTypeAppearance(
+                notification.type,
+              );
+              const copy = buildNotificationCopy(notification);
+              const isUnread =
+                !notification.readAt && !notification.archivedAt;
 
               const actionButtonClassName = isMobile
-                ? "inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                : "text-[11px] text-gray-500 hover:text-gray-700";
+                ? "inline-flex items-center rounded-full bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100"
+                : "inline-flex items-center rounded-full bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100";
 
               return (
                 <div
                   key={notification.id}
-                  className={`group px-4 py-3 transition-colors ${
-                    !notification.readAt && !notification.archivedAt
-                      ? "bg-indigo-50/40"
-                      : ""
-                  } ${notificationPath ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                  className={`group px-4 py-3.5 transition-colors ${
+                    isUnread ? "bg-indigo-50/45" : "bg-white"
+                  } ${notificationPath ? "cursor-pointer hover:bg-slate-50" : ""}`}
                   onClick={() => {
                     if (!notificationPath) return;
                     onNavigateToInbox(notificationPath);
@@ -186,68 +355,57 @@ export function NotificationPanel({
                   }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex-shrink-0">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600">
-                        {getNotificationTypeLabel(notification.type)}
-                      </span>
+                    <div
+                      className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${typeAppearance.iconClassName}`}
+                    >
+                      {typeAppearance.icon}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold leading-tight text-gray-800">
-                        {notification.title}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold ${typeAppearance.chipClassName}`}
+                        >
+                          {typeAppearance.label}
+                        </span>
+                        {isUnread && (
+                          <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-700">
+                            New
+                          </span>
+                        )}
+                        <span className="text-[11px] text-slate-400">
+                          {relativeTime(new Date(notification.createdAt).getTime())}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold leading-5 text-slate-900">
+                        {copy.heading}
                       </p>
-                      <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-gray-500">
-                        {notification.body}
-                      </p>
-                      <p className="mt-1 text-[10px] text-gray-400">
-                        {relativeTime(new Date(notification.createdAt).getTime())}
-                      </p>
-                      {isMobile && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {activeTab === "new" && (
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void updateNotificationState(notification.id, {
-                                  archived: true,
-                                });
-                              }}
-                              className={actionButtonClassName}
-                            >
-                              Archive
-                            </button>
-                          )}
+                      {copy.detail ? (
+                        <p className="mt-0.5 text-xs font-medium text-slate-500">
+                          {copy.detail}
+                        </p>
+                      ) : null}
+                      {copy.preview ? (
+                        <div className="mt-2 rounded-2xl bg-white/80 px-3 py-2.5 text-[13px] leading-5 text-slate-600 shadow-sm shadow-slate-200/60">
+                          {copy.preview}
+                        </div>
+                      ) : null}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {notificationPath && (
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
+                              onNavigateToInbox(notificationPath);
                               void updateNotificationState(notification.id, {
-                                read: !notification.readAt,
+                                read: true,
                               });
+                              onClose();
                             }}
-                            className={actionButtonClassName}
+                            className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-slate-800"
                           >
-                            {notification.readAt ? "Mark unread" : "Mark read"}
+                            Open
                           </button>
-                          {notification.archivedAt && (
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void updateNotificationState(notification.id, {
-                                  archived: false,
-                                });
-                              }}
-                              className={actionButtonClassName}
-                            >
-                              Unarchive
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {!isMobile && (
-                      <div className="flex flex-col items-end gap-1 opacity-0 transition-all group-hover:opacity-100">
+                        )}
                         {activeTab === "new" && (
                           <button
                             type="button"
@@ -272,7 +430,7 @@ export function NotificationPanel({
                           }}
                           className={actionButtonClassName}
                         >
-                          {notification.readAt ? "Unread" : "Read"}
+                          {notification.readAt ? "Mark unread" : "Mark read"}
                         </button>
                         {notification.archivedAt && (
                           <button
@@ -289,7 +447,7 @@ export function NotificationPanel({
                           </button>
                         )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               );
@@ -331,7 +489,7 @@ export function NotificationPanel({
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
       <div
-        className="absolute right-0 top-full z-20 mt-2 flex w-[min(22rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+        className="absolute right-0 top-full z-20 mt-2 flex w-[min(26rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
         style={{ maxHeight: "480px" }}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">

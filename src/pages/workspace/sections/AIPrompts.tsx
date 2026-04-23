@@ -119,7 +119,7 @@ export const AIPrompts = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 sm:h-10 sm:w-10">
@@ -147,7 +147,7 @@ export const AIPrompts = () => {
 
       <div className="space-y-3">
         {prompts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-10 text-center">
+          <div className="rounded-2xl bg-slate-50/80 px-4 py-10 text-center">
             <p className="text-sm font-semibold text-gray-900">No AI prompts yet</p>
             <p className="mt-1 text-sm text-gray-500">Create your first custom prompt to speed up inbox rewrites.</p>
           </div>
@@ -155,8 +155,8 @@ export const AIPrompts = () => {
           prompts.map((prompt) => (
             <div
               key={prompt.id}
-              className={`rounded-xl border px-4 py-4 shadow-sm transition-colors sm:px-5 sm:py-5 ${
-                prompt.isEnabled ? 'border-indigo-100 bg-indigo-50/40' : 'border-gray-200 bg-white'
+              className={`rounded-2xl px-4 py-4 transition-colors sm:px-5 sm:py-5 ${
+                prompt.isEnabled ? 'bg-indigo-50/60' : 'bg-slate-50/80'
               }`}
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -185,7 +185,7 @@ export const AIPrompts = () => {
                   {!prompt.isDefault && (
                     <button
                       onClick={() => void handleDelete(prompt)}
-                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 sm:w-auto"
+                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 sm:w-auto"
                     >
                       <Trash2 size={15} /> Delete
                     </button>
@@ -193,12 +193,12 @@ export const AIPrompts = () => {
                   {!prompt.isDefault && (
                     <button
                       onClick={() => openEdit(prompt)}
-                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
+                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl bg-white/80 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-white sm:w-auto"
                     >
                       <Edit2 size={15} /> Edit
                     </button>
                   )}
-                  <div className="ml-auto flex items-center gap-2 rounded-full bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-inset ring-gray-200 sm:ml-0">
+                  <div className="ml-auto flex items-center gap-2 rounded-full bg-white/85 px-2.5 py-1.5 sm:ml-0">
                     <span className="text-xs font-medium text-gray-600">{prompt.isEnabled ? 'On' : 'Off'}</span>
                     <Toggle
                       checked={Boolean(prompt.isEnabled)}
@@ -216,7 +216,7 @@ export const AIPrompts = () => {
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 sm:items-center sm:px-4">
           <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:max-w-xl sm:rounded-2xl">
-            <div className="flex items-start justify-between border-b border-gray-200 px-4 py-4 sm:px-6">
+            <div className="flex items-start justify-between px-4 py-4 sm:px-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 sm:text-2xl">{editPrompt ? 'Edit AI prompt' : 'New AI prompt'}</h3>
                 <p className="mt-1 text-sm text-gray-500">Create a reusable rewrite action for the inbox composer.</p>
@@ -260,7 +260,7 @@ export const AIPrompts = () => {
             </div>
 
             <div className="flex flex-col-reverse gap-2 px-4 pb-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6 sm:pb-5">
-              <button onClick={closeEditor} className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+              <button onClick={closeEditor} className="w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-slate-200 sm:w-auto">
                 Cancel
               </button>
               <button onClick={handleSave} disabled={saving} className="w-full rounded-xl bg-gray-300 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-70 enabled:bg-indigo-600 enabled:hover:bg-indigo-700 sm:w-auto">

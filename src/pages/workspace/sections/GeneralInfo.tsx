@@ -77,7 +77,7 @@ export const WorkspaceGeneralInfo = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
         {/* <h2 className="text-base font-semibold text-gray-900 mb-5">
           Workspace identity
         </h2> */}
@@ -110,7 +110,7 @@ export const WorkspaceGeneralInfo = () => {
 
                 <button
                   onClick={() => navigator.clipboard.writeText(form.id)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="rounded-lg bg-white/80 p-2 shadow-sm shadow-slate-200/60 transition-colors hover:bg-white"
                   title="Copy"
                 >
                   <Copy size={16} className="text-gray-400" />
@@ -121,7 +121,7 @@ export const WorkspaceGeneralInfo = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
         <h2 className="text-base font-semibold text-gray-900 mb-5">
           Localization
         </h2>

@@ -1,7 +1,7 @@
-import { X } from "lucide-react";
-import { useState, useEffect } from "react";
-
-import { Users, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Trash2, Users, X } from "lucide-react";
+import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
+import { OrgGuard, useAuthorization } from "../../context/AuthorizationContext";
 import { MobileSheet } from "../../components/topbar/MobileSheet";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
@@ -196,13 +196,11 @@ export const DeleteWorkspaceModal = ({
 export const WorkspacesManage = () => {
   const { workspaces, createWorkspace, deleteWorkspace } = useWorkspace();
   const { activeOrganization } = useOrganization();
+  const { canOrg } = useAuthorization();
+  const isMobile = useIsMobile();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteWs, setDeleteWs] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  
-   useEffect(() => {
-     if (workspaces) setLoading(false);
-   }, [workspaces]);
+  const canManageWorkspaces = canOrg("org:workspaces:manage");
 
   const handleCreate = (name: string) => {
     console.log("create workspace", name);
@@ -216,9 +214,25 @@ export const WorkspacesManage = () => {
     setDeleteWs(null);
   };
 
+  useMobileHeaderActions(
+    isMobile && canManageWorkspaces
+      ? {
+          actions: [
+            {
+              id: "organization-workspaces-create",
+              label: "New workspace",
+              icon: <Plus size={18} />,
+              onClick: () => setCreateOpen(true),
+            },
+          ],
+        }
+      : {},
+    [canManageWorkspaces, isMobile],
+  );
+
   return (
     <div>
-      <div className="border-b border-gray-200 pb-4 mb-6 flex items-center justify-between">
+      <div className="mb-6 hidden items-center justify-between border-b border-gray-200 pb-4 md:flex">
         <div>
           <h2 className="text-base font-semibold text-gray-900">Workspaces</h2>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -226,20 +240,22 @@ export const WorkspacesManage = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
-        >
-          <Plus size={15} />
-          New workspace
-        </button>
+        <OrgGuard permission="org:workspaces:manage">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700"
+          >
+            <Plus size={15} />
+            New workspace
+          </button>
+        </OrgGuard>
       </div>
 
       <div className="space-y-3 max-w-2xl">
         {workspaces?.map((ws) => (
           <div
             key={ws.id}
-            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:bg-gray-50"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-semibold text-sm">
@@ -256,12 +272,14 @@ export const WorkspacesManage = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => setDeleteWs(ws)}
-              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-            >
-              <Trash2 size={14} />
-            </button>
+            <OrgGuard permission="org:workspaces:manage">
+              <button
+                onClick={() => setDeleteWs(ws)}
+                className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+              >
+                <Trash2 size={14} />
+              </button>
+            </OrgGuard>
           </div>
         ))}
       </div>

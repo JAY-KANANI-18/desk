@@ -119,7 +119,7 @@ function PreferenceSelectRow<T extends string>({
     options.find((option) => option.value === value) ?? options[0];
 
   return (
-    <div className="grid gap-4 rounded-2xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_280px] md:items-start">
+    <div className="grid gap-4 rounded-2xl bg-slate-50/80 p-4 md:grid-cols-[minmax(0,1fr)_280px] md:items-start">
       <div>
         <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
         <p className="mt-1 text-sm text-slate-500">{description}</p>
@@ -203,7 +203,7 @@ export const NotificationPreferences = () => {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-2xl bg-slate-50/80 p-6 text-sm text-gray-500">
         Loading notification preferences...
       </div>
     );
@@ -211,7 +211,7 @@ export const NotificationPreferences = () => {
 
   if (!prefs) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-500">
+      <div className="rounded-2xl bg-rose-50 p-6 text-sm text-red-500">
         {error ?? "Notification preferences are unavailable."}
       </div>
     );
@@ -219,7 +219,7 @@ export const NotificationPreferences = () => {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
         <h1 className="text-lg font-semibold text-slate-900">Notifications</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-500">
           Keep only the alerts you need. Pick one simple option for each
@@ -227,7 +227,7 @@ export const NotificationPreferences = () => {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900">
@@ -283,7 +283,7 @@ export const NotificationPreferences = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900">
@@ -331,7 +331,7 @@ export const NotificationPreferences = () => {
               }
               className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
                 pushRegistrationStatus === "registered"
-                  ? "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                  ? "bg-white/85 text-gray-700 hover:bg-white"
                   : "bg-indigo-600 text-white hover:bg-indigo-700"
               }`}
             >
@@ -343,7 +343,7 @@ export const NotificationPreferences = () => {
           <button
             type="button"
             onClick={() => void refreshPushDevices()}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/85 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white"
           >
             Refresh devices
           </button>
@@ -363,7 +363,7 @@ export const NotificationPreferences = () => {
         )}
         {pushError && <p className="mt-3 text-xs text-red-500">{pushError}</p>}
 
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-5 rounded-2xl bg-white/65 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">
@@ -377,7 +377,7 @@ export const NotificationPreferences = () => {
             <button
               type="button"
               onClick={() => setShowDevices((current) => !current)}
-              className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="inline-flex w-fit items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               {showDevices ? "Hide devices" : `Show devices (${pushDevices.length})`}
             </button>
@@ -386,7 +386,7 @@ export const NotificationPreferences = () => {
           {showDevices && (
             <div className="mt-4 space-y-3">
               {pushDevices.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
+                <div className="rounded-xl bg-white px-4 py-5 text-sm text-slate-500">
                   No push-capable devices are registered yet.
                 </div>
               ) : (
@@ -410,7 +410,7 @@ export const NotificationPreferences = () => {
                   return (
                     <div
                       key={device.id}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-4"
+                      className="rounded-xl bg-white px-4 py-4"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
@@ -454,7 +454,7 @@ export const NotificationPreferences = () => {
                         <button
                           type="button"
                           onClick={() => void removePushDevice(device.id)}
-                          className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200"
                         >
                           Remove device
                         </button>
@@ -493,7 +493,7 @@ export const NotificationPreferences = () => {
           type="button"
           onClick={() => savedPrefs && setPrefs({ ...savedPrefs })}
           disabled={!dirty || saving || !savedPrefs}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-60"
         >
           Reset
         </button>

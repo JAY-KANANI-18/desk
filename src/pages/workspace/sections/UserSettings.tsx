@@ -159,7 +159,7 @@ export const UserSettings = () => {
   return (
     <div className="space-y-6">
       {/* Profile */}
-      <Card className="rounded-[24px] border-slate-200 p-4 shadow-sm sm:rounded-[28px] sm:p-6">
+      <Card className="rounded-[24px] border-transparent bg-slate-50/80 p-4 shadow-none sm:rounded-[28px] sm:p-6">
         <h2 className="mb-5 text-base font-semibold text-gray-900">Profile</h2>
 
         <div className="mb-5 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-5">
