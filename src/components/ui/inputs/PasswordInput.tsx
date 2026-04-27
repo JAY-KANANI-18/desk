@@ -7,7 +7,7 @@ export interface PasswordInputProps
   extends Omit<BaseInputProps, "type" | "rightIcon"> {}
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ size = "md", disabled, ...props }, ref) => {
+  ({ size = "sm", disabled, ...props }, ref) => {
     const [isVisible, setIsVisible] = useState(false);
 
     return (
