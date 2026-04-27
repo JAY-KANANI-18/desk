@@ -14,11 +14,12 @@ import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { useSettingsLinks } from "./settingsLinks";
 import { Button } from "./ui/Button";
+import { MobileSheet } from "./ui/modal";
 
 type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
 
 const PRIMARY_MOBILE_PATH_ORDER = [
-  "/dashboard",
+  // "/dashboard",
   "/contacts",
   "/inbox",
   "/channels",
@@ -246,21 +247,22 @@ export function MobileBottomNav() {
   })}
 </nav>
 
-      {moreMenu.isOpen && (
-        <>
-          <Button
-            type="button"
-            aria-label="Close more menu"
-            className="fixed inset-0 z-40 bg-slate-950/35 md:hidden"
-            onClick={moreMenu.close}
-            variant="unstyled"
-          />
-
-          <div className=" fixed inset-x-3 bottom-[5.75rem] z-50 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.22)] md:hidden">
-            <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              More
+      <MobileSheet
+        isOpen={moreMenu.isOpen}
+        title={
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Navigation
             </p>
-
+            <h2 className="mt-1 text-base font-semibold text-slate-900">
+              More
+            </h2>
+          </div>
+        }
+        onClose={moreMenu.close}
+      >
+        <div className="space-y-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {moreNavItems.length > 0 ? (
             <div className="space-y-1">
               {moreNavItems.map((item) => {
                 const isActive = isPathActive([item.path]);
@@ -286,12 +288,14 @@ export function MobileBottomNav() {
                   </NavLink>
                 );
               })}
+            </div>
+          ) : null}
 
-              {settingsLinks.length > 0 && moreNavItems.length > 0 ? (
-                <p className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Settings
-                </p>
-              ) : null}
+          {settingsLinks.length > 0 ? (
+            <div className="space-y-1">
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Settings
+              </p>
 
               {settingsLinks.map((link) => {
                 const isActive =
@@ -323,9 +327,9 @@ export function MobileBottomNav() {
                 );
               })}
             </div>
-          </div>
-        </>
-      )}
+          ) : null}
+        </div>
+      </MobileSheet>
     </div>
   );
 }
