@@ -762,7 +762,7 @@ export const OnboardingMinimalFlow = () => {
   }
 
   return (
-    <div className="relative h-[100dvh] overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
       <motion.div
         aria-hidden
         className="absolute -left-20 top-24 h-72 w-72 rounded-full bg-indigo-100/70 blur-3xl"
@@ -776,27 +776,27 @@ export const OnboardingMinimalFlow = () => {
         transition={{ repeat: Infinity, duration: 14, ease: "easeInOut" }}
       />
 
-      <div className="relative mx-auto flex h-full w-full max-w-xl items-center justify-center px-3 py-3 sm:px-5 sm:py-4">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-xl items-stretch justify-center px-3 py-3 sm:items-center sm:px-5 sm:py-4">
         <motion.section
           initial={{ opacity: 0, y: 18, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex h-[min(760px,calc(100dvh-24px))] w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/92 p-4 shadow-[0_24px_90px_-50px_rgba(15,23,42,0.28)] backdrop-blur sm:p-6"
+          className="flex h-[calc(100dvh-24px)] min-h-0 w-full flex-col overflow-hidden rounded-[28px] border border-white/80 bg-white/92 p-4 shadow-[0_24px_90px_-50px_rgba(15,23,42,0.28)] backdrop-blur sm:h-[min(760px,calc(100dvh-32px))] sm:p-6"
         >
           <OnboardingProgress steps={steps} currentStep={currentStep} />
 
           <form
             onSubmit={handleContinue}
-            className="mt-3 grid min-h-0 flex-1 grid-rows-[138px_1fr_72px] sm:grid-rows-[150px_1fr_76px]"
+            className="mt-3 flex min-h-0 flex-1 flex-col"
           >
-            <div className="flex flex-col justify-center text-center">
-              <h1 className="mx-auto max-w-[18ch] text-[clamp(1.65rem,5vw,2.55rem)] font-semibold leading-[1.1] tracking-tight text-gray-950">
+            <div className="shrink-0 py-3 text-center sm:py-4">
+              <h1 className="mx-auto max-w-[18ch] text-2xl font-semibold leading-tight text-gray-950 sm:text-3xl md:text-4xl">
                 {currentStepConfig.title}
               </h1>
-              <p className="mt-5 text-sm leading-6 text-indigo-600">{supportText}</p>
+              <p className="mt-3 text-sm leading-6 text-indigo-600 sm:mt-5">{supportText}</p>
             </div>
 
-            <div className="flex min-h-0 flex-1 items-start justify-center py-2 sm:py-3">
+            <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto overscroll-contain py-2 sm:py-3">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={currentStepConfig.key}
@@ -805,7 +805,7 @@ export const OnboardingMinimalFlow = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: direction > 0 ? -20 : 20 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="mx-auto w-full max-w-[28rem] overflow-hidden px-1 py-1"
+                  className="mx-auto w-full max-w-[28rem] overflow-visible px-1 py-1"
                 >
                   {renderStep()}
                 </motion.div>
@@ -813,7 +813,7 @@ export const OnboardingMinimalFlow = () => {
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div className="mt-2 shrink-0 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
               </div>
             )}
