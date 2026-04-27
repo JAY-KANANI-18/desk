@@ -1,44 +1,30 @@
-/**
- * SubSidebar.tsx
- * ─────────────────────────────────────────────────────────────────
- * Left sub-sidebar: inbox section selector.
- *
- * Features:
- *  ✓ Collapsible (w-48 ↔ w-14)
- *  ✓ Static section items (All, Mine, Unassigned, Unreplied, Teams)
- *  ✓ Dedicated LifecycleItemBtn for server-fetched lifecycle stages
- *  ✓ Unread count badges derived from convList
- *  ✓ Active section drives InboxContext filters
- *  ✓ Keyboard shortcut display
- */
-
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import {
-  ChevronLeft, ChevronRight,
-  Inbox, Clock, CheckCircle2, Lock,
-  MessageSquareDot, UserCircle2, Users2,
-  Bell,
-  UserMinus,
-  PanelRightOpen,
-  PanelLeftClose,
+  Inbox,
   PanelLeftOpen,
+  PanelRightOpen,
+  UserCircle2,
+  UserMinus,
 } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { CountBadge } from "../../components/ui/CountBadge";
+import { Tooltip } from "../../components/ui/Tooltip";
+import { IconButton } from "../../components/ui/button/IconButton";
 import { useInbox } from "../../context/InboxContext";
 import type { ConvStatus } from "../../lib/inboxApi";
-
-// ─── Types ────────────────────────────────────────────────────────
 
 interface SidebarItem {
   id: string;
   label: string;
-  icon: React.FC<{ size?: number; className?: string }>;
-  dotColor?: string;
-  filter?: Partial<{ status: ConvStatus | "all"; assigneeId: string; unreplied: boolean }>;
+  icon: ComponentType<{ size?: number; className?: string }>;
+  filter?: Partial<{
+    status: ConvStatus | "all";
+    assigneeId: string;
+    unreplied: boolean;
+  }>;
   shortcut?: string;
 }
 
-/** Shape coming back from the server via InboxContext.lifecycles */
 interface LifecycleItem {
   id: string | number;
   name: string;
@@ -47,21 +33,17 @@ interface LifecycleItem {
   order: number;
 }
 
-// ─── Static section definitions ───────────────────────────────────
-
 const SECTIONS: SidebarItem[] = [
   {
     id: "all",
     label: "All",
     icon: Inbox,
-    dotColor: "bg-blue-500",
     shortcut: "1",
   },
   {
     id: "mine",
     label: "Mine",
     icon: UserCircle2,
-    dotColor: "bg-emerald-500",
     filter: { assigneeId: "me" },
     shortcut: "2",
   },
@@ -69,20 +51,10 @@ const SECTIONS: SidebarItem[] = [
     id: "unassigned",
     label: "Unassigned",
     icon: UserMinus,
-    dotColor: "bg-orange-400",
     filter: { assigneeId: "unassigned" },
     shortcut: "3",
   },
-  
-  // {
-  //   id: "teams",
-  //   label: "Teams",
-  //   icon: Users2,
-  // },
 ];
-
-
-// ─── SidebarItemBtn (static items) ────────────────────────────────
 
 function SidebarItemBtn({
   item,
@@ -99,62 +71,59 @@ function SidebarItemBtn({
 }) {
   const Icon = item.icon;
 
-  return (
-    <button
+  const button = collapsed ? (
+    <Button
       type="button"
       onClick={onClick}
-      title={collapsed ? item.label : undefined}
-      className={`w-full flex items-center gap-2.5 rounded-lg transition-colors
-        ${collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2"}
-        ${isActive
-          ? "bg-indigo-50 text-indigo-600"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-        }`}
-    >
-      
-
-      {/* Icon with badge overlay — collapsed only */}
-      
-        <div className="relative">
+      variant={isActive ? "soft-primary" : "ghost"}
+      size="sm"
+      radius="lg"
+      iconOnly
+      aria-label={item.label}
+      leftIcon={
+        <span className="relative inline-flex">
           <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-500"} />
-          {count != null && count > 0 && collapsed && (
-            <span className={`absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px]
-              bg-indigo-600 text-white text-[8px] font-bold rounded-full
-              flex items-center justify-center px-0.5 leading-none`}>
-              {count > 99 ? "99" : count}
-            </span>
-            
-          )}
-        </div>
-      
+          <CountBadge count={count} compact />
+        </span>
+      }
+    />
+  ) : (
+    <Button
+      type="button"
+      onClick={onClick}
+      variant={isActive ? "soft-primary" : "ghost"}
+      size="sm"
+      radius="lg"
+      fullWidth
+      contentAlign="start"
+      preserveChildLayout
+      className="group"
+    >
+      <span className="flex w-full items-center gap-2.5">
+        <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-500"} />
+        <span className="min-w-0 flex-1 truncate text-left text-xs font-medium">
+          {item.label}
+        </span>
+        <span className="flex items-center gap-1.5">
+          {item.shortcut ? (
+            <kbd className="hidden items-center rounded bg-gray-100 px-1 py-0.5 font-mono text-[9px] text-gray-400 group-hover:inline-flex">
+              {item.shortcut}
+            </kbd>
+          ) : null}
+          <CountBadge count={count} />
+        </span>
+      </span>
+    </Button>
+  );
 
-      {/* Label + shortcut + count badge — expanded only */}
-      {!collapsed && (
-        <>
-          <span className="flex-1 text-xs font-medium text-left truncate">
-            {item.label}
-          </span>
-          <div className="flex items-center gap-1.5">
-            {item.shortcut && (
-              <kbd className="hidden group-hover:inline-flex items-center px-1 py-0.5
-                rounded bg-gray-100 text-gray-400 text-[9px] font-mono">
-                {item.shortcut}
-              </kbd>
-            )}
-            {count != null && count > 0 && (
-              <span className={`min-w-[18px] h-[18px] ${!isActive && "bg-indigo-100"} text-indigo-700
-                text-[10px] font-bold rounded-full flex items-center justify-center px-1`}>
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
-          </div>
-        </>
-      )}
-    </button>
+  return collapsed ? (
+    <Tooltip content={item.label} position="right">
+      {button}
+    </Tooltip>
+  ) : (
+    button
   );
 }
-
-// ─── LifecycleItemBtn (server-fetched lifecycle stages) ────────────
 
 function LifecycleItemBtn({
   item,
@@ -170,71 +139,61 @@ function LifecycleItemBtn({
   onClick: () => void;
 }) {
   const isLost = item.type === "lost";
+  const activeVariant = isLost ? "soft-warning" : "soft-primary";
 
-  return (
-    <button
+  const button = collapsed ? (
+    <Button
       type="button"
       onClick={onClick}
-      title={collapsed ? item.name : undefined}
-      className={`w-full flex items-center gap-2.5 rounded-lg transition-colors
-        ${collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2"}
-        ${isActive
-          ? isLost
-            ? "bg-orange-50 text-orange-700"
-            : "bg-indigo-50 text-indigo-600"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-        }`}
-    >
-      {/* Emoji dot / indicator — collapsed */}
-      {collapsed ? (
-        <div className="relative">
+      variant={isActive ? activeVariant : "ghost"}
+      size="sm"
+      radius="lg"
+      iconOnly
+      aria-label={item.name}
+      leftIcon={
+        <span className="relative inline-flex">
           <span className="text-base leading-none">{item.emoji}</span>
-          {count != null && count > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px]
-              bg-blue-600 text-white text-[8px] font-bold rounded-full
-              flex items-center justify-center px-0.5 leading-none">
-              {count > 99 ? "99" : count}
-            </span>
-          )}
-        </div>
-      ) : (
-        // Expanded: emoji + name + badge
-        <>
-          <span className="text-sm leading-none flex-shrink-0">{item.emoji}</span>
-          <span className="flex-1 text-xs font-medium text-left truncate">
-            {item.name}
-          </span>
-          {count != null && count > 0 && (
-            <span className={`min-w-[18px] h-[18px] text-[10px] font-bold rounded-full
-              flex items-center justify-center px-1
-              ${isLost
-                ? "bg-orange-100 text-orange-700"
-                : "bg-blue-100 text-blue-700"
-              }`}>
-              {count > 99 ? "99+" : count}
-            </span>
-          )}
-        </>
-      )}
-    </button>
+          <CountBadge count={count} compact />
+        </span>
+      }
+    />
+  ) : (
+    <Button
+      type="button"
+      onClick={onClick}
+      variant={isActive ? activeVariant : "ghost"}
+      size="sm"
+      radius="lg"
+      fullWidth
+      contentAlign="start"
+      preserveChildLayout
+    >
+      <span className="flex w-full items-center gap-2.5">
+        <span className="flex-shrink-0 text-sm leading-none">{item.emoji}</span>
+        <span className="min-w-0 flex-1 truncate text-left text-xs font-medium">
+          {item.name}
+        </span>
+        <CountBadge count={count} tone={isLost ? "warning" : "primary"} />
+      </span>
+    </Button>
+  );
+
+  return collapsed ? (
+    <Tooltip content={item.name} position="right">
+      {button}
+    </Tooltip>
+  ) : (
+    button
   );
 }
 
-// ─── Section label ────────────────────────────────────────────────
-
 function SectionLabel({ label }: { label: string }) {
   return (
-    <p className="px-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest my-2">
+    <p className="my-2 px-3 text-[9px] font-bold uppercase tracking-widest text-gray-400">
       {label}
     </p>
   );
 }
-
-function Divider({ collapsed }: { collapsed: boolean }) {
-  return <div className={`border-b border-gray-200 my-3 ${collapsed ? "mx-1" : "mx-2"}`} />;
-}
-
-// ─── Main ─────────────────────────────────────────────────────────
 
 export function SubSidebar() {
   const { filters, setFilters, convList, lifecycles, fetchLifecycles } = useInbox();
@@ -243,8 +202,6 @@ export function SubSidebar() {
   useEffect(() => {
     fetchLifecycles();
   }, []);
-
-  // ── Derive active id from current filters ──────────────────────
 
   const activeId = (() => {
     if (filters.unreplied) return "unreplied";
@@ -257,23 +214,19 @@ export function SubSidebar() {
     return "all";
   })();
 
-  // ── Unread counts derived from convList ───────────────────────
-
   const unreadBySection: Record<string, number> = {
-    all: convList.reduce((s, c) => s + c.unreadCount, 0),
+    all: convList.reduce((sum, conversation) => sum + conversation.unreadCount, 0),
     mine: convList
-      .filter(c => c.contact?.assigneeId != null)
-      .reduce((s, c) => s + c.unreadCount, 0),
+      .filter((conversation) => conversation.contact?.assigneeId != null)
+      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
     unassigned: convList
-      .filter(c => c.contact?.assigneeId == null)
-      .reduce((s, c) => s + c.unreadCount, 0),
-    unreplied: convList.filter(c => c.unreadCount > 0).length,
-    pending: convList.filter(c => c.status === "pending").length,
-    resolved: convList.filter(c => c.status === "resolved").length,
-    closed: convList.filter(c => c.status === "closed").length,
+      .filter((conversation) => conversation.contact?.assigneeId == null)
+      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
+    unreplied: convList.filter((conversation) => conversation.unreadCount > 0).length,
+    pending: convList.filter((conversation) => conversation.status === "pending").length,
+    resolved: convList.filter((conversation) => conversation.status === "resolved").length,
+    closed: convList.filter((conversation) => conversation.status === "closed").length,
   };
-
-  // ── Handlers ──────────────────────────────────────────────────
 
   const handleSelectSection = (item: SidebarItem) => {
     setFilters({
@@ -293,39 +246,35 @@ export function SubSidebar() {
     });
   };
 
-  // ── Split lifecycle items by type ─────────────────────────────
-
-  const lifecycleStages = lifecycles.filter((l: LifecycleItem) => l.type === "lifecycle");
-  const lostStages = lifecycles.filter((l: LifecycleItem) => l.type === "lost");
-
-  // ── Render ────────────────────────────────────────────────────
+  const lifecycleStages = lifecycles.filter(
+    (item: LifecycleItem) => item.type === "lifecycle",
+  );
+  const lostStages = lifecycles.filter((item: LifecycleItem) => item.type === "lost");
 
   return (
     <div
-      className={`flex-shrink-0 flex flex-col border-r border-gray-200 bg-white
-        transition-all duration-200 overflow-hidden
-        ${collapsed ? "w-14" : "w-48"}`}
+      className={`flex flex-shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white transition-all duration-200 ${
+        collapsed ? "w-14" : "w-48"
+      }`}
     >
-      {/* Collapse toggle */}
-      <div className={`flex items-center h-14 border-b border-gray-200
-        ${collapsed ? "justify-center" : "justify-end px-3"}`}>
-        <button
+      <div
+        className={`flex h-14 items-center border-b border-gray-200 ${
+          collapsed ? "justify-center" : "justify-end px-3"
+        }`}
+      >
+        <IconButton
           type="button"
-          onClick={() => setCollapsed(c => !c)}
-          className="w-10 h-10 flex items-center justify-center rounded-md
-            text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+          onClick={() => setCollapsed((value) => !value)}
+          icon={collapsed ? <PanelLeftOpen size={18} /> : <PanelRightOpen size={18} />}
+          variant="ghost"
+          size="md"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <  PanelLeftOpen size={18} /> : <PanelRightOpen size={18} />}
-        </button>
+        />
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex flex-col overflow-y-auto px-2 py-3 ">
-
-        {/* ── Inbox sections ── */}
-        {!collapsed && <SectionLabel label="Inbox" />}
-        {SECTIONS.map(item => (
+      <div className="flex flex-col overflow-y-auto px-2 py-3">
+        {!collapsed ? <SectionLabel label="Inbox" /> : null}
+        {SECTIONS.map((item) => (
           <SidebarItemBtn
             key={item.id}
             item={item}
@@ -336,14 +285,9 @@ export function SubSidebar() {
           />
         ))}
 
-
-       
-
-        {/* ── Lifecycle stages (from server) ── */}
-        {lifecycleStages.length > 0 && (
+        {lifecycleStages.length > 0 ? (
           <>
-            {/* <Divider collapsed={collapsed} /> */}
-            {!collapsed && <SectionLabel label="Lifecycle" />}
+            {!collapsed ? <SectionLabel label="Lifecycle" /> : null}
             {lifecycleStages.map((item: LifecycleItem) => (
               <LifecycleItemBtn
                 key={item.id}
@@ -355,25 +299,18 @@ export function SubSidebar() {
               />
             ))}
           </>
-        )}
+        ) : null}
 
-        {/* ── Lost stages (from server) ── */}
-        {lostStages.length > 0 && (
-          <>
-            {/* <Divider collapsed={collapsed} />
-            {!collapsed && <SectionLabel label="Lost" />} */}
-            {lostStages.map((item: LifecycleItem) => (
-              <LifecycleItemBtn
-                key={item.id}
-                item={item}
-                isActive={activeId === String(item.id)}
-                count={unreadBySection[String(item.id)]}
-                collapsed={collapsed}
-                onClick={() => handleSelectLifecycle(item)}
-              />
-            ))}
-          </>
-        )}
+        {lostStages.map((item: LifecycleItem) => (
+          <LifecycleItemBtn
+            key={item.id}
+            item={item}
+            isActive={activeId === String(item.id)}
+            count={unreadBySection[String(item.id)]}
+            collapsed={collapsed}
+            onClick={() => handleSelectLifecycle(item)}
+          />
+        ))}
       </div>
     </div>
   );

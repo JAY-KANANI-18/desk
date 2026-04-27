@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChannelApi } from "../../../../lib/channelApi";
 import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, Select, ToggleRow } from "../PanelShell";
-import { ConnectedChannel } from "../../../channels/ManageChannelPage";
-import { FileIcon, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { useWorkflow } from "../../WorkflowContext";
 import { useChannel } from "../../../../context/ChannelContext";
+import { Button } from "../../../../components/ui/Button";
+import { IconButton } from "../../../../components/ui/button/IconButton";
+import { useDisclosure } from "../../../../hooks/useDisclosure";
 
 
 
@@ -34,15 +35,10 @@ export function SendMessageConfig({ step, onChange }: SP) {
   const u = (p: Partial<SendMessageData>) => onChange({ ...data, ...p });
 
   const [uploading, setUploading] = useState(false);
-  const [showVarMenu, setShowVarMenu] = useState(false);
-  const [varQuery, setVarQuery] = useState("");
-  const [caretPos, setCaretPos] = useState(0);
   const { uploadFile } = useWorkflow();
     const [channels, setChannels] = useState<any[]>([]);
 
   const {channels:ch} = useChannel()
-
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
       setChannels([
@@ -54,90 +50,6 @@ export function SendMessageConfig({ step, onChange }: SP) {
       ]);
    
   }, [ch]);
-
-  const textValue = data.defaultMessage.text ?? "";
-
-  const filteredVariables = useMemo(() => {
-    if (!varQuery) return VARIABLE_OPTIONS;
-    return VARIABLE_OPTIONS.filter((v) =>
-      v.toLowerCase().includes(varQuery.toLowerCase()),
-    );
-  }, [varQuery]);
-
-  const detectVariableTrigger = (value: string, cursor: number) => {
-    const textBeforeCursor = value.slice(0, cursor);
-
-    // Find last "$" before cursor
-    const match = textBeforeCursor.match(/\$([a-zA-Z0-9_]*)$/);
-
-    if (match) {
-      setShowVarMenu(true);
-      setVarQuery(match[1] || "");
-    } else {
-      setShowVarMenu(false);
-      setVarQuery("");
-    }
-  };
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    const cursor = e.target.selectionStart;
-
-    u({
-      defaultMessage: {
-        ...data.defaultMessage,
-        text: value,
-      },
-    });
-
-    setCaretPos(cursor);
-    detectVariableTrigger(value, cursor);
-  };
-
-  const handleSelectVariable = (variable: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const value = textValue;
-    const cursor = caretPos;
-
-    const beforeCursor = value.slice(0, cursor);
-    const afterCursor = value.slice(cursor);
-
-    // replace "$abc" with "{{$abc}}"
-    const updatedBefore = beforeCursor.replace(
-      /\$([a-zA-Z0-9_]*)$/,
-      `{{$${variable}}}`,
-    );
-
-    const newValue = updatedBefore + afterCursor;
-
-    u({
-      defaultMessage: {
-        ...data.defaultMessage,
-        text: newValue,
-      },
-    });
-
-    setShowVarMenu(false);
-    setVarQuery("");
-
-    requestAnimationFrame(() => {
-      const newCursor = updatedBefore.length;
-      textarea.focus();
-      textarea.setSelectionRange(newCursor, newCursor);
-      setCaretPos(newCursor);
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!showVarMenu) return;
-
-    if (e.key === "Escape") {
-      setShowVarMenu(false);
-      setVarQuery("");
-    }
-  };
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,25 +106,23 @@ export function SendMessageConfig({ step, onChange }: SP) {
         <Field label="Type">
           <div className="flex gap-2 mb-3">
             {(["text", "media"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() =>
-                  u({
-                    defaultMessage: {
-                      ...data.defaultMessage,
-                      type: t,
-                    },
-                  })
-                }
-                className={`flex-1 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                  data.defaultMessage.type === t
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "border-gray-200 text-gray-600 hover:border-gray-400"
-                }`}
-              >
-                {t === "text" ? "Text" : "Media"}
-              </button>
+              <div key={t} className="flex-1">
+                <Button
+                  onClick={() =>
+                    u({
+                      defaultMessage: {
+                        ...data.defaultMessage,
+                        type: t,
+                      },
+                    })
+                  }
+                  variant={data.defaultMessage.type === t ? "dark" : "secondary"}
+                  size="sm"
+                  fullWidth
+                >
+                  {t === "text" ? "Text" : "Media"}
+                </Button>
+              </div>
             ))}
           </div>
         </Field>
@@ -238,29 +148,6 @@ export function SendMessageConfig({ step, onChange }: SP) {
                 placeholder="Type your message..."
               />
 
-              {showVarMenu && filteredVariables.length > 0 && (
-                <div className="absolute z-20 bottom-full mt-2 w-72 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-                  <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b bg-gray-50">
-                    Insert Variable
-                  </div>
-
-                  <div className="max-h-56 overflow-auto">
-                    {filteredVariables.map((variable) => (
-                      <button
-                        key={variable}
-                        type="button"
-                        onClick={() => handleSelectVariable(variable)}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm flex items-center justify-between"
-                      >
-                        <span className="text-gray-800">{variable}</span>
-                        <span className="text-xs text-gray-400">
-                          {`{{$${variable}}}`}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </Field>
         ) : (
@@ -274,25 +161,28 @@ export function SendMessageConfig({ step, onChange }: SP) {
             <span className="flex-1 text-xs text-gray-700 truncate">
               {att.filename ?? att.url.split('/').pop()}
             </span>
-            <button
-              type="button"
+            <IconButton
+              aria-label="Remove attachment"
+              icon={<X size={13} />}
+              variant="danger-ghost"
+              size="xs"
               onClick={() => removeAttachment(i)}
-              className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <X size={13} />
-            </button>
+            />
           </div>
 
           {/* Image preview */}
           {att.type === 'image' && (
             <div className="relative w-fit rounded-lg border border-gray-200 bg-gray-50 p-1.5 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => removeAttachment(i)}
-                className="absolute top-1 left-1 z-10 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-              >
-                <X size={10} />
-              </button>
+              <div className="absolute left-1 top-1 z-10">
+                <IconButton
+                  aria-label="Remove attachment"
+                  icon={<X size={10} />}
+                  variant="dark"
+                  size="2xs"
+                  radius="full"
+                  onClick={() => removeAttachment(i)}
+                />
+              </div>
               <img
                 src={att.url}
                 alt={att.filename ?? 'attachment'}
@@ -304,7 +194,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
           {/* Non-image file preview */}
           {att.type !== 'image' && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
-              <FileIcon type={att.type} />
+              <AttachmentIcon type={att.type} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-700 truncate">{att.filename}</p>
                 {att.size && (
@@ -378,7 +268,7 @@ export function VariableEditor({
   placeholder = "Type your message...",
 }: VariableEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const [showMenu, setShowMenu] = useState(false);
+  const variableMenu = useDisclosure();
   const [query, setQuery] = useState("");
 
   const filteredVariables = useMemo(() => {
@@ -453,10 +343,10 @@ export function VariableEditor({
     const match = textBeforeCursor?.match(/\$([a-zA-Z0-9._-]*)$/);
 
     if (match) {
-      setShowMenu(true);
+      variableMenu.open();
       setQuery(match[1] || "");
     } else {
-      setShowMenu(false);
+      variableMenu.close();
       setQuery("");
     }
   };
@@ -505,7 +395,7 @@ export function VariableEditor({
     selection.removeAllRanges();
     selection.addRange(afterRange);
 
-    setShowMenu(false);
+    variableMenu.close();
     setQuery("");
 
     const raw = extractRawText();
@@ -539,7 +429,7 @@ export function VariableEditor({
         </div>
       )}
 
-      {showMenu && filteredVariables.length > 0 && (
+      {variableMenu.isOpen && filteredVariables.length > 0 && (
         <div className="absolute left-0 top-full mt-2 z-30 w-72 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
           <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b bg-gray-50">
             Insert Variable
@@ -547,20 +437,26 @@ export function VariableEditor({
 
           <div className="max-h-56 overflow-auto">
             {filteredVariables.map((variable) => (
-              <button
+              <Button
                 key={variable}
-                type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   insertVariable(variable);
                 }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm flex items-center justify-between"
+                variant="inherit-ghost"
+                radius="none"
+                size="sm"
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
               >
-                <span className="text-gray-800">${variable}</span>
-                <span className="text-xs text-gray-400">
-                  {`{{$${variable}}}`}
+                <span className="flex w-full items-center justify-between gap-3">
+                  <span className="text-gray-800">${variable}</span>
+                  <span className="text-xs text-gray-400">
+                    {`{{$${variable}}}`}
+                  </span>
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

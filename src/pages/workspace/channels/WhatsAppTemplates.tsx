@@ -1,44 +1,67 @@
-// src/pages/workspace/channels/WhatsAppTemplates.tsx
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, Check, Eye, Loader, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, Check, Eye, RefreshCw, Search } from 'lucide-react';
 
 import {
   DataTable,
   type DataTableColumn,
   type DataTableSortDirection,
 } from '../../../components/ui/DataTable';
+import { Button } from '../../../components/ui/button/Button';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { CenterModal } from '../../../components/ui/modal/CenterModal';
+import { BaseSelect } from '../../../components/ui/select/BaseSelect';
+import type { SelectOption } from '../../../components/ui/select/shared';
+import { Tag } from '../../../components/ui/tag/Tag';
 import { ChannelApi, type WaTemplate } from '../../../lib/channelApi';
 import { useSocket } from '../../../socket/socket-provider';
 import { ConnectedChannel } from '../../channels/ManageChannelPage';
 
-type WhatsAppTemplateSortField = 'name' | 'category' | 'language' | 'variables' | 'status';
+type WhatsAppTemplateSortField =
+  | 'name'
+  | 'category'
+  | 'language'
+  | 'variables'
+  | 'status';
+
+const statusOptions: SelectOption[] = [
+  { value: '', label: 'All statuses' },
+  { value: 'APPROVED', label: 'APPROVED' },
+  { value: 'PENDING', label: 'PENDING' },
+  { value: 'REJECTED', label: 'REJECTED' },
+  { value: 'PAUSED', label: 'PAUSED' },
+];
+
+const categoryOptions: SelectOption[] = [
+  { value: '', label: 'All categories' },
+  { value: 'MARKETING', label: 'MARKETING' },
+  { value: 'UTILITY', label: 'UTILITY' },
+  { value: 'AUTHENTICATION', label: 'AUTHENTICATION' },
+];
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const map: Record<string, string> = {
-    APPROVED: 'bg-green-50 text-green-700 border-green-200',
-    PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    REJECTED: 'bg-red-50 text-red-600 border-red-200',
-    PAUSED: 'bg-gray-100 text-gray-500 border-gray-200',
+  const colorMap: Record<string, string> = {
+    APPROVED: 'success',
+    PENDING: 'warning',
+    REJECTED: 'error',
+    PAUSED: 'gray',
   };
 
-  return (
-    <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${map[status] ?? 'border-gray-200 bg-gray-100 text-gray-500'}`}>
-      {status}
-    </span>
-  );
+  return <Tag label={status} size="sm" bgColor={colorMap[status] ?? 'gray'} />;
 };
 
 const CategoryBadge = ({ category }: { category: string }) => {
-  const map: Record<string, string> = {
-    MARKETING: 'bg-purple-50 text-purple-700',
-    UTILITY: 'bg-blue-50 text-blue-700',
-    AUTHENTICATION: 'bg-orange-50 text-orange-700',
+  const colorMap: Record<string, string> = {
+    MARKETING: 'tag-purple',
+    UTILITY: 'tag-blue',
+    AUTHENTICATION: 'tag-orange',
   };
 
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${map[category] ?? 'bg-gray-100 text-gray-500'}`}>
-      {category}
-    </span>
+    <Tag
+      label={category}
+      size="sm"
+      bgColor={colorMap[category] ?? 'gray'}
+    />
   );
 };
 
@@ -73,7 +96,11 @@ const PreviewModal = ({
     setLoading(true);
     setError(null);
     try {
-      const nextPreview = await ChannelApi.previewTemplate(channelId, template.id, vars);
+      const nextPreview = await ChannelApi.previewTemplate(
+        channelId,
+        template.id,
+        vars,
+      );
       setPreview(nextPreview);
     } catch (err: any) {
       setError(err?.message ?? 'Preview failed');
@@ -83,113 +110,107 @@ const PreviewModal = ({
   };
 
   useEffect(() => {
-    if (template.variables?.length === 0) {
+    if ((template.variables?.length ?? 0) === 0) {
       void handlePreview();
     }
   }, [template.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">{template.name}</p>
-            <p className="text-xs text-gray-400">
-              {template.language} - {template.category}
+    <CenterModal
+      isOpen
+      onClose={onClose}
+      title={template.name}
+      subtitle={`${template.language} - ${template.category}`}
+      size="lg"
+    >
+      <div className="space-y-4">
+        {(template.variables?.length ?? 0) > 0 ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              Template Variables
             </p>
+            {template.variables.map((variable) => (
+              <BaseInput
+                key={variable}
+                value={vars[variable] ?? ''}
+                onChange={(event) =>
+                  setVars((current) => ({
+                    ...current,
+                    [variable]: event.target.value,
+                  }))
+                }
+                label={`{{${variable}}}`}
+                placeholder={`Value for {{${variable}}}`}
+              />
+            ))}
+            <Button
+              onClick={() => void handlePreview()}
+              leftIcon={!loading ? <Eye size={13} /> : undefined}
+              loading={loading}
+              loadingMode="inline"
+              loadingLabel="Previewing..."
+            >
+              Preview
+            </Button>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        ) : null}
 
-        <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
-          {template.variables?.length > 0 ? (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-                Template Variables
-              </p>
-              {template.variables.map((variable) => (
-                <div key={variable}>
-                  <label className="mb-1 block text-xs text-gray-500">{`{{${variable}}}`}</label>
-                  <input
-                    value={vars[variable] ?? ''}
-                    onChange={(event) =>
-                      setVars((current) => ({
-                        ...current,
-                        [variable]: event.target.value,
-                      }))
-                    }
-                    placeholder={`Value for {{${variable}}}`}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+        {preview ? (
+          <div className="space-y-2 rounded-xl bg-gray-50 p-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              Preview
+            </p>
+            <div className="max-w-[280px] overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+              {preview.header ? (
+                <div className="border-b border-gray-100 bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700">
+                  {preview.header}
+                </div>
+              ) : null}
+              <div className="whitespace-pre-wrap px-3 py-3 text-sm leading-relaxed text-gray-800">
+                {preview.body}
+              </div>
+              {preview.footer ? (
+                <div className="px-3 pb-2 text-xs text-gray-400">
+                  {preview.footer}
+                </div>
+              ) : null}
+              {preview.buttons?.map((button: any, index: number) => (
+                <div
+                  key={`${button.text}-${index}`}
+                  className="border-t border-gray-100 px-3 py-2 text-center text-xs font-medium text-indigo-600"
+                >
+                  {button.text}
                 </div>
               ))}
-              <button
-                onClick={handlePreview}
-                disabled={loading}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {loading ? <Loader size={13} className="animate-spin" /> : <Eye size={13} />}
-                Preview
-              </button>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          {preview ? (
-            <div className="space-y-2 rounded-xl bg-gray-50 p-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                Preview
-              </p>
-              <div className="max-w-[280px] overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                {preview.header ? (
-                  <div className="border-b border-gray-100 bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700">
-                    {preview.header}
-                  </div>
-                ) : null}
-                <div className="whitespace-pre-wrap px-3 py-3 text-sm leading-relaxed text-gray-800">
-                  {preview.body}
-                </div>
-                {preview.footer ? (
-                  <div className="px-3 pb-2 text-xs text-gray-400">{preview.footer}</div>
-                ) : null}
-                {preview.buttons?.map((button: any, index: number) => (
-                  <div
-                    key={`${button.text}-${index}`}
-                    className="border-t border-gray-100 px-3 py-2 text-center text-xs font-medium text-indigo-600"
-                  >
-                    {button.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
+        {error ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+            <AlertCircle size={13} />
+            {error}
+          </div>
+        ) : null}
 
-          {error ? (
-            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-              <AlertCircle size={13} />
-              {error}
-            </div>
-          ) : null}
-
-          <details className="group">
-            <summary className="cursor-pointer select-none text-xs text-gray-400 hover:text-gray-600">
-              View raw components
-            </summary>
-            <pre className="mt-2 overflow-x-auto rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
-              {JSON.stringify(template.components, null, 2)}
-            </pre>
-          </details>
-        </div>
+        <details className="group">
+          <summary className="cursor-pointer select-none text-xs text-gray-400 hover:text-gray-600">
+            View raw components
+          </summary>
+          <pre className="mt-2 overflow-x-auto rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+            {JSON.stringify(template.components, null, 2)}
+          </pre>
+        </details>
       </div>
-    </div>
+    </CenterModal>
   );
 };
 
-export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChannel }) => {
+export const WhatsAppTemplatesSection = ({
+  channel,
+}: {
+  channel: ConnectedChannel;
+}) => {
   const { socket } = useSocket();
   const [templates, setTemplates] = useState<WaTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,18 +221,23 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
   const [statusFilter, setStatus] = useState('');
   const [catFilter, setCategory] = useState('');
   const [preview, setPreview] = useState<WaTemplate | null>(null);
-  const [sortField, setSortField] = useState<WhatsAppTemplateSortField>('name');
-  const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
+  const [sortField, setSortField] =
+    useState<WhatsAppTemplateSortField>('name');
+  const [sortDirection, setSortDirection] =
+    useState<DataTableSortDirection>('asc');
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const nextTemplates = await ChannelApi.listWhatsAppTemplates(String(channel.id), {
-        status: statusFilter || undefined,
-        category: catFilter || undefined,
-        search: search || undefined,
-      });
+      const nextTemplates = await ChannelApi.listWhatsAppTemplates(
+        String(channel.id),
+        {
+          status: statusFilter || undefined,
+          category: catFilter || undefined,
+          search: search || undefined,
+        },
+      );
       setTemplates(nextTemplates ?? []);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load templates');
@@ -233,7 +259,9 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
         String(event?.channelId) === String(channel.id) &&
         event?.feature === 'whatsapp_templates'
       ) {
-        setSyncMsg(`Synced ${event?.synced ?? 0} templates${event?.errors ? ` (${event.errors} errors)` : ''}`);
+        setSyncMsg(
+          `Synced ${event?.synced ?? 0} templates${event?.errors ? ` (${event.errors} errors)` : ''}`,
+        );
         void load();
       }
     };
@@ -308,7 +336,9 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
       sortable: true,
       sortField: 'language',
       mobile: 'detail',
-      cell: (template) => <span className="text-xs text-gray-500">{template.language}</span>,
+      cell: (template) => (
+        <span className="text-xs text-gray-500">{template.language}</span>
+      ),
     },
     {
       id: 'variables',
@@ -317,10 +347,13 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
       sortField: 'variables',
       mobile: 'detail',
       cell: (template) =>
-        template.variables?.length > 0 ? (
-          <span className="inline-flex max-w-[220px] truncate rounded bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-600">
-            {template.variables.join(', ')}
-          </span>
+        template.variables?.length ? (
+          <Tag
+            label={template.variables.join(', ')}
+            size="sm"
+            bgColor="gray"
+            maxWidth={220}
+          />
         ) : (
           <span className="text-xs text-gray-300">-</span>
         ),
@@ -340,13 +373,15 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
     setSyncMsg(null);
     try {
       const result = await ChannelApi.syncWhatsAppTemplates(String(channel.id));
-      setSyncMsg(`Synced ${result?.synced ?? 0} templates${result?.errors ? ` (${result.errors} errors)` : ''}`);
+      setSyncMsg(
+        `Synced ${result?.synced ?? 0} templates${result?.errors ? ` (${result.errors} errors)` : ''}`,
+      );
       await load();
     } catch (err: any) {
       setError(err?.message ?? 'Sync failed');
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMsg(null), 4000);
+      window.setTimeout(() => setSyncMsg(null), 4000);
     }
   };
 
@@ -366,51 +401,42 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
               {syncMsg}
             </span>
           ) : null}
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
+          <Button
+            onClick={() => void handleSync()}
+            variant="secondary"
+            leftIcon={!syncing ? <RefreshCw size={13} /> : undefined}
+            loading={syncing}
+            loadingMode="inline"
+            loadingLabel="Syncing..."
           >
-            {syncing ? <Loader size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-            {syncing ? 'Syncing...' : 'Sync'}
-          </button>
+            Sync
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
-        <form onSubmit={handleSearch} className="relative min-w-[200px] flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+      <div className="flex flex-shrink-0 flex-wrap items-start gap-2">
+        <form onSubmit={handleSearch} className="min-w-[200px] flex-1">
+          <BaseInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search templates..."
-            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            leftIcon={<Search size={14} />}
           />
         </form>
-        <select
-          value={statusFilter}
-          onChange={(event) => setStatus(event.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">All statuses</option>
-          {['APPROVED', 'PENDING', 'REJECTED', 'PAUSED'].map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <select
-          value={catFilter}
-          onChange={(event) => setCategory(event.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">All categories</option>
-          {['MARKETING', 'UTILITY', 'AUTHENTICATION'].map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+        <div className="min-w-[180px]">
+          <BaseSelect
+            value={statusFilter}
+            onChange={setStatus}
+            options={statusOptions}
+          />
+        </div>
+        <div className="min-w-[180px]">
+          <BaseSelect
+            value={catFilter}
+            onChange={setCategory}
+            options={categoryOptions}
+          />
+        </div>
       </div>
 
       {error ? (
@@ -449,7 +475,8 @@ export const WhatsAppTemplatesSection = ({ channel }: { channel: ConnectedChanne
       </div>
 
       <p className="flex-shrink-0 text-xs text-gray-400">
-        {templates.length} template{templates.length !== 1 ? 's' : ''} - Templates are created and managed in Meta Business Manager
+        {templates.length} template{templates.length !== 1 ? 's' : ''} -
+        Templates are created and managed in Meta Business Manager
       </p>
 
       {preview ? (

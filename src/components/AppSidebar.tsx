@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { useState } from "react";
 import { BookCheck, Settings } from "lucide-react";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useDisclosure } from "../hooks/useDisclosure";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useSettingsLinks } from "./settingsLinks";
+import { Button } from "./ui/Button";
 
 interface AppSidebarProps {
   onNavigate?: () => void;
@@ -16,7 +17,7 @@ export const AppSidebar = ({
   onNavigate,
   variant = "desktop",
 }: AppSidebarProps) => {
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const settingsMenu = useDisclosure();
   const { canWs } = useAuthorization();
   const { dismissed, isComplete } = useGetStarted();
   const { flags } = useFeatureFlags();
@@ -34,7 +35,7 @@ export const AppSidebar = ({
 
   const handleNavClick = () => {
     onNavigate?.();
-    setShowSettingsMenu(false);
+    settingsMenu.close();
   };
 
   const visibleNavItems = APP_NAV_ITEMS.filter(
@@ -120,25 +121,33 @@ export const AppSidebar = ({
 
           {!isExpanded && (
             <div className="relative flex w-full justify-center">
-              <button
-                onClick={() => setShowSettingsMenu((prev) => !prev)}
+              <Button
+                type="button"
+                variant="unstyled"
+                onClick={settingsMenu.toggle}
                 className={`${desktopIconButtonClass} ${
-                  showSettingsMenu
+                  settingsMenu.isOpen
                     ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
                     : ""
                 }`}
+                preserveChildLayout
               >
-                <Settings size={22} />
-                <span className="line-clamp-2 text-[9.5px] font-semibold leading-tight">
-                  Settings
+                <span className="flex h-full w-full flex-col items-center justify-center gap-1.5">
+                  <Settings size={22} />
+                  <span className="line-clamp-2 text-[9.5px] font-semibold leading-tight">
+                    Settings
+                  </span>
                 </span>
-              </button>
+              </Button>
 
-              {showSettingsMenu && (
+              {settingsMenu.isOpen && (
                 <>
-                  <div
+                  <Button
+                    type="button"
+                    variant="unstyled"
+                    aria-label="Close settings menu"
                     className="fixed inset-0 z-10"
-                    onClick={() => setShowSettingsMenu(false)}
+                    onClick={settingsMenu.close}
                   />
                   <div className="absolute bottom-0 left-full z-20 ml-3 w-72 rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
                     {settingsLinks.map((link) => (

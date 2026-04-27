@@ -9,9 +9,13 @@ import {
   type LucideIcon,
   type ReactNode,
 } from "lucide-react";
+import { Avatar } from "../../../components/ui/Avatar";
+import { Button } from "../../../components/ui/Button";
+import { Tag } from "../../../components/ui/Tag";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { Tooltip } from "../../../components/ui/Tooltip";
-import { getTagSurfaceStyle, resolveTagBaseColor } from "../../../lib/tagAppearance";
+import { CheckboxInput } from "../../../components/ui/inputs/CheckboxInput";
+import { resolveTagBaseColor } from "../../../lib/tagAppearance";
 import { channelConfig } from "../../inbox/data";
 import type {
   Contact,
@@ -23,6 +27,7 @@ import type {
 import type { LifecycleStage } from "../../workspace/types";
 import { MAX_VISIBLE_CHANNELS, MAX_VISIBLE_TAGS } from "../constants";
 import { ContactsPagination } from "./ContactsPagination";
+import { TruncatedText } from "../../../components/ui/TruncatedText";
 
 interface ContactsTableProps {
   loading: boolean;
@@ -128,6 +133,10 @@ function normalizeVisualColor(color?: string | null) {
   return LIFECYCLE_COLOR_MAP[color] ?? color;
 }
 
+function getContactName(contact: Contact) {
+  return `${contact.firstName} ${contact.lastName ?? ""}`.trim();
+}
+
 function DetailLine({
   icon: Icon,
   value,
@@ -153,24 +162,6 @@ function DetailLine({
   );
 }
 
-function ContactAvatar({ contact, size = "sm" }: { contact: Contact; size?: "sm" | "lg" }) {
-  const dimension = size === "lg" ? "h-12 w-12 text-sm" : "h-7 w-7 text-xs";
-
-  return (
-    <div className={`flex ${dimension} flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 font-semibold text-slate-500`}>
-      {contact.avatarUrl ? (
-        <img
-          src={contact.avatarUrl}
-          alt={contact.firstName}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <span>{contact.firstName?.charAt(0)?.toUpperCase() ?? "?"}</span>
-      )}
-    </div>
-  );
-}
-
 function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?: boolean }) {
   const visibleChannels = contact.contactChannels?.slice(0, MAX_VISIBLE_CHANNELS) ?? [];
   const overflowChannels = Math.max(
@@ -189,7 +180,11 @@ function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?
         const label = `${channel.channelType ?? "channel"}: ${channel.channelId ?? channel.identifier ?? ""}`;
 
         return (
-          <Tooltip key={`${channel.channelType}-${index}`} content={label} side="top">
+          <Tooltip
+            key={`${channel.channelType}-${index}`}
+            content={label}
+            position="top"
+          >
             <div className={`flex items-center justify-center rounded-full bg-white ${compact ? "h-7 w-7" : "h-6 w-6"}`}>
               {icon ? (
                 <img
@@ -251,18 +246,28 @@ export function ContactsTable({
           const tagColor = tagMeta?.color;
 
           return (
-            <Tooltip key={tag} content={tag} side="top">
+            mobile ? (
               <span
+                key={tag}
                 className={`${mobile ? "max-w-full break-words px-2.5 py-1" : "max-w-[72px] truncate px-2 py-0.5"} inline-flex items-center gap-1 rounded-full border text-[11px] font-medium`}
                 style={{
-                  ...getTagSurfaceStyle(tagColor),
+                  backgroundColor: `${resolveTagBaseColor(tagColor) ?? "var(--color-gray-200)"}1F`,
+                  borderColor: `${resolveTagBaseColor(tagColor) ?? "var(--color-gray-300)"}59`,
                   color: resolveTagBaseColor(tagColor),
                 }}
               >
                 {tagMeta?.emoji ? <span>{tagMeta.emoji}</span> : null}
                 <span className={mobile ? "max-w-full break-words" : "truncate"}>{tag}</span>
               </span>
-            </Tooltip>
+            ) : (
+              <Tag
+                key={tag}
+                label={tag}
+                emoji={tagMeta?.emoji}
+                bgColor={tagColor}
+                size="sm"
+              />
+            )
           );
         })}
         {contact.tags.length > MAX_VISIBLE_TAGS ? (
@@ -278,31 +283,32 @@ export function ContactsTable({
     {
       id: "select",
       header: (
-        <input
-          type="checkbox"
-          aria-label="Select all contacts"
-          className="cursor-pointer rounded"
-          checked={allFilteredSelected}
-          ref={(element) => {
-            if (element) {
-              element.indeterminate = someSelected && !allFilteredSelected;
-            }
-          }}
-          onChange={toggleSelectAll}
-        />
+        <div className="flex justify-center">
+          <CheckboxInput
+            aria-label="Select all contacts"
+            checked={allFilteredSelected}
+            ref={(element) => {
+              if (element) {
+                element.indeterminate = someSelected && !allFilteredSelected;
+              }
+            }}
+            onChange={() => toggleSelectAll()}
+            className="justify-center"
+          />
+        </div>
       ),
       align: "center",
       className: "w-8",
       mobile: "hidden",
       cell: (contact) => (
-        <input
-          type="checkbox"
-          aria-label={`Select ${contact.firstName} ${contact.lastName ?? ""}`.trim()}
-          className="cursor-pointer rounded"
-          checked={selectedIds.has(contact.id)}
-          onClick={(event) => event.stopPropagation()}
-          onChange={() => toggleSelectOne(contact.id)}
-        />
+        <div className="flex justify-center" onClick={(event) => event.stopPropagation()}>
+          <CheckboxInput
+            aria-label={`Select ${contact.firstName} ${contact.lastName ?? ""}`.trim()}
+            checked={selectedIds.has(contact.id)}
+            onChange={() => toggleSelectOne(contact.id)}
+            className="justify-center"
+          />
+        </div>
       ),
     },
     {
@@ -313,9 +319,13 @@ export function ContactsTable({
       mobile: "primary",
       cell: (contact) => (
         <div className="flex min-w-0 items-center gap-2">
-          <ContactAvatar contact={contact} />
+          <Avatar
+            src={contact.avatarUrl ?? undefined}
+            name={getContactName(contact)}
+            size="sm"
+          />
           <span className="truncate whitespace-nowrap text-sm font-medium text-gray-800">
-            {contact.firstName} {contact.lastName}
+            {getContactName(contact)}
           </span>
         </div>
       ),
@@ -333,9 +343,7 @@ export function ContactsTable({
       cell: (contact) => {
         const assigneeName = getAssigneeName(contact, workspaceUsers);
         return assigneeName ? (
-          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
-            {assigneeName}
-          </span>
+          <TruncatedText maxLength={20} text={assigneeName} />
         ) : (
           <span className="text-xs text-gray-300">-</span>
         );
@@ -347,11 +355,16 @@ export function ContactsTable({
       sortable: true,
       sortField: "lifecycle",
       mobile: "secondary",
-      cell: (contact) => (
-        <span className="whitespace-nowrap text-xs text-gray-600">
-          {getLifecycleLabel(contact, stages)}
-        </span>
-      ),
+      cell: (contact) => {
+        const lifecycleLabel = getLifecycleLabel(contact, stages);
+        return lifecycleLabel === "-" ? (
+          <span className="text-xs text-gray-300">-</span>
+        ) : (
+
+          <TruncatedText maxLength={20} text={lifecycleLabel} />
+        
+        );
+      },
     },
     {
       id: "email",
@@ -359,7 +372,7 @@ export function ContactsTable({
       sortable: true,
       sortField: "email",
       mobile: "detail",
-      cell: (contact) => <span className="text-xs text-gray-600">{contact.email || "-"}</span>,
+      cell: (contact) => <span className=" text-gray-800">{contact.email || "-"}</span>,
     },
     {
       id: "phone",
@@ -368,7 +381,7 @@ export function ContactsTable({
       sortField: "phone",
       mobile: "detail",
       cell: (contact) => (
-        <span className="whitespace-nowrap text-xs text-gray-600">{contact.phone || "-"}</span>
+        <span className="whitespace-nowrap text-gray-800">{contact.phone || "-"}</span>
       ),
     },
     {
@@ -401,24 +414,25 @@ export function ContactsTable({
         <div className="min-w-0">
           <div className="min-w-0 space-y-3">
             <div className="flex items-start gap-3">
-              <ContactAvatar contact={contact} size="lg" />
+              <Avatar
+                src={contact.avatarUrl ?? undefined}
+                name={getContactName(contact)}
+                size="lg"
+              />
 
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-[17px] font-semibold leading-tight text-slate-900">
-                      {contact.firstName} {contact.lastName}
+                      {getContactName(contact)}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span
-                        className="inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                        style={{
-                          ...getTagSurfaceStyle(normalizeVisualColor(lifecycle.color)),
-                          color: resolveTagBaseColor(normalizeVisualColor(lifecycle.color)),
-                        }}
-                      >
-                        <span className="truncate">{lifecycle.label}</span>
-                      </span>
+                      <Tag
+                        label={lifecycle.label}
+                        bgColor={normalizeVisualColor(lifecycle.color)}
+                        size="sm"
+                        maxWidth={220}
+                      />
                     </div>
                   </div>
 
@@ -449,20 +463,24 @@ export function ContactsTable({
       {someSelected ? (
         <div className="flex flex-wrap items-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
           <span className="font-medium">{selectedIds.size} selected</span>
-          <button
+          <Button
             onClick={handleDeleteSelected}
-            className="ml-auto flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+            className="ml-auto"
+            variant="danger"
+            leftIcon={<Trash2 size={13} />}
           >
-            <Trash2 size={13} />
-            Delete selected
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="rounded p-1 hover:bg-indigo-500"
-            title="Clear selection"
-          >
-            <X size={15} />
-          </button>
+          </Button>
+          <Tooltip content="Clear selection" position="top">
+            <span className="inline-flex">
+              <Button
+                onClick={() => setSelectedIds(new Set())}
+                variant="secondary"
+                iconOnly
+                leftIcon={<X size={15} />}
+                aria-label="Clear selection"
+              />
+            </span>
+          </Tooltip>
         </div>
       ) : null}
 

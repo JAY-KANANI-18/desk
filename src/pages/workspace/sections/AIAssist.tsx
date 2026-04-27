@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wand2 } from 'lucide-react';
-import { Toggle } from '../components/Toggle';
 
 import { SectionError } from '../components/SectionError';
 import type { AISettings, AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
+import { Button } from '../../../components/ui/Button';
+import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
+import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 export const AIAssist = () => {
+  const isMobile = useIsMobile();
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [assistPrompt, setAssistPrompt] = useState<AIPrompt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +84,11 @@ export const AIAssist = () => {
             </div>
           </div>
           <div className="self-start sm:self-auto">
-            <Toggle checked={settings.enabled} onChange={v => handleSettingsChange({ enabled: v })} />
+            <ToggleSwitch
+              checked={settings.enabled}
+              onChange={v => handleSettingsChange({ enabled: v })}
+              aria-label={settings.enabled ? 'Disable AI assist' : 'Enable AI assist'}
+            />
           </div>
         </div>
 
@@ -91,21 +99,22 @@ export const AIAssist = () => {
               This prompt is used only for the AI Assist reply action. Summary prompt is internal and not user-editable.
             </p>
           </div>
-          <textarea
+          <TextareaInput
             value={assistPrompt.prompt}
             onChange={(e) => setAssistPrompt({ ...assistPrompt, prompt: e.target.value })}
             rows={6}
-            className="min-h-[180px] w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:min-h-0 sm:px-4"
             placeholder="You will be a seasoned customer support agent..."
           />
           <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
+            <Button
               onClick={handlePromptSave}
-              disabled={savingPrompt}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
+              loading={savingPrompt}
+              loadingMode="inline"
+              loadingLabel="Saving..."
+              fullWidth={isMobile}
             >
-              {savingPrompt ? 'Saving...' : 'Save'}
-            </button>
+              Save
+            </Button>
           </div>
         </div>
       </div>

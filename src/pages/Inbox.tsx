@@ -60,7 +60,6 @@ export function InboxPage() {
     selectConversation,
     refreshContact,
     refreshConversations,
-    channels,
     handleChannelChange,
     setInputMode,
     setSnoozedUntil,
@@ -193,10 +192,8 @@ export function InboxPage() {
             key={selectedConversation?.id}
             inputMode={inputMode}
             onInputModeChange={setInputMode}
-            selectedConversation={selectedConversation as any}
             selectedChannel={selectedChannel}
             onChannelChange={handleChannelChange}
-            channels={channels}
             onSendMessage={handleSendMessage}
             onSendNote={handleSendNote}
             replyContext={replyContext}

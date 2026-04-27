@@ -1,11 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  CreditCard, Download, X, Pencil, Shield, Users, UserRound,
+  CreditCard, Download, Pencil, Users, UserRound,
   Loader2, AlertTriangle, Sparkles, Crown, ArrowUp, ArrowDown, Eye,
   RefreshCw, Plus, Minus, Zap, FileText, CheckCircle, Clock, Info,
   ChevronRight,
 } from 'lucide-react';
 import { workspaceApi } from '../lib/workspaceApi';
+import { Button } from '../components/ui/Button';
+import { IconButton } from '../components/ui/button/IconButton';
+import { BaseInput, type BaseInputProps } from '../components/ui/inputs/BaseInput';
+import { CenterModal } from '../components/ui/modal';
+import { PageLayout } from '../components/ui/PageLayout';
+import { Tag } from '../components/ui/Tag';
+import { Tooltip } from '../components/ui/Tooltip';
 
 /* ─────────────────────────── types ─────────────────────────── */
 type BillingProvider = 'stripe' | 'razorpay';
@@ -55,12 +62,12 @@ const PLAN_ORDER: PlanKey[] = ['trial', 'starter', 'growth', 'pro'];
 
 const PLAN_DISPLAY: Record<PlanKey, {
   label: string; price: string; badge: string;
-  badgeClass: string; description: string; accentColor: string;
+  badgeColor: string; description: string; accentColor: string;
 }> = {
-  trial:   { label: 'Free',     price: '₹0/mo',     badge: 'Trial',   badgeClass: 'bg-amber-100 text-amber-700',   description: 'Explore with limited access.',   accentColor: '#f59e0b' },
-  starter: { label: 'Starter',  price: '₹999/mo',   badge: 'Starter', badgeClass: 'bg-slate-100 text-slate-600',   description: 'For small teams.',               accentColor: '#64748b' },
-  growth:  { label: 'Growth',   price: '₹2,999/mo', badge: 'Growth',  badgeClass: 'bg-indigo-100 text-indigo-700',     description: 'For growing teams.',             accentColor: '#2563eb' },
-  pro:     { label: 'Pro',      price: '₹9,999/mo', badge: 'Pro',     badgeClass: 'bg-violet-100 text-violet-700', description: 'Advanced scale and support.',    accentColor: '#7c3aed' },
+  trial:   { label: 'Free',     price: '₹0/mo',     badge: 'Trial',   badgeColor: 'warning',    description: 'Explore with limited access.',   accentColor: '#f59e0b' },
+  starter: { label: 'Starter',  price: '₹999/mo',   badge: 'Starter', badgeColor: 'gray',       description: 'For small teams.',               accentColor: '#64748b' },
+  growth:  { label: 'Growth',   price: '₹2,999/mo', badge: 'Growth',  badgeColor: 'primary',    description: 'For growing teams.',             accentColor: '#2563eb' },
+  pro:     { label: 'Pro',      price: '₹9,999/mo', badge: 'Pro',     badgeColor: 'tag-purple', description: 'Advanced scale and support.',    accentColor: '#7c3aed' },
 };
 
 const AVAILABLE_PLANS: Array<{
@@ -99,17 +106,20 @@ function fmtDate(d?: string | null) {
 function pct(cur: number, lim: number) { return lim ? Math.min(Math.round((cur / lim) * 100), 100) : 0; }
 function isUpgrade(a: PlanKey, b: string) { return PLAN_ORDER.indexOf(b as PlanKey) > PLAN_ORDER.indexOf(a); }
 
-const statusColors: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700', trialing: 'bg-amber-100 text-amber-700',
-  past_due: 'bg-red-100 text-red-700', cancelled: 'bg-gray-100 text-gray-500',
-  expired: 'bg-gray-100 text-gray-500', paused: 'bg-orange-100 text-orange-700',
-  unpaid: 'bg-red-100 text-red-700',
+const statusTagColors: Record<string, string> = {
+  active: 'success',
+  trialing: 'warning',
+  past_due: 'error',
+  cancelled: 'gray',
+  expired: 'gray',
+  paused: 'tag-orange',
+  unpaid: 'error',
 };
 
-/* ─────────────────────────── atoms ─────────────────────────── */
-const Badge = ({ children, cls }: { children: React.ReactNode; cls: string }) => (
-  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{children}</span>
-);
+function openExternalUrl(url?: string | null) {
+  if (!url) return;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 function UsageBar({ title, icon, current, limit, unit, extra, onAddExtra }: {
   title: string; icon: React.ReactNode; current: number; limit: number;
@@ -128,7 +138,7 @@ function UsageBar({ title, icon, current, limit, unit, extra, onAddExtra }: {
             <p className="text-xs text-gray-400">{limit.toLocaleString()} included</p>
           </div>
         </div>
-        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${over ? 'bg-red-50 text-red-600' : high ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>{p}%</span>
+        <Tag label={`${p}%`} size="sm" bgColor={over ? 'error' : high ? 'warning' : 'success'} />
       </div>
       <div className="flex items-end justify-between mb-2">
         <span className={`text-2xl font-bold ${over ? 'text-red-600' : 'text-gray-900'}`}>{current.toLocaleString()}</span>
@@ -145,15 +155,29 @@ function UsageBar({ title, icon, current, limit, unit, extra, onAddExtra }: {
             {extra && <p className="text-xs text-red-400 mt-0.5">{extra}</p>}
           </div>
           {onAddExtra && (
-            <button onClick={onAddExtra} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 shrink-0 ml-3">
-              <Plus size={11} /> Add More
-            </button>
+            <Button
+              onClick={onAddExtra}
+              variant="danger"
+              
+              leftIcon={<Plus size={11} />}
+            >
+              Add More
+            </Button>
           )}
         </div>
       ) : high && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-amber-600 font-medium">Approaching limit</p>
-          {onAddExtra && <button onClick={onAddExtra} className="text-xs text-indigo-600 font-semibold hover:underline">Add more →</button>}
+          {onAddExtra && (
+            <Button
+              onClick={onAddExtra}
+              variant="link"
+              size="xs"
+              rightIcon={<ChevronRight size={12} />}
+            >
+              Add more
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -165,6 +189,7 @@ function InvoiceModal({ invoice, onClose, onPay, paying }: {
   invoice: InvoiceItem; onClose: () => void; onPay: () => void; paying: boolean;
 }) {
   const unpaid = invoice.status !== 'paid';
+  const invoiceDownloadUrl = invoice.invoicePdf || invoice.invoiceUrl;
   const rows = [
     ['Date', fmtDate(invoice.date)],
     ['Description', invoice.description || (invoice.type === 'addon' ? 'Add-on charge' : 'Subscription')],
@@ -175,55 +200,71 @@ function InvoiceModal({ invoice, onClose, onPay, paying }: {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${invoice.type === 'addon' ? 'bg-violet-50' : 'bg-indigo-50'}`}>
-              <FileText size={18} className={invoice.type === 'addon' ? 'text-violet-600' : 'text-indigo-600'} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{invoice.type === 'addon' ? 'Add-on Invoice' : 'Subscription Invoice'}</h3>
-              <p className="text-xs text-gray-400 font-mono mt-0.5">{invoice.id}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+    <CenterModal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title={invoice.type === 'addon' ? 'Add-on Invoice' : 'Subscription Invoice'}
+      subtitle={<span className="font-mono">{invoice.id}</span>}
+      headerIcon={
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${invoice.type === 'addon' ? 'bg-violet-50' : 'bg-indigo-50'}`}>
+          <FileText size={18} className={invoice.type === 'addon' ? 'text-violet-600' : 'text-indigo-600'} />
         </div>
-        <div className="px-6 py-5 space-y-0">
-          {rows.map(([label, value]) => (
-            <div key={label as string} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-              <span className="text-xs text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
-              <span className="text-sm font-semibold text-gray-800">{value}</span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between py-2.5">
-            <span className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Status</span>
-            <Badge cls={!unpaid ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}>
-              {!unpaid ? <CheckCircle size={11} /> : <Clock size={11} />} {invoice.status}
-            </Badge>
+      }
+      secondaryAction={
+        invoiceDownloadUrl ? (
+          <Button
+            onClick={() => openExternalUrl(invoiceDownloadUrl)}
+            variant="secondary"
+           
+            leftIcon={<Download size={14} />}
+          >
+            Download PDF
+          </Button>
+        ) : (
+          <Button
+            disabled
+            variant="secondary"
+           
+            leftIcon={<Download size={14} />}
+          >
+            No PDF
+          </Button>
+        )
+      }
+      primaryAction={
+        unpaid ? (
+          <Button
+            onClick={onPay}
+            loading={paying}
+            loadingMode="inline"
+            loadingLabel="Processing..."
+        
+            leftIcon={<CreditCard size={14} />}
+          >
+            Pay Now
+          </Button>
+        ) : undefined
+      }
+    >
+      <div className="space-y-0">
+        {rows.map(([label, value]) => (
+          <div key={label as string} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+            <span className="text-xs text-gray-400 uppercase tracking-wide font-semibold">{label}</span>
+            <span className="text-sm font-semibold text-gray-800">{value}</span>
           </div>
-        </div>
-        <div className="px-6 pb-6 flex gap-3">
-          {unpaid && (
-            <button onClick={onPay} disabled={paying}
-              className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2">
-              {paying ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-              {paying ? 'Processing…' : 'Pay Now'}
-            </button>
-          )}
-          {(invoice.invoiceUrl || invoice.invoicePdf) ? (
-            <a href={invoice.invoicePdf || invoice.invoiceUrl} target="_blank" rel="noreferrer"
-              className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-              <Download size={14} /> Download PDF
-            </a>
-          ) : (
-            <button disabled className="flex-1 py-3 border border-gray-100 rounded-xl text-sm text-gray-300 flex items-center justify-center gap-2">
-              <Download size={14} /> No PDF
-            </button>
-          )}
+        ))}
+        <div className="flex items-center justify-between py-2.5">
+          <span className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Status</span>
+          <Tag
+            label={invoice.status}
+            size="sm"
+            bgColor={!unpaid ? 'success' : 'error'}
+            icon={!unpaid ? <CheckCircle size={11} /> : <Clock size={11} />}
+          />
         </div>
       </div>
-    </div>
+    </CenterModal>
   );
 }
 
@@ -244,69 +285,77 @@ function AddonModal({ type, addonPricing, onClose, onSave, saving }: {
   const slabSize = !isAgents ? (pricing as any).slabSize : 1;
   const totalUnits = qty * slabSize;
   const totalCost = qty * pricePerUnit;
+  const primaryLabel = saving
+    ? 'Creating invoice...'
+    : isAgents
+      ? `Add ${qty} Agent${qty > 1 ? 's' : ''} - ${fmt(totalCost)}/mo`
+      : `Add ${totalUnits.toLocaleString()} Contacts - ${fmt(totalCost)}/mo`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <div>
-            <h3 className="font-semibold text-gray-900">{isAgents ? 'Add Extra Agents' : 'Add Extra Contacts'}</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {isAgents ? `${fmt(pricePerUnit)}/agent/month` : `${fmt(pricePerUnit)} per ${slabSize.toLocaleString()} contacts/month`}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400"><X size={16} /></button>
-        </div>
-        <div className="px-6 py-6">
-          <div className="bg-indigo-50 rounded-xl p-3 mb-5 flex gap-2">
-            <Info size={13} className="text-indigo-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-indigo-700">
-              {isAgents
-                ? 'Charged as a separate invoice on the same billing date as your subscription.'
-                : `Added in slabs of ${slabSize.toLocaleString()} contacts. Charged as a separate invoice on your next billing date.`}
-            </p>
-          </div>
-
-          <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-4">
-            {isAgents ? 'Number of Extra Agents' : `Contact Slabs (${slabSize.toLocaleString()} each)`}
-          </p>
-
-          <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-4 mb-4">
-            <button onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 shadow-sm">
-              <Minus size={16} />
-            </button>
-            <div className="text-center">
-              <span className="text-4xl font-bold text-gray-900">{qty}</span>
-              <p className="text-xs text-gray-400 mt-1">
-                {isAgents ? `agent${qty > 1 ? 's' : ''}` : `× ${slabSize.toLocaleString()} = ${totalUnits.toLocaleString()} contacts`}
-              </p>
-            </div>
-            <button onClick={() => setQty(q => q + 1)}
-              className="w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 shadow-sm">
-              <Plus size={16} />
-            </button>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 p-4 mb-5">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-500">{qty} × {fmt(pricePerUnit)}</span>
-              <span className="font-bold text-gray-900">{fmt(totalCost)}/mo</span>
-            </div>
-            <p className="text-xs text-gray-400">Charged as a separate invoice, same billing date</p>
-          </div>
-
-          <button onClick={() => onSave(type, qty)} disabled={saving}
-            className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 disabled:opacity-40 flex items-center justify-center gap-2">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-            {saving ? 'Creating invoice…'
-              : isAgents
-              ? `Add ${qty} Agent${qty > 1 ? 's' : ''} · ${fmt(totalCost)}/mo`
-              : `Add ${totalUnits.toLocaleString()} Contacts · ${fmt(totalCost)}/mo`}
-          </button>
-        </div>
+    <CenterModal
+      isOpen
+      onClose={onClose}
+      size="sm"
+      title={isAgents ? 'Add Extra Agents' : 'Add Extra Contacts'}
+      subtitle={isAgents ? `${fmt(pricePerUnit)}/agent/month` : `${fmt(pricePerUnit)} per ${slabSize.toLocaleString()} contacts/month`}
+      primaryAction={
+        <Button
+          onClick={() => onSave(type, qty)}
+          loading={saving}
+          loadingMode="inline"
+          loadingLabel="Creating invoice..."
+          variant="dark"
+       
+          leftIcon={<Zap size={14} />}
+        >
+          {primaryLabel}
+        </Button>
+      }
+    >
+      <div className="bg-indigo-50 rounded-xl p-3 mb-5 flex gap-2">
+        <Info size={13} className="text-indigo-500 mt-0.5 shrink-0" />
+        <p className="text-xs text-indigo-700">
+          {isAgents
+            ? 'Charged as a separate invoice on the same billing date as your subscription.'
+            : `Added in slabs of ${slabSize.toLocaleString()} contacts. Charged as a separate invoice on your next billing date.`}
+        </p>
       </div>
-    </div>
+
+      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-4">
+        {isAgents ? 'Number of Extra Agents' : `Contact Slabs (${slabSize.toLocaleString()} each)`}
+      </p>
+
+      <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-4 mb-4">
+        <IconButton
+          onClick={() => setQty(q => Math.max(1, q - 1))}
+          icon={<Minus size={16} />}
+          variant="secondary"
+       
+          aria-label="Decrease quantity"
+        />
+        <div className="text-center">
+          <span className="text-4xl font-bold text-gray-900">{qty}</span>
+          <p className="text-xs text-gray-400 mt-1">
+            {isAgents ? `agent${qty > 1 ? 's' : ''}` : `× ${slabSize.toLocaleString()} = ${totalUnits.toLocaleString()} contacts`}
+          </p>
+        </div>
+        <IconButton
+          onClick={() => setQty(q => q + 1)}
+          icon={<Plus size={16} />}
+          variant="secondary"
+     
+          aria-label="Increase quantity"
+        />
+      </div>
+
+      <div className="rounded-xl border border-gray-200 p-4">
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-gray-500">{qty} × {fmt(pricePerUnit)}</span>
+          <span className="font-bold text-gray-900">{fmt(totalCost)}/mo</span>
+        </div>
+        <p className="text-xs text-gray-400">Charged as a separate invoice, same billing date</p>
+      </div>
+    </CenterModal>
   );
 }
 
@@ -317,48 +366,59 @@ function BillingDetailsModal({ initial, onClose, onSave, loading }: {
 }) {
   const [form, setForm] = useState<BillingDetails>(initial);
   const set = (k: keyof BillingDetails, v: string) => setForm(p => ({ ...p, [k]: v }));
-  const valid = form.companyName && form.email && form.addressLine1 && form.city && form.state && form.postalCode;
+  const valid = Boolean(form.companyName && form.email && form.addressLine1 && form.city && form.state && form.postalCode);
 
-  const rows: [string, keyof BillingDetails][][] = [
-    [['Company Name', 'companyName'], ['Billing Email', 'email']],
-    [['Phone', 'phone'], ['Tax ID / GSTIN', 'taxId']],
-    [['Address Line 1', 'addressLine1'], ['Address Line 2', 'addressLine2']],
-    [['City', 'city'], ['State', 'state']],
-    [['Postal Code', 'postalCode'], ['Country', 'country']],
+  const rows: Array<Array<{ label: string; key: keyof BillingDetails; type?: BaseInputProps['type'] }>> = [
+    [{ label: 'Company Name', key: 'companyName' }, { label: 'Billing Email', key: 'email', type: 'email' }],
+    [{ label: 'Phone', key: 'phone', type: 'tel' }, { label: 'Tax ID / GSTIN', key: 'taxId' }],
+    [{ label: 'Address Line 1', key: 'addressLine1' }, { label: 'Address Line 2', key: 'addressLine2' }],
+    [{ label: 'City', key: 'city' }, { label: 'State', key: 'state' }],
+    [{ label: 'Postal Code', key: 'postalCode' }, { label: 'Country', key: 'country' }],
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Billing Details</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Used on invoices and tax documents</p>
+    <CenterModal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      title="Billing Details"
+      subtitle="Used on invoices and tax documents"
+      secondaryAction={
+        <Button onClick={onClose} variant="secondary" size="md" radius="lg">
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          disabled={!valid}
+          loading={loading}
+          loadingMode="inline"
+          loadingLabel="Saving..."
+          onClick={() => onSave(form)}
+          size="md"
+          radius="lg"
+        >
+          Save Details
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        {rows.map((row, i) => (
+          <div key={i} className="grid md:grid-cols-2 gap-4">
+            {row.map(({ label, key, type }) => (
+              <BaseInput
+                key={key}
+                label={label}
+                labelVariant="sidebar"
+                type={type}
+                value={form[key] || ''}
+                onChange={e => set(key, e.target.value)}
+              />
+            ))}
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400"><X size={16} /></button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          {rows.map((row, i) => (
-            <div key={i} className="grid md:grid-cols-2 gap-4">
-              {row.map(([label, key]) => (
-                <div key={key as string}>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{label}</label>
-                  <input value={(form as any)[key] || ''} onChange={e => set(key, e.target.value)}
-                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-                </div>
-              ))}
-            </div>
-          ))}
-          <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
-            <button disabled={!valid || loading} onClick={() => onSave(form)}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50">
-              {loading ? 'Saving…' : 'Save Details'}
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
-    </div>
+    </CenterModal>
   );
 }
 
@@ -484,16 +544,41 @@ export const Billing = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f8f9fc]">
-      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-5">
+    <div className="h-full overflow-y-auto bg-[#f8f9fc] md:overflow-hidden">
+      <PageLayout
+        title="Billing"
+        subtitle="Manage plan, add-ons, invoices and usage."
+        className="bg-[#f8f9fc]"
+        contentClassName="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 lg:px-8"
+        actions={
+          <Tooltip content="Refresh billing">
+            <IconButton
+              onClick={load}
+              icon={<RefreshCw size={15} />}
+              variant="secondary"
+              size="md"
+              radius="lg"
+              aria-label="Refresh billing"
+            />
+          </Tooltip>
+        }
+      >
+      <div className="p-4 md:p-0 max-w-7xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between md:hidden">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Billing</h1>
             <p className="text-sm text-gray-400 mt-0.5">Manage plan, add-ons, invoices and usage.</p>
           </div>
-          <button onClick={load} className="p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-400 shadow-sm"><RefreshCw size={15} /></button>
+          <IconButton
+            onClick={load}
+            icon={<RefreshCw size={15} />}
+            variant="secondary"
+            size="md"
+            radius="lg"
+            aria-label="Refresh billing"
+          />
         </div>
 
         {/* ── Banners ── */}
@@ -562,10 +647,18 @@ export const Billing = () => {
                     <p className="text-sm font-semibold text-gray-800">{fmt(inv.amount, inv.currency)}</p>
                     <p className="text-xs text-gray-400">{fmtDate(inv.date)} · {inv.description || 'Invoice'}</p>
                   </div>
-                  <button onClick={() => handlePayInvoice(inv)} disabled={payingInvoice === inv.id}
-                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5">
-                    {payingInvoice === inv.id ? <Loader2 size={11} className="animate-spin" /> : <CreditCard size={11} />} Pay Now
-                  </button>
+                  <Button
+                    onClick={() => handlePayInvoice(inv)}
+                    loading={payingInvoice === inv.id}
+                    loadingMode="inline"
+                    loadingLabel="Paying..."
+                    variant="danger"
+                    size="xs"
+                    radius="lg"
+                    leftIcon={<CreditCard size={11} />}
+                  >
+                    Pay Now
+                  </Button>
                 </div>
               ))}
             </div>
@@ -583,9 +676,9 @@ export const Billing = () => {
                 <h2 className="text-xl font-bold text-gray-900">{billing?.plan.name} Plan</h2>
                 <p className="text-sm text-gray-400 mt-0.5">{currentDisplay.description}</p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge cls={currentDisplay.badgeClass}>{currentDisplay.badge}</Badge>
-                  {sub?.status && <Badge cls={statusColors[sub.status] || 'bg-gray-100 text-gray-500'}>{sub.status}</Badge>}
-                  {sub?.cancelAtPeriodEnd && <Badge cls="bg-orange-100 text-orange-700">Cancels at period end</Badge>}
+                  <Tag label={currentDisplay.badge} size="sm" bgColor={currentDisplay.badgeColor} />
+                  {sub?.status && <Tag label={sub.status} size="sm" bgColor={statusTagColors[sub.status] || 'gray'} />}
+                  {sub?.cancelAtPeriodEnd && <Tag label="Cancels at period end" size="sm" bgColor="tag-orange" />}
                 </div>
               </div>
             </div>
@@ -616,10 +709,16 @@ export const Billing = () => {
               <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">Pay via</p>
               <div className="flex gap-2">
                 {(['razorpay', 'stripe'] as BillingProvider[]).map(p => (
-                  <button key={p} onClick={() => setSelectedProvider(p)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border capitalize ${selectedProvider === p ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
-                    {p}
-                  </button>
+                  <Button
+                    key={p}
+                    onClick={() => setSelectedProvider(p)}
+                    variant={selectedProvider === p ? 'dark' : 'secondary'}
+                    size="xs"
+                    radius="lg"
+                    aria-pressed={selectedProvider === p}
+                  >
+                    {p === 'razorpay' ? 'Razorpay' : 'Stripe'}
+                  </Button>
                 ))}
               </div>
             </div>
@@ -627,11 +726,19 @@ export const Billing = () => {
               {AVAILABLE_PLANS.filter(p => p.key !== currentPlan).map(plan => {
                 const up = isUpgrade(currentPlan, plan.key);
                 return (
-                  <button key={plan.key} onClick={() => handleUpgrade(plan.key)} disabled={checkoutLoading === plan.key}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 ${up ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
-                    {checkoutLoading === plan.key ? <Loader2 size={13} className="animate-spin" /> : up ? <ArrowUp size={13} /> : <ArrowDown size={13} />}
+                  <Button
+                    key={plan.key}
+                    onClick={() => handleUpgrade(plan.key)}
+                    loading={checkoutLoading === plan.key}
+                    loadingMode="inline"
+                    loadingLabel="Opening..."
+                    variant={up ? 'primary' : 'secondary'}
+                    size="sm"
+                    radius="lg"
+                    leftIcon={up ? <ArrowUp size={13} /> : <ArrowDown size={13} />}
+                  >
                     {up ? 'Upgrade' : 'Downgrade'} to {plan.name}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -658,30 +765,48 @@ export const Billing = () => {
         {currentPlan !== 'trial' && addonPricing && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {addonPricing.extraAgent && (
-              <button onClick={() => setAddonModal('extra_agents')}
-                className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all text-left group">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-100">
-                  <UserRound size={16} className="text-indigo-600" />
+              <Button
+                onClick={() => setAddonModal('extra_agents')}
+                variant="select-card"
+                size="lg"
+                radius="lg"
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
+              >
+                <div className="flex w-full items-center gap-4 text-left">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                    <UserRound size={16} className="text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Add Extra Agents</p>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{addonPricing.extraAgent.label} · separate invoice</p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-300 shrink-0" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">Add Extra Agents</p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{addonPricing.extraAgent.label} · separate invoice</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 shrink-0" />
-              </button>
+              </Button>
             )}
             {addonPricing.extraContacts && (
-              <button onClick={() => setAddonModal('extra_contacts')}
-                className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:border-violet-200 hover:shadow-md transition-all text-left group">
-                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 group-hover:bg-violet-100">
-                  <Users size={16} className="text-violet-600" />
+              <Button
+                onClick={() => setAddonModal('extra_contacts')}
+                variant="select-card"
+                size="lg"
+                radius="lg"
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
+              >
+                <div className="flex w-full items-center gap-4 text-left">
+                  <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+                    <Users size={16} className="text-violet-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Add Extra Contacts</p>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{addonPricing.extraContacts.label} · separate invoice</p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-300 shrink-0" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">Add Extra Contacts</p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{addonPricing.extraContacts.label} · separate invoice</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-300 group-hover:text-violet-400 shrink-0" />
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -695,8 +820,16 @@ export const Billing = () => {
               const up = isUpgrade(currentPlan, plan.key);
               return (
                 <div key={plan.key} className={`rounded-2xl border p-5 relative transition-all ${isCurrent ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200 hover:border-gray-300'}`}>
-                  {plan.popular && !isCurrent && <span className="absolute -top-2.5 left-4 bg-violet-600 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wide">POPULAR</span>}
-                  {isCurrent && <span className="absolute -top-2.5 left-4 bg-indigo-600 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wide">CURRENT</span>}
+                  {plan.popular && !isCurrent && (
+                    <div className="absolute -top-2.5 left-4">
+                      <Tag label="POPULAR" size="sm" bgColor="tag-purple" />
+                    </div>
+                  )}
+                  {isCurrent && (
+                    <div className="absolute -top-2.5 left-4">
+                      <Tag label="CURRENT" size="sm" bgColor="primary" />
+                    </div>
+                  )}
                   <p className="font-bold text-gray-900 text-base">{plan.name}</p>
                   <p className="text-xl font-bold text-gray-800 mt-1">{plan.price}</p>
                   <p className="text-xs text-gray-400 mb-4">base plan · billed monthly</p>
@@ -714,13 +847,20 @@ export const Billing = () => {
                       : <p className="text-xs text-gray-400 italic">Agents unlimited on this plan</p>}
                     <p className="text-xs text-gray-500">+{plan.extraContactsPrice}</p>
                   </div>
-                  <button disabled={isCurrent || checkoutLoading === plan.key} onClick={() => handleUpgrade(plan.key)}
-                    className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 ${isCurrent ? 'bg-indigo-100 text-indigo-500 cursor-default' : up ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    {isCurrent ? 'Current Plan'
-                      : checkoutLoading === plan.key ? <><Loader2 size={13} className="animate-spin" />Opening…</>
-                      : up ? <><ArrowUp size={13} />Upgrade</>
-                      : <><ArrowDown size={13} />Downgrade</>}
-                  </button>
+                  <Button
+                    disabled={isCurrent}
+                    loading={checkoutLoading === plan.key}
+                    loadingMode="inline"
+                    loadingLabel="Opening..."
+                    onClick={() => handleUpgrade(plan.key)}
+                    variant={isCurrent ? 'soft-primary' : up ? 'primary' : 'soft'}
+                    size="sm"
+                    radius="lg"
+                    fullWidth
+                    leftIcon={!isCurrent ? (up ? <ArrowUp size={13} /> : <ArrowDown size={13} />) : undefined}
+                  >
+                    {isCurrent ? 'Current Plan' : up ? 'Upgrade' : 'Downgrade'}
+                  </Button>
                 </div>
               );
             })}
@@ -734,9 +874,15 @@ export const Billing = () => {
               <h2 className="text-base font-bold text-gray-900">Billing Details</h2>
               <p className="text-xs text-gray-400 mt-0.5">Used on invoices and tax documents</p>
             </div>
-            <button onClick={() => setEditingBilling(true)} className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl">
-              <Pencil size={12} /> Edit
-            </button>
+            <Button
+              onClick={() => setEditingBilling(true)}
+              variant="soft-primary"
+              size="xs"
+              radius="lg"
+              leftIcon={<Pencil size={12} />}
+            >
+              Edit
+            </Button>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
             {[['Company', billingDetails.companyName], ['Email', billingDetails.email], ['Phone', billingDetails.phone], ['Tax ID', billingDetails.taxId], ['City', billingDetails.city], ['State', billingDetails.state]].map(([label, value]) => (
@@ -773,30 +919,56 @@ export const Billing = () => {
                     <td className="py-3.5 text-sm text-gray-700 max-w-[160px] truncate">{inv.description || '—'}</td>
                     <td className="py-3.5 text-sm font-semibold text-gray-900 whitespace-nowrap">{fmt(inv.amount, inv.currency)}</td>
                     <td className="py-3.5">
-                      <span className={`text-xs px-2 py-1 rounded-lg font-medium ${inv.type === 'addon' ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                        {inv.type === 'addon' ? 'Add-on' : 'Subscription'}
-                      </span>
+                      <Tag
+                        label={inv.type === 'addon' ? 'Add-on' : 'Subscription'}
+                        size="sm"
+                        bgColor={inv.type === 'addon' ? 'tag-purple' : 'primary'}
+                      />
                     </td>
                     <td className="py-3.5">
-                      <span className={`text-xs px-2 py-1 rounded-lg font-medium ${inv.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                        {inv.status}
-                      </span>
+                      <Tag
+                        label={inv.status}
+                        size="sm"
+                        bgColor={inv.status === 'paid' ? 'success' : 'error'}
+                      />
                     </td>
                     <td className="py-3.5">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => setPreviewInvoice(inv)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600" title="Preview">
-                          <Eye size={14} />
-                        </button>
+                        <Tooltip content="Preview">
+                          <IconButton
+                            onClick={() => setPreviewInvoice(inv)}
+                            icon={<Eye size={14} />}
+                            variant="ghost"
+                            size="xs"
+                            radius="lg"
+                            aria-label="Preview invoice"
+                          />
+                        </Tooltip>
                         {(inv.invoiceUrl || inv.invoicePdf) && (
-                          <a href={inv.invoicePdf || inv.invoiceUrl} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600" title="Download">
-                            <Download size={14} />
-                          </a>
+                          <Tooltip content="Download">
+                            <IconButton
+                              onClick={() => openExternalUrl(inv.invoicePdf || inv.invoiceUrl)}
+                              icon={<Download size={14} />}
+                              variant="ghost"
+                              size="xs"
+                              radius="lg"
+                              aria-label="Download invoice"
+                            />
+                          </Tooltip>
                         )}
                         {inv.status !== 'paid' && (
-                          <button onClick={() => handlePayInvoice(inv)} disabled={payingInvoice === inv.id}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 disabled:opacity-50">
-                            {payingInvoice === inv.id ? <Loader2 size={11} className="animate-spin" /> : <CreditCard size={11} />} Pay
-                          </button>
+                          <Button
+                            onClick={() => handlePayInvoice(inv)}
+                            loading={payingInvoice === inv.id}
+                            loadingMode="inline"
+                            loadingLabel="Paying..."
+                            variant="danger"
+                            size="xs"
+                            radius="lg"
+                            leftIcon={<CreditCard size={11} />}
+                          >
+                            Pay
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -808,6 +980,7 @@ export const Billing = () => {
         </div>
 
       </div>
+      </PageLayout>
 
       {/* ── Modals ── */}
       {previewInvoice && (

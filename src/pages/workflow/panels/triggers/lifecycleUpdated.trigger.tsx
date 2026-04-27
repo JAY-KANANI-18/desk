@@ -1,63 +1,118 @@
-
-// ── 10. Lifecycle Updated ─────────────────────────────────────────────────────
-
 import { useCallback, useEffect, useState } from "react";
-import { Props, LifecycleUpdatedData } from "../../workflow.types";
-import { InfoBox, Field, Section } from "../PanelShell";
+import type { LifecycleStage } from "../../../workspace/types";
+import { Button } from "../../../../components/ui/Button";
+import { CheckboxInput } from "../../../../components/ui/inputs";
 import { workspaceApi } from "../../../../lib/workspaceApi";
+import type { LifecycleUpdatedData, Props } from "../../workflow.types";
+import { Field, InfoBox, Section } from "../PanelShell";
 
+const stageSelectionOptions = [
+  { value: "all", label: "All Stages" },
+  { value: "specific", label: "Specific Stages" },
+] as const;
 
 export function LifecycleConfig({ trigger, onChange }: Props) {
   const data = trigger.data as LifecycleUpdatedData;
-    const [stages, setStages]         = useState<any[]>([]);
-    const [loading, setLoading]       = useState(true);
-    const [loadError, setLoadError]   = useState<string | null>(null);
-  const toggle = (stage: string) => {
-    const stages = data.stages.includes(stage) ? data.stages.filter((s) => s !== stage) : [...data.stages, stage];
-    onChange({ data: { ...data, stages } });
-    
+  const [stages, setStages] = useState<LifecycleStage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const toggleStage = (stageId: string) => {
+    const nextStages = data.stages.includes(stageId)
+      ? data.stages.filter((id) => id !== stageId)
+      : [...data.stages, stageId];
+
+    onChange({ data: { ...data, stages: nextStages } });
   };
 
-    const load = useCallback(async () => {
-      // setLoading(true); 
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
       setLoadError(null);
-     setStages(await workspaceApi.getLifecycleStages()); 
-      
-    }, []);
-  
-    useEffect(() => { load(); }, [load]);
+      const nextStages = await workspaceApi.getLifecycleStages();
+      setStages(Array.isArray(nextStages) ? nextStages : []);
+    } catch {
+      setStages([]);
+      setLoadError("Failed to load lifecycle stages.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   return (
     <Section title="Configuration">
-      <InfoBox>Requires Lifecycle feature to be enabled in Workspace Settings.</InfoBox>
+      <InfoBox>
+        Requires Lifecycle feature to be enabled in Workspace Settings.
+      </InfoBox>
+
       <div className="mt-3 space-y-3">
         <Field label="Stage Selection">
           <div className="flex gap-2">
-            {(['all', 'specific'] as const).map((m) => (
-              <button key={m} onClick={() => onChange({ data: { ...data, stageSelection: m } })}
-                className={`flex-1 py-2 text-xs font-medium rounded-md border transition-colors ${m === data.stageSelection ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
-                {m === 'all' ? 'All Stages' : 'Specific Stages'}
-              </button>
+            {stageSelectionOptions.map((option) => (
+              <div key={option.value} className="flex-1">
+                <Button
+                  variant={
+                    option.value === data.stageSelection ? "dark" : "secondary"
+                  }
+                  size="sm"
+                  fullWidth
+                  onClick={() =>
+                    onChange({
+                      data: { ...data, stageSelection: option.value },
+                    })
+                  }
+                >
+                  {option.label}
+                </Button>
+              </div>
             ))}
           </div>
         </Field>
-        {data.stageSelection === 'specific' && (
-          <div className="flex flex-wrap gap-1.5">
-            {stages.map((stage) => {
-              const active = data.stages.includes(stage.id);
-              return (
-                <button key={stage.id} onClick={() => toggle(stage.id)}
-                  className={`px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors ${active ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
-                  {stage.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-          <input type="checkbox" checked={data.triggerWhenCleared}
-            onChange={(e) => onChange({ data: { ...data, triggerWhenCleared: e.target.checked } })} className="rounded" />
-          Also trigger when lifecycle stage is cleared
-        </label>
+
+        {data.stageSelection === "specific" ? (
+          loading ? (
+            <p className="text-xs text-gray-400">Loading lifecycle stages...</p>
+          ) : loadError ? (
+            <InfoBox type="warning">{loadError}</InfoBox>
+          ) : stages.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {stages.map((stage) => {
+                const stageId = String(stage.id);
+                const active = data.stages.includes(stageId);
+
+                return (
+                  <Button
+                    key={stageId}
+                    variant={active ? "dark" : "secondary"}
+                    size="xs"
+                    onClick={() => toggleStage(stageId)}
+                  >
+                    {stage.name}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">
+              No lifecycle stages configured.
+            </p>
+          )
+        ) : null}
+
+        <CheckboxInput
+          checked={data.triggerWhenCleared}
+          onChange={(checked) =>
+            onChange({
+              data: { ...data, triggerWhenCleared: checked },
+            })
+          }
+          size="sm"
+          label="Also trigger when lifecycle stage is cleared"
+        />
       </div>
     </Section>
   );

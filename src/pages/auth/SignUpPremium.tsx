@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "./auth.utils";
 import {
   AuthDivider,
   AuthField,
   AuthNotice,
+  AuthPasswordField,
   AuthPrimaryButton,
+  AuthSecondaryButton,
   AuthShell,
 } from "./components/AuthShell";
 
@@ -17,8 +19,6 @@ export const SignUpPremium = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,23 +88,23 @@ export const SignUpPremium = () => {
       }
     >
       <div className="space-y-4">
-        <button
+        <AuthSecondaryButton
           type="button"
           onClick={handleGoogle}
           disabled={googleLoading}
-          className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {googleLoading ? (
-            <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
-          ) : (
+          loading={googleLoading}
+          loadingLabel="Connecting Google..."
+          leftIcon={
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
+              alt=""
+              aria-hidden="true"
               className="h-5 w-5"
             />
-          )}
+          }
+        >
           Continue with Google
-        </button>
+        </AuthSecondaryButton>
 
         <AuthDivider label="or continue with email" />
 
@@ -123,10 +123,9 @@ export const SignUpPremium = () => {
           />
 
           <div className="space-y-2">
-            <AuthField
+            <AuthPasswordField
               label="Password"
               icon={Lock}
-              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
@@ -134,16 +133,6 @@ export const SignUpPremium = () => {
               }}
               placeholder="12+ chars, mixed case, number, symbol"
               autoComplete="new-password"
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="text-gray-400 transition hover:text-gray-600"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              }
             />
 
             {password ? (
@@ -159,10 +148,9 @@ export const SignUpPremium = () => {
             ) : null}
           </div>
 
-          <AuthField
+          <AuthPasswordField
             label="Confirm password"
             icon={Lock}
-            type={showConfirm ? "text" : "password"}
             value={confirmPassword}
             onChange={(event) => {
               setConfirmPassword(event.target.value);
@@ -171,16 +159,6 @@ export const SignUpPremium = () => {
             placeholder="Repeat your password"
             autoComplete="new-password"
             error={Boolean(confirmPassword && confirmPassword !== password)}
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowConfirm((prev) => !prev)}
-                className="text-gray-400 transition hover:text-gray-600"
-                aria-label={showConfirm ? "Hide password" : "Show password"}
-              >
-                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
           />
 
           {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
@@ -190,15 +168,13 @@ export const SignUpPremium = () => {
             Policy.
           </p>
 
-          <AuthPrimaryButton type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              "Create account"
-            )}
+          <AuthPrimaryButton
+            type="submit"
+            disabled={loading}
+            loading={loading}
+            loadingLabel="Creating account..."
+          >
+            Create account
           </AuthPrimaryButton>
         </form>
       </div>

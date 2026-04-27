@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Users, X } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { OrgGuard, useAuthorization } from "../../context/AuthorizationContext";
-import { MobileSheet } from "../../components/topbar/MobileSheet";
+import { MobileSheet } from "../../components/ui/modal";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { Avatar } from "../../components/ui/Avatar";
+import { Button } from "../../components/ui/button/Button";
+import { IconButton } from "../../components/ui/button/IconButton";
+import { BaseInput } from "../../components/ui/inputs";
+import { CenterModal } from "../../components/ui/Modal";
 
 interface WorkspaceModalProps {
   open: boolean;
@@ -27,44 +32,44 @@ export const WorkspaceModal = ({
 
   useEffect(() => {
     setName(initialName || "");
-  }, [initialName]);
+  }, [initialName, open]);
 
-  useEffect(() => {
-    setName("");
-  }, [open]);
+  const trimmedName = name.trim();
 
   if (!open) return null;
 
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
         title={<h3 className="text-base font-semibold text-slate-900">{title}</h3>}
         footer={
           <div className="flex flex-col-reverse gap-2">
-            <button
+            <Button
               onClick={onClose}
-              className="rounded-lg border px-3 py-2 text-sm"
+              variant="secondary"
+              fullWidth
             >
               Cancel
-            </button>
+            </Button>
 
-            <button
-              onClick={() => onSubmit(name)}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+            <Button
+              onClick={() => onSubmit(trimmedName)}
+              disabled={!trimmedName}
+              fullWidth
             >
               Save
-            </button>
+            </Button>
           </div>
         }
       >
         <div className="p-4">
-          <input
+          <BaseInput
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(event) => setName(event.target.value)}
             placeholder="Workspace name"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            label="Workspace name"
           />
         </div>
       </MobileSheet>
@@ -72,46 +77,37 @@ export const WorkspaceModal = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-[420px] rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Workspace name"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={onClose}
-              className="px-3 py-2 text-sm rounded-lg border"
-            >
-              Cancel
-            </button>
-
-            <button
-              onClick={() => onSubmit(name)}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title={title}
+      size="sm"
+      width={420}
+      secondaryAction={
+        <Button onClick={onClose} variant="secondary" >
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={() => onSubmit(trimmedName)}
+          disabled={!trimmedName}
+        >
+          Save
+        </Button>
+      }
+    >
+      <BaseInput
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder="Workspace name"
+        label="Workspace name"
+      />
+    </CenterModal>
   );
 };
 
-interface Props {
+interface DeleteWorkspaceModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -123,73 +119,74 @@ export const DeleteWorkspaceModal = ({
   onClose,
   onConfirm,
   workspaceName,
-}: Props) => {
+}: DeleteWorkspaceModalProps) => {
   const isMobile = useIsMobile();
+
   if (!open) return null;
+
+  const content = (
+    <p className="text-sm text-gray-600">
+      Are you sure you want to delete{" "}
+      <span className="font-medium">{workspaceName}</span>? This action cannot
+      be undone.
+    </p>
+  );
 
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
-        title={<h3 className="text-base font-semibold text-slate-900">Delete workspace</h3>}
+        title={
+          <h3 className="text-base font-semibold text-slate-900">
+            Delete workspace
+          </h3>
+        }
         footer={
           <div className="flex flex-col-reverse gap-2">
-            <button
+            <Button
               onClick={onClose}
-              className="rounded-lg border px-3 py-2 text-sm"
+              variant="secondary"
+              fullWidth
             >
               Cancel
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={onConfirm}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+              variant="danger"
+              fullWidth
             >
               Delete
-            </button>
+            </Button>
           </div>
         }
       >
-        <div className="p-4">
-          <p className="text-sm text-gray-600">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">{workspaceName}</span>? This action
-            cannot be undone.
-          </p>
-        </div>
+        <div className="p-4">{content}</div>
       </MobileSheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-[420px] rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-2">Delete workspace</h3>
-
-        <p className="text-sm text-gray-600 mb-6">
-          Are you sure you want to delete{" "}
-          <span className="font-medium">{workspaceName}</span>? This action
-          cannot be undone.
-        </p>
-
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-2 text-sm border rounded-lg"
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title="Delete workspace"
+      size="sm"
+      width={420}
+      secondaryAction={
+        <Button onClick={onClose} variant="secondary">
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button onClick={onConfirm} variant="danger" >
+          Delete
+        </Button>
+      }
+    >
+      {content}
+    </CenterModal>
   );
 };
 
@@ -203,13 +200,21 @@ export const WorkspacesManage = () => {
   const canManageWorkspaces = canOrg("org:workspaces:manage");
 
   const handleCreate = (name: string) => {
-    console.log("create workspace", name);
-    createWorkspace({ name, organizationId: activeOrganization?.id });
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    createWorkspace({ name: trimmedName, organizationId: activeOrganization?.id });
     setCreateOpen(false);
   };
 
   const handleDelete = () => {
-    console.log("delete workspace", deleteWs.id);
+    if (!deleteWs) {
+      return;
+    }
+
     deleteWorkspace(deleteWs);
     setDeleteWs(null);
   };
@@ -232,40 +237,30 @@ export const WorkspacesManage = () => {
 
   return (
     <div>
-      <div className="mb-6 hidden items-center justify-between border-b border-gray-200 pb-4 md:flex">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900">Workspaces</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage all workspaces under your organization.
-          </p>
-        </div>
-
+      <div className="mb-6 hidden items-center justify-between pb-4 md:flex">
         <OrgGuard permission="org:workspaces:manage">
-          <button
+          <Button
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700"
+            leftIcon={<Plus size={15} />}
           >
-            <Plus size={15} />
             New workspace
-          </button>
+          </Button>
         </OrgGuard>
       </div>
 
-      <div className="space-y-3 max-w-2xl">
+      <div className="max-w-2xl space-y-3">
         {workspaces?.map((ws) => (
           <div
             key={ws.id}
-            className="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:bg-gray-50"
+            className="flex items-center justify-between rounded-lg border border-gray-200 p-4 transition hover:bg-gray-50"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 font-semibold text-sm">
-                {ws.name[0]}
-              </div>
+              <Avatar name={ws.name} shape="square" size="md" />
 
               <div>
                 <p className="text-sm font-medium text-gray-800">{ws.name}</p>
 
-                <p className="text-xs text-gray-500 flex items-center gap-1">
+                <p className="flex items-center gap-1 text-xs text-gray-500">
                   <Users size={11} />
                   {ws?.members?.length} members
                 </p>
@@ -273,12 +268,13 @@ export const WorkspacesManage = () => {
             </div>
 
             <OrgGuard permission="org:workspaces:manage">
-              <button
+              <IconButton
+                icon={<Trash2 size={14} />}
+                aria-label={`Delete ${ws.name}`}
+                variant="danger-ghost"
+                size="sm"
                 onClick={() => setDeleteWs(ws)}
-                className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-              >
-                <Trash2 size={14} />
-              </button>
+              />
             </OrgGuard>
           </div>
         ))}

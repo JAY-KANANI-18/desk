@@ -1,4 +1,5 @@
 import { Radio } from "lucide-react";
+import { Button } from "../../components/ui/Button";
 import { STATUS_FILTERS } from "./constants";
 
 type BroadcastSidebarProps = {
@@ -25,19 +26,20 @@ export function BroadcastSidebar({
 
       <div className="space-y-1.5">
         {STATUS_FILTERS.map((filter) => (
-          <button
+          <Button
             key={filter.name}
             type="button"
             onClick={() => onSelectStatus(filter.name)}
-            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${
-              selectedStatus === filter.name
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            }`}
+            fullWidth
+            contentAlign="start"
+      
+            variant={
+              selectedStatus === filter.name ? "soft-primary" : "ghost"
+            }
           >
             <span className={`h-2.5 w-2.5 rounded-full ${filter.color}`} />
             <span className="flex-1">{filter.name}</span>
-          </button>
+          </Button>
         ))}
       </div>
 

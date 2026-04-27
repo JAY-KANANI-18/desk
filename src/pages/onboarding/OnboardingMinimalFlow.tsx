@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Building2, ChevronRight, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Avatar } from "../../components/ui/Avatar";
+import { Button } from "../../components/ui/Button";
+import { BaseInput } from "../../components/ui/inputs";
 import { useAuth } from "../../context/AuthContext";
 import { useOrganization } from "../../context/OrganizationContext";
 import { workspaceApi } from "../../lib/workspaceApi";
@@ -130,28 +133,6 @@ const slugifyWorkspaceName = (value: string) =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-
-const getInitials = ({
-  firstName,
-  lastName,
-  email,
-}: {
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
-}) => {
-  const seed = [firstName, lastName].filter(Boolean).join(" ").trim();
-
-  if (seed) {
-    return seed
-      .split(/\s+/)
-      .map((part) => part.charAt(0).toUpperCase())
-      .join("")
-      .slice(0, 2);
-  }
-
-  return (email ?? "AX").slice(0, 2).toUpperCase();
-};
 
 const getStepValidationMessage = (stepKey: OnboardingStepKey) => {
   switch (stepKey) {
@@ -510,16 +491,18 @@ export const OnboardingMinimalFlow = () => {
       case "welcome":
         return (
           <div className="flex flex-col items-center gap-4 py-3 text-center">
-            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-indigo-600 text-base font-semibold text-white shadow-lg shadow-indigo-200">
-              {user?.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt="Profile avatar"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                getInitials(user ?? {})
-              )}
+            <div className="rounded-2xl shadow-lg shadow-indigo-200">
+              <Avatar
+                src={user?.avatarUrl ?? undefined}
+                name={
+                  [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+                  user?.email ||
+                  "AxoDesk user"
+                }
+                alt="Profile avatar"
+                size="xl"
+                shape="square"
+              />
             </div>
 
             <div className="space-y-2">
@@ -659,23 +642,19 @@ export const OnboardingMinimalFlow = () => {
       case "workspaceName":
         return (
           <div className="space-y-3">
-            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
-              <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                Workspace name
-              </label>
-              <div className="mt-2 flex items-center gap-3">
-                <Building2 size={16} className="text-gray-400" />
-                <input
-                  value={data.workspaceName}
-                  onChange={(event) =>
-                    updateField("workspaceName", event.target.value)
-                  }
-                  placeholder="AxoDesk HQ"
-                  autoFocus
-                  className="w-full bg-transparent text-base font-medium text-gray-900 outline-none"
-                />
-              </div>
-            </div>
+            <BaseInput
+              value={data.workspaceName}
+              onChange={(event) =>
+                updateField("workspaceName", event.target.value)
+              }
+              label="Workspace name"
+              labelVariant="sidebar"
+              placeholder="AxoDesk HQ"
+              autoFocus
+              size="lg"
+              appearance="auth"
+              leftIcon={<Building2 size={16} />}
+            />
 
             <p className="text-center text-sm text-gray-500">
               <span className="font-medium text-gray-900">{workspaceSlug}</span>
@@ -687,18 +666,20 @@ export const OnboardingMinimalFlow = () => {
       case "profile":
         return (
           <div className="space-y-3">
-            <input
+            <BaseInput
               value={data.firstName}
               onChange={(event) => updateField("firstName", event.target.value)}
               autoFocus
               placeholder="First name"
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              size="lg"
+              appearance="auth"
             />
-            <input
+            <BaseInput
               value={data.lastName}
               onChange={(event) => updateField("lastName", event.target.value)}
               placeholder="Last name"
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              size="lg"
+              appearance="auth"
             />
           </div>
         );
@@ -824,7 +805,7 @@ export const OnboardingMinimalFlow = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: direction > 0 ? -20 : 20 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="mx-auto w-full max-w-[28rem] overflow-hidden"
+                  className="mx-auto w-full max-w-[28rem] overflow-hidden px-1 py-1"
                 >
                   {renderStep()}
                 </motion.div>
@@ -840,39 +821,37 @@ export const OnboardingMinimalFlow = () => {
             <div className="mt-2 shrink-0 border-t border-gray-100 pt-4">
               <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
                 {currentStep > 0 ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => goToStep(currentStep - 1)}
-                    className="inline-flex min-w-[102px] items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                    variant="secondary"
+                    radius="full"
+                    leftIcon={<ArrowLeft size={16} />}
                   >
-                    <ArrowLeft size={16} />
                     Back
-                  </button>
+                  </Button>
                 ) : (
                   <div className="h-10 min-w-[102px]" />
                 )}
 
                 <div className="text-center">
                   {currentStepConfig.optional ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={handleSkip}
-                      className="text-sm font-medium text-gray-500 transition hover:text-gray-700"
+                      variant="link"
+                      size="sm"
                     >
                       Skip
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
 
-                <button
+                <Button
                   type="submit"
                   disabled={!canContinue && !currentStepConfig.optional}
-                  className={[
-                    "inline-flex min-w-[120px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition",
-                    !canContinue && !currentStepConfig.optional
-                      ? "cursor-not-allowed bg-indigo-300 text-white"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700",
-                  ].join(" ")}
+                  radius="full"
+                  rightIcon={<ChevronRight size={15} />}
                 >
                   {currentStepConfig.key === "welcome"
                     ? "Get Started"
@@ -881,8 +860,7 @@ export const OnboardingMinimalFlow = () => {
                         ? "Finish Setup"
                         : "Create Workspace"
                       : "Continue"}
-                  <ChevronRight size={15} />
-                </button>
+                </Button>
               </div>
             </div>
           </form>

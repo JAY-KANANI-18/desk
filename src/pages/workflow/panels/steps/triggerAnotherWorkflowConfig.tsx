@@ -2,7 +2,7 @@
 // ─── 12. Trigger Another Workflow ─────────────────────────────────────────────
 
 import { useState, useEffect } from "react";
-import { MOCK_WF } from ".";
+import { Button } from "../../../../components/ui/Button";
 import { workspaceApi } from "../../../../lib/workspaceApi";
 import { SP, TriggerAnotherWorkflowData } from "../../workflow.types";
 import { Field, InfoBox, Section, Select } from "../PanelShell";
@@ -10,7 +10,7 @@ import { Field, InfoBox, Section, Select } from "../PanelShell";
 export function TriggerAnotherWorkflowConfig({ step, onChange }: SP) {
   const data = step.data as TriggerAnotherWorkflowData;
   const u = (p: Partial<TriggerAnotherWorkflowData>) => onChange({ ...data, ...p });
-const [workflowOptions, setWorkflowOptions] = useState([]);
+const [workflowOptions, setWorkflowOptions] = useState<Array<{ value: string; label: string }>>([]);
 
   const loadWorkflows = (inputValue: string) => {
     workspaceApi.getWorkflows().then((workflows) => {
@@ -29,10 +29,16 @@ const [workflowOptions, setWorkflowOptions] = useState([]);
       <Field label="Start From">
         <div className="flex gap-2">
           {(['beginning','specific_step'] as const).map((m) => (
-            <button key={m} onClick={() => u({ startFrom: m, targetStepId: undefined })}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-md border transition-colors ${data.startFrom === m ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+            <div key={m} className="flex-1">
+              <Button
+                variant={data.startFrom === m ? "dark" : "secondary"}
+                size="sm"
+                fullWidth
+                onClick={() => u({ startFrom: m, targetStepId: undefined })}
+              >
               {m === 'beginning' ? 'Beginning' : 'Specific Step'}
-            </button>
+              </Button>
+            </div>
           ))}
         </div>
       </Field>

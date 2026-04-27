@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Loader2, Save } from "lucide-react";
+import { Check, Save } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/Select";
 import { useNotifications } from "../../../context/NotificationContext";
 import { workspaceApi } from "../../../lib/workspaceApi";
@@ -126,7 +127,6 @@ function PreferenceSelectRow<T extends string>({
       </div>
 
       <Select
-        aria-label={title}
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
         options={options.map((option) => ({
@@ -134,7 +134,6 @@ function PreferenceSelectRow<T extends string>({
           label: option.label,
         }))}
         helperText={selectedOption.description}
-        className="bg-white"
       />
     </div>
   );
@@ -313,40 +312,32 @@ export const NotificationPreferences = () => {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {pushSupported && browserPermission !== "granted" && (
-            <button
-              type="button"
-              onClick={() => void enableBackgroundPush()}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
+            <Button onClick={() => void enableBackgroundPush()}>
               Enable browser push
-            </button>
+            </Button>
           )}
           {pushSupported && browserPermission === "granted" && (
-            <button
-              type="button"
+            <Button
+              variant={
+                pushRegistrationStatus === "registered" ? "secondary" : "primary"
+              }
               onClick={() =>
                 void (pushRegistrationStatus === "registered"
                   ? disableBackgroundPush()
                   : enableBackgroundPush())
               }
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
-                pushRegistrationStatus === "registered"
-                  ? "bg-white/85 text-gray-700 hover:bg-white"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700"
-              }`}
             >
               {pushRegistrationStatus === "registered"
                 ? "Disable on this device"
                 : "Finish setup"}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => void refreshPushDevices()}
-            className="inline-flex items-center gap-2 rounded-lg bg-white/85 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white"
           >
             Refresh devices
-          </button>
+          </Button>
         </div>
 
         {!pushSupported && (
@@ -374,13 +365,12 @@ export const NotificationPreferences = () => {
                 background push for your account.
               </p>
             </div>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => setShowDevices((current) => !current)}
-              className="inline-flex w-fit items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               {showDevices ? "Hide devices" : `Show devices (${pushDevices.length})`}
-            </button>
+            </Button>
           </div>
 
           {showDevices && (
@@ -451,13 +441,13 @@ export const NotificationPreferences = () => {
                           )}
                         </div>
 
-                        <button
-                          type="button"
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => void removePushDevice(device.id)}
-                          className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200"
                         >
                           Remove device
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );
@@ -469,34 +459,25 @@ export const NotificationPreferences = () => {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
+        <Button
           onClick={save}
           disabled={!dirty || saving}
-          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
-            saved
-              ? "bg-green-600 text-white"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
-          }`}
+          loading={saving}
+          leftIcon={
+            saving ? undefined : saved ? <Check size={16} /> : <Save size={16} />
+          }
+          variant={saved ? "success" : "primary"}
         >
-          {saving ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : saved ? (
-            <Check size={16} />
-          ) : (
-            <Save size={16} />
-          )}
           {saving ? "Saving..." : saved ? "Saved" : "Save changes"}
-        </button>
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => savedPrefs && setPrefs({ ...savedPrefs })}
           disabled={!dirty || saving || !savedPrefs}
-          className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-60"
         >
           Reset
-        </button>
+        </Button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
       </div>

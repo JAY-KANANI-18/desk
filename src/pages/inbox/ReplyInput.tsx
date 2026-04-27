@@ -11,26 +11,35 @@
  * 5. Note mode turns the composer background amber; send builds type:"comment"
  */
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
 import {
-  Send, Paperclip, Smile, Mic, X, ChevronDown, Check,
-  Video, FileText, DollarSign, LayoutTemplate,
+  Send, Paperclip, Smile, X,
+  LayoutTemplate,
   MessageSquare, StickyNote,
   Play, File as FileIcon,
-  Wand2, Sparkles, Loader2, AtSign, AlertTriangle, Clock3,
+  Wand2, Sparkles, AtSign, AlertTriangle, Clock3,
 } from 'lucide-react';
 import { channelConfig, variables } from './data';
 import type { MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
 import { Template, TemplateModal } from './TemplateModal';
+import { Button } from '../../components/ui/Button';
+import { CompactSelectMenu, VariableSuggestionMenu, type CompactSelectMenuGroup } from '../../components/ui/Select';
+import { TextareaInput } from '../../components/ui/inputs/TextareaInput';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
-import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './composerShared';
+import {
+  AiComposerInlineStatus,
+  AiPromptMenu,
+  ComposerAttachmentPreviewStrip,
+  useInboxAiComposer,
+} from './composerShared';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { extractMentionIds } from './utils';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useDisclosure } from '../../hooks/useDisclosure';
 import { findMatchingContactChannel, getContactScopedChannels, isSameChannel } from './channelUtils';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
@@ -39,12 +48,24 @@ type AttachedFile = { file: globalThis.File; type: AttachmentType; url: string; 
 
 const WINDOW_RESTRICTED_CHANNELS = new Set(['whatsapp', 'messenger', 'instagram']);
 const FIRST_MESSAGE_RESTRICTED_CHANNELS = new Set(['messenger', 'instagram']);
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
 
 function getAttachmentType(file: globalThis.File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'doc';
+}
+
+function getReplyChannelOptionValue(channel: { id?: string | number | null; type?: string | null }) {
+  return `${String(channel?.type ?? 'unknown')}::${String(channel?.id ?? '')}`;
 }
 
 function parseTimestamp(value: string | number | null | undefined): number | null {
@@ -108,9 +129,16 @@ function QuotedReplyBanner({
           ) : null}
         </div>
       </div>
-      <button onClick={onDismiss} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 mt-0.5">
-        <X size={13} />
-      </button>
+      <Button
+        onClick={onDismiss}
+        variant="unstyled"
+        size="xs"
+        iconOnly
+        radius="full"
+        aria-label="Dismiss quoted reply"
+        leftIcon={<X size={13} />}
+        className="mt-0.5 flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+      />
     </div>
   );
 }
@@ -130,21 +158,19 @@ export function ReplyInput({
   const isMobile = useIsMobile();
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const [emojiOpen, setEmojiOpen] = useState(false);
+  const emojiMenu = useDisclosure();
   const [showRecorder, setShowRecorder] = useState(false);
-  const [channelMenuOpen, setChannelMenuOpen] = useState(false);
   const [variableQuery, setVariableQuery] = useState<string | null>(null);
   const [variableHighlight, setVariableHighlight] = useState(0);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionHighlight, setMentionHighlight] = useState(0);
-  const [templateOpen, setTemplateOpen] = useState(false);
+  const templateModal = useDisclosure();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<HTMLDivElement>(null);
   const variableDropdownRef = useRef<HTMLDivElement>(null);
   const aiPromptMenuRef = useRef<HTMLDivElement>(null);
   const mentionDropdownRef = useRef<HTMLDivElement>(null);
@@ -206,6 +232,38 @@ export function ReplyInput({
       availableReplyChannels[0]
     );
   }, [availableReplyChannels, selectedChannel]);
+  const activeComposerChannelValue = activeComposerChannel
+    ? getReplyChannelOptionValue(activeComposerChannel)
+    : undefined;
+  const replyChannelGroups = useMemo<CompactSelectMenuGroup[]>(
+    () => [
+      {
+        label: 'Send via channel',
+        options: availableReplyChannels.map((channel) => ({
+          value: getReplyChannelOptionValue(channel),
+          label: channel.name || 'Unnamed',
+          leading: (
+            <img
+              src={channelConfig[channel.type]?.icon}
+              alt={channel.name || 'Reply channel'}
+              className="h-4 w-4 rounded-sm object-contain"
+            />
+          ),
+          tone: 'neutral' as const,
+          searchText: [channel.name, channel.type].filter(Boolean).join(' '),
+        })),
+      },
+    ],
+    [availableReplyChannels],
+  );
+  const handleReplyChannelChange = useCallback((value: string) => {
+    const nextChannel = availableReplyChannels.find(
+      (channel) => getReplyChannelOptionValue(channel) === value,
+    );
+    if (nextChannel) {
+      onChannelChange(nextChannel);
+    }
+  }, [availableReplyChannels, onChannelChange]);
   const validatedContactChannels = hasLoadedSelectedContact
     ? ((selectedContact?.contactChannels as any[] | undefined) ?? [])
     : [];
@@ -273,8 +331,7 @@ export function ReplyInput({
   // click-outside handlers
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) setEmojiOpen(false);
-      if (channelRef.current && !channelRef.current.contains(e.target as Node)) setChannelMenuOpen(false);
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) emojiMenu.close();
       if (aiPromptMenuRef.current && !aiPromptMenuRef.current.contains(e.target as Node)) {
         aiComposer.setAiPromptMenuOpen(false);
         aiComposer.setActivePromptParent(null);
@@ -290,17 +347,17 @@ export function ReplyInput({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [aiComposer]);
+  }, [aiComposer, emojiMenu]);
 
   useEffect(() => {
     if (!isReplyComposerLocked) return;
-    setEmojiOpen(false);
+    emojiMenu.close();
     aiComposer.setAiPromptMenuOpen(false);
     aiComposer.setActivePromptParent(null);
     setShowRecorder(false);
     setVariableQuery(null);
     setMentionQuery(null);
-  }, [aiComposer, isReplyComposerLocked]);
+  }, [aiComposer, emojiMenu, isReplyComposerLocked]);
 
   useEffect(() => {
     if (isNote || availableReplyChannels.length === 0) return;
@@ -506,76 +563,49 @@ export function ReplyInput({
   };
 
   /* ── bg ── */
-  const noteBg = 'bg-amber-50';
-  const replyBg = 'bg-white';
-  const activeBg = isNote ? noteBg : replyBg;
+  const actionButtonSize = 'xs';
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
   const channelSelector = !isNote && activeComposerChannel ? (
-    <div className="relative" ref={channelRef}>
-      <button
-        onClick={() => setChannelMenuOpen((open) => !open)}
-        className={`flex min-w-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white/90 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 ${
-          isMobile ? 'max-w-[11.5rem]' : ''
-        }`}
-        title="Switch channel"
-      >
-        <img
-          src={channelConfig[activeComposerChannel?.type]?.icon}
-          alt={activeComposerChannel?.name}
-          className="h-3.5 w-3.5 flex-shrink-0"
-        />
-        <span className={`truncate ${isMobile ? 'max-w-[7rem]' : 'hidden max-w-[5rem] sm:inline'}`}>
-          {activeComposerChannel?.name}
+    <CompactSelectMenu
+      value={activeComposerChannelValue}
+      groups={replyChannelGroups}
+      onChange={handleReplyChannelChange}
+      hasValue
+      size="sm"
+      triggerAppearance="inline"
+      dropdownWidth="sm"
+      dropdownPlacement="top"
+      triggerContent={(
+        <span className="flex min-w-0 items-center gap-1.5 ">
+          <img
+            src={channelConfig[activeComposerChannel.type]?.icon}
+            alt={activeComposerChannel.name || 'Reply channel'}
+            className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
+          />
+          <span className="max-w-[7rem] truncate">
+            {activeComposerChannel.name || 'Unnamed'}
+          </span>
         </span>
-        <ChevronDown
-          size={12}
-          className={`flex-shrink-0 transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {channelMenuOpen && (
-        <div className="absolute bottom-full left-0 z-50 mb-1.5 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            Send via channel
-          </p>
-          {availableReplyChannels.map((ch) => (
-            <button
-              key={ch.id}
-              onClick={() => {
-                onChannelChange(ch);
-                setChannelMenuOpen(false);
-              }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${
-                isSameChannel(activeComposerChannel, ch) ? 'bg-gray-50' : ''
-              }`}
-            >
-              <img src={channelConfig[ch.type]?.icon} alt={ch.name} className="h-4 w-4" />
-              <span className="flex-1 text-left font-medium text-gray-700">{ch.name || 'Unnamed'}</span>
-              {isSameChannel(activeComposerChannel, ch) && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
-            </button>
-          ))}
-        </div>
       )}
-    </div>
+    />
   ) : null;
   const assistButton = !isNote && !isReplyComposerLocked ? (
-    <button
+    <Button
       onClick={aiComposer.handleAssistDraft}
       disabled={aiComposer.aiLoadingAction !== null}
-      className={`inline-flex items-center gap-2 rounded-xl bg-violet-50 font-medium text-violet-700 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${
-        isMobile ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-1.5 text-sm'
-      }`}
+      variant="link"
+      size={actionButtonSize}
+      radius="full"
+      loading={aiComposer.aiLoadingAction === 'assist'}
+      loadingMode="inline"
+      leftIcon={<Sparkles size={15} />}
     >
-      {aiComposer.aiLoadingAction === 'assist' ? (
-        <Loader2 size={15} className="animate-spin" />
-      ) : (
-        <Sparkles size={15} />
-      )}
       AI Assist
-    </button>
+    </Button>
   ) : null;
   return (
-    <div className={`${activeBg} transition-colors duration-150 `}>
-      <TemplateModal open={templateOpen}  onClose={() => setTemplateOpen(false)} onUse={handleTemplateUse} contextValues={templateContextValues} />
+    <div className="transition-colors duration-150">
+      <TemplateModal open={templateModal.isOpen}  onClose={templateModal.close} onUse={handleTemplateUse} contextValues={templateContextValues} />
 
       {/* ── Quoted reply banner ── */}
       {replyContext?.type === 'chat' && (
@@ -588,32 +618,10 @@ export function ReplyInput({
         </div>
       ) : (
         <div className={`mx-2 mb-2 rounded-[20px] border ${borderClr} ${isNote ? 'bg-amber-50/80' : 'bg-white'} p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-shadow sm:mx-3 sm:mb-2.5 sm:rounded-xl`}>
-          {showWindowRestrictionWarning && (
-            <div className="mx-2 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-              <div className="flex items-start gap-2">
-                <AlertTriangle size={16} className="mt-0.5 text-amber-600 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-amber-900">{restrictionCopy}</p>
-                  {formattedWindowExpiry && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
-                      <Clock3 size={12} />
-                      Window expired at {formattedWindowExpiry}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isMobile && !isNote && (
-            <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-1.5">
+         
+          {!isNote && (channelSelector || assistButton) && (
+            <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-1.5 sm:pt-1 sm:pb-1">
               {channelSelector}
-              {assistButton}
-            </div>
-          )}
-
-          {!isMobile && assistButton && (
-            <div className="flex items-center justify-end px-2 pt-1 pb-1">
               {assistButton}
             </div>
           )}
@@ -631,19 +639,26 @@ export function ReplyInput({
                   {filteredMentionUsers.map((user: any, idx) => {
                     const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
                     return (
-                      <button
+                      <Button
                         key={user.id}
+                        type="button"
+                        variant="unstyled"
                         onMouseDown={(e) => { e.preventDefault(); insertMention(user); }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${mentionHighlight === idx ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
+                        style={classDrivenButtonStyle}
+                        fullWidth
+                        preserveChildLayout
                       >
-                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                          {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
-                          <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                        </div>
-                      </button>
+                        <span className="flex w-full items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
+                            {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
+                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                          </div>
+                        </span>
+                      </Button>
                     );
                   })}
                 </div>
@@ -656,97 +671,62 @@ export function ReplyInput({
                 </div>
               </div>
             )}
-            {variableQuery !== null && filteredVariables.length > 0 && (
-              <div ref={variableDropdownRef} className="absolute bottom-full left-0 mb-1 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
-                  <DollarSign size={13} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Insert variable</span>
-                  {variableQuery && <span className="ml-auto text-xs text-violet-600 font-medium bg-violet-50 px-1.5 py-0.5 rounded">${variableQuery}</span>}
-                </div>
-                <div className="max-h-52 overflow-y-auto py-1">
-                  {filteredVariables.map((v, idx) => (
-                    <button key={v.key} onMouseDown={e => { e.preventDefault(); insertVariable(v); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${variableHighlight === idx ? 'bg-violet-50' : 'hover:bg-gray-50'}`}>
-                      <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                        <DollarSign size={13} className="text-violet-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{v.label}</p>
-                        <p className="text-xs text-gray-400 truncate">{v.description}</p>
-                      </div>
-                      <code className="text-[10px] text-violet-600 bg-violet-50 border border-violet-100 px-1.5 py-0.5 rounded font-mono flex-shrink-0">{`{{${v.key}}}`}</code>
-                    </button>
-                  ))}
-                </div>
-                <div className="px-3 py-1.5 border-t border-gray-100 bg-gray-50">
-                  <p className="text-[10px] text-gray-400">↑↓ navigate · ↵ select · Esc dismiss</p>
-                </div>
-              </div>
-            )}
-            {variableQuery !== null && variableQuery.length > 0 && filteredVariables.length === 0 && (
-              <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
-                <div className="px-4 py-3 text-center">
-                  <p className="text-sm text-gray-400">No variable matches <span className="font-medium text-gray-600">${variableQuery}</span></p>
-                </div>
-              </div>
-            )}
+            <VariableSuggestionMenu
+              ref={variableDropdownRef}
+              isOpen={variableQuery !== null}
+              query={variableQuery ?? ""}
+              options={filteredVariables}
+              highlightedIndex={variableHighlight}
+              onHighlightChange={setVariableHighlight}
+              onSelect={insertVariable}
+              showEmptyState={Boolean(variableQuery)}
+            />
 
             {/* Textarea */}
             <AiComposerInlineStatus
               loadingAction={aiComposer.aiLoadingAction}
               notice={aiComposer.aiComposerNotice}
             />
-            <textarea
+            {!isReplyComposerLocked ? (
+              <TextareaInput
               ref={textareaRef}
               value={message}
               onChange={handleMessageChange}
               onKeyDown={handleKeyDown}
               readOnly={isAiBusy}
               placeholder={isAiBusy ? "AI is working..." : isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
-              className={`w-full resize-none px-3 py-2 text-[13px] leading-6 focus:outline-none sm:px-4 sm:py-3 sm:text-sm sm:leading-relaxed ${isReplyComposerLocked ? 'hidden' : ''} ${isAiBusy ? 'cursor-wait text-gray-500' : ''} ${isNote ? 'bg-amber-50 placeholder-amber-400' : 'bg-white placeholder-gray-400'}`}
+              appearance={isNote ? 'composer-note' : 'composer'}
+              autoResize
               rows={1}
-              style={{ minHeight: isMobile ? 52 : 44, maxHeight: isMobile ? 132 : 200, overflowY: 'auto' }}
+              maxRows={isMobile ? 4 : 7}
             />
-            {isReplyComposerLocked && (
-              <div className="px-3 py-3 sm:px-4 sm:py-4">
-                <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 px-4 py-3">
-                  <p className="text-sm font-medium text-amber-900">Reply actions are hidden while this channel window is closed.</p>
-                  <p className="mt-1 text-xs text-amber-700">
-                    You can switch channel, add an internal note, or use a template if this channel supports it.
-                  </p>
-                </div>
-              </div>
-            )}
+            ) : null}
+      
           </div>
-
-          {/* Attached file previews */}
-          {attachedFiles.length > 0 && (
-            <div className={`border-t px-2.5 py-2 sm:px-4 ${isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-white'}`}>
-              <div className="flex flex-wrap gap-2 items-start">
-                {attachedFiles.map((af, i) =>
-                  af.type === 'image' ? (
-                    <div key={i} className="relative group flex-shrink-0">
-                      <img src={af.previewUrl} alt={af.file.name} className="w-14 h-14 object-cover rounded-lg border border-gray-200 shadow-sm" />
-                      {!isReplyComposerLocked && (
-                        <button onMouseDown={e => { e.preventDefault(); removeFile(i); }}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                          <X size={10} />
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <span key={i} className={`flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 ${af.type === 'audio' ? 'bg-red-50 text-red-700 border-red-200' : af.type === 'video' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
-                      {af.type === 'audio' ? <Mic size={11} /> : af.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
-                      <span className="max-w-[120px] truncate font-medium">{af.file.name}</span>
-                      {!isReplyComposerLocked && (
-                        <button onMouseDown={e => { e.preventDefault(); removeFile(i); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
-                      )}
-                    </span>
-                  )
-                )}
+           {showWindowRestrictionWarning && (
+            <div className="mx-2 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="mt-0.5 text-amber-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-amber-900">{restrictionCopy}</p>
+                  {formattedWindowExpiry && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
+                      <Clock3 size={12} />
+                      Window expired at {formattedWindowExpiry}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
+
+
+          <ComposerAttachmentPreviewStrip
+            files={attachedFiles}
+            onRemove={removeFile}
+            locked={isReplyComposerLocked}
+            tone={isNote ? 'note' : 'reply'}
+          />
 
           {/* Bottom toolbar */}
           <div className="relative" ref={aiPromptMenuRef}>
@@ -765,34 +745,48 @@ export function ReplyInput({
             {/* Left: attachments + emoji + mic + template */}
             <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pr-1 sm:flex-wrap sm:overflow-visible sm:pr-0">
               {!isNote && !isReplyComposerLocked && (
-                <button onClick={() => aiComposer.setAiPromptMenuOpen((open) => !open)} className="mr-1 p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
-                  <Wand2 size={16} />
-                </button>
+                <Button
+                  onClick={() => aiComposer.setAiPromptMenuOpen((open) => !open)}
+                  variant={aiComposer.aiPromptMenuOpen ? 'soft-primary' : 'ghost'}
+                  size="xs"
+                  iconOnly
+                  aria-label="Open AI prompts"
+                  leftIcon={<Wand2 size={16} />}
+                  className="mr-1"
+                />
               )}
-
-              {/* Channel selector (only in reply mode) */}
-              {!isMobile && channelSelector}
 
               {/* <button onClick={() => imageRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach image"><ImageIcon size={16} /></button>
               <button onClick={() => videoRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach video"><Video size={16} /></button> */}
               {!isReplyComposerLocked && (
-                <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file"><Paperclip size={16} /></button>
+                <Button
+                  onClick={() => fileRef.current?.click()}
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
+                  aria-label="Attach file"
+                  leftIcon={<Paperclip size={16} />}
+                />
               )}
 
               {!isReplyComposerLocked && (
                 <div className="relative" ref={emojiRef}>
-                  <button onClick={() => setEmojiOpen(o => !o)}
-                    className={`p-1.5 rounded-lg transition-colors ${emojiOpen ? 'bg-yellow-100 text-yellow-600' : 'hover:bg-gray-200 text-gray-500'}`} title="Emoji">
-                    <Smile size={16} />
-                  </button>
-                  {emojiOpen && (
-                    <EmojiPicker mode="reply" accent="gray" onSelect={emoji => { setMessage(prev => prev + emoji); setEmojiOpen(false); }} />
+                  <Button
+                    onClick={emojiMenu.toggle}
+                    variant={emojiMenu.isOpen ? 'soft-warning' : 'ghost'}
+                    size="xs"
+                    iconOnly
+                    aria-label="Insert emoji"
+                    leftIcon={<Smile size={16} />}
+                  />
+                  {emojiMenu.isOpen && (
+                    <EmojiPicker mode="reply" accent="gray" onSelect={emoji => { setMessage(prev => prev + emoji); emojiMenu.close(); }} />
                   )}
                 </div>
               )}
 
               {isNote && (
-                <button
+                <Button
                   onMouseDown={(e) => {
                     e.preventDefault();
                     const pos = textareaRef.current?.selectionStart ?? message.length;
@@ -805,19 +799,25 @@ export function ReplyInput({
                       textareaRef.current?.setSelectionRange(pos + 1, pos + 1);
                     }, 0);
                   }}
-                  className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600 transition-colors"
-                  title="Mention teammate"
-                >
-                  <AtSign size={16} />
-                </button>
+                  variant="soft-warning"
+                  size="xs"
+                  iconOnly
+                  aria-label="Mention teammate"
+                  leftIcon={<AtSign size={16} />}
+                />
               )}
 
               {/* <button onClick={() => setShowRecorder(true)} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-lg text-gray-500 transition-colors" title="Record voice"><Mic size={16} /></button> */}
 
               {!isNote && ['whatsapp', 'messenger'].includes(activeComposerChannel?.type) && (
-                <button onClick={() => setTemplateOpen(true)} className="p-1.5 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-gray-500 transition-colors" title="Insert template">
-                  <LayoutTemplate size={16} />
-                </button>
+                <Button
+                  onClick={templateModal.open}
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
+                  aria-label="Insert template"
+                  leftIcon={<LayoutTemplate size={16} />}
+                />
               )}
             </div>
 
@@ -826,41 +826,50 @@ export function ReplyInput({
 
               {/* ── Mode switcher: two compact pills ── */}
               {!isNote && !isReplyComposerLocked && (
-                <button onClick={aiComposer.handleSummarize} disabled={aiComposer.aiLoadingAction !== null} className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-auto sm:w-auto sm:gap-1 sm:rounded-lg sm:px-2 sm:py-1 sm:text-sm sm:font-medium">
-                  {aiComposer.aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  <span className="hidden sm:inline">Summarize</span>
-                </button>
+                <Button
+                  onClick={aiComposer.handleSummarize}
+                  disabled={aiComposer.aiLoadingAction !== null}
+                  variant="link"
+                  size="xs"
+                  iconOnly={isMobile}
+                  aria-label="Summarize conversation"
+                  loading={aiComposer.aiLoadingAction === 'summarize'}
+                  loadingMode="inline"
+                  leftIcon={<Sparkles size={14} />}
+                >
+                  {!isMobile ? 'Summarize' : null}
+                </Button>
               )}
               <div className="flex items-center rounded-xl bg-gray-100 p-0.5">
-                <button
+                <Button
                   onClick={() => onInputModeChange('reply')}
-                  title="Reply to customer"
-                  className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${!isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                  variant={!isNote ? 'secondary' : 'ghost'}
+                  size="xs"
+                  leftIcon={<MessageSquare size={11} />}
                 >
-                  <MessageSquare size={11} />
                   <span className="hidden sm:inline">Reply</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => onInputModeChange('note')}
-                  title="Internal note"
-                  className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                  variant={isNote ? 'soft-warning' : 'ghost'}
+                  size="xs"
+                  leftIcon={<StickyNote size={11} />}
                 >
-                  <StickyNote size={11} />
                   <span className="hidden sm:inline">Note</span>
-                </button>
+                </Button>
               </div>
 
               {/* Send button */}
               {(!isReplyComposerLocked || isNote) && (
-                <button onClick={handleSend} disabled={!canSend}
-                  className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-sm font-medium transition-colors sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 ${canSend
-                    ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}>
-                  <Send size={14} />
-                </button>
+                <Button
+                  onClick={handleSend}
+                  disabled={!canSend}
+                  variant={isNote ? 'warning' : 'primary'}
+                  size="sm"
+                  iconOnly
+                  leftIcon={<Send size={14} />}
+                  aria-label={isNote ? 'Send internal note' : 'Send reply'}
+                />
               )}
             </div>
           </div>

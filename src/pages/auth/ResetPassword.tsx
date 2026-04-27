@@ -1,3 +1,4 @@
+// LEGACY - not mounted in current router, pending removal
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, CheckCircle, MessageSquare, ShieldAlert, Mail, RefreshCw, ArrowLeft } from 'lucide-react';

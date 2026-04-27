@@ -89,6 +89,8 @@ export interface WorkspaceUser {
 }
 
 export interface ContactsPageContentProps {
+  showDesktopHeader?: boolean;
+  renderDesktopSidebar?: boolean;
   navigate: NavigateFunction;
   contacts: Contact[];
   totalContacts: number;

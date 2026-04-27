@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { ContactSidebarHybrid } from "./ContactSidebarHybrid";
 import { useInbox } from "../../context/InboxContext";
+import { IconButton } from "../../components/ui/button/IconButton";
 import type { Contact, Conversation } from "./types";
 
 interface MobileContactSheetProps {
@@ -33,14 +34,14 @@ export function MobileContactSheet({
         <div className="flex max-h-[88vh] min-h-[55vh] flex-col overflow-hidden rounded-t-[28px] border border-slate-200 bg-white shadow-[0_-18px_50px_rgba(15,23,42,0.18)]">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 pb-3 pt-4">
             <div className="h-1.5 w-14 rounded-full bg-slate-200" />
-            <button
+            <IconButton
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100"
+              variant="secondary"
+              size="sm"
               aria-label="Close contact details"
-            >
-              <X size={16} />
-            </button>
+              icon={<X size={16} />}
+            />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <ContactSidebarHybrid

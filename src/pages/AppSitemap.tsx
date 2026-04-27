@@ -4,9 +4,14 @@ import {
   MessageSquare, LayoutDashboard, Users, Radio, Workflow, BarChart3,
   Plug, UsersRound, Building2, CreditCard, Settings, LogIn, UserPlus,
   KeyRound, Mail, ShieldCheck, ExternalLink, Search, X, ChevronRight,
-  Inbox, Globe, Phone, Wand2, Sparkles, Tag, AlignLeft, CheckCircle,
+  Inbox, Globe, Phone, Wand2, Sparkles, Tag as TagIcon, AlignLeft, CheckCircle,
   Contact, RefreshCw, Smile, UserCog, LayoutGrid, Map, Zap, ArrowRight,
 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { CountBadge } from '../components/ui/CountBadge';
+import { IconButton } from '../components/ui/button/IconButton';
+import { BaseInput } from '../components/ui/inputs/BaseInput';
+import { Tag } from '../components/ui/Tag';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -410,7 +415,7 @@ const PAGES: PageEntry[] = [
     description: 'Manage conversation and contact tags for better organization and filtering.',
     url: '/workspace-settings',
     category: 'settings',
-    icon: <Tag size={22} />,
+    icon: <TagIcon size={22} />,
     color: 'bg-slate-100',
     textColor: 'text-slate-600',
     borderColor: 'border-slate-400',
@@ -535,14 +540,14 @@ const PAGES: PageEntry[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 // CATEGORY CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const CATEGORIES: { id: Category; label: string; color: string; activeColor: string }[] = [
-  { id: 'all',      label: 'All Pages',    color: 'bg-gray-100 text-gray-600 hover:bg-gray-200',          activeColor: 'bg-gray-800 text-white' },
-  { id: 'core',     label: 'Core',         color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',            activeColor: 'bg-blue-600 text-white' },
-  { id: 'channels', label: 'Channels',     color: 'bg-green-50 text-green-600 hover:bg-green-100',         activeColor: 'bg-green-600 text-white' },
-  { id: 'team',     label: 'Team & Org',   color: 'bg-purple-50 text-purple-600 hover:bg-purple-100',      activeColor: 'bg-purple-600 text-white' },
-  { id: 'billing',  label: 'Billing',      color: 'bg-amber-50 text-amber-600 hover:bg-amber-100',         activeColor: 'bg-amber-500 text-white' },
-  { id: 'settings', label: 'Settings',     color: 'bg-slate-50 text-slate-600 hover:bg-slate-100',         activeColor: 'bg-slate-600 text-white' },
-  { id: 'auth',     label: 'Auth',         color: 'bg-rose-50 text-rose-600 hover:bg-rose-100',            activeColor: 'bg-rose-500 text-white' },
+const CATEGORIES: { id: Category; label: string }[] = [
+  { id: 'all',      label: 'All Pages' },
+  { id: 'core',     label: 'Core' },
+  { id: 'channels', label: 'Channels' },
+  { id: 'team',     label: 'Team & Org' },
+  { id: 'billing',  label: 'Billing' },
+  { id: 'settings', label: 'Settings' },
+  { id: 'auth',     label: 'Auth' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -625,43 +630,61 @@ export const AppSitemap = () => {
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-3 md:px-10">
           {/* Search */}
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search pages, features…"
+          <div className="mb-3">
+            <BaseInput
+              type="search"
+              placeholder="Search pages, features..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              size="sm"
+              appearance="toolbar"
+              leftIcon={<Search size={16} />}
+              rightIcon={
+                search ? (
+                  <IconButton
+                    type="button"
+                    onClick={() => setSearch('')}
+                    icon={<X size={14} />}
+                    aria-label="Clear sitemap search"
+                    size="xs"
+                    variant="ghost"
+                  />
+                ) : undefined
+              }
             />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X size={14} />
-              </button>
-            )}
           </div>
 
           {/* Category tabs */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  activeCategory === cat.id ? cat.activeColor : cat.color
-                }`}
-              >
-                {cat.label}
-                {cat.id !== 'all' && (
-                  <span className="ml-1.5 opacity-70">
-                    {PAGES.filter(p => p.category === cat.id).length}
-                  </span>
-                )}
-              </button>
-            ))}
+            {CATEGORIES.map(cat => {
+              const isActive = activeCategory === cat.id;
+              const count =
+                cat.id === 'all' ? PAGES.length : PAGES.filter(p => p.category === cat.id).length;
+
+              return (
+                <div key={cat.id} className="flex-shrink-0">
+                  <Button
+                    onClick={() => setActiveCategory(cat.id)}
+                    variant={isActive ? 'primary' : 'soft'}
+                    size="xs"
+                    radius="full"
+                    preserveChildLayout
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{cat.label}</span>
+                      {cat.id !== 'all' && (
+                        <CountBadge
+                          count={count}
+                          tone={isActive ? 'primary' : 'neutral'}
+                          size="xs"
+                          showZero
+                        />
+                      )}
+                    </span>
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -675,12 +698,14 @@ export const AppSitemap = () => {
           {search && <span className="ml-1">matching <strong>"{search}"</strong></span>}
         </p>
         {(search || activeCategory !== 'all') && (
-          <button
+          <Button
             onClick={() => { setSearch(''); setActiveCategory('all'); }}
-            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            variant="link"
+            size="xs"
+            leftIcon={<X size={12} />}
           >
-            <X size={12} /> Clear filters
-          </button>
+            Clear filters
+          </Button>
         )}
       </div>
 
@@ -716,13 +741,13 @@ function PageCard({ page, onOpen }: { page: PageEntry; onOpen: (p: PageEntry) =>
     billing: 'Billing', settings: 'Settings', auth: 'Auth',
   };
 
-  const categoryChipColor: Record<string, string> = {
-    core: 'bg-blue-50 text-blue-600',
-    channels: 'bg-green-50 text-green-600',
-    team: 'bg-purple-50 text-purple-600',
-    billing: 'bg-amber-50 text-amber-600',
-    settings: 'bg-slate-100 text-slate-600',
-    auth: 'bg-rose-50 text-rose-600',
+  const categoryTagColor: Record<string, string> = {
+    core: 'tag-blue',
+    channels: 'tag-green',
+    team: 'tag-purple',
+    billing: 'tag-orange',
+    settings: 'tag-grey',
+    auth: 'tag-red',
   };
 
   return (
@@ -738,14 +763,16 @@ function PageCard({ page, onOpen }: { page: PageEntry; onOpen: (p: PageEntry) =>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-gray-900 text-sm leading-tight">{page.title}</h3>
                 {page.badge && (
-                  <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 text-xs font-medium rounded-full">
-                    {page.badge}
-                  </span>
+                  <Tag label={page.badge} bgColor="tag-orange" size="sm" />
                 )}
               </div>
-              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${categoryChipColor[page.category]}`}>
-                {categoryLabel[page.category]}
-              </span>
+              <div className="mt-1">
+                <Tag
+                  label={categoryLabel[page.category]}
+                  bgColor={categoryTagColor[page.category]}
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -774,29 +801,32 @@ function PageCard({ page, onOpen }: { page: PageEntry; onOpen: (p: PageEntry) =>
             ))}
           </ul>
           {page.features.length > 4 && (
-            <button
+            <Button
               onClick={() => setExpanded(!expanded)}
-              className={`mt-2 text-xs font-medium flex items-center gap-1 ${page.textColor} hover:opacity-80 transition-opacity`}
+              variant="link"
+              size="xs"
             >
               {expanded ? (
                 <>Show less</>
               ) : (
                 <>+{page.features.length - 4} more features</>
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Footer CTA */}
       <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
-        <button
+        <Button
           onClick={() => onOpen(page)}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-sm font-medium transition-all ${page.color} ${page.textColor} hover:opacity-90 group-hover:shadow-sm`}
+          variant="soft-primary"
+          size="sm"
+          fullWidth
+          rightIcon={<ArrowRight size={14} />}
         >
           Open Page
-          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        </Button>
       </div>
     </div>
   );

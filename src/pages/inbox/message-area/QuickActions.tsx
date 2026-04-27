@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { type ElementType } from "react";
 import {
   CornerUpLeft,
   CornerUpRight,
@@ -9,11 +9,13 @@ import {
   Users,
   ExternalLink,
 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { Tooltip } from "../../../components/ui/Tooltip";
 import type { Message, ReplyContext } from "./types";
 
 type ActionDef = {
   id: string;
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   danger?: boolean;
 };
@@ -76,18 +78,23 @@ export function QuickActions({
   visible: boolean;
   onReply: (ctx: ReplyContext) => void;
 }) {
-  const [tooltip, setTooltip] = useState<string | null>(null);
   const actions = CHANNEL_ACTIONS[channel] ?? CHANNEL_ACTIONS.webchat;
+
+  const copyToClipboard = (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(value);
+    }
+  };
 
   const handleAction = (id: string) => {
     if (id === "copy") {
-      navigator.clipboard.writeText(msg.text ?? "");
+      copyToClipboard(msg.text ?? "");
       return;
     }
     if (id === "link") {
       const origin = window.location.origin;
       const link = `${origin}/inbox/${msg.conversationId}?targetMessageId=${msg.id}`;
-      navigator.clipboard.writeText(link);
+      copyToClipboard(link);
       return;
     }
     if (id === "reply") {
@@ -130,22 +137,21 @@ export function QuickActions({
       ${visible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
     >
       {actions.map((action) => (
-        <div key={action.id} className="relative">
-          <button
+        <Tooltip
+          key={action.id}
+          content={action.label}
+          position={isOutgoing ? "left" : "right"}
+        >
+          <Button
             onClick={() => handleAction(action.id)}
-            onMouseEnter={() => setTooltip(action.label)}
-            onMouseLeave={() => setTooltip(null)}
-            className={`w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100
-              ${action.danger ? "text-red-500" : "text-gray-500"}`}
-          >
-            <action.icon size={14} />
-          </button>
-          {tooltip === action.label && (
-            <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow">
-              {action.label}
-            </div>
-          )}
-        </div>
+            leftIcon={<action.icon size={14} />}
+            aria-label={action.label}
+            iconOnly
+            size="xs"
+            radius="full"
+            variant={action.danger ? "danger-ghost" : "ghost"}
+          />
+        </Tooltip>
       ))}
     </div>
   );

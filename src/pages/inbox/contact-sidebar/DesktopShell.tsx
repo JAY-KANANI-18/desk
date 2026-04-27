@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { PanelLeftOpen } from 'lucide-react';
+import { Tooltip } from '../../../components/ui/Tooltip';
+import { IconButton } from '../../../components/ui/button/IconButton';
 
 interface ContactSidebarDesktopShellProps {
   children: ReactNode;
@@ -25,15 +27,18 @@ export function ContactSidebarDesktopShell({
 
   const renderCloseButton = () =>
     onClose ? (
-      <button
-        type="button"
-        onClick={onClose}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl   bg-white text-[#6b7280] transition-colors hover:border-[#cbd5e1] hover:bg-[#f8fafc] hover:text-[#1c2030]"
-        aria-label="Collapse contact details"
-        title="Collapse contact details"
-      >
-        <PanelLeftOpen size={18} />
-      </button>
+      <Tooltip content="Collapse contact details">
+        <span className="inline-flex">
+          <IconButton
+            type="button"
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            aria-label="Collapse contact details"
+            icon={<PanelLeftOpen size={18} />}
+          />
+        </span>
+      </Tooltip>
     ) : null;
 
   return (

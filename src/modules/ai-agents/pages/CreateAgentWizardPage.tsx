@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -15,11 +15,28 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { BaseInput, TextareaInput } from "../../../components/ui/inputs";
+import { Select } from "../../../components/ui/Select";
+import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
-import { PageHeader, PageShell } from "../components/AiAgentPrimitives";
+import { AiPageLayout } from "../components/AiAgentPrimitives";
 import type { AiAgentType } from "../types";
 
 type WizardStep = "template" | "identity" | "channels" | "permissions" | "publish";
+
+type AgentWizardForm = {
+  templateId: string;
+  name: string;
+  description: string;
+  avatar: string;
+  tone: string;
+  defaultLanguage: string;
+  channels: string[];
+  toolsAllowed: string[];
+  approvalMode: string;
+  canReply: boolean;
+};
 
 const steps: Array<{ id: WizardStep; label: string }> = [
   { id: "template", label: "Template" },
@@ -34,7 +51,7 @@ const templates: Array<{
   title: string;
   type: AiAgentType;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   tone: string;
   tools: string[];
   prompt: string;
@@ -93,12 +110,18 @@ const templates: Array<{
 
 const channelOptions = ["whatsapp", "instagram", "messenger", "email", "webchat"];
 const languageOptions = ["auto", "English", "Hindi", "Spanish", "Arabic", "Portuguese"];
+const approvalModeOptions = [
+  { value: "off", label: "No approval" },
+  { value: "first_reply", label: "First reply" },
+  { value: "all_replies", label: "All replies" },
+  { value: "tools_only", label: "Tools only" },
+];
 
 export function CreateAgentWizardPage() {
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<AgentWizardForm>({
     templateId: "support",
     name: "Support Agent",
     description: "Handles common customer questions and escalates when needed.",
@@ -119,7 +142,7 @@ export function CreateAgentWizardPage() {
     return true;
   }, [currentStep, form.name, form.channels.length]);
 
-  const update = (patch: Partial<typeof form>) => setForm((state) => ({ ...state, ...patch }));
+  const update = (patch: Partial<AgentWizardForm>) => setForm((state) => ({ ...state, ...patch }));
 
   const chooseTemplate = (templateId: string) => {
     const template = templates.find((item) => item.id === templateId) || templates[0];
@@ -170,40 +193,48 @@ export function CreateAgentWizardPage() {
   };
 
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow="Create Agent"
-        title="Launch a supervised AI teammate"
-        description="Start from a proven workflow, connect channels, choose permissions, then test before going live."
-        actions={
-          <button
-            onClick={() => navigate("/ai-agents")}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
-        }
-      />
-
+    <AiPageLayout
+      eyebrow="Create Agent"
+      title="Launch a supervised AI teammate"
+      description="Start from a proven workflow, connect channels, choose permissions, then test before going live."
+      actions={
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          leftIcon={<ArrowLeft size={16} />}
+          onClick={() => navigate("/ai-agents")}
+        >
+          Back
+        </Button>
+      }
+    >
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[280px_1fr]">
         <aside className="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r">
           <div className="space-y-2">
             {steps.map((step, index) => (
-              <button
+              <Button
                 key={step.id}
+                type="button"
                 onClick={() => setStepIndex(index)}
-                className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition ${
-                  index === stepIndex ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"
-                }`}
+                variant={index === stepIndex ? "dark" : "ghost"}
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
               >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
-                  index < stepIndex ? "bg-emerald-500 text-white" : index === stepIndex ? "bg-white text-slate-950" : "bg-slate-100 text-slate-500"
-                }`}>
-                  {index < stepIndex ? <Check size={14} /> : index + 1}
+                <span className="flex w-full items-center gap-3">
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                    index < stepIndex
+                      ? "bg-emerald-500 text-white"
+                      : index === stepIndex
+                        ? "bg-white text-slate-950"
+                        : "bg-slate-100 text-slate-500"
+                  }`}>
+                    {index < stepIndex ? <Check size={14} /> : index + 1}
+                  </span>
+                  <span className="text-sm font-semibold">{step.label}</span>
                 </span>
-                <span className="text-sm font-semibold">{step.label}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </aside>
@@ -216,24 +247,30 @@ export function CreateAgentWizardPage() {
                 <p className="mt-1 text-sm text-slate-500">You can tune every setting after creation.</p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {templates.map((template) => (
-                    <button
+                    <Button
                       key={template.id}
+                      type="button"
+                      variant="select-card"
+                      selected={form.templateId === template.id}
+                      fullWidth
+                      contentAlign="start"
+                      preserveChildLayout
+                      radius="lg"
                       onClick={() => chooseTemplate(template.id)}
-                      className={`rounded-lg border bg-white p-4 text-left transition hover:border-slate-400 ${
-                        form.templateId === template.id ? "border-slate-950 ring-2 ring-slate-950/10" : "border-slate-200"
-                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
-                          {template.icon}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-950">{template.title}</p>
-                          <p className="text-xs text-slate-500">{template.type}</p>
-                        </div>
-                      </div>
-                      <p className="mt-4 text-sm text-slate-500">{template.description}</p>
-                    </button>
+                      <span className="block w-full text-left">
+                        <span className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
+                            {template.icon}
+                          </span>
+                          <span>
+                            <span className="block font-semibold text-slate-950">{template.title}</span>
+                            <span className="block text-xs text-slate-500">{template.type}</span>
+                          </span>
+                        </span>
+                        <span className="mt-4 block text-sm font-normal text-slate-500">{template.description}</span>
+                      </span>
+                    </Button>
                   ))}
                 </div>
               </section>
@@ -251,29 +288,24 @@ export function CreateAgentWizardPage() {
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <Field label="Name" value={form.name} onChange={(name) => update({ name })} />
                   <Field label="Tone" value={form.tone} onChange={(tone) => update({ tone })} />
-                  <label className="md:col-span-2">
-                    <span className="text-sm font-semibold text-slate-700">Description</span>
-                    <textarea
+                  <div className="md:col-span-2">
+                    <TextareaInput
+                      label="Description"
                       value={form.description}
                       onChange={(event) => update({ description: event.target.value })}
-                      className="mt-1 min-h-24 w-full rounded-md border border-slate-200 p-3 text-sm outline-none focus:border-slate-400"
+                      rows={4}
                     />
-                  </label>
-                  <label>
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <Languages size={15} />
-                      Language
-                    </span>
-                    <select
-                      value={form.defaultLanguage}
-                      onChange={(event) => update({ defaultLanguage: event.target.value })}
-                      className="mt-1 w-full rounded-md border border-slate-200 bg-white p-2 text-sm outline-none focus:border-slate-400"
-                    >
-                      {languageOptions.map((language) => (
-                        <option key={language} value={language}>{language}</option>
-                      ))}
-                    </select>
-                  </label>
+                  </div>
+                  <Select
+                    label="Language"
+                    value={form.defaultLanguage}
+                    onChange={(event) => update({ defaultLanguage: event.target.value })}
+                    options={languageOptions.map((language) => ({ value: language, label: language }))}
+                  />
+                  <div className="hidden items-end gap-2 text-sm font-semibold text-slate-500 md:flex">
+                    <Languages size={15} />
+                    Keep language set to auto when channels serve multiple regions.
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -286,8 +318,15 @@ export function CreateAgentWizardPage() {
                   {channelOptions.map((channel) => {
                     const checked = form.channels.includes(channel);
                     return (
-                      <button
+                      <Button
                         key={channel}
+                        type="button"
+                        variant="select-card"
+                        selected={checked}
+                        fullWidth
+                        contentAlign="start"
+                        preserveChildLayout
+                        radius="lg"
                         onClick={() =>
                           update({
                             channels: checked
@@ -295,16 +334,15 @@ export function CreateAgentWizardPage() {
                               : [...form.channels, channel],
                           })
                         }
-                        className={`flex items-center justify-between rounded-lg border bg-white p-4 text-left ${
-                          checked ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 hover:border-slate-400"
-                        }`}
                       >
-                        <span className="flex items-center gap-3 text-sm font-semibold capitalize text-slate-800">
-                          <MessageCircle size={18} />
-                          {channel}
+                        <span className="flex w-full items-center justify-between gap-3">
+                          <span className="flex items-center gap-3 text-sm font-semibold capitalize text-slate-800">
+                            <MessageCircle size={18} />
+                            {channel}
+                          </span>
+                          {checked ? <Check size={18} className="text-emerald-600" /> : null}
                         </span>
-                        {checked ? <Check size={18} className="text-emerald-600" /> : null}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -316,28 +354,23 @@ export function CreateAgentWizardPage() {
                 <h2 className="text-lg font-semibold text-slate-950">Permissions</h2>
                 <p className="mt-1 text-sm text-slate-500">Start conservative. Managers can loosen approvals after testing.</p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  <Toggle label="Can reply automatically" checked={form.canReply} onChange={(canReply) => update({ canReply })} />
+                  <ToggleSetting label="Can reply automatically" checked={form.canReply} onChange={(canReply) => update({ canReply })} />
                   <PermissionTool name="assignConversation" label="Can assign conversations" form={form} update={update} />
                   <PermissionTool name="createLead" label="Can create leads" form={form} update={update} />
                   <PermissionTool name="updateContactField" label="Can update CRM fields" form={form} update={update} />
                   <PermissionTool name="triggerWorkflow" label="Can trigger workflows" form={form} update={update} />
                   <PermissionTool name="escalateHuman" label="Can escalate to humans" form={form} update={update} />
                 </div>
-                <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4">
-                  <label className="flex items-center gap-3">
-                    <LockKeyhole size={18} className="text-slate-500" />
-                    <span className="text-sm font-semibold text-slate-700">Needs approval for actions</span>
-                    <select
+                <div className="mt-5 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+                  <LockKeyhole size={18} className="mt-7 text-slate-500" />
+                  <div className="min-w-0 flex-1">
+                    <Select
+                      label="Needs approval for actions"
                       value={form.approvalMode}
                       onChange={(event) => update({ approvalMode: event.target.value })}
-                      className="ml-auto rounded-md border border-slate-200 bg-white px-2 py-1 text-sm outline-none"
-                    >
-                      <option value="off">No approval</option>
-                      <option value="first_reply">First reply</option>
-                      <option value="all_replies">All replies</option>
-                      <option value="tools_only">Tools only</option>
-                    </select>
-                  </label>
+                      options={approvalModeOptions}
+                    />
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -357,74 +390,76 @@ export function CreateAgentWizardPage() {
             ) : null}
 
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <button
+              <Button
+                type="button"
+                variant="secondary"
                 disabled={stepIndex === 0}
                 onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
               >
                 Back
-              </button>
+              </Button>
               {currentStep === "publish" ? (
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant="secondary"
                     disabled={saving}
+                    loading={saving}
+                    loadingMode="inline"
+                    loadingLabel="Saving"
                     onClick={() => save(false)}
-                    className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
                   >
                     Save draft
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="dark"
                     disabled={saving}
+                    loading={saving}
+                    loadingMode="inline"
+                    loadingLabel="Publishing"
                     onClick={() => save(true)}
-                    className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     Publish
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
+                <Button
+                  type="button"
+                  variant="dark"
                   disabled={!canNext}
+                  rightIcon={<ArrowRight size={16} />}
                   onClick={() => setStepIndex((index) => Math.min(steps.length - 1, index + 1))}
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   Continue
-                  <ArrowRight size={16} />
-                </button>
+                </Button>
               )}
             </div>
           </div>
         </main>
       </div>
-    </PageShell>
+    </AiPageLayout>
   );
 }
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <label>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-md border border-slate-200 p-2 text-sm outline-none focus:border-slate-400"
-      />
-    </label>
+    <BaseInput
+      label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function ToggleSetting({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <button
-      onClick={() => onChange(!checked)}
-      className={`flex items-center justify-between rounded-lg border p-4 text-left ${
-        checked ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 bg-white"
-      }`}
-    >
+    <div className={`flex items-center justify-between gap-3 rounded-lg border p-4 ${
+      checked ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 bg-white"
+    }`}>
       <span className="text-sm font-semibold text-slate-800">{label}</span>
-      <span className={`h-5 w-9 rounded-full p-0.5 transition ${checked ? "bg-emerald-500" : "bg-slate-200"}`}>
-        <span className={`block h-4 w-4 rounded-full bg-white transition ${checked ? "translate-x-4" : ""}`} />
-      </span>
-    </button>
+      <ToggleSwitch checked={checked} onChange={onChange} aria-label={label} />
+    </div>
   );
 }
 
@@ -436,12 +471,12 @@ function PermissionTool({
 }: {
   name: string;
   label: string;
-  form: { toolsAllowed: string[] };
-  update: (patch: any) => void;
+  form: Pick<AgentWizardForm, "toolsAllowed">;
+  update: (patch: Partial<AgentWizardForm>) => void;
 }) {
   const checked = form.toolsAllowed.includes(name);
   return (
-    <Toggle
+    <ToggleSetting
       label={label}
       checked={checked}
       onChange={() =>

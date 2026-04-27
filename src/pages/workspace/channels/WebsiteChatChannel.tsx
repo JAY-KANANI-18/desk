@@ -1,62 +1,26 @@
-import { useState, useRef } from 'react';
+import { useState } from "react";
 import {
-  Copy, Check, Upload, X, ChevronDown,
-  AlertCircle, Lock, Globe, Zap, Shield,
-  MessageSquare, BarChart3, ExternalLink,
-} from 'lucide-react';
-import type { Channel } from '../types';
-import { ChannelApi } from '../../../lib/channelApi';
-
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
-
-export const WebsiteChatChannelSidebar = () => (
-  <div className="flex flex-col gap-6 p-6 h-full">
-    <div className="flex items-center gap-2.5">
-       <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0">
-        <img src="https://cdn.simpleicons.org/googlechat" className="w-10 h-10" alt="Website Chat" />
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-900 leading-none">Website Chat</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">Embeddable live chat widget</p>
-      </div>
-    </div>
-    <div className="h-px bg-gray-100" />
-    <div>
-      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Features</p>
-      <div className="space-y-0.5">
-        {[
-          { Icon: MessageSquare, label: 'Live Chat',      desc: 'Real-time visitor messaging' },
-          { Icon: Zap,           label: 'Instant Setup',  desc: 'One script tag to embed' },
-          { Icon: Globe,         label: 'Any Website',    desc: 'Works on any platform' },
-          { Icon: Shield,        label: 'Secure',         desc: 'Token-authenticated sessions' },
-          { Icon: BarChart3,     label: 'History',        desc: 'Full conversation history' },
-        ].map(({ Icon, label, desc }) => (
-          <div key={label} className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-            <Icon size={13} className="text-gray-400 shrink-0" />
-            <div>
-              <p className="text-xs font-medium text-gray-700">{label}</p>
-              <p className="text-[10px] text-gray-400">{desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-    <div className="h-px bg-gray-100" />
-    <div className="mt-auto">
-      <a
-      
-        href="https://docs.yourplatform.com/webchat"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 text-[11px] text-gray-400 hover:text-gray-700 transition-colors no-underline font-medium"
-      >
-        <ExternalLink size={11} /> Documentation
-      </a>
-    </div>
-  </div>
-);
-
-// ─── Chat icon SVGs ───────────────────────────────────────────────────────────
+  AlertCircle,
+  BarChart3,
+  Check,
+  ExternalLink,
+  Globe,
+  Lock,
+  MessageSquare,
+  Shield,
+  Upload,
+  X,
+  Zap,
+} from "lucide-react";
+import type { Channel } from "../types";
+import { ChannelApi } from "../../../lib/channelApi";
+import { Button } from "../../../components/ui/button/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { CheckboxInput } from "../../../components/ui/inputs/CheckboxInput";
+import { ColorInput } from "../../../components/ui/inputs/ColorInput";
+import { CopyInput } from "../../../components/ui/inputs/CopyInput";
+import { TagInput } from "../../../components/ui/inputs/TagInput";
+import { Tag } from "../../../components/ui/tag/Tag";
 
 const CHAT_ICONS = [
   () => (
@@ -65,7 +29,14 @@ const CHAT_ICONS = [
     </svg>
   ),
   () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="22" height="22">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      strokeWidth="2"
+      width="22"
+      height="22"
+    >
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   ),
@@ -87,8 +58,6 @@ const CHAT_ICONS = [
   ),
 ];
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface Props {
   connected: Channel | null;
   onConnect: (channel: Channel) => void;
@@ -96,70 +65,113 @@ interface Props {
   workspaceId: string;
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspaceId }: Props) => {
-  const [step, setStep]               = useState<1 | 2>(1);
-
-  // Step 1
-  const [websites, setWebsites]       = useState<string[]>([]);
-  const [websiteInput, setInput]      = useState('');
-  const [showDropdown, setDropdown]   = useState(false);
-  const [themeColor, setColor]        = useState('#4f46e5');
-  const [selectedIcon, setIcon]       = useState(0);
-  const colorRef                      = useRef<HTMLInputElement>(null);
-
-  // Step 2 — populated from API response
-  const [embedCode, setEmbedCode]     = useState('');
-  const [createdChannel, setCreated]  = useState<any>(null);
-  const [copied, setCopied]           = useState(false);
-  const [confirmed, setConfirmed]     = useState(false);
-  const [sendEmail, setSendEmail]     = useState(false);
-
-  // Async state
-  const [connecting, setConnecting]   = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-
-  // ── Website tag helpers ───────────────────────────────────────────────────
-
-  const addWebsite = (val: string) => {
-    const trimmed = val.trim().replace(/,+$/, '');
-    if (trimmed && !websites.includes(trimmed))
-      setWebsites(p => [...p, trimmed]);
-    setInput('');
-    setDropdown(false);
+interface CreatedWebsiteChannel extends Channel {
+  embedCode?: string;
+  config?: {
+    widgetToken?: string;
   };
+}
 
-  const removeWebsite = (w: string) =>
-    setWebsites(p => p.filter(x => x !== w));
+export const WebsiteChatChannelSidebar = () => (
+  <div className="flex h-full flex-col gap-6 p-6">
+    <div className="flex items-center gap-2.5">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+        <img
+          src="https://cdn.simpleicons.org/googlechat"
+          className="h-10 w-10"
+          alt="Website Chat"
+        />
+      </div>
+      <div>
+        <p className="leading-none text-xs font-semibold text-gray-900">
+          Website Chat
+        </p>
+        <p className="mt-0.5 text-[10px] text-gray-400">
+          Embeddable live chat widget
+        </p>
+      </div>
+    </div>
+    <div className="h-px bg-gray-100" />
+    <div>
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        Features
+      </p>
+      <div className="space-y-0.5">
+        {[
+          { Icon: MessageSquare, label: "Live Chat", desc: "Real-time visitor messaging" },
+          { Icon: Zap, label: "Instant Setup", desc: "One script tag to embed" },
+          { Icon: Globe, label: "Any Website", desc: "Works on any platform" },
+          { Icon: Shield, label: "Secure", desc: "Token-authenticated sessions" },
+          { Icon: BarChart3, label: "History", desc: "Full conversation history" },
+        ].map(({ Icon, label, desc }) => (
+          <div
+            key={label}
+            className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+          >
+            <Icon size={13} className="shrink-0 text-gray-400" />
+            <div>
+              <p className="text-xs font-medium text-gray-700">{label}</p>
+              <p className="text-[10px] text-gray-400">{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="h-px bg-gray-100" />
+    <div className="mt-auto">
+      <a
+        href="https://docs.yourplatform.com/webchat"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 text-[11px] font-medium text-gray-400 no-underline transition-colors hover:text-gray-700"
+      >
+        <ExternalLink size={11} />
+        Documentation
+      </a>
+    </div>
+  </div>
+);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addWebsite(websiteInput);
-    } else if (e.key === 'Backspace' && !websiteInput && websites.length) {
-      setWebsites(p => p.slice(0, -1));
-    }
-  };
-
-  // ── Step 1 → 2: hit backend, get real token + embed code ─────────────────
+export const WebsiteChatChannel = ({
+  connected,
+  onConnect,
+  onDisconnect,
+  workspaceId,
+}: Props) => {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [websites, setWebsites] = useState<string[]>([]);
+  const [themeColor, setThemeColor] = useState("#4f46e5");
+  const [selectedIcon, setSelectedIcon] = useState(0);
+  const [embedCode, setEmbedCode] = useState("");
+  const [createdChannel, setCreatedChannel] =
+    useState<CreatedWebsiteChannel | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleNext = async () => {
     setConnecting(true);
     setError(null);
+
     try {
-      const res = await ChannelApi.createWebchatChannel(workspaceId, {
-        name: 'Website Chat',
-        welcomeMessage: 'Hi! How can we help?',
+      const response = await ChannelApi.createWebchatChannel(workspaceId, {
+        name: "Website Chat",
+        welcomeMessage: "Hi! How can we help?",
         primaryColor: themeColor,
         allowedOrigins: websites,
       });
-      // res.data matches your BE response: { id, config: { widgetToken }, embedCode, ... }
-      setCreated(res);
-      setEmbedCode(res.embedCode);
+
+      setCreatedChannel(response);
+      setEmbedCode(response.embedCode ?? "");
       setStep(2);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? 'Failed to create channel.');
+    } catch (caughtError: any) {
+      setError(
+        caughtError?.response?.data?.message ??
+          caughtError?.message ??
+          "Failed to create channel.",
+      );
     } finally {
       setConnecting(false);
     }
@@ -168,169 +180,150 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
   const handleCopy = () => {
     navigator.clipboard.writeText(embedCode).catch(() => {});
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    window.setTimeout(() => setCopied(false), 2000);
   };
-
-  // ── Complete: pass real channel object to parent ──────────────────────────
 
   const handleComplete = () => {
-    if (!confirmed || !createdChannel) return;
-    onConnect(createdChannel); // same shape as WhatsApp — raw API response
-  };
+    if (!confirmed || !createdChannel) {
+      return;
+    }
 
-  // ── Connected state ───────────────────────────────────────────────────────
+    void sendEmail;
+    onConnect(createdChannel);
+  };
 
   if (connected) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-          <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
+          <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-gray-900">Channel active</p>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{connected.identifier}</p>
+            <p className="mt-0.5 truncate text-xs text-gray-400">
+              {connected.identifier}
+            </p>
           </div>
-          <span className="text-[11px] text-gray-500 font-medium shrink-0">
+          <span className="shrink-0 text-[11px] font-medium text-gray-500">
             {connected.msgs?.toLocaleString()} messages
           </span>
         </div>
         <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-900">Disconnect channel</p>
-            <p className="text-xs text-gray-400 mt-0.5">Stops all incoming website chat messages.</p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Stops all incoming website chat messages.
+            </p>
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => onDisconnect(connected.id)}
-            className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors bg-transparent cursor-pointer"
+            style={{
+              color: "var(--color-error)",
+              borderColor: "var(--color-error)",
+            }}
           >
             Disconnect
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
-
-  // ── Step 1: Configure ─────────────────────────────────────────────────────
 
   if (step === 1) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Connect Website Chat</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Embed a live chat widget on your website. Further customization is available after connecting.
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Connect Website Chat
+          </h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Embed a live chat widget on your website. Further customization is
+            available after connecting.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 space-y-6">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="space-y-6 p-6">
+            <TagInput
+              label="Website(s) where the widget will be added"
+              values={websites}
+              onChange={setWebsites}
+              placeholder="e.g. www.apple.com"
+              hint="Press Enter or comma to add each website"
+            />
 
-            {/* Websites */}
+            <ColorInput
+              label="Theme Color"
+              value={themeColor}
+              onChange={setThemeColor}
+            />
+
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold text-gray-500">
-                Website(s) where the widget will be added
+                Launcher Icon
               </label>
-              <div
-                className="relative border border-gray-200 rounded-lg bg-white min-h-[40px] flex flex-wrap items-center gap-1.5 px-3 py-2 cursor-text focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all"
-                onClick={() => setDropdown(true)}
-              >
-                {websites.map(w => (
-                  <span key={w} className="flex items-center gap-1 bg-blue-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full border border-blue-200">
-                    {w}
-                    <button
-                      onClick={e => { e.stopPropagation(); removeWebsite(w); }}
-                      className="hover:text-blue-900 bg-transparent border-none cursor-pointer p-0"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={websiteInput}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => setDropdown(true)}
-                  onBlur={() => setTimeout(() => setDropdown(false), 150)}
-                  placeholder={websites.length === 0 ? 'e.g. www.apple.com' : ''}
-                  className="flex-1 min-w-0 text-[13px] text-gray-700 placeholder:text-gray-300 outline-none bg-transparent sm:min-w-[180px]"
-                />
-                <ChevronDown size={14} className="text-gray-300 shrink-0 ml-auto" />
-              </div>
-              {showDropdown && websiteInput && (
-                <div className="border border-gray-200 rounded-lg bg-white shadow-md overflow-hidden">
-                  <button
-                    onMouseDown={e => { e.preventDefault(); addWebsite(websiteInput); }}
-                    className="w-full text-left px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50 bg-transparent border-none cursor-pointer"
-                  >
-                    Add "<span className="font-medium">{websiteInput}</span>"
-                  </button>
-                </div>
-              )}
-              <p className="text-[10px] text-gray-400">Press Enter or comma to add each website</p>
-            </div>
-
-            {/* Theme color */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-gray-500">Theme Color</label>
-              <div
-                className="flex items-center gap-3 border border-gray-200 rounded-lg bg-white px-4 py-2.5 cursor-pointer hover:border-indigo-400 transition-colors"
-                onClick={() => colorRef.current?.click()}
-              >
-                <div className="w-5 h-5 rounded-full border border-gray-200 shrink-0" style={{ backgroundColor: themeColor }} />
-                <span className="text-[13px] font-mono text-gray-700 flex-1">{themeColor.toUpperCase()}</span>
-                <input
-                  ref={colorRef}
-                  type="color"
-                  value={themeColor}
-                  onChange={e => setColor(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
-            </div>
-
-            {/* Icon picker */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-gray-500">Launcher Icon</label>
               <div className="flex flex-wrap items-center gap-2.5">
-                {CHAT_ICONS.map((IconFn, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setIcon(i)}
-                    className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-none cursor-pointer ${
-                      selectedIcon === i ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110' : 'hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: themeColor }}
-                  >
-                    <IconFn />
-                  </button>
+                {CHAT_ICONS.map((IconMarkup, index) => (
+                  <Button
+                    key={index}
+                    iconOnly
+                    radius="full"
+                    variant="ghost"
+                    aria-label={`Select launcher icon ${index + 1}`}
+                    leftIcon={<IconMarkup />}
+                    onClick={() => setSelectedIcon(index)}
+                    style={{
+                      backgroundColor: themeColor,
+                      width: "44px",
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      transform: selectedIcon === index ? "scale(1.1)" : undefined,
+                      boxShadow:
+                        selectedIcon === index
+                          ? "0 0 0 3px var(--color-primary-light)"
+                          : undefined,
+                    }}
+                  />
                 ))}
-                <button className="w-11 h-11 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-indigo-400 hover:text-indigo-400 transition-colors bg-transparent cursor-pointer">
-                  <Upload size={15} />
-                </button>
+                <IconButton
+                  icon={<Upload size={15} />}
+                  aria-label="Upload custom icon"
+                  variant="ghost"
+                  size="lg"
+                  style={{
+                    borderStyle: "dashed",
+                    borderWidth: "2px",
+                    borderColor: "var(--color-gray-200)",
+                    color: "var(--color-gray-400)",
+                    backgroundColor: "transparent",
+                  }}
+                />
               </div>
             </div>
 
-            {error && (
-              <div className="flex items-center gap-2 text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
-                <AlertCircle size={12} className="shrink-0" /> {error}
+            {error ? (
+              <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2.5 text-[12px] text-red-500">
+                <AlertCircle size={12} className="shrink-0" />
+                {error}
               </div>
-            )}
+            ) : null}
 
             <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                <Lock size={10} /> Token generated securely on our servers
+                <Lock size={10} />
+                Token generated securely on our servers
               </p>
-              <button
-                onClick={handleNext}
-                disabled={websites.length === 0 || connecting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600   text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              <Button
+                leftIcon={<MessageSquare size={12} />}
+                loading={connecting}
+                loadingMode="inline"
+                loadingLabel="Creating..."
+                disabled={websites.length === 0}
+                onClick={() => void handleNext()}
               >
-                {connecting ? (
-                  <><div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" /> Creating…</>
-                ) : (
-                  <><MessageSquare size={12} /> Next</>
-                )}
-              </button>
+                Next
+              </Button>
             </div>
           </div>
         </div>
@@ -338,85 +331,77 @@ export const WebsiteChatChannel = ({ connected, onConnect, onDisconnect, workspa
     );
   }
 
-  // ── Step 2: Embed script ──────────────────────────────────────────────────
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Add the Widget Script</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Paste this before the <code className="bg-gray-100 px-1 rounded text-xs">&lt;/body&gt;</code> tag on your website.
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          Add the Widget Script
+        </h1>
+        <p className="mt-1 text-sm text-gray-400">
+          Paste this before the{" "}
+          <code className="rounded bg-gray-100 px-1 text-xs">&lt;/body&gt;</code>{" "}
+          tag on your website.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="p-6 space-y-5">
-
-          {/* Embed code block */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div className="space-y-5 p-6">
           <div className="flex flex-col gap-3 rounded-xl bg-slate-900 p-4 sm:flex-row sm:items-start">
-            <code className="flex-1 text-xs text-emerald-300 font-mono break-all leading-relaxed">
+            <code className="flex-1 break-all font-mono text-xs leading-relaxed text-emerald-300">
               {embedCode}
             </code>
-            <button
+            <Button
+              size="sm"
               onClick={handleCopy}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${
-                copied ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
+              style={
+                copied
+                  ? {
+                      backgroundColor: "var(--color-success)",
+                      borderColor: "var(--color-success)",
+                      color: "white",
+                    }
+                  : {
+                      backgroundColor: "var(--color-gray-700)",
+                      borderColor: "var(--color-gray-700)",
+                      color: "var(--color-gray-100)",
+                    }
+              }
             >
-              {copied ? <><Check size={12} />Copied</> : <><Copy size={12} />Copy</>}
-            </button>
+              {copied ? "Copied" : "Copy"}
+            </Button>
           </div>
 
-          {/* Token display */}
-          {createdChannel?.config?.widgetToken && (
-            <div className="flex items-center gap-2 text-[11px] text-gray-400">
-              <span>Widget token:</span>
-              <code className="font-mono text-gray-600 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded">
-                {createdChannel.config.widgetToken}
-              </code>
-            </div>
-          )}
+          {createdChannel?.config?.widgetToken ? (
+            <CopyInput
+              label="Widget token"
+              value={createdChannel.config.widgetToken}
+            />
+          ) : null}
 
-          {/* Checkboxes */}
           <div className="space-y-3 pt-1">
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={sendEmail}
-                onChange={e => setSendEmail(e.target.checked)}
-                className="mt-0.5 accent-indigo-600"
-              />
-              <span className="text-[12px] text-gray-600">
-                Send installation instructions to website admin via email.
-              </span>
-            </label>
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={e => setConfirmed(e.target.checked)}
-                className="mt-0.5 accent-indigo-600"
-              />
-              <span className="text-[12px] text-gray-600">
-                I have added the script, or informed my website admin to add it.
-              </span>
-            </label>
+            <CheckboxInput
+              checked={sendEmail}
+              onChange={setSendEmail}
+              label="Send installation instructions to website admin via email."
+            />
+            <CheckboxInput
+              checked={confirmed}
+              onChange={setConfirmed}
+              label="I have added the script, or informed my website admin to add it."
+            />
           </div>
 
           <div className="flex flex-col gap-3 border-t border-gray-100 pt-2 sm:flex-row sm:items-center">
-            <button
-              onClick={() => setStep(1)}
-              className="px-5 py-2.5 text-[12px] font-semibold border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors bg-transparent cursor-pointer"
-            >
+            <Button variant="secondary" onClick={() => setStep(1)}>
               Back
-            </button>
-            <button
-              onClick={handleComplete}
+            </Button>
+            <Button
+              leftIcon={<Check size={12} />}
               disabled={!confirmed}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600  text-white text-[12px] font-semibold rounded-lg border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handleComplete}
             >
-              <Check size={12} /> Complete Setup
-            </button>
+              Complete Setup
+            </Button>
           </div>
         </div>
       </div>

@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, X, Sparkles } from 'lucide-react';
-import { Toggle } from '../components/Toggle';
+import { Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
 
 import { SectionError } from '../components/SectionError';
 import type { AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
+import { Button } from '../../../components/ui/Button';
+import { CenterModal } from '../../../components/ui/Modal';
+import { Tag } from '../../../components/ui/Tag';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
+import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
+import { MobileSheet } from '../../../components/ui/modal';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 type PromptFormState = {
   name: string;
@@ -20,6 +27,7 @@ const EMPTY_FORM: PromptFormState = {
 };
 
 export const AIPrompts = () => {
+  const isMobile = useIsMobile();
   const [prompts, setPrompts] = useState<AIPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +125,50 @@ export const AIPrompts = () => {
   if (loading) return <DataLoader type={'prompts'} />;
   if (error && prompts.length === 0) return <SectionError message={error} onRetry={load} />;
 
+  const editorContent = (
+    <div className="space-y-4 p-4 sm:p-0">
+      <BaseInput
+        label="Prompt Name"
+        value={form.name}
+        onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+        placeholder="Name of your prompt"
+      />
+
+      <TextareaInput
+        label="Prompt Action"
+        value={form.prompt}
+        onChange={(e) => setForm((prev) => ({ ...prev, prompt: e.target.value }))}
+        rows={4}
+        placeholder="Write exactly what you want your prompt to do. Always start with a verb. Ex: Make concise"
+      />
+
+      <BaseInput
+        label="Description"
+        value={form.description}
+        onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+        placeholder="Short description shown in AI prompts list"
+      />
+    </div>
+  );
+
+  const editorFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button onClick={closeEditor} variant="secondary" >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleSave}
+        disabled={!form.name.trim() || !form.prompt.trim()}
+        loading={saving}
+        loadingMode="inline"
+        loadingLabel="Saving..."
+        
+      >
+        Save
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
@@ -133,13 +185,13 @@ export const AIPrompts = () => {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={openCreate}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 sm:w-auto"
+            leftIcon={<Plus size={16} />}
+            fullWidth={isMobile}
           >
-            <Plus size={16} />
             Add AI prompt
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -163,47 +215,49 @@ export const AIPrompts = () => {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-gray-900">{prompt.name}</p>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        prompt.isDefault ? 'bg-gray-100 text-gray-600' : 'bg-indigo-50 text-indigo-700'
-                      }`}
-                    >
-                      {prompt.isDefault ? 'Default' : 'Custom'}
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        prompt.isEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {prompt.isEnabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    <Tag
+                      label={prompt.isDefault ? 'Default' : 'Custom'}
+                      bgColor={prompt.isDefault ? 'gray' : 'primary'}
+                      size="sm"
+                    />
+                    <Tag
+                      label={prompt.isEnabled ? 'Enabled' : 'Disabled'}
+                      bgColor={prompt.isEnabled ? 'success' : 'gray'}
+                      size="sm"
+                    />
                   </div>
                   <p className="mt-1 break-words text-sm leading-5 text-gray-500">{prompt.description ?? prompt.prompt}</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {!prompt.isDefault && (
-                    <button
+                    <Button
                       onClick={() => void handleDelete(prompt)}
-                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 sm:w-auto"
+                      variant="danger-ghost"
+       
+                      leftIcon={<Trash2 size={15} />}
+                      fullWidth={isMobile}
                     >
-                      <Trash2 size={15} /> Delete
-                    </button>
+                      Delete
+                    </Button>
                   )}
                   {!prompt.isDefault && (
-                    <button
+                    <Button
                       onClick={() => openEdit(prompt)}
-                      className="inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-xl bg-white/80 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-white sm:w-auto"
+                      variant="secondary"
+                  
+                      leftIcon={<Edit2 size={15} />}
+                      fullWidth={isMobile}
                     >
-                      <Edit2 size={15} /> Edit
-                    </button>
+                      Edit
+                    </Button>
                   )}
                   <div className="ml-auto flex items-center gap-2 rounded-full bg-white/85 px-2.5 py-1.5 sm:ml-0">
                     <span className="text-xs font-medium text-gray-600">{prompt.isEnabled ? 'On' : 'Off'}</span>
-                    <Toggle
+                    <ToggleSwitch
                       checked={Boolean(prompt.isEnabled)}
                       onChange={() => void handleToggle(prompt)}
-                      ariaLabel={prompt.isEnabled ? 'Disable prompt' : 'Enable prompt'}
+                      aria-label={prompt.isEnabled ? 'Disable prompt' : 'Enable prompt'}
                     />
                   </div>
                 </div>
@@ -213,63 +267,29 @@ export const AIPrompts = () => {
         )}
       </div>
 
-      {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 sm:items-center sm:px-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:max-w-xl sm:rounded-2xl">
-            <div className="flex items-start justify-between px-4 py-4 sm:px-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 sm:text-2xl">{editPrompt ? 'Edit AI prompt' : 'New AI prompt'}</h3>
-                <p className="mt-1 text-sm text-gray-500">Create a reusable rewrite action for the inbox composer.</p>
-              </div>
-              <button onClick={closeEditor} className="text-gray-500 transition-colors hover:text-gray-700">
-                <X size={22} />
-              </button>
-            </div>
+      {showEditor && isMobile ? (
+        <MobileSheet
+          isOpen={showEditor}
+          onClose={closeEditor}
+          title={<h3 className="text-base font-semibold text-slate-900">{editPrompt ? 'Edit AI prompt' : 'New AI prompt'}</h3>}
+          footer={editorFooter}
+        >
+          {editorContent}
+        </MobileSheet>
+      ) : null}
 
-            <div className="space-y-4 px-4 py-4 sm:space-y-5 sm:px-6 sm:py-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">Prompt Name</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Name of your prompt"
-                  className="w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:px-4"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">Prompt Action</label>
-                <textarea
-                  value={form.prompt}
-                  onChange={(e) => setForm((prev) => ({ ...prev, prompt: e.target.value }))}
-                  rows={4}
-                  placeholder="Write exactly what you want your prompt to do. Always start with a verb. Ex: Make concise"
-                  className="min-h-[140px] w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:min-h-0 sm:px-4"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">Description</label>
-                <input
-                  value={form.description}
-                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Short description shown in AI prompts list"
-                  className="w-full rounded-xl border border-gray-300 px-3 py-3 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:px-4"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 px-4 pb-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6 sm:pb-5">
-              <button onClick={closeEditor} className="w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-slate-200 sm:w-auto">
-                Cancel
-              </button>
-              <button onClick={handleSave} disabled={saving} className="w-full rounded-xl bg-gray-300 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-70 enabled:bg-indigo-600 enabled:hover:bg-indigo-700 sm:w-auto">
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showEditor && !isMobile ? (
+        <CenterModal
+          isOpen={showEditor}
+          onClose={closeEditor}
+          title={editPrompt ? 'Edit AI prompt' : 'New AI prompt'}
+          subtitle="Create a reusable rewrite action for the inbox composer."
+          size="sm"
+          footer={editorFooter}
+        >
+          {editorContent}
+        </CenterModal>
+      ) : null}
     </div>
   );
 };

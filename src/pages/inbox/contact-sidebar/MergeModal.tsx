@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import {
   AlertTriangle,
-  Check,
   GitMerge,
-  Loader2,
   Mail,
   MessageSquareText,
   Users,
   Workflow,
-  X,
 } from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
+import { Avatar } from '../../../components/ui/Avatar';
+import { CenterModal } from '../../../components/ui/Modal';
+import { Tag } from '../../../components/ui/Tag';
+import { CheckboxInput } from '../../../components/ui/inputs';
 import type { ContactMergePreview } from '../../../lib/contactApi';
-import { ContactAvatar } from '../../../components/contact/ContactAvatar';
 import type { SidebarContact } from './types';
 import { CHANNEL_META, conflictFromReasons, contactName } from './utils';
 
@@ -63,19 +64,18 @@ export function MergeModal({
     return selection;
   });
   const [mergeTags, setMergeTags] = useState(true);
+  const mergedTags = [...new Set([...(current.tags || []), ...(duplicate.tags || [])])];
 
   const contactCards = [
     {
       key: 'current',
       contact: current,
       roleLabel: 'Primary Contact',
-      roleTone: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     },
     {
       key: 'duplicate',
       contact: duplicate,
       roleLabel: 'Merge Suggestion',
-      roleTone: 'bg-slate-50 text-slate-600 border-slate-200',
     },
   ] as const;
 
@@ -133,10 +133,9 @@ export function MergeModal({
     if (field.key === 'avatarUrl') {
       return (
         <div className="flex items-center gap-3">
-          <ContactAvatar
-            firstName={contact.firstName}
-            lastName={contact.lastName}
-            avatarUrl={(contact as any).avatarUrl}
+          <Avatar
+            src={(contact as any).avatarUrl ?? undefined}
+            name={contactName(contact)}
             size="sm"
           />
           <span className="text-[13px] text-[#1f2937]">
@@ -151,9 +150,7 @@ export function MergeModal({
       return tags.length ? (
         <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 bg-[#f0f2f7] text-[#5a6280] text-[10px] rounded-md font-medium">
-              {tag}
-            </span>
+            <Tag key={tag} label={tag} size="sm" bgColor="gray" />
           ))}
         </div>
       ) : (
@@ -185,47 +182,62 @@ export function MergeModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/45 flex items-center justify-center p-4">
+    <CenterModal
+      isOpen
+      onClose={onCancel}
+      title="Merge Contact"
+      subtitle="Review and select information to be merged here."
+      headerIcon={<GitMerge size={18} className="text-indigo-600" />}
+      size="lg"
+      width={672}
+      closeOnOverlayClick={false}
+      bodyPadding="none"
+      footerMeta={
+        <p className="text-xs text-[#6b7280]">One contact and one conversation will remain after merge.</p>
+      }
+      secondaryAction={
+        <Button
+          onClick={onCancel}
+          variant="secondary"
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={doMerge}
+          disabled={loading}
+          loading={loading}
+          leftIcon={<GitMerge size={14} />}
+          loadingMode="inline"
+        >
+          Merge
+        </Button>
+      }
+    >
       <div
-        className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+        className="flex max-h-[90vh] flex-col"
         style={{ fontFamily: "'DM Sans', -apple-system, sans-serif" }}
       >
-        <div className="flex items-start justify-between px-6 py-5 border-b border-[#e5e7eb]">
-          <div>
-            <h2 className="text-[22px] font-semibold text-[#111827]">Merge Contact</h2>
-            <p className="text-sm text-[#6b7280] mt-0.5">
-              Review and select information to be merged here.
-            </p>
-          </div>
-          <button onClick={onCancel} className="text-[#6b7280] hover:text-[#111827] p-1 rounded-lg hover:bg-[#f3f4f6]">
-            <X size={20} />
-          </button>
-        </div>
-
         <div className="overflow-y-auto flex-1 px-6 py-5 bg-[#fafafa]">
           <div className="grid grid-cols-2 gap-4">
-            {contactCards.map(({ key, contact, roleLabel, roleTone }) => {
+            {contactCards.map(({ key, contact, roleLabel }) => {
               const channel = resolveChannel(contact);
               return (
                 <div key={key} className="rounded-xl border border-[#e5e7eb] bg-white p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <ContactAvatar
-                        firstName={contact.firstName}
-                        lastName={contact.lastName}
-                        avatarUrl={contact.avatarUrl}
+                      <Avatar
+                        src={contact.avatarUrl ?? undefined}
+                        name={contactName(contact)}
                         size="sm"
                       />
                       <div className="min-w-0">
                         <p className="text-[15px] font-semibold text-[#111827] truncate">{contactName(contact)}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="px-3 py-1 rounded-full text-xs font-medium bg-[#eef2ff] text-indigo-600"
-                    >
-                      Open
-                    </button>
+                    <Tag label="Open" size="sm" bgColor="primary" />
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3">
@@ -237,9 +249,11 @@ export function MergeModal({
                           <Users size={11} className="text-indigo-600" />
                         </span>
                       )}
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${roleTone}`}>
-                        {roleLabel}
-                      </span>
+                      <Tag
+                        label={roleLabel}
+                        size="sm"
+                        bgColor={key === 'current' ? 'primary' : 'gray'}
+                      />
                     </div>
                   </div>
 
@@ -279,20 +293,20 @@ export function MergeModal({
                       const dimmed = field.isTags && mergeTags;
 
                       return (
-                        <button
+                        <Button
                           type="button"
                           key={side}
                           onClick={() => {
                             if (field.isTags) setMergeTags(false);
                             setSel((prev) => ({ ...prev, [field.key]: side }));
                           }}
-                          className={`min-h-[56px] w-full p-4 rounded-xl text-left border transition-all ${
-                            dimmed
-                              ? 'border-[#e5e7eb] bg-[#f9fafb] opacity-50'
-                              : chosen
-                                ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600/10'
-                                : 'border-[#d1d5db] hover:border-indigo-300 bg-white'
-                          }`}
+                          variant={dimmed ? 'soft' : chosen ? 'soft-primary' : 'secondary'}
+                          size="lg"
+                          radius="lg"
+                          fullWidth
+                          contentAlign="start"
+                          className={dimmed ? 'min-h-[56px] whitespace-normal px-4 py-4 opacity-50' : 'min-h-[56px] whitespace-normal px-4 py-4'}
+                          aria-pressed={chosen && !dimmed}
                         >
                           <div className="flex items-start gap-3">
                             <span
@@ -304,35 +318,34 @@ export function MergeModal({
                             </span>
                             <div className="min-w-0 flex-1">{renderVal(contact, field)}</div>
                           </div>
-                        </button>
+                        </Button>
                       );
                     })}
                     {field.isTags ? (
                       <div className="col-span-2">
-                        <label
-                          onClick={() => setMergeTags(true)}
-                          className={`mt-3 flex items-center gap-2 cursor-pointer px-4 py-3 rounded-xl border transition-all ${
-                            mergeTags ? 'border-indigo-600 bg-indigo-50' : 'border-[#d1d5db] hover:border-indigo-300'
+                        <div
+                          className={`mt-3 rounded-xl border px-4 py-3 transition-all ${
+                            mergeTags ? 'border-indigo-600 bg-indigo-50' : 'border-[#d1d5db]'
                           }`}
                         >
-                          <span
-                            className={`w-5 h-5 rounded-full border flex-shrink-0 flex items-center justify-center transition-all ${
-                              mergeTags ? 'border-indigo-600' : 'border-[#9ca3af]'
-                            }`}
-                          >
-                            {mergeTags ? <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" /> : null}
-                          </span>
-                          <span className="text-[13px] text-[#374151] font-medium">Merge all tags from both contacts</span>
+                          <CheckboxInput
+                            checked={mergeTags}
+                            onChange={setMergeTags}
+                            label="Merge all tags from both contacts"
+                            className="w-full"
+                          />
                           {mergeTags ? (
-                            <div className="ml-auto flex flex-wrap gap-1">
-                              {[...new Set([...(current.tags || []), ...(duplicate.tags || [])])].map((tag) => (
-                                <span key={tag} className="px-2 py-0.5 bg-indigo-600 text-white text-[10px] rounded-md font-medium">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
+                            mergedTags.length ? (
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {mergedTags.map((tag) => (
+                                  <Tag key={tag} label={tag} size="sm" bgColor="primary" />
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-3 text-[11px] italic text-[#9ca3af]">No tags to merge</p>
+                            )
                           ) : null}
-                        </label>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -357,27 +370,7 @@ export function MergeModal({
             </div>
           </div>
         </div>
-
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[#e5e7eb] bg-white">
-          <p className="text-xs text-[#6b7280]">One contact and one conversation will remain after merge.</p>
-          <div className="flex gap-2">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 border border-[#d1d5db] rounded-xl hover:bg-[#f9fafb] text-sm font-medium text-[#374151]"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={doMerge}
-              disabled={loading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
-            >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <GitMerge size={14} />}
-              Merge
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </CenterModal>
   );
 }

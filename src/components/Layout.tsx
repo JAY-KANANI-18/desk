@@ -7,6 +7,7 @@ import { NotificationListWrapper } from "./NotificationList";
 import { IncomingCallWindow } from "./IncomingCallWindow";
 import { ActiveCallWindow } from "./ActiveCallWindow";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { IconButton } from "./ui/button/IconButton";
 import {
   MobileHeaderActionButtons,
   MobileHeaderActionsContext,
@@ -81,14 +82,14 @@ function MobileRouteHeader({
   return (
     <div className="flex flex-shrink-0 items-center gap-3 bg-white px-4 py-3 md:hidden">
       {backTo ? (
-        <button
+        <IconButton
           aria-label="Back"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100"
+          icon={<ArrowLeft size={18} />}
+          
+          variant="ghost"
           onClick={() => onBack(backTo)}
           type="button"
-        >
-          <ArrowLeft size={18} />
-        </button>
+        />
       ) : null}
 
       <div className="min-w-0 flex-1">
@@ -112,7 +113,7 @@ export const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const hideTopBarOnMobile = Boolean(
-    matchPath("/inbox/:conversationId", location.pathname),
+    matchPath("/inbox", location.pathname) || matchPath("/inbox/:conversationId", location.pathname),
   );
   const mobileRouteHeader = getMobileRouteHeader(location.pathname);
   const clearMobileHeaderRegistration = useCallback(

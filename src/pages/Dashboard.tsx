@@ -1,4 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
 import { useNavigate } from "react-router";
 import {
   RefreshCw,
@@ -7,14 +13,27 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
   ArrowDownLeft,
   ArrowUpRight,
   UserCircle2,
 } from "lucide-react";
 import { useMobileHeaderActions } from "../components/mobileHeaderActions";
+import { PageLayout } from "../components/ui/PageLayout";
+import { Button } from "../components/ui/button/Button";
+import { IconButton } from "../components/ui/button/IconButton";
+import {
+  Avatar,
+  AvatarWithBadge,
+  type AvatarBadgeType,
+} from "../components/ui/Avatar";
+import { CompactSelectMenu, type CompactSelectMenuGroup } from "../components/ui/Select";
+import { CountBadge } from "../components/ui/CountBadge";
+import { TruncatedText } from "../components/ui/TruncatedText";
 import { workspaceApi } from "../lib/workspaceApi";
-import { channelConfig } from "./inbox/data";
+import {
+  CHANNEL_CONNECT_SLUGS,
+  getChannelDefinitionByConnectSlug,
+} from "./channels/channelRegistry";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,32 +47,52 @@ interface LifecycleStage {
   percent: number;
 }
 
-interface ContactRow {
+interface ContactChannel {
+  channelType: string;
+  identifier?: string;
+}
+
+interface DashboardContactIdentity {
   id: string;
-  firstName: string;
+  firstName?: string;
   lastName?: string;
   avatarUrl?: string;
-  updatedAt: string;
+  email?: string;
+  phone?: string;
   assigneeId?: string;
   assignee?: {
     id: string;
-    firstName: string;
+    firstName?: string;
     lastName?: string;
     avatarUrl?: string;
-  };
+  } | null;
   lifecycle?: { id: string; name: string; emoji: string };
-  contactChannels: { channelType: string }[];
+  contactChannels: ContactChannel[];
+}
+
+interface DashboardLastMessage {
+  text?: string;
+  type?: string;
+  direction?: string;
+  sentAt?: string;
+  channelType?: string;
+  channel?: string | { type?: string };
+}
+
+interface ContactRow {
+  id: string;
+  contact?: DashboardContactIdentity | null;
+  updatedAt: string;
+  lastMessageAt?: string;
+  subject?: string;
+  unreadCount?: number;
+  lastMessage?: DashboardLastMessage | null;
   conversation?: {
     id: string;
     status: string;
     unreadCount: number;
     lastMessageAt?: string;
-    lastMessage?: {
-      text?: string;
-      type: string;
-      direction: string;
-      sentAt?: string;
-    };
+    lastMessage?: DashboardLastMessage | null;
   };
 }
 
@@ -76,8 +115,8 @@ interface Member {
 }
 
 interface MergeSuggestion {
-  contact1: ContactRow & { contactChannels: { channelType: string }[] };
-  contact2: ContactRow & { contactChannels: { channelType: string }[] };
+  contact1: DashboardContactIdentity;
+  contact2: DashboardContactIdentity;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -91,51 +130,50 @@ const CHANNEL_ICONS: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  online: "bg-green-500",
-  offline: "bg-gray-300",
-  busy: "bg-yellow-400",
-  away: "bg-orange-400",
+  online: "var(--color-success)",
+  offline: "var(--color-gray-300)",
+  busy: "var(--color-warning)",
+  away: "#fb923c",
+};
+
+const MEMBER_STATUS_GROUPS: CompactSelectMenuGroup[] = [
+  {
+    options: [
+      { value: "all", label: "All Statuses", tone: "neutral" },
+      { value: "online", label: "Online", description: "Available now" },
+      { value: "offline", label: "Offline", tone: "neutral" },
+      { value: "busy", label: "Busy", tone: "warning" },
+      { value: "away", label: "Away", tone: "warning" },
+    ],
+  },
+];
+
+const CHANNEL_BADGE_TYPE_BY_SLUG: Record<string, AvatarBadgeType> = {
+  whatsapp: "whatsapp",
+  whatsapp_cloud: "whatsapp",
+  instagram: "instagram",
+  messenger: "messenger",
+  facebook: "facebook",
+  email: "email",
+  gmail: "gmail",
+  website_chat: "webchat",
+  webchat: "webchat",
+  sms: "sms",
+  msg91_sms: "sms",
+  exotel_call: "web",
+  meta_ads: "facebook",
+};
+
+const CHANNEL_SLUG_ALIASES: Record<string, string> = {
+  webchat: "website_chat",
+  website: "website_chat",
+  website_chat: "website_chat",
+  whatsapp: "whatsapp_cloud",
+  whatsapp_cloud: "whatsapp_cloud",
+  sms: "msg91_sms",
 };
 
 // ── Small components ───────────────────────────────────────────────────────────
-
-function Avatar({
-  src,
-  name,
-  size = "md",
-}: {
-  src?: string;
-  name: string;
-  size?: "sm" | "md" | "lg";
-}) {
-  const sz = {
-    sm: "w-6 h-6 text-[10px]",
-    md: "w-8 h-8 text-xs",
-    lg: "w-9 h-9 text-xs",
-  }[size];
-  const initials = name
-    .trim()
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  if (src)
-    return (
-      <img
-        src={src}
-        alt={name}
-        className={`${sz} rounded-full object-cover flex-shrink-0`}
-      />
-    );
-  return (
-    <div
-      className={`${sz} rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold flex-shrink-0`}
-    >
-      {initials || "?"}
-    </div>
-  );
-}
 
 function timeAgo(date?: string): string {
   if (!date) return "";
@@ -162,6 +200,93 @@ function previewMessage(msg?: ContactRow["conversation"]) {
   return prefix + (typeLabels[type] ?? type);
 }
 
+function getContactName(contact?: DashboardContactIdentity | null) {
+  const name = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ");
+
+  return name || contact?.email || contact?.phone || "Contact";
+}
+
+function getUserName(user?: { firstName?: string; lastName?: string; email?: string } | null) {
+  const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+
+  return name || user?.email || "Team member";
+}
+
+function getChannelSlug(channelType?: string | null) {
+  const normalized = channelType?.toLowerCase().trim() ?? "";
+
+  return CHANNEL_SLUG_ALIASES[normalized] ?? CHANNEL_CONNECT_SLUGS[normalized] ?? normalized;
+}
+
+function getDashboardChannel(channelType?: string | null) {
+  const slug = getChannelSlug(channelType);
+  const definition = getChannelDefinitionByConnectSlug(slug);
+
+  return {
+    label: definition?.name ?? channelType ?? "Channel",
+    icon: definition?.icon,
+    badgeType: CHANNEL_BADGE_TYPE_BY_SLUG[slug] ?? "webchat",
+  };
+}
+
+function getLastMessageChannelType(row: ContactRow) {
+  const messageChannel = row.lastMessage?.channel ?? row.conversation?.lastMessage?.channel;
+
+  if (typeof messageChannel === "string") {
+    return messageChannel;
+  }
+
+  return (
+    messageChannel?.type ??
+    row.lastMessage?.channelType ??
+    row.conversation?.lastMessage?.channelType ??
+    row.contact?.contactChannels?.[0]?.channelType
+  );
+}
+
+function getLastMessageText(row: ContactRow) {
+  const message = row.lastMessage ?? row.conversation?.lastMessage;
+
+  return message?.text ?? row.subject ?? "...";
+}
+
+function DashboardContactAvatar({
+  contact,
+  channelType,
+  size = "md",
+}: {
+  contact?: DashboardContactIdentity | null;
+  channelType?: string | null;
+  size?: "sm" | "md" | "lg";
+}) {
+  const contactName = getContactName(contact);
+
+  if (!channelType) {
+    return (
+      <Avatar
+        src={contact?.avatarUrl}
+        name={contactName}
+        size={size}
+        fallbackTone="neutral"
+      />
+    );
+  }
+
+  const channel = getDashboardChannel(channelType);
+
+  return (
+    <AvatarWithBadge
+      src={contact?.avatarUrl}
+      name={contactName}
+      size={size}
+      fallbackTone="neutral"
+      badgeType={channel.badgeType}
+      badgeSrc={channel.icon}
+      badgeAlt={channel.label}
+    />
+  );
+}
+
 function SectionCard({
   title,
   rightSlot,
@@ -169,16 +294,16 @@ function SectionCard({
   className = "",
 }: {
   title: string;
-  rightSlot?: React.ReactNode;
-  children: React.ReactNode;
+  rightSlot?: ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (
     <div
-      className={`flex flex-col rounded-2xl bg-white md:border md:border-slate-200 ${className}`}
+      className={`flex flex-col rounded-2xl bg-white  md:border-slate-200 ${className}`}
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-5">
-        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
         {rightSlot}
       </div>
       {children}
@@ -382,56 +507,67 @@ export const Dashboard = () => {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
-      {/* Header */}
-      <div className="hidden flex-shrink-0 flex-col gap-3 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 md:flex md:border-b">
-        <h1 className="hidden text-sm font-semibold text-gray-900 md:block">Dashboard</h1>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+    <PageLayout
+      title="Dashboard"
+      actions={
+        <>
           <span className="text-xs text-gray-400">{lastUpdatedLabel}</span>
-          <button
+          <Button
             onClick={handleRefresh}
-            disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+            loading={refreshing}
+            loadingMode="inline"
+            loadingLabel="Refresh"
+       
+            leftIcon={<RefreshCw size={18} />}
           >
-            <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
             Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Scrollable body */}
-      <div className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+          </Button>
+        </>
+      }
+      className="bg-white"
+      contentClassName="min-h-0 flex-1 overflow-y-auto bg-white px-0 py-0"
+    >
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:p-4 md:flex-none md:overflow-visible">
         {/* ── Lifecycle — single horizontal row ────────────────────── */}
         <SectionCard title="Lifecycle">
           <div className="overflow-x-auto px-3 py-3 scrollbar-thin scrollbar-thumb-gray-200 sm:px-4">
-            <div className="flex gap-3" style={{ minWidth: "max-content" }}>
+            <div className="flex min-w-max gap-3">
               {(lifecycle?.stages ?? []).length === 0 ? (
                 <p className="text-xs text-gray-400 py-2">
                   No lifecycle stages configured
                 </p>
               ) : (
                 (lifecycle?.stages ?? []).map((stage) => (
-                  <button
+                  <Button
                     key={stage.id}
                     onClick={() => navigate(`/contacts?lifecycle=${stage.id}`)}
-                    className="flex w-[13rem] flex-shrink-0 flex-col gap-2 rounded-2xl bg-slate-50 p-3.5 text-left transition-all hover:bg-indigo-50 sm:w-56 md:border md:border-slate-200 md:hover:border-indigo-200"
+                    variant="select-card"
+                    size="lg"
+                    radius="lg"
+                    contentAlign="start"
+                    preserveChildLayout
+                    className="w-[13rem] flex-shrink-0 sm:w-56"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg">{stage.emoji}</span>
-                      <span className="text-[10px] font-medium text-gray-400">
-                        {stage.percent}%
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 leading-none">
-                        {stage.count}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">
-                        {stage.name}
-                      </p>
+                    <div className="flex w-full flex-col gap-2 text-left">
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg">{stage.emoji}</span>
+                        <span className="text-[10px] font-medium text-gray-400">
+                          {stage.percent}%
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold leading-none text-gray-900">
+                          {stage.count}
+                        </p>
+                        <TruncatedText
+                          text={stage.name}
+                          maxLines={1}
+                          className="mt-0.5 text-xs text-gray-500"
+                        />
+                      </div>
                     </div>
                     
-                  </button>
+                  </Button>
                 ))
               )}
             </div>
@@ -459,26 +595,26 @@ export const Dashboard = () => {
                   },
                 ] as const
               ).map((t) => (
-                <button
+                <Button
                   key={t.key}
                   onClick={() => setContactTab(t.key)}
-                  className={`flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
-                    contactTab === t.key
-                      ? "border-indigo-600 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
+                  variant="tab"
+                  selected={contactTab === t.key}
+                  size="sm"
+                  radius="none"
+                  className="shrink-0"
+                  aria-pressed={contactTab === t.key}
+                  preserveChildLayout
                 >
-                  {t.label}
-                  <span
-                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                      contactTab === t.key
-                        ? "bg-indigo-100 text-indigo-600"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {t.count}
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>{t.label}</span>
+                    <CountBadge
+                      count={t.count}
+                      showZero
+                      tone={contactTab === t.key ? "primary" : "neutral"}
+                    />
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -494,63 +630,46 @@ export const Dashboard = () => {
                 </div>
               ) : (
                 contacts.map((conv) => {
-                  const lastMsg = conv?.lastMessage;
-                  const channel = conv?.contact?.contactChannels?.[0]?.channelType;
-                  const contactAssignee = conv?.contact.assigneeId
-                    ? members?.find(
-                        (u: any) => u.id === conv.assigneeId,
-                      )
-                    : null;
-                  const preview = previewMessage(conv.conversation);
+                  const contact = conv.contact;
+                  const lastMsg = conv.lastMessage ?? conv.conversation?.lastMessage;
+                  const channelType = getLastMessageChannelType(conv);
+                  const contactAssignee =
+                    contact?.assignee ??
+                    members.find(
+                      (member) =>
+                        member.userId === contact?.assigneeId ||
+                        member.user.id === contact?.assigneeId,
+                    )?.user ??
+                    null;
+                  const contactName = getContactName(contact);
+                  const assigneeName = getUserName(contactAssignee);
                   return (
-                    <div
+                    <Button
                       key={conv.id}
                       onClick={() => navigate(`/contacts/${conv.id}`)}
-                      className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors
-               `}
+                      variant="list-row"
+                      fullWidth
+                      contentAlign="start"
+                      preserveChildLayout
+                      aria-label={`Open ${contactName}`}
                     >
-                      <div className="flex items-start gap-3">
-                        {/* Avatar + channel badge */}
-                        <div className="relative flex-shrink-0">
-                          <div
-                            className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center
-                    text-sm font-semibold `}
-                          >
-                            {conv?.contact?.avatarUrl ? (
-                              <img
-                                src={conv.contact.avatarUrl}
-                                alt={conv.contact.firstName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span>
-                                {conv?.contact?.firstName?.charAt(0)?.toUpperCase() ??
-                                  "?"}
-                              </span>
-                            )}
-                          </div>
-                          {/* Channel icon */}
-                          <span
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center
-                    border-2 border-white bg-white"
-                          >
-                            <img
-                              src={channelConfig[lastMsg?.channel?.type || channel]?.icon}
-                              alt={channelConfig[lastMsg?.channel?.type || channel]?.label}
-                              className="w-3 h-3"
-                            />
-                          </span>
-                        </div>
+                      <div className="flex w-full items-start gap-3 text-left">
+                        <DashboardContactAvatar
+                          contact={contact}
+                          channelType={channelType}
+                          size="sm"
+                        />
 
                         {/* Content */}
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           {/* Row 1: name + time + unread */}
                           <div className="flex items-center justify-between mb-0.5">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              {/* Priority dot */}
-                              <span className={`text-sm truncate `}>
-                                {conv?.contact?.firstName} {conv?.contact?.lastName}
-                              </span>
+                            <div className="min-w-0 flex items-center gap-1.5">
+                              <TruncatedText
+                                text={contactName}
+                                maxLines={1}
+                                className="text-sm text-gray-800"
+                              />
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                               <span className={`text-xs text-gray-400`}>
@@ -585,28 +704,26 @@ export const Dashboard = () => {
                           </div>
 
                           {/* Row 3: tag + assignee chip */}
-                          <div className="flex items-center justify-end  flex-wrap">
-                            {conv?.contact?.assigneeId ? (
-                              <>
-                                <img
-                                  src={contactAssignee?.avatarUrl}
-                                  alt={`${contactAssignee?.firstName} ${contactAssignee?.lastName}`}
-                                  className="w-5 h-5 rounded-full object-cover"
-                                />
-                              </>
+                          <div className="flex flex-wrap items-center justify-end">
+                            {contact?.assigneeId && contactAssignee ? (
+                              <Avatar
+                                src={contactAssignee.avatarUrl}
+                                name={assigneeName}
+                                size="2xs"
+                                fallbackTone="neutral"
+                              />
                             ) : (
                               <>
                                 <UserCircle2
                                   size={16}
-                                  className="text-gray-400 w-5 h-5 rounded-full"
+                                  className="h-5 w-5 rounded-full text-gray-400"
                                 />
-                                <span className="text-gray-500"></span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Button>
                   );
                 })
               )}
@@ -614,20 +731,24 @@ export const Dashboard = () => {
 
             {/* Pagination */}
             <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-100 px-3 py-2 sm:px-4">
-              <button
+              <Button
                 onClick={contactPrevPage}
                 disabled={!hasPrevContact || contactLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+                variant="secondary"
+                size="xs"
+                leftIcon={<ChevronLeft size={12} />}
               >
-                <ChevronLeft size={12} /> Prev
-              </button>
-              <button
+                Prev
+              </Button>
+              <Button
                 onClick={contactNextPage}
                 disabled={!contactNextCursor || contactLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+                variant="secondary"
+                size="xs"
+                rightIcon={<ChevronRight size={12} />}
               >
-                Next <ChevronRight size={12} />
-              </button>
+                Next
+              </Button>
             </div>
           </SectionCard>
 
@@ -636,20 +757,18 @@ export const Dashboard = () => {
             title="Team Members"
             className="min-h-[360px] lg:h-[420px]"
             rightSlot={
-              <select
+              <CompactSelectMenu
                 value={memberFilter}
-                onChange={(e) => {
-                  setMemberFilter(e.target.value);
+                groups={MEMBER_STATUS_GROUPS}
+                onChange={(value) => {
+                  setMemberFilter(value);
                   setMemberPage(1);
                 }}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-              >
-                <option value="all">All Statuses</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
-                <option value="busy">Busy</option>
-                <option value="away">Away</option>
-              </select>
+                triggerAppearance="field"
+                dropdownWidth="sm"
+                dropdownAlign="end"
+                size="xs"
+              />
             }
           >
             {/* List */}
@@ -668,26 +787,25 @@ export const Dashboard = () => {
                     key={member.id}
                     className="flex items-center gap-3 px-4 py-2.5"
                   >
-                    {/* Avatar + status dot */}
-                    <div className="relative flex-shrink-0">
-                      <Avatar
-                        src={member.user.avatarUrl}
-                        name={`${member.user.firstName ?? ""} ${member.user.lastName ?? ""}`}
-                        size="lg"
-                      />
-                      <span
-                        className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                          STATUS_COLOR[member.user.activityStatus] ??
-                          "bg-gray-300"
-                        }`}
-                      />
-                    </div>
+                    <Avatar
+                      src={member.user.avatarUrl}
+                      name={getUserName(member.user)}
+                      size="sm"
+                      fallbackTone="neutral"
+                      showStatus
+                      statusColor={
+                        STATUS_COLOR[member.user.activityStatus] ??
+                        "var(--color-gray-300)"
+                      }
+                    />
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-800 truncate">
-                        {member.user.firstName} {member.user.lastName}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <TruncatedText
+                        text={getUserName(member.user)}
+                        maxLines={1}
+                        className="text-xs font-semibold text-gray-800"
+                      />
                       <p className="text-[10px] text-gray-400 truncate">
                         {member.role} · {member.assignedCount} assigned
                       </p>
@@ -713,25 +831,29 @@ export const Dashboard = () => {
 
             {/* Pagination */}
             <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-100 px-3 py-2 sm:px-4">
-              <button
+              <Button
                 onClick={() => setMemberPage((p) => Math.max(1, p - 1))}
                 disabled={memberPage <= 1 || memberLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+                variant="secondary"
+                size="xs"
+                leftIcon={<ChevronLeft size={12} />}
               >
-                <ChevronLeft size={12} /> Prev
-              </button>
+                Prev
+              </Button>
               <span className="text-[10px] text-gray-400">
                 {memberPage} / {memberTotalPages}
               </span>
-              <button
+              <Button
                 onClick={() =>
                   setMemberPage((p) => Math.min(memberTotalPages, p + 1))
                 }
                 disabled={memberPage >= memberTotalPages || memberLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 border border-gray-200 disabled:opacity-30 hover:bg-gray-50 transition-colors"
+                variant="secondary"
+                size="xs"
+                rightIcon={<ChevronRight size={12} />}
               >
-                Next <ChevronRight size={12} />
-              </button>
+                Next
+              </Button>
             </div>
           </SectionCard>
         </div>
@@ -750,8 +872,9 @@ export const Dashboard = () => {
                     <div className="relative">
                       <Avatar
                         src={s.contact1.avatarUrl}
-                        name={`${s.contact1.firstName} ${s.contact1.lastName ?? ""}`}
+                        name={getContactName(s.contact1)}
                         size="md"
+                        fallbackTone="neutral"
                       />
                       {s.contact1.contactChannels[0] && (
                         <span className="absolute -bottom-0.5 -right-0.5 text-[10px]">
@@ -774,8 +897,9 @@ export const Dashboard = () => {
                     <div className="relative">
                       <Avatar
                         src={s.contact2.avatarUrl}
-                        name={`${s.contact2.firstName} ${s.contact2.lastName ?? ""}`}
+                        name={getContactName(s.contact2)}
                         size="md"
+                        fallbackTone="neutral"
                       />
                     </div>
                     <div className="min-w-0">
@@ -794,18 +918,21 @@ export const Dashboard = () => {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 flex-shrink-0 sm:ml-auto">
-                    <button
+                    <Button
                       onClick={() => handleMerge(s)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      variant="secondary"
+                      size="xs"
+                      leftIcon={<GitMerge size={11} />}
                     >
-                      <GitMerge size={11} /> Merge
-                    </button>
-                    <button
+                      Merge
+                    </Button>
+                    <IconButton
                       onClick={() => handleDismiss(s)}
-                      className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
-                    >
-                      <X size={12} />
-                    </button>
+                      variant="danger-ghost"
+                      size="xs"
+                      icon={<X size={12} />}
+                      aria-label="Dismiss merge suggestion"
+                    />
                   </div>
                 </div>
               ))}
@@ -813,7 +940,7 @@ export const Dashboard = () => {
           </SectionCard>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

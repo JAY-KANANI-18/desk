@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { EdgeProps, getStraightPath, BaseEdge, EdgeLabelRenderer,getSmoothStepPath } from 'reactflow';
 import { Plus } from 'lucide-react';
+import { IconButton } from '../../../../components/ui/button/IconButton';
 
 export const BRANCH_COLORS = [
   '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6',
@@ -60,15 +61,17 @@ export const AddButtonEdge = memo(({
             zIndex: 10,
           }}
         >
-          <button
+          <IconButton
+            aria-label="Add step"
+            icon={<Plus size={10} />}
+            size="2xs"
+            radius="full"
+            variant="secondary"
             onClick={(e) => {
               e.stopPropagation();
               data?.onAdd?.();
             }}
-            className="w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-gray-600 flex items-center justify-center shadow-sm group transition-colors"
-          >
-            <Plus size={10} className="text-gray-400 group-hover:text-gray-700" />
-          </button>
+          />
         </div>
       </EdgeLabelRenderer>
     </>
@@ -99,13 +102,15 @@ export const ArmStepEdge = memo(({
       <BaseEdge id={id} path={path} style={{ stroke: color, strokeWidth: 1.5, strokeDasharray: dashed ? '5 4' : undefined }} />
       <EdgeLabelRenderer>
         <div className="nodrag nopan" style={{ position: 'absolute', transform: `translate(-50%,-50%) translate(${mx}px,${my}px)`, pointerEvents: 'all', zIndex: 10 }}>
-          <button
+          <IconButton
+            aria-label="Add branch step"
+            icon={<Plus size={10} style={{ color }} />}
+            size="2xs"
+            radius="full"
+            variant="secondary"
             onClick={e => { e.stopPropagation(); data?.onAdd?.(); }}
-            className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform group"
             style={{ border: `1.5px solid ${color}` }}
-          >
-            <Plus size={10} style={{ color }} />
-          </button>
+          />
         </div>
       </EdgeLabelRenderer>
     </>

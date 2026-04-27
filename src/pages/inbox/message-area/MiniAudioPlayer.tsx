@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
 import { formatAudioTime } from "./helpers";
 
 export function MiniAudioPlayer({
@@ -36,23 +37,32 @@ export function MiniAudioPlayer({
 
   const trackBg = dark ? "bg-white/30" : "bg-gray-200";
   const fill = dark ? "bg-white" : "bg-indigo-500";
-  const btn = dark
-    ? "bg-white text-indigo-600 hover:bg-indigo-50"
-    : "bg-indigo-600 text-white hover:bg-indigo-700";
   const labelClr = dark ? "text-white/80" : "text-gray-500";
   const timeClr = dark ? "text-white/70" : "text-gray-400";
   const wrapBg = dark ? "bg-indigo-600" : "bg-gray-100";
+  const playPauseIcon = playing ? (
+    <Pause size={14} className={dark ? "text-indigo-600" : undefined} />
+  ) : (
+    <Play
+      size={14}
+      className={dark ? "ml-0.5 text-indigo-600" : "ml-0.5"}
+    />
+  );
 
   return (
     <div
       className={`flex items-center gap-2.5 ${wrapBg} rounded-2xl px-3 py-2.5 min-w-[200px] max-w-[260px] shadow-sm`}
     >
-      <button
+      <Button
         onClick={toggle}
-        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-colors ${btn}`}
-      >
-        {playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
-      </button>
+        type="button"
+        variant={dark ? "secondary" : "primary"}
+        size="sm"
+        radius="full"
+        iconOnly
+        leftIcon={playPauseIcon}
+        aria-label={playing ? "Pause audio" : "Play audio"}
+      />
       <div className="flex-1 min-w-0">
         {isVoice && (
           <p className={`text-[10px] font-medium mb-1 ${labelClr}`}>

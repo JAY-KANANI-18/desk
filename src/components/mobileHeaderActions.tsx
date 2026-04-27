@@ -5,6 +5,7 @@ import {
   type DependencyList,
   type ReactNode,
 } from "react";
+import { IconButton } from "./ui/button/IconButton";
 
 export type MobileHeaderAction = {
   id: string;
@@ -68,24 +69,29 @@ export function MobileHeaderActionButtons({
   return (
     <div className="ml-auto flex shrink-0 items-center gap-1">
       {actions.map((action) => (
-        <button
+        <IconButton
           aria-label={action.label}
-          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`relative text-slate-600 ${
             action.active ? "bg-slate-100 text-indigo-600" : ""
           }`}
           disabled={action.disabled}
+          icon={
+            <>
+              {action.hasIndicator ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white"
+                />
+              ) : null}
+              {action.icon}
+            </>
+          }
           key={action.id}
           onClick={action.onClick}
+          radius="full"
           type="button"
-        >
-          {action.hasIndicator ? (
-            <span
-              aria-hidden="true"
-              className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white"
-            />
-          ) : null}
-          {action.icon}
-        </button>
+          variant={action.active ? "soft-primary" : "ghost"}
+        />
       ))}
     </div>
   );

@@ -1,5 +1,8 @@
 import type { ChangeEvent, DragEvent, RefObject } from "react";
 import { AlertCircle, CheckCircle2, Download, FileText, Upload, X } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { CenterModal } from "../../../components/ui/Modal";
+import { IconButton } from "../../../components/ui/button/IconButton";
 import { CSV_HEADERS, SAMPLE_CSV_ROWS } from "../constants";
 import type { Contact } from "../types";
 
@@ -41,37 +44,57 @@ export function ImportContactsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100">
-              <Upload size={18} className="text-indigo-600" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Import Contacts</h2>
-              <p className="text-xs text-gray-500">Upload a CSV file to bulk-import contacts</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-            <X size={20} />
-          </button>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title="Import Contacts"
+      subtitle="Upload a CSV file to bulk-import contacts"
+      headerIcon={
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100">
+          <Upload size={18} className="text-indigo-600" />
         </div>
-
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      }
+      size="lg"
+      width={768}
+      closeOnOverlayClick={false}
+      bodyPadding="none"
+      footerMeta={
+        <p className="text-xs text-gray-400">
+          {importParsed
+            ? `${importParsed.length} contacts will be added to your list.`
+            : "No file selected yet."}
+        </p>
+      }
+      secondaryAction={
+        <Button variant="secondary"  onClick={onClose}>
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={() => void onConfirmImport()}
+          disabled={!importParsed}
+          leftIcon={<Upload size={14} />}
+        >
+          Import {importParsed ? `${importParsed.length} Contacts` : ""}
+        </Button>
+      }
+    >
+      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           <div>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <FileText size={15} className="text-gray-400" />
                 Required CSV Format
               </h3>
-              <button
+              <Button
                 onClick={onDownloadSample}
-                className="flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-100 hover:text-indigo-700"
+                variant="secondary"
+                
+                leftIcon={<Download size={13} />}
               >
-                <Download size={13} />
                 Download Sample CSV
-              </button>
+              </Button>
             </div>
 
             <div className="overflow-hidden rounded-lg border border-gray-200 text-xs">
@@ -189,15 +212,17 @@ export function ImportContactsModal({
                     </table>
                   </div>
                 </div>
-                <button
+                <IconButton
                   onClick={() => {
                     setImportParsed(null);
                     setImportFileName(null);
                   }}
-                  className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={16} />
-                </button>
+                  className="flex-shrink-0"
+                  icon={<X size={16} />}
+                  aria-label="Remove selected import file"
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
             )}
 
@@ -208,27 +233,7 @@ export function ImportContactsModal({
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 border-t border-gray-200 px-6 py-4">
-          <p className="text-xs text-gray-400">
-            {importParsed ? `${importParsed.length} contacts will be added to your list.` : "No file selected yet."}
-          </p>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
-              Cancel
-            </button>
-            <button
-              onClick={() => void onConfirmImport()}
-              disabled={!importParsed}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Upload size={14} />
-              Import {importParsed ? `${importParsed.length} Contacts` : ""}
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </CenterModal>
   );
 }

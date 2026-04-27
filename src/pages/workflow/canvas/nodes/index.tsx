@@ -5,8 +5,36 @@ import { TRIGGER_META } from '../triggerTypes';
 import { STEP_META } from '../stepTypes';
 import { StepType, TriggerType } from '../../workflow.types';
 import { NODE_W, NODE_W_PILL, NODE_W_ADD } from '../../WorkflowCanvas';
+import { IconButton } from '../../../../components/ui/button/IconButton';
+import { Tooltip } from '../../../../components/ui/Tooltip';
 
 const base = 'relative group bg-white border border-gray-200 rounded-lg cursor-pointer select-none transition-all hover:border-gray-400 hover:shadow-sm';
+
+function NodeActionButton({
+  label,
+  icon,
+  tone = 'default',
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  tone?: 'default' | 'danger';
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <Tooltip content={label}>
+      <span className="inline-flex">
+        <IconButton
+          aria-label={label}
+          icon={icon}
+          size="2xs"
+          variant={tone === 'danger' ? 'danger-ghost' : 'secondary'}
+          onClick={onClick}
+        />
+      </span>
+    </Tooltip>
+  );
+}
 
 // ─── Trigger Node ─────────────────────────────────────────────────────────────
 
@@ -80,14 +108,17 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
       />
       {/* Hover actions */}
       <div className="absolute -top-3 right-1.5 hidden group-hover:flex items-center gap-1 z-10">
-        <button onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
-          className="w-5 h-5 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center hover:border-gray-400" title="Duplicate">
-          <Copy size={10} className="text-gray-500" />
-        </button>
-        <button onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
-          className="w-5 h-5 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center hover:border-red-300 hover:bg-red-50" title="Delete">
-          <Trash2 size={10} className="text-gray-400 hover:text-red-500" />
-        </button>
+        <NodeActionButton
+          label="Duplicate"
+          icon={<Copy size={10} />}
+          onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+        />
+        <NodeActionButton
+          label="Delete"
+          icon={<Trash2 size={10} />}
+          tone="danger"
+          onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
+        />
       </div>
       <div className="px-3 py-3 flex items-center gap-3">
         <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -141,14 +172,17 @@ export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) =
         className="!w-2 !h-2 !bg-gray-300 !border-2 !border-white !top-[-5px]"
       />
       <div className="absolute -top-3 right-1.5 hidden group-hover:flex items-center gap-1 z-10">
-        <button onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
-          className="w-5 h-5 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center hover:border-gray-400" title="Duplicate">
-          <Copy size={10} className="text-gray-500" />
-        </button>
-        <button onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
-          className="w-5 h-5 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center hover:border-red-300 hover:bg-red-50" title="Delete">
-          <Trash2 size={10} className="text-gray-400 hover:text-red-500" />
-        </button>
+        <NodeActionButton
+          label="Duplicate"
+          icon={<Copy size={10} />}
+          onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+        />
+        <NodeActionButton
+          label="Delete"
+          icon={<Trash2 size={10} />}
+          tone="danger"
+          onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
+        />
       </div>
       <div className="px-3 py-3 flex items-center gap-3">
         <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">

@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Check, Edit3, Loader2, Search, ShieldCheck, X } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { BaseInput, CheckboxInput, TextareaInput } from "../../../components/ui/inputs";
+import { CenterModal } from "../../../components/ui/Modal";
+import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useSocket } from "../../../socket/socket-provider";
 import type { AiApproval } from "../types";
-import { EmptyState, PageHeader, PageShell } from "../components/AiAgentPrimitives";
+import { AiPageLayout, EmptyState } from "../components/AiAgentPrimitives";
 
 export function ApprovalQueuePage() {
+  const navigate = useNavigate();
   const { socket } = useSocket();
   const [items, setItems] = useState<AiApproval[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +57,7 @@ export function ApprovalQueuePage() {
     );
   }, [items, query]);
 
-  const approve = async (item: AiApproval, input?: Record<string, any>) => {
+  const approve = async (item: AiApproval, input?: Record<string, unknown>) => {
     setBusy(true);
     try {
       await aiAgentsApi.approveAction(item.id, input);
@@ -97,41 +102,56 @@ export function ApprovalQueuePage() {
     }
   };
 
+  const approveEditedAction = () => {
+    if (!editing) return;
+
+    try {
+      const parsed = JSON.parse(editJson) as Record<string, unknown>;
+      const item = editing;
+      setEditing(null);
+      void approve(item, parsed);
+    } catch {
+      toast.error("Input must be valid JSON");
+    }
+  };
+
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow="Supervision"
-        title="Approval Queue"
-        description="Review high-risk AI replies and tool actions before they affect customers or CRM data."
-        actions={
-          <>
-            <Link to="/ai-agents" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-              AI Agents
-            </Link>
-            <button
-              disabled={!selected.size || busy}
-              onClick={bulkApprove}
-              className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              Approve selected
-            </button>
-          </>
-        }
-      />
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-          <div className="relative max-w-md">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by agent, contact, tool, or intent"
-              className="w-full rounded-md border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
+    <AiPageLayout
+      eyebrow="Supervision"
+      title="Approval Queue"
+      description="Review high-risk AI replies and tool actions before they affect customers or CRM data."
+      actions={
+        <>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate("/ai-agents")}>
+            AI Agents
+          </Button>
+          <Button
+            type="button"
+            variant="dark"
+            size="sm"
+            disabled={!selected.size || busy}
+            loading={busy && selected.size > 0}
+            loadingMode="inline"
+            loadingLabel="Approving"
+            onClick={bulkApprove}
+          >
+            Approve selected
+          </Button>
+        </>
+      }
+      toolbar={
+        <div className="max-w-md">
+          <BaseInput
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by agent, contact, tool, or intent"
+            leftIcon={<Search size={15} />}
+            size="sm"
+          />
         </div>
-
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-auto bg-white">
           {loading ? (
             <div className="flex h-80 items-center justify-center text-sm text-slate-500">
@@ -149,9 +169,9 @@ export function ApprovalQueuePage() {
                 const checked = selected.has(item.id);
                 return (
                   <div key={item.id} className="grid gap-4 px-4 py-4 hover:bg-slate-50 lg:grid-cols-[32px_1fr_170px_260px] lg:items-center lg:px-6">
-                    <input
-                      type="checkbox"
+                    <CheckboxInput
                       checked={checked}
+                      aria-label={`Select approval for ${item.agentName}`}
                       onChange={() =>
                         setSelected((state) => {
                           const next = new Set(state);
@@ -159,45 +179,60 @@ export function ApprovalQueuePage() {
                           return next;
                         })
                       }
-                      className="h-4 w-4"
                     />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700">
-                          <ShieldCheck size={12} />
-                          {approvalLabel(item.toolName)}
-                        </span>
+                        <Tag
+                          label={approvalLabel(item.toolName)}
+                          icon={<ShieldCheck size={12} />}
+                          bgColor="info"
+                          size="sm"
+                        />
                         <span className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</span>
                       </div>
                       <p className="mt-2 text-sm font-semibold text-slate-950">{item.agentName} wants to run {item.toolName}</p>
                       <p className="mt-1 text-sm text-slate-500">
                         {item.contactName}
-                        {item.intent ? ` · ${item.intent}` : ""}
-                        {item.confidence ? ` · ${Math.round(Number(item.confidence) * 100)}% confidence` : ""}
+                        {item.intent ? ` - ${item.intent}` : ""}
+                        {item.confidence ? ` - ${Math.round(Number(item.confidence) * 100)}% confidence` : ""}
                       </p>
                     </div>
-                    <Link to={`/inbox/${item.conversationId}`} className="inline-flex items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => navigate(`/inbox/${item.conversationId}`)}>
                       Open chat
-                    </Link>
+                    </Button>
                     <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
-                      <button onClick={() => approve(item)} disabled={busy} className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                        <Check size={14} />
+                      <Button
+                        type="button"
+                        variant="success"
+                        size="sm"
+                        leftIcon={<Check size={14} />}
+                        disabled={busy}
+                        onClick={() => approve(item)}
+                      >
                         Approve
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Edit3 size={14} />}
                         onClick={() => {
                           setEditing(item);
                           setEditJson(JSON.stringify(item.input || {}, null, 2));
                         }}
-                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
                       >
-                        <Edit3 size={14} />
                         Edit
-                      </button>
-                      <button onClick={() => reject(item)} disabled={busy} className="inline-flex items-center gap-1 rounded-md border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 disabled:opacity-50">
-                        <X size={14} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger-ghost"
+                        size="sm"
+                        leftIcon={<X size={14} />}
+                        disabled={busy}
+                        onClick={() => reject(item)}
+                      >
                         Reject
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -207,36 +242,32 @@ export function ApprovalQueuePage() {
         </div>
       </div>
 
-      {editing ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
-            <div className="border-b border-slate-100 p-4">
-              <h2 className="font-semibold text-slate-950">Edit then approve</h2>
-              <p className="text-sm text-slate-500">{editing.toolName} for {editing.contactName}</p>
-            </div>
-            <div className="p-4">
-              <textarea value={editJson} onChange={(event) => setEditJson(event.target.value)} className="min-h-72 w-full rounded-md border border-slate-200 p-3 font-mono text-xs outline-none" />
-            </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 p-4">
-              <button onClick={() => setEditing(null)} className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">Cancel</button>
-              <button
-                onClick={() => {
-                  try {
-                    approve(editing, JSON.parse(editJson));
-                    setEditing(null);
-                  } catch {
-                    toast.error("Input must be valid JSON");
-                  }
-                }}
-                className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
-              >
-                Approve edited action
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </PageShell>
+      <CenterModal
+        isOpen={Boolean(editing)}
+        onClose={() => setEditing(null)}
+        title="Edit then approve"
+        subtitle={editing ? `${editing.toolName} for ${editing.contactName}` : undefined}
+        size="lg"
+        secondaryAction={
+          <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
+            Cancel
+          </Button>
+        }
+        primaryAction={
+          <Button type="button" variant="dark" disabled={busy} onClick={approveEditedAction}>
+            Approve edited action
+          </Button>
+        }
+      >
+        <TextareaInput
+          label="Approval input JSON"
+          value={editJson}
+          onChange={(event) => setEditJson(event.target.value)}
+          rows={12}
+          className="font-mono text-xs"
+        />
+      </CenterModal>
+    </AiPageLayout>
   );
 }
 

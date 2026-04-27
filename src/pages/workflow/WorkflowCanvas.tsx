@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -19,6 +19,7 @@ import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
 import { StepType, StepConfig, TriggerConfig, InsertCtx, Step } from "./workflow.types";
 import { useNavigate, useParams } from "react-router";
+import { useDisclosure } from "../../hooks/useDisclosure";
 import { useIsMobile } from "../../hooks/useIsMobile";
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -426,7 +427,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
 
 export function WorkflowCanvas() {
   const isMobile = useIsMobile();
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const addMenu = useDisclosure();
   const insertCtxRef = useRef<InsertCtx | null>(null);
   const stepCounter = useRef(1);
   const { workflowId } = useParams(); // from URL :id
@@ -482,7 +483,7 @@ export function WorkflowCanvas() {
       },
       onInsert: (ctx: InsertCtx) => {
         insertCtxRef.current = ctx;
-        setShowAddMenu(true);
+        addMenu.open();
       },
     });
 
@@ -543,7 +544,7 @@ export function WorkflowCanvas() {
     }
 
     selectNode(newStep.id, "step");
-    setShowAddMenu(false);
+    addMenu.close();
     insertCtxRef.current = null;
     return;
   };
@@ -594,16 +595,16 @@ export function WorkflowCanvas() {
         </div>
       ) : null}
 
-      {showAddMenu && (
+      {addMenu.isOpen && (
         <>
           <div
             className="fixed inset-0 bg-black/10"
-            onClick={() => setShowAddMenu(false)}
+            onClick={addMenu.close}
           />
           <AddStepMenu
             onSelect={handleAddStep}
             onClose={() => {
-              setShowAddMenu(false);
+              addMenu.close();
               insertCtxRef.current = null;
             }}
           />

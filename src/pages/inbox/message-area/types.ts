@@ -52,6 +52,30 @@ export interface ActivityResponse {
   description: string;
 }
 
+export type WaTemplateButtonType = "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+
+export interface WaTemplateButton {
+  type: WaTemplateButtonType;
+  text: string;
+}
+
+export interface WaTemplateExample {
+  header_handle?: string[];
+}
+
+export interface WaTemplateComponent {
+  type: "HEADER" | "BODY" | "FOOTER" | "BUTTONS" | "CAROUSEL";
+  format?: "IMAGE" | "VIDEO" | "DOCUMENT" | "TEXT";
+  text?: string;
+  example?: WaTemplateExample;
+  buttons?: WaTemplateButton[];
+  cards?: WaTemplateCarouselCard[];
+}
+
+export interface WaTemplateCarouselCard {
+  components: WaTemplateComponent[];
+}
+
 export type TimelineItemType = "message" | "activity";
 
 export interface TimelineItem {
@@ -130,6 +154,9 @@ export interface Message {
       author?: string;
       attachmentType?: MediaAttachment["type"];
       attachmentUrl?: string;
+    };
+    template?: {
+      components?: WaTemplateComponent[];
     };
     error?: string;
     providerError?: string;

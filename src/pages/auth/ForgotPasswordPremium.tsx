@@ -107,15 +107,13 @@ export const ForgotPasswordPremium = () => {
 
         {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
 
-        <AuthPrimaryButton type="submit" disabled={loading}>
-          {loading ? (
-            <>
-              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              Sending...
-            </>
-          ) : (
-            "Send reset instructions"
-          )}
+        <AuthPrimaryButton
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          loadingLabel="Sending..."
+        >
+          Send reset instructions
         </AuthPrimaryButton>
       </form>
     </AuthShell>

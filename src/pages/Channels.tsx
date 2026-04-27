@@ -1,11 +1,23 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Settings, Globe, Plug, Loader2, X, ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  Globe,
+  Loader2,
+  Plug,
+  Plus,
+  Search,
+  Settings,
+  X,
+} from "lucide-react";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";
+import { PageLayout } from "../components/ui/PageLayout";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useMobileHeaderActions } from "../components/mobileHeaderActions";
+import { Button } from "../components/ui/button/Button";
+import { BaseInput } from "../components/ui/inputs";
 
 interface ConnectedChannel {
   id: number;
@@ -38,6 +50,7 @@ const ConnectedChannelsView = ({
   pagination,
   onPageChange,
   onConnectNew,
+  showDesktopChrome = true,
 }: {
   loading: boolean;
   channels: ConnectedChannel[];
@@ -51,14 +64,14 @@ const ConnectedChannelsView = ({
   };
   onPageChange: (page: number) => void;
   onConnectNew: () => void;
+  showDesktopChrome?: boolean;
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-
-  const handleManage = (ch: ConnectedChannel) => {
-    navigate(`/channels/manage/${ch.type}/${ch.id}`);
+  const handleManage = (channel: ConnectedChannel) => {
+    navigate(`/channels/manage/${channel.type}/${channel.id}`);
   };
 
   useMobileHeaderActions(
@@ -81,67 +94,65 @@ const ConnectedChannelsView = ({
             },
           ],
           panel: mobileSearchOpen ? (
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={15}
-              />
-              <input
-                autoFocus
-                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search channels..."
-                type="text"
-                value={search}
-              />
-            </div>
+            <BaseInput
+              autoFocus
+              type="search"
+              appearance="toolbar"
+              leftIcon={<Search size={15} />}
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search channels..."
+              aria-label="Search channels"
+            />
           ) : null,
         }
       : {},
-    [isMobile, mobileSearchOpen, search],
+    [isMobile, mobileSearchOpen, onConnectNew, search],
   );
 
   return (
     <div className="mobile-borderless min-h-0 flex-1 overflow-y-auto bg-white">
       <div className="px-4 py-4 md:px-6">
-        <div className="hidden items-start gap-3 md:flex">
-          <div className="pt-1 text-slate-700">
-            <Plug size={20} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold text-gray-900 md:text-xl">
-              Connected Channels
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage every connected inbox and entry point from one place.
-            </p>
-          </div>
-        </div>
+        {showDesktopChrome ? (
+          <>
+            <div className="hidden items-start gap-3 md:flex">
+              <div className="pt-1 text-slate-700">
+                <Plug size={20} />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg font-semibold text-gray-900 md:text-xl">
+                  Connected Channels
+                </h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage every connected inbox and entry point from one place.
+                </p>
+              </div>
+            </div>
 
-        <div className="mt-4 hidden grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
-          <div className="relative w-full md:max-w-sm">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search channels..."
-              className="w-full rounded-xl bg-slate-100 py-2.5 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500 md:border md:border-gray-300 md:bg-white"
-            />
-          </div>
+            <div className="mt-4 hidden grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
+              <div className="w-full md:max-w-sm">
+                <BaseInput
+                  type="search"
+                  appearance="toolbar"
+                  leftIcon={<Search size={15} />}
+                  value={search}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder="Search channels..."
+                  aria-label="Search channels"
+                />
+              </div>
 
-          <div className="flex w-full justify-end md:w-auto">
-            <button
-              onClick={onConnectNew}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 md:w-auto"
-            >
-              <Plus size={14} />
-              Add Channel
-            </button>
-          </div>
-        </div>
+              <div className="flex w-full justify-end md:ml-auto md:w-auto">
+                <Button
+                  onClick={onConnectNew}
+                  leftIcon={<Plus size={14} />}
+                >
+                  Add Channel
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {loading ? (
           <div className="flex items-center justify-center py-20 text-gray-500">
@@ -159,31 +170,31 @@ const ConnectedChannelsView = ({
             <p className="mb-4 mt-1 text-sm text-gray-500">
               Connect your first channel to start receiving messages.
             </p>
-            <button
+            <Button
               onClick={onConnectNew}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              leftIcon={<Plus size={15} />}
             >
-              <Plus size={15} /> Connect a channel
-            </button>
+              Connect a channel
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 py-4 sm:grid-cols-2 xl:grid-cols-3">
-            {channels.map((ch) => (
-              <article
-                key={ch.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleManage(ch)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleManage(ch);
-                  }
-                }}
-                className={`relative cursor-pointer rounded-[24px] bg-white p-4 transition-all hover:bg-slate-50 md:border md:border-gray-200 md:hover:border-gray-300 md:hover:shadow-sm ${
-                  isMobile ? "space-y-4" : "space-y-5"
-                }`}
+            {channels.map((channel) => (
+              <Button
+                key={channel.id}
+                onClick={() => handleManage(channel)}
+                variant="select-card"
+                size="lg"
+                radius="lg"
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
               >
+                <div
+                  className={`relative w-full text-left ${
+                    isMobile ? "space-y-4" : "space-y-5"
+                  }`}
+                >
                 {isMobile ? (
                   <span
                     aria-hidden="true"
@@ -192,35 +203,25 @@ const ConnectedChannelsView = ({
                     <ChevronRight size={16} />
                   </span>
                 ) : null}
+
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
                     <img
-                      src={channelConfig[ch.type]?.icon}
+                      src={channelConfig[channel.type]?.icon}
                       className="h-10 w-10 object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
                       }}
                     />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-900 md:text-base">
-                      {ch.name}
+                      {channel.name}
                     </p>
                     <p className="mt-1 truncate text-sm text-gray-500">
-                      {channelConfig[ch.type]?.label} · {ch.identifier}
+                      {channelConfig[channel.type]?.label} · {channel.identifier}
                     </p>
-                    {/* <div
-                      className={`mt-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                        ch.status === "Connected"
-                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : ch.status === "Error"
-                            ? "border border-amber-200 bg-amber-50 text-amber-700"
-                            : "border border-slate-200 bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {ch.status}
-                    </div> */}
                   </div>
                 </div>
 
@@ -230,32 +231,14 @@ const ConnectedChannelsView = ({
                       ? "hidden"
                       : "grid grid-cols-2 gap-3 rounded-2xl p-3 text-xs text-slate-500"
                   }
-                >
-                  {/* <div>
-                    <p>Messages</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {ch.msgs}
-                    </p>
-                  </div>
-                  <div>
-                    <p>Connected</p>
-                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">
-                      {ch.connectedAt}
-                    </p>
-                  </div> */}
-                </div>
+                />
 
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleManage(ch);
-                  }}
-                  className="hidden w-full items-center justify-center gap-1.5 rounded-xl border border-indigo-200 px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:bg-indigo-600 hover:text-white md:flex"
-                >
+                <span className="hidden items-center gap-1.5 text-xs font-medium text-gray-700 md:inline-flex">
                   <Settings size={14} />
                   Manage
-                </button>
-              </article>
+                </span>
+                </div>
+              </Button>
             ))}
           </div>
         )}
@@ -275,6 +258,7 @@ const ConnectedChannelsView = ({
 
 export const Channels = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [channels, setChannels] = useState<ConnectedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchDraft, setSearchDraft] = useState("");
@@ -288,32 +272,6 @@ export const Channels = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
-
-  useEffect(() => {
-  const code: string | null = null;
-  const error: string | null = null;
-  return;
-
-  if (code) {
-    void code;
-
-    // 🔥 Call your API here
-          const redirectUri =  import.meta.env.VITE_INSTAGRAM_REDIRECT_URI;
-
-    ChannelApi.exchangeInstagramCode(code, redirectUri)
-      .then(res => {
-        // onSuccess(res.channel);
-      })
-      .catch(err => {
-        // onError(err.message);
-      });
-  }
-
-  if (error) {
-    void error;
-    // onError(error);
-  }
-}, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -336,6 +294,7 @@ export const Channels = () => {
           search: search || undefined,
         });
         if (!active) return;
+
         setChannels(Array.isArray(response?.items) ? response.items : []);
         setPagination(
           response?.pagination ?? {
@@ -348,26 +307,61 @@ export const Channels = () => {
           },
         );
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
-    loadChannels();
+    void loadChannels();
 
     return () => {
       active = false;
     };
   }, [page, search]);
 
+  const desktopToolbar = isMobile ? undefined : (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="w-full md:max-w-sm">
+        <BaseInput
+          type="search"
+          appearance="toolbar"
+          leftIcon={<Search size={15} />}
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
+          placeholder="Search channels..."
+          aria-label="Search channels"
+        />
+      </div>
+
+      <div className="flex w-full justify-end md:ml-auto md:w-auto">
+        <Button
+          onClick={() => navigate("/channels/connect")}
+          leftIcon={<Plus size={14} />}
+        >
+          Add Channel
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <ConnectedChannelsView
-      channels={channels}
-      loading={loading}
-      search={searchDraft}
-      onSearchChange={setSearchDraft}
-      pagination={pagination}
-      onPageChange={setPage}
-      onConnectNew={() => navigate("/channels/connect")}
-    />
+    <PageLayout
+      title="Channels"
+      toolbar={desktopToolbar}
+      className="bg-white"
+      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
+    >
+      <ConnectedChannelsView
+        channels={channels}
+        loading={loading}
+        search={searchDraft}
+        onSearchChange={setSearchDraft}
+        pagination={pagination}
+        onPageChange={setPage}
+        onConnectNew={() => navigate("/channels/connect")}
+        showDesktopChrome={false}
+      />
+    </PageLayout>
   );
 };

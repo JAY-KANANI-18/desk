@@ -1,5 +1,6 @@
 import { PAGE_SIZE } from "../constants";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../../../components/ui/Button";
 
 interface ContactsPaginationProps {
   totalContacts: number;
@@ -110,37 +111,40 @@ export function ContactsPagination({
         {totalContacts} contacts
       </span>
       <div className="flex flex-wrap items-center gap-1">
-        <button
+        <Button
           onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
           disabled={currentPage === 1}
-          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
+          variant="secondary"
+          
         >
-          {"<-"} Prev
-        </button>
+           Prev
+        </Button>
         {paginationItems.map((item, index) =>
           item === "..." ? (
             <span key={`ellipsis-${index}`} className="px-2 text-xs text-gray-400">
               ...
             </span>
           ) : (
-            <button
+            <Button
               key={item}
               onClick={() => setCurrentPage(item)}
-              className={`h-8 w-8 rounded-lg text-xs transition-colors md:border ${
-                currentPage === item ? "bg-indigo-600 text-white md:border-indigo-600" : "bg-slate-100 text-gray-700 hover:bg-slate-200 md:border-gray-300 md:bg-white md:hover:bg-gray-50"
-              }`}
+              variant={currentPage === item ? "primary" : "secondary"}
+              iconOnly
+              aria-current={currentPage === item ? "page" : undefined}
+              aria-label={`Go to page ${item}`}
             >
               {item}
-            </button>
+            </Button>
           ),
         )}
-        <button
+        <Button
           onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
           disabled={currentPage === totalPages}
-          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
+          variant="secondary"
+         
         >
-          Next {"->"}
-        </button>
+          Next 
+        </Button>
       </div>
     </div>
     </>

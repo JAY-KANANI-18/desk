@@ -1,3 +1,4 @@
+// LEGACY - not mounted in current router, pending removal
 export const Header = () => {
   return (
     <div className="bg-no-repeat box-border caret-transparent flex flex-col h-full justify-between mx-4 md:mx-16">

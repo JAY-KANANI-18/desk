@@ -2,17 +2,16 @@ import React from "react";
 import {
   ChevronDown,
   ChevronUp,
-  CornerUpLeft,
-  ExternalLink,
   Eye,
   FileText,
   Mail,
-  Phone,
   Play,
   Reply,
 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { TruncatedText } from "../../../components/ui/TruncatedText";
 import type { Message } from "./types";
-import { highlightText, formatWaBody } from "./helpers";
+import { getWaTemplateButtonIcon, highlightText, formatWaBody } from "./helpers";
 import { AttachmentItem } from "./AttachmentItem";
 import { QuotedPreview } from "./QuotedPreview";
 import { WaCarouselBubble } from "./WaCarouselBubble";
@@ -52,23 +51,43 @@ export function MessageBubble({
   const renderText = (t: string) =>
     searchTerm ? highlightText(t, searchTerm) : t;
 
+  const renderImageGrid = (imageAttachments: typeof images) => (
+    <div
+      className={`grid gap-0.5 ${imageAttachments.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+    >
+      {imageAttachments.map((att, i) => (
+        <a
+          key={`${att.url}-${i}`}
+          href={att.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block overflow-hidden"
+        >
+          <img
+            src={att.url}
+            alt={att.name}
+            className={`w-full object-cover ${imageAttachments.length === 1 ? "max-h-[200px]" : "max-h-[120px]"}`}
+          />
+        </a>
+      ))}
+    </div>
+  );
+
   const expandBtn = (outgoing: boolean) =>
     needsExpand && (
-      <button
-        onClick={onToggleExpand}
-        className={`mt-1.5 flex items-center gap-1 text-xs font-medium opacity-70 hover:opacity-100 transition-opacity
-        ${outgoing ? "text-indigo-200" : "text-indigo-500"}`}
-      >
-        {isExpanded ? (
-          <>
-            <ChevronUp size={12} /> Show less
-          </>
-        ) : (
-          <>
-            <ChevronDown size={12} /> Show more
-          </>
-        )}
-      </button>
+      <div className={`mt-1.5 ${outgoing ? "text-indigo-200" : "text-indigo-500"}`}>
+        <Button
+          type="button"
+          variant="inherit-ghost"
+          size="xs"
+          onClick={onToggleExpand}
+          leftIcon={
+            isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+          }
+        >
+          {isExpanded ? "Show less" : "Show more"}
+        </Button>
+      </div>
     );
 
   if (isWaTemplate) {
@@ -94,12 +113,8 @@ export function MessageBubble({
 
     return (
       <div
-        className="overflow-hidden shadow-sm"
+        className="max-w-[300px] overflow-hidden rounded-[14px] rounded-bl-[4px] bg-white shadow-sm"
         style={{
-          background: "#fff",
-          borderRadius: 14,
-          borderBottomLeftRadius: 4,
-          maxWidth: 300,
           fontFamily: '-apple-system, "Segoe UI", sans-serif',
         }}
       >
@@ -107,8 +122,7 @@ export function MessageBubble({
           <img
             src={header.example.header_handle[0]}
             alt=""
-            className="w-full object-cover"
-            style={{ maxHeight: 170 }}
+            className="max-h-[170px] w-full object-cover"
           />
         )}
         {header?.format === "VIDEO" && (
@@ -125,25 +139,34 @@ export function MessageBubble({
               <span className="text-[8px] font-bold text-[#e53935]">PDF</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[11.5px] font-semibold text-[#303030] truncate">
-                {header.text || "document.pdf"}
-              </p>
+              <TruncatedText
+                as="p"
+                text={header.text || "document.pdf"}
+                maxLines={1}
+                className="text-[11.5px] font-semibold text-[#303030]"
+              />
               <p className="text-[10px] text-[#8a8a8a]">PDF - 1 page</p>
             </div>
           </div>
         )}
         {header?.format === "TEXT" && header.text && (
           <div className="px-3 pt-2.5 pb-0.5">
-            <p className="text-[13px] font-bold text-[#303030] leading-snug">
-              {header.text}
-            </p>
+            <TruncatedText
+              as="p"
+              text={header.text}
+              maxLines={2}
+              className="text-[13px] font-bold text-[#303030] leading-snug"
+            />
           </div>
         )}
         {!header?.format && header?.text && (
           <div className="px-3 pt-2.5 pb-0.5">
-            <p className="text-[13px] font-bold text-[#303030] leading-snug">
-              {header.text}
-            </p>
+            <TruncatedText
+              as="p"
+              text={header.text}
+              maxLines={2}
+              className="text-[13px] font-bold text-[#303030] leading-snug"
+            />
           </div>
         )}
 
@@ -158,25 +181,43 @@ export function MessageBubble({
 
         {footer?.text && (
           <div className="px-3 pb-1.5">
-            <p className="text-[10.5px] text-[#8a8a8a] leading-snug">
-              {footer.text}
-            </p>
+            <TruncatedText
+              as="p"
+              text={footer.text}
+              maxLines={2}
+              className="text-[10.5px] text-[#8a8a8a] leading-snug"
+            />
           </div>
         )}
 
         {buttons.length > 0 && (
           <div className="border-t border-[#e9edef]">
-            {buttons.map((btn, i) => (
-              <div
-                key={i}
-                className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] active:bg-[#ebebeb] transition-colors ${i > 0 ? "border-t border-[#e9edef]" : ""}`}
-              >
-                {btn.type === "URL" && <ExternalLink size={12} />}
-                {btn.type === "PHONE_NUMBER" && <Phone size={12} />}
-                {btn.type === "QUICK_REPLY" && <CornerUpLeft size={12} />}
-                <span>{btn.text}</span>
-              </div>
-            ))}
+            {buttons.map((btn, i) => {
+              const Icon = getWaTemplateButtonIcon(btn.type);
+
+              return (
+                <div
+                  key={`${btn.type}-${btn.text}-${i}`}
+                  className={`${i > 0 ? "border-t border-[#e9edef]" : ""} text-[var(--color-info)]`}
+                >
+                  <Button
+                    type="button"
+                    variant="inherit-ghost"
+                    size="sm"
+                    radius="none"
+                    fullWidth
+                    leftIcon={<Icon size={12} />}
+                  >
+                    <TruncatedText
+                      as="span"
+                      text={btn.text}
+                      maxLines={1}
+                      className="max-w-full"
+                    />
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -193,11 +234,12 @@ export function MessageBubble({
             className={`flex items-center gap-1.5 px-4 pt-3 pb-2 border-b ${isOutgoing ? "border-white/10" : "border-gray-100"}`}
           >
             <Mail size={11} className="flex-shrink-0 opacity-50" />
-            <span
-              className={`text-xs font-semibold truncate max-w-[240px] ${isOutgoing ? "text-white/90" : "text-gray-700"}`}
-            >
-              {msg.metadata.email.subject}
-            </span>
+            <TruncatedText
+              as="span"
+              text={msg.metadata.email.subject}
+              maxLines={1}
+              className={`max-w-[240px] text-xs font-semibold ${isOutgoing ? "text-white/90" : "text-gray-700"}`}
+            />
           </div>
         )}
         {quoted && <QuotedPreview {...quoted} isOutgoing={isOutgoing} />}
@@ -212,28 +254,7 @@ export function MessageBubble({
         )}
         {atts.length > 0 && (
           <div className={hasText ? "border-t border-black/5 mt-1" : ""}>
-            {images.length > 0 && (
-              <div
-                className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-              >
-                {images.map((att, i) => (
-                  <a
-                    key={i}
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block overflow-hidden"
-                  >
-                    <img
-                      src={att.url}
-                      alt={att.name}
-                      className="w-full object-cover"
-                      style={{ maxHeight: images.length === 1 ? 200 : 120 }}
-                    />
-                  </a>
-                ))}
-              </div>
-            )}
+            {images.length > 0 && renderImageGrid(images)}
             {others.map((att, i) => (
               <div
                 key={i}
@@ -246,20 +267,28 @@ export function MessageBubble({
             ))}
           </div>
         )}
-        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button
+        <div
+          className={`flex items-center gap-1 px-3 pb-3 pt-2 ${isOutgoing ? "text-white/90" : "text-gray-600"}`}
+        >
+          <Button
             onClick={onOpenEmailModal}
-            className={`flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity
-              ${isOutgoing ? "text-white" : "text-gray-600"}`}
-          >
-            <Eye size={11} />
-          </button>
-          <button
-            className={`flex items-center gap-1 text-xs opacity-70 hover:opacity-100 font-medium transition-opacity
-              ${isOutgoing ? "text-white" : "text-gray-600"}`}
-          >
-            <Reply size={11} />
-          </button>
+            type="button"
+            variant="inherit-ghost"
+            size="xs"
+            radius="full"
+            iconOnly
+            leftIcon={<Eye size={11} />}
+            aria-label="View email"
+          />
+          <Button
+            type="button"
+            variant="inherit-ghost"
+            size="xs"
+            radius="full"
+            iconOnly
+            leftIcon={<Reply size={11} />}
+            aria-label="Reply to email"
+          />
         </div>
       </div>
     );
@@ -270,28 +299,7 @@ export function MessageBubble({
       className={`rounded-2xl overflow-hidden shadow-sm ${bubbleColor} max-w-sm`}
     >
       {quoted && <QuotedPreview {...quoted} isOutgoing={isOutgoing} />}
-      {images.length > 0 && (
-        <div
-          className={`grid gap-0.5 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-        >
-          {images.map((att, i) => (
-            <a
-              key={i}
-              href={att.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden"
-            >
-              <img
-                src={att.url}
-                alt={att.name}
-                className="w-full object-cover"
-                style={{ maxHeight: images.length === 1 ? 200 : 120 }}
-              />
-            </a>
-          ))}
-        </div>
-      )}
+      {images.length > 0 && renderImageGrid(images)}
       {others.length > 0 && (
         <div className={images.length > 0 ? "border-t border-black/5" : ""}>
           {others.map((att, i) => (

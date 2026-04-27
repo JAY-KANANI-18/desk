@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
-import { MobileSheet } from "../../../components/topbar/MobileSheet";
+import { MobileSheet } from "../../../components/ui/modal";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 import { organizationApi } from "../../../lib/organizationApi";
-import { useAuthorization, WsGuard } from "../../../context/AuthorizationContext";
+import {
+  useAuthorization,
+  WsGuard,
+} from "../../../context/AuthorizationContext";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { ListPagination } from "../../../components/ui/ListPagination";
 import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
+import { Avatar } from "../../../components/ui/Avatar";
+import { Tag } from "../../../components/ui/Tag";
+import { Button } from "../../../components/ui/button/Button";
+import { BaseInput } from "../../../components/ui/inputs";
+import { CenterModal } from "../../../components/ui/Modal";
+import { BaseSelect } from "../../../components/ui/select/BaseSelect";
+import type { SelectOption } from "../../../components/ui/select/shared";
 
 const workspaceRoles = [
   { id: "WS_OWNER", name: "Owner" },
@@ -16,18 +26,54 @@ const workspaceRoles = [
   { id: "WS_AGENT", name: "Agent" },
 ];
 
-const visibilityOptions = [
-  { id: "TEAM", name: "Anyone in the user's team" },
-  { id: "ASSIGNED_ONLY", name: "Only assigned contacts" },
-];
+const workspaceRoleOptions: SelectOption[] = workspaceRoles.map((role) => ({
+  value: role.id,
+  label: role.name,
+}));
 
-const getWorkspaceRoleLabel = (role: string) => {
-  return workspaceRoles.find((r) => r.id === role)?.name || role;
+type WorkspaceRestrictions = {
+  restrictContactVisibility: boolean;
+  contactVisibilityScope: string;
+  restrictCalls: boolean;
+  restrictWorkflowButton: boolean;
+  maskPhoneAndEmail: boolean;
 };
 
-/* =========================
-   Invite User Modal
-========================= */
+type WorkspaceUser = {
+  id: string;
+  role: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  status?: string;
+  restrictions?: Partial<WorkspaceRestrictions>;
+};
+
+const defaultRestrictions: WorkspaceRestrictions = {
+  restrictContactVisibility: false,
+  contactVisibilityScope: "TEAM",
+  restrictCalls: false,
+  restrictWorkflowButton: false,
+  maskPhoneAndEmail: false,
+};
+
+const getWorkspaceRoleLabel = (role: string) => {
+  return workspaceRoles.find((item) => item.id === role)?.name || role;
+};
+
+const getWorkspaceUserName = (user?: Partial<WorkspaceUser> | null) => {
+  if (!user) {
+    return "User";
+  }
+
+  return (
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.email ||
+    "User"
+  );
+};
+
 const InviteUserModal = ({
   open,
   onClose,
@@ -68,10 +114,58 @@ const InviteUserModal = ({
     }
   };
 
+  const content = (
+    <div className="space-y-6">
+      <p className="text-[15px] leading-7 text-gray-600">
+        Invite a user to this workspace by email and assign their access level.
+      </p>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <BaseInput
+          type="email"
+          label="Email Address"
+          placeholder="Enter user email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+
+        <BaseSelect
+          label="Access Level"
+          value={role}
+          onChange={setRole}
+          options={workspaceRoleOptions}
+        />
+      </div>
+
+      <p className="text-[15px] text-gray-500">
+        Agents only have access to Messages within the workspace.
+      </p>
+    </div>
+  );
+
+  const secondaryAction = (
+    <Button onClick={onClose} variant="secondary">
+      Cancel
+    </Button>
+  );
+
+  const primaryAction = (
+    <Button
+      onClick={handleInvite}
+      disabled={!email.trim()}
+      loading={loading}
+      loadingMode="inline"
+      loadingLabel="Inviting..."
+     
+    >
+      Invite
+    </Button>
+  );
+
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
         title={
           <div>
@@ -85,154 +179,43 @@ const InviteUserModal = ({
         }
         footer={
           <div className="flex flex-col-reverse gap-3">
-            <button
-              onClick={onClose}
-              className="rounded-xl px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
-            >
+            <Button onClick={onClose} variant="secondary" fullWidth >
               Cancel
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={handleInvite}
-              disabled={!email.trim() || loading}
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!email.trim()}
+              loading={loading}
+              loadingMode="inline"
+              loadingLabel="Inviting..."
+              fullWidth
             >
-              {loading ? "Inviting..." : "Invite"}
-            </button>
+              Invite
+            </Button>
           </div>
         }
       >
-        <div className="space-y-6 p-4">
-          <p className="text-[15px] leading-7 text-gray-600">
-            Invite a user to this workspace by email and assign their access
-            level.
-          </p>
-
-          <div className="grid grid-cols-1 gap-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-500">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="Enter user email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-500">
-                Access Level
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {workspaceRoles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[15px] text-gray-500">
-            Agents only have access to Messages within the workspace.
-          </p>
-        </div>
+        <div className="p-4">{content}</div>
       </MobileSheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/30 backdrop-blur-[2px] flex justify-center items-start overflow-y-auto px-4 pt-24 pb-10">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-[22px] font-semibold text-gray-900">
-            Invite User
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 transition"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-6">
-          <p className="text-[15px] text-gray-600 leading-7 mb-6">
-            Invite a user to this workspace by email and assign their access
-            level.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="Enter user email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
-                Access Level
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {workspaceRoles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[15px] text-gray-500 mt-6">
-            Agents only have access to Messages within the workspace.
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-gray-700 font-medium hover:bg-gray-100"
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={handleInvite}
-            disabled={!email.trim() || loading}
-            className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Inviting..." : "Invite"}
-          </button>
-        </div>
-      </div>
-    </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title="Invite User"
+      size="lg"
+      width={720}
+      secondaryAction={secondaryAction}
+      primaryAction={primaryAction}
+    >
+      {content}
+    </CenterModal>
   );
 };
 
-/* =========================
-   Edit User Modal
-========================= */
 const EditWorkspaceUserModal = ({
   open,
   onClose,
@@ -241,31 +224,18 @@ const EditWorkspaceUserModal = ({
 }: {
   open: boolean;
   onClose: () => void;
-  editUser: any;
+  editUser: WorkspaceUser | null;
   onSave: (payload: {
     userId: string;
     role: string;
-    restrictions: {
-      restrictContactVisibility: boolean;
-      contactVisibilityScope: string;
-      restrictCalls: boolean;
-      restrictWorkflowButton: boolean;
-      maskPhoneAndEmail: boolean;
-    };
+    restrictions: WorkspaceRestrictions;
   }) => Promise<void>;
 }) => {
   const isMobile = useIsMobile();
   const [role, setRole] = useState("WS_AGENT");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const [restrictions, setRestrictions] = useState({
-    restrictContactVisibility: false,
-    contactVisibilityScope: "TEAM",
-    restrictCalls: false,
-    restrictWorkflowButton: false,
-    maskPhoneAndEmail: false,
-  });
+  const [restrictions, setRestrictions] =
+    useState<WorkspaceRestrictions>(defaultRestrictions);
 
   useEffect(() => {
     if (editUser && open) {
@@ -285,13 +255,6 @@ const EditWorkspaceUserModal = ({
 
   if (!open || !editUser) return null;
 
-  const updateRestriction = (key: string, value: any) => {
-    setRestrictions((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
   const handleUpdate = async () => {
     try {
       setLoading(true);
@@ -308,10 +271,79 @@ const EditWorkspaceUserModal = ({
     }
   };
 
+  const content = (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Avatar
+          src={editUser.avatarUrl}
+          name={getWorkspaceUserName(editUser)}
+          size="lg"
+        />
+
+        <div className="min-w-0">
+          <p className="truncate text-base font-semibold text-gray-900">
+            {getWorkspaceUserName(editUser)}
+          </p>
+          <p className="truncate text-sm text-gray-500">{editUser.email}</p>
+        </div>
+      </div>
+
+      <p className="text-[15px] leading-7 text-gray-600">
+        To edit this user select a new access level and click{" "}
+        <span className="font-medium text-gray-800">Update</span>. The access
+        level defines what the user can do on the workspace.
+      </p>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <BaseInput
+          label="Email Address"
+          value={editUser.email || ""}
+          disabled
+        />
+
+        <BaseSelect
+          label="Access Level"
+          value={role}
+          onChange={setRole}
+          options={workspaceRoleOptions}
+        />
+      </div>
+
+      <p className="text-[15px] text-gray-500">
+        Agents only have access to Messages within the workspace. Optionally
+        you can limit the visibility on Contacts.
+      </p>
+    </div>
+  );
+
+  const footerMeta = (
+    <Button variant="link" size="sm">
+      Learn more
+    </Button>
+  );
+
+  const secondaryAction = (
+    <Button onClick={onClose} variant="secondary" >
+      Cancel
+    </Button>
+  );
+
+  const primaryAction = (
+    <Button
+      onClick={handleUpdate}
+      loading={loading}
+      loadingMode="inline"
+      loadingLabel="Updating..."
+     
+    >
+      Update
+    </Button>
+  );
+
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
         title={
           <div>
@@ -325,331 +357,51 @@ const EditWorkspaceUserModal = ({
         }
         footer={
           <div className="flex flex-col-reverse gap-3">
-            <button className="text-sm font-medium text-indigo-600 hover:underline">
+            <Button variant="link" size="sm">
               Learn more
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={onClose}
-              className="rounded-xl px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+              variant="secondary"
+              fullWidth
+              
             >
               Cancel
-            </button>
-
-            <button
+            </Button>
+            <Button
               onClick={handleUpdate}
-              disabled={loading}
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+              loading={loading}
+              loadingMode="inline"
+              loadingLabel="Updating..."
+              fullWidth
+              
             >
-              {loading ? "Updating..." : "Update"}
-            </button>
+              Update
+            </Button>
           </div>
         }
       >
-        <div className="space-y-6 p-4">
-          <div className="flex items-center gap-4">
-            <UserAvatar
-              avatarUrl={editUser.avatarUrl}
-              firstName={editUser.firstName}
-              lastName={editUser.lastName}
-              email={editUser.email}
-              size="lg"
-            />
-
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-gray-900">
-                {[editUser.firstName, editUser.lastName]
-                  .filter(Boolean)
-                  .join(" ") || editUser.email}
-              </p>
-              <p className="truncate text-sm text-gray-500">{editUser.email}</p>
-            </div>
-          </div>
-
-          <p className="text-[15px] leading-7 text-gray-600">
-            To edit this user select a new access level and click{" "}
-            <span className="font-medium text-gray-800">"Update"</span>. The
-            Access Level defines what the user can do on the workspace.
-          </p>
-
-          <div className="grid grid-cols-1 gap-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-500">
-                Email Address
-              </label>
-              <input
-                disabled
-                value={editUser.email || ""}
-                className="h-11 w-full cursor-not-allowed rounded-xl border border-gray-300 bg-gray-100 px-4 text-[15px] text-gray-500 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-500">
-                Access Level
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {workspaceRoles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[15px] text-gray-500">
-            Agents only have access to Messages within the workspace. Optionally
-            you can limit the visibility on Contacts.
-          </p>
-        </div>
+        <div className="p-4">{content}</div>
       </MobileSheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/30 backdrop-blur-[2px] flex justify-center items-start overflow-y-auto px-4 pt-24 pb-10">
-      <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-[22px] font-semibold text-gray-900">Edit User</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 transition"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-6">
-          {editUser && (
-            <div className="flex items-center gap-4 mb-6">
-              <UserAvatar
-                avatarUrl={editUser.avatarUrl}
-                firstName={editUser.firstName}
-                lastName={editUser.lastName}
-                email={editUser.email}
-                size="lg"
-              />
-
-              <div className="min-w-0">
-                <p className="text-base font-semibold text-gray-900 truncate">
-                  {[editUser.firstName, editUser.lastName]
-                    .filter(Boolean)
-                    .join(" ") || editUser.email}
-                </p>
-                <p className="text-sm text-gray-500 truncate">
-                  {editUser.email}
-                </p>
-              </div>
-            </div>
-          )}
-          <p className="text-[15px] text-gray-600 leading-7 mb-6">
-            To edit this user select a new access level and click{" "}
-            <span className="font-medium text-gray-800">"Update"</span>. The
-            Access Level defines what the user can do on the workspace.
-          </p>
-
-          {/* Top Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
-                Email Address
-              </label>
-              <input
-                disabled
-                value={editUser.email || ""}
-                className="w-full h-11 rounded-xl border border-gray-300 bg-gray-100 px-4 text-[15px] text-gray-500 outline-none cursor-not-allowed"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
-                Access Level
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {workspaceRoles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[15px] text-gray-500 mb-6">
-            Agents only have access to Messages within the workspace. Optionally
-            you can limit the visibility on Contacts.
-          </p>
-
-          {/* Advanced Restrictions */}
-          {/* <button
-            type="button"
-            onClick={() => setShowAdvanced((prev) => !prev)}
-            className="flex items-center justify-between w-full text-left text-[15px] font-medium text-indigo-600 mb-4"
-          >
-            <span>Advanced Restrictions</span>
-            {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button> */}
-
-          {showAdvanced && (
-            <div className="">
-              {/* Restrict Contact Visibility */}
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  checked={restrictions.restrictContactVisibility}
-                  onChange={(e) =>
-                    updateRestriction(
-                      "restrictContactVisibility",
-                      e.target.checked,
-                    )
-                  }
-                  className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-
-                <div className="flex-1">
-                  <p className="text-[16px] font-medium text-gray-800">
-                    Restrict Contact Visibility
-                  </p>
-                  <p className="text-[15px] text-gray-600 mt-1">
-                    This user can only view contacts assigned to
-                  </p>
-                </div>
-
-                <select
-                  disabled={!restrictions.restrictContactVisibility}
-                  value={restrictions.contactVisibilityScope}
-                  onChange={(e) =>
-                    updateRestriction("contactVisibilityScope", e.target.value)
-                  }
-                  className={`w-[280px] h-11 rounded-xl border px-4 text-[15px] outline-none ${
-                    restrictions.restrictContactVisibility
-                      ? "border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-indigo-500"
-                      : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  {visibilityOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Restrict Calls */}
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  checked={restrictions.restrictCalls}
-                  onChange={(e) =>
-                    updateRestriction("restrictCalls", e.target.checked)
-                  }
-                  className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <p className="text-[16px] font-medium text-gray-800">
-                    Restrict Calls Capabilities
-                  </p>
-                  <p className="text-[15px] text-gray-600 mt-1">
-                    This user will not be able to receive or initiate calls.
-                  </p>
-                </div>
-              </div>
-
-              {/* Restrict Workflow */}
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  checked={restrictions.restrictWorkflowButton}
-                  onChange={(e) =>
-                    updateRestriction(
-                      "restrictWorkflowButton",
-                      e.target.checked,
-                    )
-                  }
-                  className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <p className="text-[16px] font-medium text-gray-800">
-                    Restrict Workflows Button
-                  </p>
-                  <p className="text-[15px] text-gray-600 mt-1">
-                    The Workflows button in the Messages module will be disabled
-                    for this user. This includes Shortcuts and stopping a
-                    Workflow for a Contact.
-                  </p>
-                </div>
-              </div>
-
-              {/* Mask Phone / Email */}
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  checked={restrictions.maskPhoneAndEmail}
-                  onChange={(e) =>
-                    updateRestriction("maskPhoneAndEmail", e.target.checked)
-                  }
-                  className="mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[16px] font-medium text-gray-800">
-                      Mask Phone Number and Email Address
-                    </p>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
-                      Upgrade
-                    </span>
-                  </div>
-                  <p className="text-[15px] text-gray-600 mt-1">
-                    This user will not be able to view all Contacts’ phone
-                    numbers and email addresses.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
-          <button className="text-indigo-600 text-sm font-medium hover:underline">
-            Learn more
-          </button>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-gray-700 font-medium hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-
-            <button
-              onClick={handleUpdate}
-              disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-50"
-            >
-              {loading ? "Updating..." : "Update"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title="Edit User"
+      size="lg"
+      width={760}
+      footerMeta={footerMeta}
+      secondaryAction={secondaryAction}
+      primaryAction={primaryAction}
+    >
+      {content}
+    </CenterModal>
   );
 };
 
-/* =========================
-   Main Team Settings
-========================= */
 export const WorkspaceUsers = () => {
   const { refreshWorkspaceUsers, inviteUser, updateUser } = useWorkspace();
   const isMobile = useIsMobile();
@@ -657,8 +409,8 @@ export const WorkspaceUsers = () => {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editUser, setEditUser] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
+  const [editUser, setEditUser] = useState<WorkspaceUser | null>(null);
+  const [users, setUsers] = useState<WorkspaceUser[]>([]);
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -707,7 +459,7 @@ export const WorkspaceUsers = () => {
   };
 
   useEffect(() => {
-    loadUsers(page, search);
+    void loadUsers(page, search);
   }, [page, search]);
 
   const handleInvite = async ({
@@ -717,7 +469,7 @@ export const WorkspaceUsers = () => {
     email: string;
     role: string;
   }) => {
-    await inviteUser(email, role,{});
+    await inviteUser(email, role, {});
     await refreshWorkspaceUsers();
     await loadUsers(1, search);
   };
@@ -729,13 +481,7 @@ export const WorkspaceUsers = () => {
   }: {
     userId: string;
     role: string;
-    restrictions: {
-      restrictContactVisibility: boolean;
-      contactVisibilityScope: string;
-      restrictCalls: boolean;
-      restrictWorkflowButton: boolean;
-      maskPhoneAndEmail: boolean;
-    };
+    restrictions: WorkspaceRestrictions;
   }) => {
     await updateUser(userId, role, restrictions);
     await refreshWorkspaceUsers();
@@ -772,19 +518,16 @@ export const WorkspaceUsers = () => {
               : []),
           ],
           panel: mobileSearchOpen ? (
-            <div className="relative">
-              <Search
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                autoFocus
-                value={searchDraft}
-                onChange={(e) => setSearchDraft(e.target.value)}
-                placeholder="Search members..."
-                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <BaseInput
+              autoFocus
+              type="search"
+              appearance="toolbar"
+              leftIcon={<Search size={15} />}
+              value={searchDraft}
+              onChange={(event) => setSearchDraft(event.target.value)}
+              placeholder="Search members..."
+              aria-label="Search members"
+            />
           ) : null,
         }
       : {},
@@ -792,115 +535,110 @@ export const WorkspaceUsers = () => {
   );
 
   return (
-    <div className="">
-      {/* Top */}
-      <div className="mb-6 hidden items-center justify-between md:flex">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage users and permissions for this workspace.
-          </p>
+    <div>
+      <div className="mb-4 hidden items-center justify-between md:flex">
+        <div className="w-full max-w-xs">
+          <BaseInput
+            type="search"
+            appearance="toolbar"
+            leftIcon={<Search size={15} />}
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+            placeholder="Search members..."
+            aria-label="Search members"
+          />
         </div>
 
         <WsGuard permission="ws:settings:manage">
-          <button
+          <Button
             onClick={() => setInviteOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+            leftIcon={<Plus size={16} />}
           >
-            <Plus size={16} />
             Invite User
-          </button>
+          </Button>
         </WsGuard>
       </div>
 
-      <div className="mb-4 hidden items-center justify-end md:flex">
-        <div className={`relative w-full ${isMobile ? "" : "max-w-xs"}`}>
-          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-            placeholder="Search members..."
-            className="w-full rounded-xl border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
+      <div className="space-y-3">
+        {loading ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+            <p className="font-medium text-gray-600">Loading users...</p>
+          </div>
+        ) : users.length > 0 ? (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className={`rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50 ${
+                isMobile
+                  ? "space-y-4"
+                  : "flex items-center justify-between gap-4"
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar
+                  src={user.avatarUrl}
+                  name={getWorkspaceUserName(user)}
+                  size="md"
+                />
 
-      {/* User List */}
-     <div className="space-y-3">
-  {loading ? (
-    <div className="border border-dashed border-gray-300 rounded-2xl p-10 text-center">
-      <p className="text-gray-600 font-medium">Loading users...</p>
-    </div>
-  ) : users?.length > 0 ? (
-    users.map((user: any) => (
-      <div
-        key={user.id}
-        className={`rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50 ${isMobile ? "space-y-4" : "flex items-center justify-between gap-4"}`}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <UserAvatar
-            avatarUrl={user.avatarUrl}
-            firstName={user.firstName}
-            lastName={user.lastName}
-            email={user.email}
-            size="md"
-          />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="truncate text-sm font-medium text-gray-900">
+                      {getWorkspaceUserName(user)}
+                    </p>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {[user.firstName, user.lastName].filter(Boolean).join(" ") ||
-                  user.email}
-              </p>
+                    {user.status === "PENDING" ? (
+                      <Tag label="Pending" bgColor="warning" size="sm" />
+                    ) : null}
+                  </div>
 
-              {user.status === "PENDING" && (
-                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200">
-                  Pending
-                </span>
-              )}
+                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                    {user.email}
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {getWorkspaceRoleLabel(user.role)}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={`flex shrink-0 ${
+                  isMobile
+                    ? "gap-4 border-t border-slate-100 pt-3"
+                    : "items-center gap-4"
+                }`}
+              >
+                <Button
+                  onClick={() => {
+                    setEditUser(user);
+                    setEditOpen(true);
+                  }}
+                  variant="ghost"
+                  leftIcon={<Pencil size={14} />}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  onClick={() => void handleDelete(user.id)}
+                  variant="danger-ghost"
+                  leftIcon={<Trash2 size={14} />}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
-
-            <p className="text-xs text-gray-500 truncate mt-0.5">
-              {user.email}
-            </p>
-
-            <p className="text-xs text-gray-500 mt-1">
-              {getWorkspaceRoleLabel(user.role)}
+          ))
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+            <p className="font-medium text-gray-600">No users found</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Invite team members to collaborate in this workspace.
             </p>
           </div>
-        </div>
-
-        <div className={`flex shrink-0 ${isMobile ? "gap-4 border-t border-slate-100 pt-3" : "items-center gap-4"}`}>
-          <button
-            onClick={() => {
-              setEditUser(user);
-              setEditOpen(true);
-            }}
-            className="text-indigo-600 text-sm flex items-center gap-1 hover:underline"
-          >
-            <Pencil size={14} />
-            Edit
-          </button>
-
-          <button
-            onClick={() => handleDelete(user.id)}
-            className="text-red-500 text-sm flex items-center gap-1 hover:underline"
-          >
-            <Trash2 size={14} />
-            Delete
-          </button>
-        </div>
+        )}
       </div>
-    ))
-  ) : (
-    <div className="border border-dashed border-gray-300 rounded-2xl p-10 text-center">
-      <p className="text-gray-600 font-medium">No users found</p>
-      <p className="text-sm text-gray-500 mt-1">
-        Invite team members to collaborate in this workspace.
-      </p>
-    </div>
-  )}
-</div>
 
       <ListPagination
         page={pagination.page}
@@ -911,14 +649,12 @@ export const WorkspaceUsers = () => {
         onPageChange={setPage}
       />
 
-      {/* Invite Modal */}
       <InviteUserModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         onInvite={handleInvite}
       />
 
-      {/* Edit Modal */}
       <EditWorkspaceUserModal
         open={editOpen}
         onClose={() => {
@@ -928,44 +664,6 @@ export const WorkspaceUsers = () => {
         editUser={editUser}
         onSave={handleSave}
       />
-    </div>
-  );
-};
-const UserAvatar = ({
-  avatarUrl,
-  firstName,
-  lastName,
-  email,
-  size = "md",
-}: {
-  avatarUrl?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  size?: "sm" | "md" | "lg";
-}) => {
-  const initials =
-    `${firstName?.[0] || ""}${lastName?.[0] || ""}`.trim() ||
-    email?.[0]?.toUpperCase() ||
-    "U";
-
-  const sizeClasses = {
-    sm: "h-9 w-9 text-sm",
-    md: "h-11 w-11 text-sm",
-    lg: "h-14 w-14 text-base",
-  };
-
-  return avatarUrl ? (
-    <img
-      src={avatarUrl}
-      alt={firstName || email || "User"}
-      className={`${sizeClasses[size]} rounded-full object-cover border border-gray-200 shrink-0`}
-    />
-  ) : (
-    <div
-      className={`${sizeClasses[size]} rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center justify-center font-semibold shrink-0`}
-    >
-      {initials}
     </div>
   );
 };

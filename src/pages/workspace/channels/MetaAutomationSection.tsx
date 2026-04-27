@@ -7,18 +7,23 @@ import {
   MessageCircle,
   RefreshCw,
 } from 'lucide-react';
+import { Button } from '../../../components/ui/button/Button';
+import { CheckboxInput } from '../../../components/ui/inputs/CheckboxInput';
+import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
+import { Tag } from '../../../components/ui/tag/Tag';
+import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
 import {
   AutomationTarget,
   ChannelApi,
   PrivateRepliesConfig,
   StoryRepliesConfig,
 } from '../../../lib/channelApi';
+import { useSocket } from '../../../socket/socket-provider';
 import {
   ConnectedChannel,
   SaveButton,
   useSave,
 } from '../../channels/ManageChannelPage';
-import { useSocket } from '../../../socket/socket-provider';
 
 type AutomationMode = 'private_replies' | 'story_replies';
 
@@ -88,7 +93,9 @@ export const MetaAutomationSection = ({
 
     setReloadingTargets(true);
     try {
-      const nextTargets = await ChannelApi.listMetaAutomationTargets(String(channel.id));
+      const nextTargets = await ChannelApi.listMetaAutomationTargets(
+        String(channel.id),
+      );
       setTargets(nextTargets ?? []);
     } catch (error: any) {
       setLoadError(error?.message ?? 'Failed to refresh posts');
@@ -106,7 +113,9 @@ export const MetaAutomationSection = ({
 
     const onChannelConfig = (event: any) => {
       if (String(event?.channelId) !== String(channel.id)) return;
-      if (!['meta_automation', 'messenger_menu'].includes(event?.feature)) return;
+      if (!['meta_automation', 'messenger_menu'].includes(event?.feature)) {
+        return;
+      }
       void loadConfig();
     };
 
@@ -175,7 +184,10 @@ export const MetaAutomationSection = ({
   const handleSave = () =>
     save(async () => {
       if (isPrivateReplies) {
-        return ChannelApi.savePrivateRepliesConfig(String(channel.id), privateReplies);
+        return ChannelApi.savePrivateRepliesConfig(
+          String(channel.id),
+          privateReplies,
+        );
       }
 
       return ChannelApi.saveStoryRepliesConfig(String(channel.id), storyReplies);
@@ -183,7 +195,7 @@ export const MetaAutomationSection = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 gap-2 text-gray-400">
+      <div className="flex items-center justify-center gap-2 py-12 text-gray-400">
         <Loader size={18} className="animate-spin" />
         <span className="text-sm">Loading automation...</span>
       </div>
@@ -198,47 +210,41 @@ export const MetaAutomationSection = ({
           <p className="mt-0.5 text-sm text-gray-500">{description}</p>
         </div>
         {isPrivateReplies ? (
-          <button
-            onClick={reloadTargets}
+          <Button
+            onClick={() => void reloadTargets()}
             disabled={reloadingTargets}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
+            variant="secondary"
+            leftIcon={!reloadingTargets ? <RefreshCw size={13} /> : undefined}
+            loading={reloadingTargets}
+            loadingMode="inline"
+            loadingLabel="Refreshing..."
           >
-            {reloadingTargets ? (
-              <Loader size={13} className="animate-spin" />
-            ) : (
-              <RefreshCw size={13} />
-            )}
             Refresh posts
-          </button>
+          </Button>
         ) : null}
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            checked={Boolean(activeConfig.enabled)}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            onChange={(event) => {
-              const checked = event.target.checked;
-              if (isPrivateReplies) {
-                setPrivateReplies((current) => ({ ...current, enabled: checked }));
-              } else {
-                setStoryReplies((current) => ({ ...current, enabled: checked }));
-              }
-            }}
-            type="checkbox"
-          />
-          <div>
-            <p className="text-sm font-medium text-gray-900">
-              {isPrivateReplies ? 'Enable automatic private replies' : 'Enable story reply automation'}
-            </p>
-            <p className="text-xs text-gray-500">
-              {isPrivateReplies
-                ? 'Runs when a supported comment webhook matches your rule.'
-                : 'Runs after the inbound story reply creates the conversation thread.'}
-            </p>
-          </div>
-        </label>
+        <ToggleSwitch
+          checked={Boolean(activeConfig.enabled)}
+          onChange={(checked) => {
+            if (isPrivateReplies) {
+              setPrivateReplies((current) => ({ ...current, enabled: checked }));
+            } else {
+              setStoryReplies((current) => ({ ...current, enabled: checked }));
+            }
+          }}
+          label={
+            isPrivateReplies
+              ? 'Enable automatic private replies'
+              : 'Enable story reply automation'
+          }
+        />
+        <p className="mt-2 text-xs text-gray-500">
+          {isPrivateReplies
+            ? 'Runs when a supported comment webhook matches your rule.'
+            : 'Runs after the inbound story reply creates the conversation thread.'}
+        </p>
       </div>
 
       {isPrivateReplies ? (
@@ -248,34 +254,34 @@ export const MetaAutomationSection = ({
               Scope
             </p>
             <div className="mt-3 flex flex-col gap-3">
-              <label className="flex items-center gap-3 text-sm text-gray-700">
-                <input
-                  checked={privateReplies.scope === 'all'}
-                  className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  onChange={() =>
-                    setPrivateReplies((current) => ({
-                      ...current,
-                      scope: 'all',
-                    }))
-                  }
-                  type="radio"
-                />
+              <Button
+                type="button"
+                variant={privateReplies.scope === 'all' ? 'primary' : 'secondary'}
+                className="justify-start"
+                onClick={() =>
+                  setPrivateReplies((current) => ({
+                    ...current,
+                    scope: 'all',
+                  }))
+                }
+              >
                 All posts and reels
-              </label>
-              <label className="flex items-center gap-3 text-sm text-gray-700">
-                <input
-                  checked={privateReplies.scope === 'selected'}
-                  className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  onChange={() =>
-                    setPrivateReplies((current) => ({
-                      ...current,
-                      scope: 'selected',
-                    }))
-                  }
-                  type="radio"
-                />
+              </Button>
+              <Button
+                type="button"
+                variant={
+                  privateReplies.scope === 'selected' ? 'primary' : 'secondary'
+                }
+                className="justify-start"
+                onClick={() =>
+                  setPrivateReplies((current) => ({
+                    ...current,
+                    scope: 'selected',
+                  }))
+                }
+              >
                 Only selected content
-              </label>
+              </Button>
             </div>
           </div>
 
@@ -302,35 +308,36 @@ export const MetaAutomationSection = ({
                     );
 
                     return (
-                      <label
+                      <div
                         key={target.id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition-colors ${
+                        className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors ${
                           selected
                             ? 'border-indigo-200 bg-indigo-50'
                             : 'border-gray-200 bg-white hover:border-gray-300'
                         }`}
                       >
-                        <input
+                        <CheckboxInput
                           checked={selected}
-                          className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           onChange={() => toggleTarget(String(target.id))}
-                          type="checkbox"
+                          className="w-full"
+                          label={target.title}
+                          description={
+                            <>
+                              <span>
+                                {target.type}
+                                {target.createdAt
+                                  ? ` - ${new Date(target.createdAt).toLocaleDateString()}`
+                                  : ''}
+                              </span>
+                              {target.subtitle ? (
+                                <span className="mt-1 block line-clamp-2">
+                                  {target.subtitle}
+                                </span>
+                              ) : null}
+                            </>
+                          }
                         />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-gray-900">
-                            {target.title}
-                          </p>
-                          <p className="mt-0.5 text-xs text-gray-500">
-                            {target.type}
-                            {target.createdAt ? ` • ${new Date(target.createdAt).toLocaleDateString()}` : ''}
-                          </p>
-                          {target.subtitle ? (
-                            <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                              {target.subtitle}
-                            </p>
-                          ) : null}
-                        </div>
-                      </label>
+                      </div>
                     );
                   })}
                 </div>
@@ -343,24 +350,18 @@ export const MetaAutomationSection = ({
           <div className="flex items-start gap-2.5">
             <MessageCircle size={15} className="mt-0.5 text-indigo-500" />
             <p className="text-xs text-indigo-900">
-              Story replies already arrive as real messages, so the automation uses the existing
-              conversation flow and adds the reply immediately after the inbound event.
+              Story replies already arrive as real messages, so the automation
+              uses the existing conversation flow and adds the reply immediately
+              after the inbound event.
             </p>
           </div>
         </div>
       )}
 
-      <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Message
-          </p>
-          <span className="text-xs text-gray-400">
-            Variables: {isPrivateReplies ? '{{commenter_name}} {{comment_text}} {{post_id}}' : '{{contact_name}} {{reply_text}} {{story_id}}'}
-          </span>
-        </div>
-        <textarea
-          className="min-h-[120px] w-full rounded-xl border border-gray-200 px-3 py-3 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <TextareaInput
+          label="Message"
+          value={messageValue}
           onChange={(event) => {
             const value = event.target.value;
             if (isPrivateReplies) {
@@ -369,12 +370,18 @@ export const MetaAutomationSection = ({
               setStoryReplies((current) => ({ ...current, message: value }));
             }
           }}
+          rows={5}
+          autoResize
+          hint={
+            isPrivateReplies
+              ? 'Variables: {{commenter_name}} {{comment_text}} {{post_id}}'
+              : 'Variables: {{contact_name}} {{reply_text}} {{story_id}}'
+          }
           placeholder={
             isPrivateReplies
               ? 'Hi {{commenter_name}}, thanks for commenting. We just sent you a DM.'
               : 'Thanks {{contact_name}}. We saw your story reply and will follow up shortly.'
           }
-          value={messageValue}
         />
       </div>
 
@@ -385,13 +392,13 @@ export const MetaAutomationSection = ({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {activeTargets.map((target) => (
-              <span
+              <Tag
                 key={target.id}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700"
-              >
-                <Check size={11} />
-                {target.title}
-              </span>
+                label={target.title}
+                size="sm"
+                bgColor="gray"
+                icon={<Check size={11} />}
+              />
             ))}
           </div>
         </div>

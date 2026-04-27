@@ -3,6 +3,8 @@ import {
   PHONE_COUNTRY_OPTIONS,
   normalizeDialCode,
 } from "../phoneUtils";
+import { Select } from "../../../components/ui/Select";
+import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 
 interface PhoneNumberFieldProps {
   phoneCountryCode: string;
@@ -16,12 +18,6 @@ interface PhoneNumberFieldProps {
   }) => void;
 }
 
-const defaultInputClassName =
-  "w-full rounded-lg bg-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 md:border md:border-gray-300 md:bg-white";
-
-const sidebarInputClassName =
-  "w-full rounded-xl border border-[#e0e4ed] bg-[#fafbfc] px-3 py-2.5 text-[13px] text-[#1c2030] placeholder:text-[#c8cdd8] focus:outline-none focus:ring-2 focus:ring-[#1c2030]/10 focus:border-[#1c2030]";
-
 export function PhoneNumberField({
   phoneCountryCode,
   customPhoneCountryCode,
@@ -30,13 +26,12 @@ export function PhoneNumberField({
   onChange,
 }: PhoneNumberFieldProps) {
   const showCustomCodeInput = phoneCountryCode === CUSTOM_PHONE_COUNTRY_CODE;
-  const inputClassName =
-    variant === "sidebar" ? sidebarInputClassName : defaultInputClassName;
+  const fieldAppearance = variant === "sidebar" ? "sidebar" : "default";
 
   return (
     <div className="space-y-2">
       <div className="grid gap-2 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
-        <select
+        <Select
           value={phoneCountryCode}
           onChange={(event) =>
             onChange({
@@ -46,29 +41,33 @@ export function PhoneNumberField({
                 : { customPhoneCountryCode: "" }),
             })
           }
-          className={inputClassName}
-        >
-          {PHONE_COUNTRY_OPTIONS.map((option) => (
-            <option key={option.code} value={option.code}>
-              {option.label} ({option.dialCode})
-            </option>
-          ))}
-          <option value={CUSTOM_PHONE_COUNTRY_CODE}>Custom country code</option>
-        </select>
+          appearance={fieldAppearance}
+          options={[
+            ...PHONE_COUNTRY_OPTIONS.map((option) => ({
+              value: option.code,
+              label: `${option.label} (${option.dialCode})`,
+            })),
+            {
+              value: CUSTOM_PHONE_COUNTRY_CODE,
+              label: "Custom country code",
+            },
+          ]}
+        />
 
-        <input
+        <BaseInput
+          appearance={fieldAppearance}
           type="tel"
           placeholder="Phone number"
           value={phoneLocalNumber}
           onChange={(event) =>
             onChange({ phoneLocalNumber: event.target.value })
           }
-          className={inputClassName}
         />
       </div>
 
       {showCustomCodeInput ? (
-        <input
+        <BaseInput
+          appearance={fieldAppearance}
           type="text"
           placeholder="+998"
           value={customPhoneCountryCode}
@@ -77,7 +76,6 @@ export function PhoneNumberField({
               customPhoneCountryCode: normalizeDialCode(event.target.value),
             })
           }
-          className={inputClassName}
         />
       ) : null}
     </div>

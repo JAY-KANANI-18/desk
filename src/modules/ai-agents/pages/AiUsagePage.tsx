@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Cpu, Loader2, MessageSquareText, ReceiptText, WalletCards } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { Select } from "../../../components/ui/Select";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import type { AiAnalyticsSummary } from "../types";
-import { MetricTile, PageHeader, PageShell } from "../components/AiAgentPrimitives";
+import { AiPageLayout, MetricTile } from "../components/AiAgentPrimitives";
+
+const rangeOptions = [
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+];
 
 export function AiUsagePage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<AiAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("30");
@@ -37,23 +46,24 @@ export function AiUsagePage() {
   const overage = Math.max(0, totalTokens - quota);
 
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow="Billing"
-        title="AI Usage"
-        description="Track AI replies, tokens, provider cost, quota, and overage before invoices surprise anyone."
-        actions={
-          <>
-            <select value={range} onChange={(event) => setRange(event.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-              <option value="7">Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-            </select>
-            <Link to="/billing" className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Billing settings</Link>
-          </>
-        }
-      />
-
+    <AiPageLayout
+      eyebrow="Billing"
+      title="AI Usage"
+      description="Track AI replies, tokens, provider cost, quota, and overage before invoices surprise anyone."
+      actions={
+        <>
+          <Select
+            value={range}
+            onChange={(event) => setRange(event.target.value)}
+            options={rangeOptions}
+            size="sm"
+          />
+          <Button type="button" variant="dark" size="sm" onClick={() => navigate("/billing")}>
+            Billing settings
+          </Button>
+        </>
+      }
+    >
       <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
         {loading ? (
           <div className="flex h-80 items-center justify-center text-sm text-slate-500">
@@ -96,7 +106,7 @@ export function AiUsagePage() {
               </div>
               {(data?.usage || []).map((item) => (
                 <div key={`${item.provider}-${item.model}`} className="grid grid-cols-[1fr_160px_140px] px-4 py-3 text-sm">
-                  <span className="font-semibold text-slate-900">{item.provider} · {item.model}</span>
+                  <span className="font-semibold text-slate-900">{item.provider} - {item.model}</span>
                   <span className="text-slate-500">{Number(item.total_tokens || 0).toLocaleString()}</span>
                   <span className="text-slate-500">${(Number(item.cost_micros || 0) / 1_000_000).toFixed(2)}</span>
                 </div>
@@ -105,6 +115,6 @@ export function AiUsagePage() {
           </div>
         )}
       </div>
-    </PageShell>
+    </AiPageLayout>
   );
 }

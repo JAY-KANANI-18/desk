@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bot, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
 import type { AiConversationStatus } from "../types";
@@ -26,26 +27,32 @@ export function AiConversationBadges({ conversationId }: { conversationId?: stri
 
   if (status.liveState === "waiting_approval") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700">
-        <ShieldCheck size={12} />
-        Waiting Approval
-      </span>
+      <Tag
+        label="Waiting Approval"
+        icon={<ShieldCheck size={12} />}
+        bgColor="info"
+        size="sm"
+      />
     );
   }
 
   if (status.liveState === "human_takeover") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
-        <UserRoundCheck size={12} />
-        Human Takeover
-      </span>
+      <Tag
+        label="Human Takeover"
+        icon={<UserRoundCheck size={12} />}
+        bgColor="warning"
+        size="sm"
+      />
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
-      <Bot size={12} />
-      AI Handling
-    </span>
+    <Tag
+      label="AI Handling"
+      icon={<Bot size={12} />}
+      bgColor="success"
+      size="sm"
+    />
   );
 }

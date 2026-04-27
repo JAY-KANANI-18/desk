@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import {
-  ExternalLink,
   AlertCircle,
+  ExternalLink,
   MessageSquare,
-  Zap,
   ThumbsUp,
+  Zap,
 } from 'lucide-react';
-import type { Channel } from '../types';
+import { ChannelConnectActionButton } from '../../../components/channels/ChannelConnectActionButton';
+import { Button } from '../../../components/ui/button/Button';
+import { Tag } from '../../../components/ui/tag/Tag';
 import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
+import type { Channel } from '../types';
 
 interface Props {
   connected: Channel | null;
@@ -40,22 +43,43 @@ const SETUP_STEPS = [
 export const FacebookChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6">
     <div className="flex items-center gap-2.5">
-      <img src="https://cdn.simpleicons.org/messenger" className="h-10 w-10" alt="messenger" />
+      <img
+        src="https://cdn.simpleicons.org/messenger"
+        className="h-10 w-10"
+        alt="messenger"
+      />
       <div>
-        <p className="leading-none text-xs font-semibold text-gray-900">Facebook Messenger</p>
-        <p className="mt-0.5 text-[10px] text-gray-400">Meta Business Platform</p>
+        <p className="leading-none text-xs font-semibold text-gray-900">
+          Facebook Messenger
+        </p>
+        <p className="mt-0.5 text-[10px] text-gray-400">
+          Meta Business Platform
+        </p>
       </div>
     </div>
     <div className="h-px bg-gray-100" />
     <div>
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Features</p>
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        Features
+      </p>
       <div className="space-y-0.5">
         {[
-          { Icon: MessageSquare, label: 'Messenger Inbox', desc: 'Unified conversation view' },
+          {
+            Icon: MessageSquare,
+            label: 'Messenger Inbox',
+            desc: 'Unified conversation view',
+          },
           { Icon: Zap, label: 'Automation', desc: 'Bots & quick replies' },
-          { Icon: ThumbsUp, label: 'Page Messaging', desc: 'Reply from your business page' },
+          {
+            Icon: ThumbsUp,
+            label: 'Page Messaging',
+            desc: 'Reply from your business page',
+          },
         ].map(({ Icon, label, desc }) => (
-          <div key={label} className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50">
+          <div
+            key={label}
+            className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+          >
             <Icon size={13} className="shrink-0 text-gray-400" />
             <div>
               <p className="text-xs font-medium text-gray-700">{label}</p>
@@ -84,19 +108,23 @@ export const SetupGuide = () => (
   <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
     <div className="border-b border-gray-100 px-5 py-4">
       <p className="text-sm font-semibold text-gray-900">Setup guide</p>
-      <p className="mt-0.5 text-[11px] text-gray-400">Step-by-step configuration</p>
+      <p className="mt-0.5 text-[11px] text-gray-400">
+        Step-by-step configuration
+      </p>
     </div>
     <div className="p-5">
       {SETUP_STEPS.map(({ step, title, desc, link }, index) => (
         <div key={step} className="relative flex gap-4 pb-5 last:pb-0">
-          {index < SETUP_STEPS.length - 1 && <div className="absolute bottom-0 left-3.5 top-7 w-px bg-gray-100" />}
+          {index < SETUP_STEPS.length - 1 ? (
+            <div className="absolute bottom-0 left-3.5 top-7 w-px bg-gray-100" />
+          ) : null}
           <div className="z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold text-white">
             {step}
           </div>
           <div className="flex-1 pt-0.5">
             <div className="mb-1 flex items-center gap-2">
               <p className="text-xs font-semibold text-gray-800">{title}</p>
-              {link && (
+              {link ? (
                 <a
                   href={link}
                   target="_blank"
@@ -106,7 +134,7 @@ export const SetupGuide = () => (
                   <ExternalLink size={10} />
                   Open
                 </a>
-              )}
+              ) : null}
             </div>
             <p className="text-[11px] leading-relaxed text-gray-400">{desc}</p>
           </div>
@@ -122,7 +150,11 @@ interface MessengerOAuthPopupProps {
   onError: (msg: string) => void;
 }
 
-export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: MessengerOAuthPopupProps) => {
+export const MessengerOAuthPopup = ({
+  workspaceId,
+  onSuccess,
+  onError,
+}: MessengerOAuthPopupProps) => {
   const { loading, startAuth } = useChannelOAuth({
     provider: 'messenger',
     workspaceId,
@@ -130,32 +162,37 @@ export const MessengerOAuthPopup = ({ workspaceId, onSuccess, onError }: Messeng
     onError,
   });
 
-  const stepLabel = loading ? 'Waiting for Facebook...' : 'Connect with Facebook';
-
   return (
-    <button
+    <ChannelConnectActionButton
       onClick={() => {
         void startAuth();
       }}
       disabled={loading}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border-none bg-indigo-600 px-5 py-2.5 text-[12px] font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      fullWidth
+      leftIcon={
+        !loading ? (
+          <img
+            src="https://cdn.simpleicons.org/facebook/ffffff"
+            className="h-3 w-3"
+            alt=""
+          />
+        ) : undefined
+      }
+      loading={loading}
+      loadingMode="inline"
+      loadingLabel="Waiting for Facebook..."
     >
-      {loading ? (
-        <>
-          <div className="h-3 w-3 animate-spin rounded-full border border-white/30 border-t-white" />
-          {stepLabel}
-        </>
-      ) : (
-        <>
-          <img src="https://cdn.simpleicons.org/facebook/ffffff" className="h-3 w-3" alt="" />
-          Connect with Facebook
-        </>
-      )}
-    </button>
+      Connect with Facebook
+    </ChannelConnectActionButton>
   );
 };
 
-export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceId }: Props) => {
+export const FacebookChannel = ({
+  connected,
+  onConnect,
+  onDisconnect,
+  workspaceId,
+}: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   if (connected) {
@@ -165,11 +202,13 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
           <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-gray-900">Channel active</p>
-            <p className="mt-0.5 truncate text-xs text-gray-400">{connected.identifier}</p>
+            <p className="mt-0.5 truncate text-xs text-gray-400">
+              {connected.identifier}
+            </p>
           </div>
-          <span className="shrink-0 text-[11px] font-medium text-gray-500">
-            {connected.msgs.toLocaleString()} messages sent
-          </span>
+          <div className="shrink-0">
+            <Tag label="Connected" size="sm" bgColor="success" />
+          </div>
         </div>
 
         <SetupGuide />
@@ -177,14 +216,17 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
         <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-gray-900">Disconnect channel</p>
-            <p className="mt-0.5 text-xs text-gray-400">Stops all incoming Messenger messages.</p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Stops all incoming Messenger messages.
+            </p>
           </div>
-          <button
+          <Button
             onClick={() => onDisconnect(connected.id)}
-            className="cursor-pointer rounded-lg border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+            variant="danger"
+            size="sm"
           >
             Disconnect
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -193,8 +235,12 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Connect Facebook Messenger</h1>
-        <p className="mt-1 text-sm text-gray-400">Manage Messenger conversations from your Facebook Business Page.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          Connect Facebook Messenger
+        </h1>
+        <p className="mt-1 text-sm text-gray-400">
+          Manage Messenger conversations from your Facebook Business Page.
+        </p>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -202,7 +248,9 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
           <div className="p-6">
             <div className="space-y-5">
               <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-indigo-700">How it works</p>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-indigo-700">
+                  How it works
+                </p>
                 <div className="space-y-1">
                   {[
                     'A Facebook login popup will open',
@@ -220,15 +268,19 @@ export const FacebookChannel = ({ connected, onConnect, onDisconnect, workspaceI
                 </div>
               </div>
 
-              {error && (
+              {error ? (
                 <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2.5 text-[12px] text-red-500">
                   <AlertCircle size={12} className="shrink-0" />
                   {error}
                 </div>
-              )}
+              ) : null}
 
               <div className="border-t border-gray-100 pt-2">
-                <MessengerOAuthPopup workspaceId={workspaceId} onSuccess={onConnect} onError={setError} />
+                <MessengerOAuthPopup
+                  workspaceId={workspaceId}
+                  onSuccess={onConnect}
+                  onError={setError}
+                />
                 <p className="mt-2 text-center text-[10px] text-gray-400">
                   A popup will open to Meta&apos;s secure authorization page.
                 </p>

@@ -1,103 +1,169 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, GripVertical, X } from 'lucide-react';
-import { Toggle } from '../components/Toggle';
-import { SectionError } from '../components/SectionError';
-import type { ContactField } from '../types';
-import { DataLoader } from '../../Loader';
+import { useCallback, useEffect, useState } from "react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { CenterModal } from "../../../components/ui/modal/CenterModal";
+import { Select } from "../../../components/ui/Select";
+import { Tag } from "../../../components/ui/Tag";
+import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
+import { workspaceApi } from "../../../lib/workspaceApi";
+import { DataLoader } from "../../Loader";
+import { SectionError } from "../components/SectionError";
+import type { ContactField } from "../types";
 
-const typeColors: Record<string, string> = {
-  Text: 'bg-blue-50 text-blue-600', Email: 'bg-purple-50 text-purple-600',
-  Phone: 'bg-green-50 text-green-600', Dropdown: 'bg-amber-50 text-amber-600',
-  Date: 'bg-pink-50 text-pink-600', Number: 'bg-indigo-50 text-indigo-600',
-  Checkbox: 'bg-teal-50 text-teal-600',
+const FIELD_TYPES = ["Text", "Number", "Email", "Phone", "Date", "Dropdown", "Checkbox"];
+
+const fieldTypeColors: Record<string, string> = {
+  Text: "tag-blue",
+  Email: "tag-purple",
+  Phone: "tag-green",
+  Dropdown: "tag-orange",
+  Date: "tag-pink",
+  Number: "tag-indigo",
+  Checkbox: "tag-green",
 };
 
 export const ContactFields = () => {
-  const [fields, setFields]     = useState<ContactField[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
-  const [showAdd, setShowAdd]   = useState(false);
-  const [newField, setNewField] = useState({ name: '', type: 'Text', required: false });
-  const [adding, setAdding]     = useState(false);
+  const [fields, setFields] = useState<ContactField[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newField, setNewField] = useState({
+    name: "",
+    type: "Text",
+    required: false,
+  });
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setFields(await workspaceApi.getContactFields()); }
-    catch { setError('Failed to load contact fields.'); }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError(null);
+    try {
+      setFields(await workspaceApi.getContactFields());
+    } catch {
+      setError("Failed to load contact fields.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const closeAddModal = () => {
+    setShowAdd(false);
+    setNewField({ name: "", type: "Text", required: false });
+  };
 
   const handleAdd = async () => {
-    if (!newField.name) return;
+    if (!newField.name.trim()) return;
+
     setAdding(true);
+    setError(null);
     try {
-      const created = await workspaceApi.addContactField({ ...newField, system: false });
-      setFields(prev => [...prev, created]);
-      setNewField({ name: '', type: 'Text', required: false });
-      setShowAdd(false);
-    } catch { setError('Failed to add field.'); }
-    finally { setAdding(false); }
+      const created = await workspaceApi.addContactField({
+        ...newField,
+        name: newField.name.trim(),
+        system: false,
+      });
+      setFields((prev) => [...prev, created]);
+      closeAddModal();
+    } catch {
+      setError("Failed to add field.");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const handleToggleRequired = async (id: number, required: boolean) => {
-    setFields(prev => prev.map(f => f.id === id ? { ...f, required } : f));
-    try { await workspaceApi.updateContactField(id, { required }); }
-    catch { load(); }
+    setFields((prev) =>
+      prev.map((field) => (field.id === id ? { ...field, required } : field)),
+    );
+    try {
+      await workspaceApi.updateContactField(id, { required });
+    } catch {
+      void load();
+    }
   };
 
   const handleDelete = async (id: number) => {
-    setFields(prev => prev.filter(f => f.id !== id));
-    try { await workspaceApi.deleteContactField(id); }
-    catch { load(); }
+    setFields((prev) => prev.filter((field) => field.id !== id));
+    try {
+      await workspaceApi.deleteContactField(id);
+    } catch {
+      void load();
+    }
   };
 
-  if (loading) return <DataLoader type={"fields"} />;
+  if (loading) return <DataLoader type="fields" />;
   if (error && fields.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Contact fields</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Customize the data you collect for each contact</p>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Customize the data you collect for each contact
+            </p>
           </div>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-            <Plus size={16} /> Add field
-          </button>
+          <Button onClick={() => setShowAdd(true)} leftIcon={<Plus size={16} />}>
+            Add field
+          </Button>
         </div>
+
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="border-b border-gray-100 bg-gray-50">
             <tr>
-              {['Field name', 'Type', 'Required', ''].map(h => (
-                <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+              {["Field name", "Type", "Required", ""].map((heading) => (
+                <th
+                  key={heading}
+                  className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                >
+                  {heading}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {fields.map(f => (
-              <tr key={f.id} className="hover:bg-gray-50">
+            {fields.map((field) => (
+              <tr key={field.id} className="hover:bg-gray-50">
                 <td className="px-6 py-3">
                   <div className="flex items-center gap-2">
-                    {!f.system && <GripVertical size={14} className="text-gray-300 cursor-grab" />}
-                    <span className="text-sm font-medium text-gray-800">{f.name}</span>
-                    {f.system && <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">System</span>}
+                    {!field.system ? (
+                      <GripVertical size={14} className="cursor-grab text-gray-300" />
+                    ) : null}
+                    <span className="text-sm font-medium text-gray-800">{field.name}</span>
+                    {field.system ? <Tag label="System" size="sm" bgColor="gray" /> : null}
                   </div>
                 </td>
                 <td className="px-6 py-3">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${typeColors[f.type] ?? 'bg-gray-100 text-gray-600'}`}>{f.type}</span>
+                  <Tag
+                    label={field.type}
+                    size="sm"
+                    bgColor={fieldTypeColors[field.type] ?? "gray"}
+                  />
                 </td>
                 <td className="px-6 py-3">
-                  <Toggle checked={f.required} onChange={v => handleToggleRequired(f.id, v)} />
+                  <ToggleSwitch
+                    checked={field.required}
+                    onChange={(value) => handleToggleRequired(field.id, value)}
+                    aria-label={`Toggle ${field.name} required`}
+                  />
                 </td>
-                <td className="px-6 py-3">
-                  {!f.system && (
-                    <button onClick={() => handleDelete(f.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                  )}
+                <td className="px-6 py-3 text-right">
+                  {!field.system ? (
+                    <IconButton
+                      onClick={() => handleDelete(field.id)}
+                      icon={<Trash2 size={15} />}
+                      variant="danger-ghost"
+                      size="xs"
+                      aria-label={`Delete ${field.name}`}
+                    />
+                  ) : null}
                 </td>
               </tr>
             ))}
@@ -105,38 +171,52 @@ export const ContactFields = () => {
         </table>
       </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Add contact field</h3>
-              <button onClick={() => setShowAdd(false)}><X size={20} className="text-gray-400" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Field name</label>
-                <input value={newField.name} onChange={e => setNewField({ ...newField, name: e.target.value })} placeholder="e.g. Customer tier" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Field type</label>
-                <select value={newField.type} onChange={e => setNewField({ ...newField, type: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  {['Text', 'Number', 'Email', 'Phone', 'Date', 'Dropdown', 'Checkbox'].map(t => <option key={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Required field</label>
-                <Toggle checked={newField.required} onChange={v => setNewField({ ...newField, required: v })} />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={handleAdd} disabled={adding} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2">
-                {adding ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Adding…</> : 'Add field'}
-              </button>
-            </div>
+      {error ? <p className="text-sm text-red-500">{error}</p> : null}
+
+      <CenterModal
+        isOpen={showAdd}
+        onClose={closeAddModal}
+        title="Add contact field"
+        size="sm"
+        secondaryAction={
+          <Button onClick={closeAddModal} variant="secondary">
+            Cancel
+          </Button>
+        }
+        primaryAction={
+          <Button
+            onClick={handleAdd}
+            disabled={adding || !newField.name.trim()}
+            loading={adding}
+            loadingMode="inline"
+          >
+            {adding ? "Adding..." : "Add field"}
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <BaseInput
+            label="Field name"
+            value={newField.name}
+            onChange={(event) => setNewField({ ...newField, name: event.target.value })}
+            placeholder="e.g. Customer tier"
+          />
+          <Select
+            label="Field type"
+            value={newField.type}
+            onChange={(event) => setNewField({ ...newField, type: event.target.value })}
+            options={FIELD_TYPES.map((type) => ({ value: type, label: type }))}
+          />
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-sm font-medium text-gray-700">Required field</label>
+            <ToggleSwitch
+              checked={newField.required}
+              onChange={(required) => setNewField({ ...newField, required })}
+              aria-label="Required field"
+            />
           </div>
         </div>
-      )}
+      </CenterModal>
     </div>
   );
 };

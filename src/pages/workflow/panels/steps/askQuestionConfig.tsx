@@ -1,6 +1,8 @@
 // ─── 2. Ask a Question ────────────────────────────────────────────────────────
 
-import {  Trash2, Plus } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
+import { Button } from "../../../../components/ui/Button";
+import { IconButton } from "../../../../components/ui/button/IconButton";
 import { QuestionType, SP, AskQuestionData, QUESTION_TYPES, genId, MOCK_FIELDS } from "../../workflow.types";
 import { Field, Textarea, Select, TextInput, ToggleRow, DurationInput, Section } from "../PanelShell";
 
@@ -29,13 +31,25 @@ export function AskQuestionConfig({ step, onChange }: SP) {
                 <div key={opt.id} className="flex items-center gap-2">
                   <span className="text-xs text-gray-300 w-4 flex-shrink-0">{idx + 1}</span>
                   <TextInput value={opt.label} onChange={(v) => updOpt(opt.id, v.slice(0, 20))} placeholder={`Option ${idx + 1}`} className="flex-1" />
-                  <button onClick={() => delOpt(opt.id)} className="p-1 hover:bg-gray-100 rounded flex-shrink-0"><Trash2 size={12} className="text-gray-400" /></button>
+                  <IconButton
+                    aria-label={`Remove option ${idx + 1}`}
+                    icon={<Trash2 size={12} />}
+                    variant="danger-ghost"
+                    size="xs"
+                    onClick={() => delOpt(opt.id)}
+                  />
                 </div>
               ))}
               {data.multipleChoiceOptions.length < 10 && (
-                <button onClick={addOpt} className="w-full py-2 border border-dashed border-gray-200 rounded-md text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1.5">
-                  <Plus size={12} /> Add Option
-                </button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  leftIcon={<Plus size={12} />}
+                  onClick={addOpt}
+                >
+                  Add Option
+                </Button>
               )}
             </div>
           </Field>

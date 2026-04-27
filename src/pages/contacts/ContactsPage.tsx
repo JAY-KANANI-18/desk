@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { PageLayout } from "../../components/ui/PageLayout";
 import type {
   CreateContactPayload,
   UpdateContactPayload,
@@ -10,15 +11,18 @@ import type {
 import { contactsApi } from "../../lib/contactApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import type { LifecycleStage } from "../workspace/types";
+import { CONTACT_SIDEBAR_WIDTH } from "../inbox/contact-sidebar/DesktopShell";
 import { DUMMY_MODE, PAGE_SIZE, SEED_CONTACTS } from "./constants";
 import { ContactsPageContent } from "./ContactsPageContent";
 import { contactsToCSV, parseCSV, sampleToCSV } from "./csv";
 import { DeleteContactsModal } from "./components/DeleteContactsModal";
+import { EditContactModal } from "./components/EditContactModal";
 import {
   buildPhoneNumber,
   DEFAULT_PHONE_COUNTRY_CODE,
   splitPhoneNumber,
 } from "./phoneUtils";
+import { ContactsHeader } from "./components/ContactsHeader";
 import type {
   Contact,
   ContactFormState,
@@ -729,9 +733,62 @@ export function ContactsPage() {
     setSortOption({ field, dir: nextDir, label: nextLabel });
   };
 
+  const desktopToolbar = isMobile ? undefined : (
+    <ContactsHeader
+      contactsCount={contacts.length}
+      totalContacts={totalContacts}
+      toast={toast}
+      setToast={setToast}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      showActionsMenu={showActionsMenu}
+      setShowActionsMenu={setShowActionsMenu}
+      selectedLifecycle={selectedLifecycle}
+      setSelectedLifecycle={setSelectedLifecycle}
+      sortOption={sortOption}
+      setSortOption={setSortOption}
+      onOpenImport={() => navigate("/contacts/import")}
+      onExport={() => void handleExport()}
+      onOpenImportJobs={() => navigate("/contacts/import-jobs")}
+      onNewContact={() => setShowNewContact(true)}
+      desktopMode="embedded"
+    />
+  );
+  const handleCloseEditingContact = () => setEditingContact(null);
+  const handleDeleteEditingContact = editingContact
+    ? () => {
+        const contactId = editingContact.id;
+        setEditingContact(null);
+        void handleDeleteOne(contactId);
+      }
+    : undefined;
+  const desktopContactDetails = isMobile ? undefined : (
+    <EditContactModal
+      contact={editingContact}
+      stages={stages}
+      workspaceUsers={workspaceUsers}
+      onClose={handleCloseEditingContact}
+      onDelete={handleDeleteEditingContact}
+      onContactChange={handlePersistedContact}
+      desktopVariant="inline"
+      desktopTitle="Contact details"
+      desktopContainerClassName="flex h-full"
+    />
+  );
+
   return (
-    <>
+    <PageLayout
+      title="Contacts"
+      toolbar={desktopToolbar}
+      aside={desktopContactDetails}
+      asideOpen={Boolean(editingContact)}
+      asideWidth={CONTACT_SIDEBAR_WIDTH}
+      className="bg-white"
+      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
+    >
       <ContactsPageContent
+        showDesktopHeader={false}
+        renderDesktopSidebar={false}
         navigate={navigate}
         contacts={contacts}
         totalContacts={totalContacts}
@@ -801,6 +858,6 @@ export function ContactsPage() {
         count={pendingDelete?.ids.length ?? 0}
         contactName={pendingDelete?.contactName}
       />
-    </>
+    </PageLayout>
   );
 }

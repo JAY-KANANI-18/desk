@@ -1,5 +1,24 @@
-import { Phone, PhoneOff, User } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { Phone, PhoneOff } from 'lucide-react';
 import { useCall } from '../context/CallContext';
+import { Avatar } from './ui/Avatar';
+import { Button } from './ui/Button';
+import { Tag } from './ui/Tag';
+
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
+
+const classDrivenTagStyle = {
+  backgroundColor: undefined,
+  borderColor: undefined,
+  color: undefined,
+} satisfies CSSProperties;
 
 export const IncomingCallWindow = () => {
   const { incomingCall, acceptCall, rejectCall } = useCall();
@@ -34,9 +53,13 @@ export const IncomingCallWindow = () => {
             <div className="relative flex items-center justify-center mb-5" style={{ height: 96 }}>
               <div className="call-ring-outer absolute w-24 h-24 rounded-full border border-green-400/20" />
               <div className="call-ring-inner absolute w-20 h-20 rounded-full border border-green-400/40" />
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold relative z-10 shadow-xl">
-                {contact.isKnown ? initials : <User size={24} />}
-              </div>
+              <Avatar
+                name={contact.isKnown ? initials : '?'}
+                size="xl"
+                fallbackTone="primary"
+                alt={contact.name}
+                className="relative z-10 shadow-xl"
+              />
             </div>
 
             {/* Contact info */}
@@ -46,10 +69,13 @@ export const IncomingCallWindow = () => {
               <p className="text-gray-500 text-xs mt-0.5">{contact.company}</p>
             )}
             {!contact.isKnown && (
-              <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                Unknown caller
-              </span>
+              <Tag
+                label="Unknown caller"
+                size="sm"
+                icon={<span className="w-1.5 h-1.5 rounded-full bg-gray-500" />}
+                className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-700"
+                style={classDrivenTagStyle}
+              />
             )}
           </div>
 
@@ -60,25 +86,33 @@ export const IncomingCallWindow = () => {
           <div className="px-6 py-7 flex items-center justify-center gap-12">
             {/* Decline */}
             <div className="flex flex-col items-center gap-2.5">
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={rejectCall}
                 className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 active:scale-95 flex items-center justify-center transition-all shadow-lg shadow-red-500/30"
+                style={classDrivenButtonStyle}
                 aria-label="Decline call"
+                preserveChildLayout
               >
                 <PhoneOff size={22} className="text-white" />
-              </button>
+              </Button>
               <span className="text-gray-500 text-xs">Decline</span>
             </div>
 
             {/* Accept */}
             <div className="flex flex-col items-center gap-2.5">
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={acceptCall}
                 className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 active:scale-95 flex items-center justify-center transition-all shadow-lg shadow-green-500/30 call-accept-pulse"
+                style={classDrivenButtonStyle}
                 aria-label="Accept call"
+                preserveChildLayout
               >
                 <Phone size={22} className="text-white" />
-              </button>
+              </Button>
               <span className="text-gray-500 text-xs">Accept</span>
             </div>
           </div>

@@ -1,17 +1,19 @@
-import React from "react";
+import { Tag } from "../../components/ui/Tag";
 
 export function MessageAreaDateBadge({ label }: { label: string }) {
   return (
-    <div
-      className="flex items-center justify-center py-2 z-10"
-      style={{ position: "sticky", top: 0 }}
-    >
-      <span
-        className="px-3 py-1 text-[11px] font-semibold text-gray-500 bg-white
-        border border-gray-200 rounded-full shadow-sm select-none"
-      >
-        {label}
-      </span>
+    <div className="sticky top-0 z-10 flex items-center justify-center py-2">
+      <Tag
+        label={label}
+        size="sm"
+        bgColor="gray"
+        textColor="var(--color-gray-700)"
+        className="pointer-events-none select-none shadow-sm"
+        style={{
+          backgroundColor: "hsl(var(--background))",
+          borderColor: "var(--color-gray-200)",
+        }}
+      />
     </div>
   );
 }

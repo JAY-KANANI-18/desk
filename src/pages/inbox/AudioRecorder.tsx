@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Play, Pause, Trash2, Square } from 'lucide-react';
 import { WAVEFORM_BARS } from './data';
 import { formatTime } from './utils';
+import { Button } from '../../components/ui/Button';
 
 interface AudioRecorderProps {
   onSend: (audioBlob: Blob) => void;
@@ -142,20 +143,32 @@ export function AudioRecorder({ onSend, onCancel }: AudioRecorderProps) {
             ))}
           </div>
           <span className="text-sm font-mono font-semibold text-red-700 tabular-nums flex-shrink-0">{formatTime(recordingTime)}</span>
-          <button onClick={stopRecording}
-            className="flex-shrink-0 w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
-            title="Stop recording">
+          <Button
+            type="button"
+            onClick={stopRecording}
+            iconOnly
+            variant="danger"
+            size="sm"
+            radius="full"
+            aria-label="Stop recording"
+          >
             <Square size={14} fill="white" />
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="px-4 py-3 bg-white">
           <div className="flex items-center gap-3">
-            <button onClick={togglePlayback}
-              className="flex-shrink-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-sm"
-              title={isPlaying ? 'Pause' : 'Play'}>
+            <Button
+              type="button"
+              onClick={togglePlayback}
+              iconOnly
+              variant="primary"
+              size="md"
+              radius="full"
+              aria-label={isPlaying ? 'Pause playback' : 'Play recording'}
+            >
               {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-            </button>
+            </Button>
             <div className="flex-1 flex flex-col gap-1.5">
               <div className="relative h-8 flex items-center cursor-pointer" onClick={handleSeek}>
                 <div className="absolute inset-0 flex items-center gap-0.5 px-0.5">
@@ -171,15 +184,26 @@ export function AudioRecorder({ onSend, onCancel }: AudioRecorderProps) {
                 <span>{formatTime(audioDuration)}</span>
               </div>
             </div>
-            <button onClick={handleDelete}
-              className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete recording">
+            <Button
+              type="button"
+              onClick={handleDelete}
+              iconOnly
+              variant="danger-ghost"
+              size="sm"
+              radius="lg"
+              aria-label="Delete recording"
+            >
               <Trash2 size={17} />
-            </button>
-            <button onClick={handleSend}
-              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm">
-              <Send size={14} />Send
-            </button>
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSend}
+              leftIcon={<Send size={14} />}
+              size="sm"
+              radius="lg"
+            >
+              Send
+            </Button>
           </div>
           <audio ref={audioRef} src={audioUrl || ''}
             onTimeUpdate={handleTimeUpdate} onEnded={handleAudioEnded} onLoadedMetadata={handleLoadedMetadata} />

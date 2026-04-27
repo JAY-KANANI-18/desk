@@ -1,23 +1,34 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, ArrowLeft, Zap, Building2, Rocket } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { DisclosureButton } from '../components/ui/button/DisclosureButton';
+import { Tag } from '../components/ui/Tag';
 
 type BillingCycle = 'monthly' | 'annual';
 
 interface Plan {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   monthlyPrice: number;
   annualPrice: number;
   description: string;
   badge?: string;
-  badgeColor?: string;
   cta: string;
   ctaVariant: 'outline' | 'primary' | 'dark';
   current?: boolean;
   features: { label: string; included: boolean; note?: string }[];
 }
+
+const getPlanCtaVariant = (variant: Plan['ctaVariant']) => {
+  if (variant === 'primary') return 'inverse-primary';
+  if (variant === 'dark') return 'dark';
+  return 'secondary';
+};
+
+const getPlanBadgeColor = (planId: string) =>
+  planId === 'enterprise' ? 'tag-purple' : 'primary';
 
 const PLANS: Plan[] = [
   {
@@ -50,7 +61,6 @@ const PLANS: Plan[] = [
     annualPrice: 79,
     description: 'For growing teams that need more power and automation.',
     badge: 'Current Plan',
-    badgeColor: 'bg-blue-500 text-white',
     cta: 'Upgrade Now',
     ctaVariant: 'primary',
     current: true,
@@ -75,7 +85,6 @@ const PLANS: Plan[] = [
     annualPrice: 0,
     description: 'Custom solutions for large organisations with complex needs.',
     badge: 'Custom Pricing',
-    badgeColor: 'bg-purple-100 text-purple-700',
     cta: 'Contact Sales',
     ctaVariant: 'dark',
     features: [
@@ -123,13 +132,15 @@ export const BillingPlans = () => {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <button
+          <Button
             onClick={() => navigate('/billing')}
-            className="flex items-center gap-2 text-gray-500 hover:text-gray-800 text-sm font-medium transition-colors"
+            variant="ghost"
+            size="sm"
+            radius="lg"
+            leftIcon={<ArrowLeft size={16} />}
           >
-            <ArrowLeft size={16} />
             Back to Billing
-          </button>
+          </Button>
         </div>
 
         <div className="text-center mb-10">
@@ -140,31 +151,30 @@ export const BillingPlans = () => {
 
           {/* Billing cycle toggle */}
           <div className="inline-flex items-center bg-white border border-gray-200 rounded-full p-1 gap-1">
-            <button
+            <Button
               onClick={() => setCycle('monthly')}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                cycle === 'monthly'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              variant={cycle === 'monthly' ? 'primary' : 'ghost'}
+              size="sm"
+              radius="full"
             >
               Monthly
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setCycle('annual')}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                cycle === 'annual'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              variant={cycle === 'annual' ? 'primary' : 'ghost'}
+              size="sm"
+              radius="full"
+              preserveChildLayout
             >
-              Annual
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                cycle === 'annual' ? 'bg-blue-500 text-white' : 'bg-green-100 text-green-700'
-              }`}>
-                Save 20%
+              <span className="inline-flex items-center gap-2">
+                Annual
+                <Tag
+                  label="Save 20%"
+                  size="sm"
+                  bgColor={cycle === 'annual' ? 'primary' : 'success'}
+                />
               </span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -186,9 +196,11 @@ export const BillingPlans = () => {
                 {/* Badge */}
                 {plan.badge && (
                   <div className="absolute top-4 right-4">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${plan.badgeColor}`}>
-                      {plan.badge}
-                    </span>
+                    <Tag
+                      label={plan.badge}
+                      size="sm"
+                      bgColor={getPlanBadgeColor(plan.id)}
+                    />
                   </div>
                 )}
 
@@ -226,17 +238,15 @@ export const BillingPlans = () => {
                   </div>
 
                   {/* CTA */}
-                  <button
-                    className={`w-full py-3 rounded-xl font-semibold text-sm mb-7 transition-all ${
-                      plan.ctaVariant === 'primary'
-                        ? 'bg-white text-blue-600 hover:bg-blue-50'
-                        : plan.ctaVariant === 'dark'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                        : 'border-2 border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600'
-                    }`}
+                  <Button
+                    variant={getPlanCtaVariant(plan.ctaVariant)}
+                    size="lg"
+                    radius="lg"
+                    fullWidth
+                    className="mb-7"
                   >
                     {plan.cta}
-                  </button>
+                  </Button>
 
                   {/* Features */}
                   <ul className="space-y-3 flex-1">
@@ -272,13 +282,14 @@ export const BillingPlans = () => {
           <div className="space-y-3">
             {FAQ.map((item, i) => (
               <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                  className="w-full flex items-center justify-between px-5 py-4 text-left"
+                <DisclosureButton
+                  open={openFaq === i}
+                  appearance="plain"
+                  size="md"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 >
-                  <span className="font-medium text-gray-800 text-sm">{item.q}</span>
-                  <span className={`text-gray-400 text-lg transition-transform ${openFaq === i ? 'rotate-45' : ''}`}>+</span>
-                </button>
+                  {item.q}
+                </DisclosureButton>
                 {openFaq === i && (
                   <div className="px-5 pb-4 text-sm text-gray-500 border-t border-gray-100 pt-3">
                     {item.a}

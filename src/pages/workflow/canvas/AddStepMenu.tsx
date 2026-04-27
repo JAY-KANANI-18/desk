@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
-import { MobileSheet } from '../../../components/topbar/MobileSheet';
+import { MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { STEP_LIST, STEPS_BY_CATEGORY, StepMeta } from './stepTypes';
 import { StepType } from '../workflow.types';
+import { Button } from '../../../components/ui/Button';
+import { IconButton } from '../../../components/ui/button/IconButton';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { Tag } from '../../../components/ui/Tag';
 
 interface AddStepMenuProps {
   onSelect: (type: StepType) => void;
@@ -50,35 +54,33 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
   const content = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="border-b border-gray-100 px-3 py-2.5">
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Search steps..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-        </div>
+        <BaseInput
+          ref={inputRef}
+          type="search"
+          placeholder="Search steps..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          appearance="toolbar"
+          size="sm"
+          leftIcon={<Search size={13} />}
+        />
 
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           {categories.map((cat) => (
-            <button
+            <Button
               key={cat.id}
-              type="button"
               onClick={() => {
                 setActiveCategory(cat.id);
                 setSearch('');
               }}
-              className={`inline-flex flex-shrink-0 rounded-2xl px-3 py-2 text-xs font-medium transition-colors ${
-                activeCategory === cat.id && !search
-                  ? 'bg-indigo-50 text-indigo-600'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+              variant={activeCategory === cat.id && !search ? 'soft-primary' : 'soft'}
+              selected={activeCategory === cat.id && !search}
+              size="xs"
+              radius="full"
+              className="flex-shrink-0"
             >
               {cat.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -90,29 +92,32 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
           filtered.map((step) => {
             const { Icon } = step;
             return (
-              <button
+              <Button
                 key={step.type}
                 onClick={() => {
                   onSelect(step.type);
                   onClose();
                 }}
-                className="group flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-gray-50"
+                variant="inherit-ghost"
+                radius="none"
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
+                className="group"
               >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-gray-200">
-                  <Icon size={15} className="text-gray-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-800">{step.label}</p>
-                    {step.upgradeRequired && (
-                      <span className="rounded border border-gray-300 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
-                        Upgrade
-                      </span>
-                    )}
+                <div className="flex w-full items-center gap-3 text-left">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-gray-200">
+                    <Icon size={15} className="text-gray-600" />
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-gray-400">{step.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-800">{step.label}</p>
+                      {step.upgradeRequired ? <Tag label="Upgrade" bgColor="gray" size="sm" /> : null}
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-gray-400">{step.description}</p>
+                  </div>
                 </div>
-              </button>
+              </Button>
             );
           })
         )}
@@ -123,7 +128,7 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
   if (isMobile) {
     return (
       <MobileSheet
-        open
+        isOpen
         onClose={onClose}
         fullScreen
         title={
@@ -148,9 +153,13 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
     >
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <span className="text-sm font-medium text-gray-900">Add Step</span>
-        <button onClick={onClose} className="rounded-md p-1 transition-colors hover:bg-gray-100">
-          <X size={14} className="text-gray-400" />
-        </button>
+        <IconButton
+          aria-label="Close add step menu"
+          icon={<X size={14} />}
+          variant="ghost"
+          size="xs"
+          onClick={onClose}
+        />
       </div>
 
       {content}

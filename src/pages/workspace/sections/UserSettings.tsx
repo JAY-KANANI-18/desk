@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Check, Camera, Loader2, X } from 'lucide-react';
-import { Toggle } from '../components/Toggle';
-
-import { SectionError } from '../components/SectionError';
-import type { UserProfile, NotificationPrefs, AvailabilityStatus } from '../types';
+import { Save, Check, Camera, X } from 'lucide-react';
+import type { UserProfile, NotificationPrefs } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { useWorkspace } from '../../../context/WorkspaceContext';
-import { DataLoader } from '../../Loader';
 import { useAuth } from '../../../context/AuthContext';
 import { Card } from '../../../components/ui/Card';
+import { Avatar } from '../../../components/ui/Avatar';
+import { Button } from '../../../components/ui/Button';
+import { TruncatedText } from '../../../components/ui/TruncatedText';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 
 export const UserSettings = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -17,7 +17,6 @@ export const UserSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Avatar state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -30,21 +29,25 @@ export const UserSettings = () => {
   const [pwSaved, setPwSaved] = useState(false);
 
   const { uploadFile } = useWorkspace();
-  const {user,setUserOnce } = useAuth()
+  const { user, setUserOnce } = useAuth();
 
   const load = useCallback(async () => {
+    if (!user) return;
 
-    console.log({usezzr:user});
-    
-    if(!user) return 
- 
     setProfile(user);
-    setNotifs({ email: true, browser: true, mentions: true, assignments: true, newConversations: true });
+    setNotifs({
+      email: true,
+      browser: true,
+      mentions: true,
+      assignments: true,
+      newConversations: true,
+    });
   }, [user]);
 
-  useEffect(() => { load(); }, [load,user]);
+  useEffect(() => {
+    void load();
+  }, [load, user]);
 
-  // Clean up object URL on unmount or when preview changes
   useEffect(() => {
     return () => {
       if (avatarPreview && avatarPreview.startsWith('blob:')) {
@@ -57,12 +60,11 @@ export const UserSettings = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate type
     if (!file.type.startsWith('image/')) {
       setAvatarError('Please select an image file.');
       return;
     }
-    // Validate size (max 5MB)
+
     if (file.size > 5 * 1024 * 1024) {
       setAvatarError('Image must be smaller than 5MB.');
       return;
@@ -71,20 +73,23 @@ export const UserSettings = () => {
     setAvatarError(null);
     setAvatarFile(file);
 
-    // Revoke previous preview URL
     if (avatarPreview && avatarPreview.startsWith('blob:')) {
       URL.revokeObjectURL(avatarPreview);
     }
+
     setAvatarPreview(URL.createObjectURL(file));
   };
 
   const handleClearAvatar = () => {
     setAvatarFile(null);
+
     if (avatarPreview && avatarPreview.startsWith('blob:')) {
       URL.revokeObjectURL(avatarPreview);
     }
+
     setAvatarPreview(null);
     setAvatarError(null);
+
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -96,39 +101,39 @@ export const UserSettings = () => {
     try {
       let finalAvatarUrl = profile.avatarUrl || '';
 
-      // Upload avatar if a new file was selected
       if (avatarFile) {
         setAvatarUploading(true);
+
         try {
           finalAvatarUrl = await uploadFile(avatarFile, profile.id ?? 'user');
           setAvatarFile(null);
-          // Keep preview as the new avatar URL after upload
+
           if (avatarPreview && avatarPreview.startsWith('blob:')) {
             URL.revokeObjectURL(avatarPreview);
           }
+
           setAvatarPreview(null);
-        } catch (uploadErr) {
+        } catch {
           setAvatarError('Failed to upload avatar. Please try again.');
           setAvatarUploading(false);
           setSaving(false);
           return;
         }
+
         setAvatarUploading(false);
       }
 
-    const user =   await workspaceApi.updateUserProfile({
+      const nextUser = await workspaceApi.updateUserProfile({
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         avatarUrl: finalAvatarUrl,
       });
-      setUserOnce(user)
 
-      // Update local profile with new avatar URL
-      setProfile(prev => prev ? { ...prev, avatarUrl: finalAvatarUrl } : prev);
-
+      setUserOnce(nextUser);
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: finalAvatarUrl } : prev));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
+    } catch {
       setError('Failed to save changes. Please try again.');
     } finally {
       setSaving(false);
@@ -136,8 +141,16 @@ export const UserSettings = () => {
   };
 
   const handleChangePassword = async () => {
-    if (pwForm.next !== pwForm.confirm) { setPwError('Passwords do not match'); return; }
-    if (!pwForm.current || !pwForm.next) { setPwError('All fields are required'); return; }
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('Passwords do not match');
+      return;
+    }
+
+    if (!pwForm.current || !pwForm.next) {
+      setPwError('All fields are required');
+      return;
+    }
+
     setPwSaving(true);
     setPwError(null);
     await workspaceApi.changePassword(pwForm.current, pwForm.next);
@@ -147,71 +160,58 @@ export const UserSettings = () => {
     setPwSaving(false);
   };
 
-  // Derived avatar display: local preview > uploaded url > initials fallback
-  const displayAvatarUrl = avatarPreview ?? (profile?.avatarUrl || null);
-  const initials = profile
-    ? (profile.firstName?.split(' ').map(n => n[0]).join('') ?? '').slice(0, 2).toUpperCase()
-    : '??';
+  void handleChangePassword;
+  void pwError;
+  void pwSaved;
 
-  // if (loading) return <DataLoader type={"Profile details"} />;
-  // if (error || !profile || !notifs) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
+  const displayAvatarUrl = avatarPreview ?? (profile?.avatarUrl || null);
+  const displayName = profile
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim() || 'User'
+    : 'User';
+  const initials = profile
+    ? (profile.firstName?.split(' ').map((name) => name[0]).join('') ?? '')
+        .slice(0, 2)
+        .toUpperCase()
+    : '??';
 
   return (
     <div className="space-y-6">
-      {/* Profile */}
-      <Card className="rounded-[24px] border-transparent bg-slate-50/80 p-4 shadow-none sm:rounded-[28px] sm:p-6">
-        <h2 className="mb-5 text-base font-semibold text-gray-900">Profile</h2>
-
+    
         <div className="mb-5 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-5">
-          {/* Avatar upload area */}
           <div className="flex w-full shrink-0 flex-col items-center gap-2 sm:w-auto sm:items-start">
-            <div className="relative group">
-              <div className="h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xl font-bold text-white ring-2 ring-transparent ring-offset-2 transition-all group-hover:ring-indigo-400 sm:h-24 sm:w-24">
-                {displayAvatarUrl ? (
-                  <img
-                    src={displayAvatarUrl}
-                    alt="Avatar"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <span>{initials}</span>
-                  </div>
-                )}
-              </div>
+            <div className="group relative h-20 w-20 sm:h-24 sm:w-24">
+              <Avatar
+                src={displayAvatarUrl ?? undefined}
+                name={displayName || initials}
+                alt="Avatar"
+                size="2xl"
+                style={{ width: '100%', height: '100%' }}
+                className="overflow-hidden ring-2 ring-transparent ring-offset-2 transition-all duration-200 group-hover:ring-indigo-400"
+              />
 
-              {/* Hover overlay */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarUploading}
-                className="absolute inset-0 rounded-full bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-full bg-black/45 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/55 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-0"
                 aria-label="Change avatar"
               >
-                {avatarUploading ? (
-                  <Loader2 size={20} className="text-white animate-spin" />
-                ) : (
-                  <>
-                    <Camera size={18} className="text-white" />
-                    <span className="text-[10px] text-white mt-1 font-medium">Change</span>
-                  </>
-                )}
+                <Camera size={14} />
+                <span className="text-[10px] font-medium">Change</span>
               </button>
 
-              {/* Clear pending upload badge */}
-              {avatarFile && !avatarUploading && (
+              {avatarFile && !avatarUploading ? (
                 <button
                   type="button"
                   onClick={handleClearAvatar}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                  className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-md transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
                   aria-label="Remove selected avatar"
                 >
-                  <X size={11} className="text-white" />
+                  <X size={11} />
                 </button>
-              )}
+              ) : null}
             </div>
 
-            {/* Hidden file input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -220,81 +220,68 @@ export const UserSettings = () => {
               onChange={handleAvatarFileChange}
             />
 
-            {/* Pending upload label */}
-            {avatarFile && !avatarUploading && (
-              <span
-                className="max-w-full truncate text-center text-[11px] font-medium text-indigo-600 sm:max-w-[90px] sm:text-left"
-                title={avatarFile?.name}
-              >
-                {avatarFile?.name}
-              </span>
-            )}
+            {avatarFile && !avatarUploading ? (
+              <TruncatedText
+                text={avatarFile?.name ?? ''}
+                maxLength={20}
+                className="max-w-full text-center text-[11px] font-medium text-indigo-600 sm:max-w-[90px] sm:text-left"
+              />
+            ) : null}
 
-            {/* Avatar error */}
-            {avatarError && (
+            {avatarError ? (
               <span className="max-w-full text-center text-[11px] text-red-500 sm:max-w-[90px] sm:text-left">
                 {avatarError}
               </span>
-            )}
+            ) : null}
           </div>
 
-          {/* Fields */}
           <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
-              <input
-                value={profile?.firstName || ''}
-                onChange={e => setProfile({ ...profile, firstName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
-              <input
-                value={profile?.lastName || ''}
-                onChange={e => setProfile({ ...profile, lastName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <BaseInput
+              label="First name"
+              value={profile?.firstName || ''}
+              onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+            />
+            <BaseInput
+              label="Last name"
+              value={profile?.lastName || ''}
+              onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+            />
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
+              <BaseInput
+                label="Email"
                 readOnly
                 value={profile?.email || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-gray-500"
               />
             </div>
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <input
-                readOnly
-                value={profile.role || ''}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500"
-              />
-            </div> */}
 
-            {error && <p className="text-sm text-red-500 md:col-span-2">{error}</p>}
+            {error ? <p className="text-sm text-red-500 md:col-span-2">{error}</p> : null}
 
             <div className="flex md:col-span-2">
-              <button
+              <div className="w-full sm:w-auto">
+              <Button
                 onClick={handleSave}
                 disabled={saving || avatarUploading}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-colors disabled:opacity-60 sm:w-auto ${
-                  saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                }`}
+                loading={saving || avatarUploading}
+                variant={saved ? 'success' : 'primary'}
+                leftIcon={
+                  saving || avatarUploading
+                    ? undefined
+                    : saved
+                      ? <Check size={16} />
+                      : <Save size={16} />
+                }
+                fullWidth
               >
-                {saved ? (
-                  <><Check size={16} /> Saved</>
-                ) : saving || avatarUploading ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</>
-                ) : (
-                  <><Save size={16} /> Save changes</>
-                )}
-              </button>
+                {saved
+                  ? 'Saved'
+                  : saving || avatarUploading
+                    ? 'Saving...'
+                    : 'Save changes'}
+              </Button>
+              </div>
             </div>
           </div>
         </div>
-      </Card>
     </div>
   );
 };

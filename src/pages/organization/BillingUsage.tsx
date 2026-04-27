@@ -1,4 +1,6 @@
 import { CreditCard, Download, CheckCircle } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { Tag } from "../../components/ui/Tag";
 
 // ─── Section: Billing & Usage ─────────────────────────────────────────────────
 export const INVOICES = [
@@ -31,9 +33,9 @@ export const BillingUsage = () => {
           <div className="text-right">
             <p className="text-2xl font-bold text-gray-900">$99</p>
             <p className="text-xs text-gray-500">per month</p>
-            <button className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">
+            <Button >
               Upgrade now
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -67,9 +69,9 @@ export const BillingUsage = () => {
               <p className="text-xs text-gray-500">Expires 12/2026</p>
             </div>
           </div>
-          <button className="text-sm text-blue-600 hover:underline">
+          <Button variant="link" size="sm">
             Update payment method
-          </button>
+          </Button>
         </div>
 
         {/* Billing history */}
@@ -102,16 +104,21 @@ export const BillingUsage = () => {
                     {inv.amount}
                   </td>
                   <td className="py-3">
-                    <span className="flex items-center gap-1 text-xs text-green-700">
-                      <CheckCircle size={12} />
-                      {inv.status}
-                    </span>
+                    <Tag
+                      label={inv.status}
+                      bgColor="success"
+                      size="sm"
+                      icon={<CheckCircle size={12} />}
+                    />
                   </td>
                   <td className="py-3 text-right">
-                    <button className="flex items-center gap-1 text-xs text-blue-600 hover:underline ml-auto">
-                      <Download size={12} />
+                    <Button
+                      variant="link"
+                      size="xs"
+                      leftIcon={<Download size={12} />}
+                    >
                       Download
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}

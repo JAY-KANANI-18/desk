@@ -1,7 +1,10 @@
 import React from "react";
 import { AlertTriangle, MessageSquare, PhoneCall, Workflow } from "lucide-react";
+import { Avatar, AvatarWithBadge } from "../../../components/ui/Avatar";
+import { Tag } from "../../../components/ui/Tag";
 import type { User } from "../../../context/AuthContext";
 import { Tooltip } from "../../../components/ui/Tooltip";
+import { getChannelBadgeType } from "../channelUtils";
 import { channelConfig } from "../data";
 import type { Conversation } from "../types";
 import { ActivityRow } from "./ActivityRow";
@@ -19,6 +22,17 @@ function getAuthorDisplayName(author: Message["author"]) {
   return typeof author === "string"
     ? author
     : [author.firstName, author.lastName].filter(Boolean).join(" ");
+}
+
+function getContactDisplayName(selectedConversation: Conversation) {
+  return (
+    [
+      selectedConversation?.contact?.firstName,
+      selectedConversation?.contact?.lastName,
+    ]
+      .filter(Boolean)
+      .join(" ") || selectedConversation?.contact?.firstName || "Contact"
+  );
 }
 
 export function TimelineItemRow({
@@ -94,6 +108,7 @@ export function TimelineItemRow({
   const channelBadge =
     channelConfig[resolvedChannelType as keyof typeof channelConfig] ??
     channelConfig.email;
+  const badgeType = getChannelBadgeType(resolvedChannelType);
   const isEmail = resolvedChannelType === "email";
   const isAiMessage = msg.metadata?.source === "ai_agent";
   const displayTime = formatMsgTime(msg.createdAt, msg.time);
@@ -122,10 +137,12 @@ export function TimelineItemRow({
     return (
       <div key={msg.id} ref={(el) => setItemRef(item.key, el)}>
         <div className="flex justify-center my-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border bg-cyan-50 text-cyan-700 border-cyan-200">
-            <PhoneCall size={12} />
-            {msg.text || "Call update"}
-          </span>
+          <Tag
+            label={msg.text || "Call update"}
+            icon={<PhoneCall size={12} />}
+            size="sm"
+            bgColor="#0891b2"
+          />
         </div>
       </div>
     );
@@ -149,9 +166,11 @@ export function TimelineItemRow({
                 Internal Note
               </span>
               <div className="flex items-center gap-1.5 ml-auto">
-                <div className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center text-[9px] font-bold text-amber-800">
-                  {msg.initials}
-                </div>
+                <Avatar
+                  src={typeof msg.author === "string" ? undefined : msg.author?.avatarUrl}
+                  name={getAuthorDisplayName(msg.author) || msg.initials || "User"}
+                  size="xs"
+                />
                 <span className="text-[11px] font-medium text-amber-800">
                   {getAuthorDisplayName(msg.author)}
                 </span>
@@ -180,30 +199,16 @@ export function TimelineItemRow({
       onMouseLeave={() => setHoveredMsgId(null)}
     >
       {!isOutgoing && (
-        <div className="relative flex-shrink-0">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs overflow-hidden">
-            {selectedConversation?.contact?.avatarUrl ? (
-              <img
-                src={selectedConversation.contact.avatarUrl}
-                alt={selectedConversation.contact.firstName || "C"}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>
-                {selectedConversation?.contact?.firstName
-                  ?.charAt(0)
-                  ?.toUpperCase() || "C"}
-              </span>
-            )}
-          </div>
-          <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white bg-white">
-            <img
-              src={channelBadge.icon}
-              alt={channelBadge.label}
-              className="w-3 h-3"
-            />
-          </span>
-        </div>
+        <AvatarWithBadge
+          src={selectedConversation?.contact?.avatarUrl}
+          name={getContactDisplayName(selectedConversation)}
+          size="sm"
+          fallbackTone="neutral"
+          badgeType={badgeType}
+          badgeSrc={channelBadge.icon}
+          badgeAlt={channelBadge.label}
+          badgePlacement="overlap"
+        />
       )}
 
       <div className="relative flex flex-col max-w-sm">
@@ -234,16 +239,14 @@ export function TimelineItemRow({
         <div className="mt-1">
           <div className="flex items-center gap-1 text-xs text-gray-400">
             {isAiMessage ? (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                AI
-              </span>
+              <Tag label="AI" size="sm" bgColor="gray" />
             ) : null}
             <span>{displayTime}</span>
             {isOutgoing && !failedMessageCopy && (
               <MessageStatusIcon status={msg.status} />
             )}
             {failedMessageCopy && (
-              <Tooltip content={failedMessageCopy} side="left">
+              <Tooltip content={failedMessageCopy} position="left">
                 <span className="inline-flex cursor-help items-center">
                   <AlertTriangle
                     size={14}
@@ -258,30 +261,39 @@ export function TimelineItemRow({
 
       {isOutgoing && (
         <div className="relative flex-shrink-0">
-          <div className="w-8 h-8 border rounded-full flex items-center justify-center text-xs overflow-hidden">
+          <div className="flex items-center justify-center text-xs">
             {typeof msg.author !== "string" && msg.author?.id ? (
-              msg.author.avatarUrl ? (
-                <img
-                  src={msg.author.avatarUrl}
-                  alt={msg.author.firstName || "U"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>
-                  {outgoingSender?.firstName?.charAt(0)?.toUpperCase() || "U"}
-                </span>
-              )
+              <AvatarWithBadge
+                src={msg.author.avatarUrl}
+                name={
+                  [outgoingSender?.firstName, outgoingSender?.lastName]
+                    .filter(Boolean)
+                    .join(" ") ||
+                  getAuthorDisplayName(msg.author) ||
+                  msg.initials ||
+                  "User"
+                }
+                size="sm"
+                badgeType={badgeType}
+                badgeSrc={channelBadge.icon}
+                badgeAlt={channelBadge.label}
+                badgePlacement="overlap"
+              />
             ) : (
-              <Workflow size={18} color="#4f46e5" />
+              <div className="w-8 h-8 border rounded-full flex items-center justify-center">
+                <Workflow size={18} color="#4f46e5" />
+              </div>
             )}
           </div>
-          <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white bg-white">
-            <img
-              src={channelBadge.icon}
-              alt={channelBadge.label}
-              className="w-3 h-3"
-            />
-          </span>
+          {typeof msg.author !== "string" && msg.author?.id ? null : (
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white bg-white">
+              <img
+                src={channelBadge.icon}
+                alt={channelBadge.label}
+                className="w-3 h-3"
+              />
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import { type ElementType } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -8,15 +8,15 @@ import {
   MessageSquare,
   PhoneCall,
   RefreshCw,
-  Tag,
+  Tag as TagIcon,
   TrendingUp,
   UserCheck,
   UserMinus,
   UserPlus,
   Workflow,
-  Zap,
   ArrowRightLeft,
 } from "lucide-react";
+import { Tag as UiTag } from "../../../components/ui/Tag";
 import type { ActivityResponse } from "./types";
 import { extractMentionLabels, renderCommentText } from "../utils";
 import { formatMsgTime, highlightText } from "./helpers";
@@ -24,7 +24,7 @@ import { formatMsgTime, highlightText } from "./helpers";
 const ACTIVITY_CONFIG: Record<
   string,
   {
-    icon: React.ElementType;
+    icon: ElementType;
     pill: string;
     label?: (a: ActivityResponse, currentUser: any) => string;
     noteCard?: boolean;
@@ -96,13 +96,13 @@ const ACTIVITY_CONFIG: Record<
     noteCard: true,
   },
   label_added: {
-    icon: Tag,
+    icon: TagIcon,
     pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} added label ${a.metadata?.label ?? ""}`,
   },
   label_removed: {
-    icon: Tag,
+    icon: TagIcon,
     pill: "text-gray-600 bg-gray-50 border-gray-200",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} removed label ${a.metadata?.label ?? ""}`,
@@ -140,41 +140,6 @@ const ACTIVITY_CONFIG: Record<
   },
 };
 
-function ActorAvatar({
-  actor,
-  size = "sm",
-}: {
-  actor?: ActivityResponse["actor"];
-  size?: "sm" | "xs";
-}) {
-  const dim = size === "xs" ? "w-5 h-5 text-[9px]" : "w-7 h-7 text-[11px]";
-  if (!actor) {
-    return (
-      <div
-        className={`${dim} bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0`}
-      >
-        <Zap size={size === "xs" ? 9 : 11} className="text-gray-500" />
-      </div>
-    );
-  }
-  if (actor.avatarUrl) {
-    return (
-      <img
-        src={actor.avatarUrl}
-        alt={actor.name}
-        className={`${dim} rounded-full object-cover flex-shrink-0`}
-      />
-    );
-  }
-  return (
-    <div
-      className={`${dim} bg-indigo-100 text-indigo-700 font-semibold rounded-full flex items-center justify-center flex-shrink-0`}
-    >
-      {actor.name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
 export function ActivityRow({
   activity,
   searchTerm,
@@ -188,7 +153,6 @@ export function ActivityRow({
     icon: RefreshCw,
     pill: "text-gray-500 bg-gray-50 border-gray-200",
   };
-  const Icon = cfg.icon;
   const time = formatMsgTime(activity.createdAt);
 
   if (cfg.noteCard) {
@@ -231,12 +195,13 @@ export function ActivityRow({
                   }))
                 : mentionIds.map((uid) => ({ key: uid, label: uid }))).map(
                 (mention) => (
-                  <span
+                  <UiTag
                     key={mention.key}
-                    className="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full"
-                  >
-                    @{mention.label}
-                  </span>
+                    label={`@${mention.label}`}
+                    size="sm"
+                    bgColor="#d97706"
+                    maxWidth={180}
+                  />
                 ),
               )}
             </div>

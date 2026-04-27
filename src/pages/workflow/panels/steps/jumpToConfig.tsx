@@ -2,6 +2,7 @@
 
 import { SP, JumpToData } from "../../workflow.types";
 import { useWorkflow } from "../../WorkflowContext";
+import { RangeInput } from "../../../../components/ui/inputs";
 import { Field, InfoBox, Section, Select } from "../PanelShell";
 
 export function JumpToConfig({ step, onChange }: SP) {
@@ -36,19 +37,13 @@ export function JumpToConfig({ step, onChange }: SP) {
         label="Maximum Jumps"
         hint="After the limit, contact moves to the next step. Max: 10."
       >
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={data.maxJumps}
-            onChange={(e) => u({ maxJumps: Number(e.target.value) })}
-            className="flex-1"
-          />
-          <span className="text-sm font-medium text-gray-700 w-6 text-center tabular-nums">
-            {data.maxJumps}
-          </span>
-        </div>
+        <RangeInput
+          min={1}
+          max={10}
+          value={data.maxJumps}
+          valueLabel={data.maxJumps}
+          onChange={(e) => u({ maxJumps: Number(e.target.value) })}
+        />
       </Field>
       <InfoBox type="warning">
         Best practice: use max 3 jumps to avoid disrupting contact flow.

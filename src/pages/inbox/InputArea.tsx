@@ -22,18 +22,16 @@
 import { useEffect } from 'react';
 import { ReplyInput }  from './ReplyInput';
 import { EmailInput }  from './EmailInputV2';
-import type { Conversation, Message } from './types';
+import type { Message } from './types';
 import type { ReplyContext } from './MessageArea';
+import type { ChannelLike } from './channelUtils';
 
 // ─── Shared props both inputs accept ─────────────────────────────────────────
 
 export interface SharedInputProps {
-  channels: any[] | null;
-  selectedConversation: Conversation;
-  selectedChannel: any;
-  onChannelChange: (ch: any) => void;
+  onChannelChange: (channel: ChannelLike) => void;
   onSendMessage: (msg: Message) => void;
-  onSendNote: (note: any) => void;
+  onSendNote: (note: ComposerNotePayload) => void;
   /** 'reply' = normal reply, 'note' = internal note */
   inputMode: 'reply' | 'note';
   onInputModeChange: (mode: 'reply' | 'note') => void;
@@ -42,17 +40,20 @@ export interface SharedInputProps {
   onClearReplyContext?: () => void;
 }
 
+export interface ComposerNotePayload {
+  text: string;
+  mentionedUserIds?: string[];
+}
+
 // ─── InputArea ────────────────────────────────────────────────────────────────
 
 interface InputAreaProps {
   inputMode: 'reply' | 'note';
   onInputModeChange: (mode: 'reply' | 'note') => void;
-  selectedConversation: Conversation;
-  selectedChannel: any;
-  onChannelChange: (ch: any) => void;
-  channels: any[] | null;
+  selectedChannel: ChannelLike | null | undefined;
+  onChannelChange: (channel: ChannelLike) => void;
   onSendMessage: (msg: Message) => void;
-  onSendNote: (note: any) => void;
+  onSendNote: (note: ComposerNotePayload) => void;
   /** Forwarded from MessageArea's onReply callback */
   replyContext?: ReplyContext | null;
   onClearReplyContext?: () => void;
@@ -61,10 +62,8 @@ interface InputAreaProps {
 export function InputArea({
   inputMode,
   onInputModeChange,
-  selectedConversation,
   selectedChannel,
   onChannelChange,
-  channels,
   onSendMessage,
   onSendNote,
   replyContext,
@@ -78,12 +77,9 @@ export function InputArea({
     if (replyContext?.type === 'email' && inputMode === 'note') {
       onInputModeChange('reply');
     }
-  }, [replyContext]);
+  }, [inputMode, onInputModeChange, replyContext]);
 
   const sharedProps: SharedInputProps = {
-    channels,
-    selectedConversation,
-    selectedChannel,
     onChannelChange,
     onSendMessage,
     inputMode,
@@ -94,7 +90,7 @@ export function InputArea({
   };
 
   return (
-    <div className="flex-shrink-0 border-t border-gray-200 bg-white">
+    <div className="flex-shrink-0 bg-white">
       {isEmail
         ? <EmailInput {...sharedProps} />
         : <ReplyInput  {...sharedProps} />

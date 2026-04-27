@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import {
   AtSign,
   Bell,
@@ -13,7 +13,9 @@ import {
 import { useNotifications } from "../../context/NotificationContext";
 import type { NotificationRecord } from "../../lib/notificationApi";
 import { getNotificationPath } from "../../lib/notificationLink";
-import { MobileSheet } from "./MobileSheet";
+import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
+import { MobileSheet } from "../ui/modal";
 import { relativeTime } from "./utils";
 
 interface NotificationPanelProps {
@@ -38,6 +40,15 @@ type NotificationCopy = {
 };
 
 const DEFAULT_NOTIFICATION_LABEL = "Activity";
+
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
 
 function normalizeText(value?: string | null) {
   if (typeof value !== "string") {
@@ -212,33 +223,48 @@ export function NotificationPanel({
 
   const headerActions = (
     <>
-      <button
-        type="button"
-        onClick={toggleSound}
-        title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
-        className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-      >
-        {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-      </button>
-      {activeTab === "new" && items.length > 0 && (
-        <button
+      <Tooltip content={soundEnabled ? "Mute sounds" : "Unmute sounds"}>
+        <Button
           type="button"
-          onClick={() => void markAllRead()}
-          title="Mark all read"
+          variant="unstyled"
+          onClick={toggleSound}
+          aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
           className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          style={classDrivenButtonStyle}
+          preserveChildLayout
         >
-          <Check size={16} />
-        </button>
+          {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </Button>
+      </Tooltip>
+      {activeTab === "new" && items.length > 0 && (
+        <Tooltip content="Mark all read">
+          <Button
+            type="button"
+            variant="unstyled"
+            onClick={() => void markAllRead()}
+            aria-label="Mark all read"
+            className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            style={classDrivenButtonStyle}
+            preserveChildLayout
+          >
+            <Check size={16} />
+          </Button>
+        </Tooltip>
       )}
       {items.length > 0 && (
-        <button
-          type="button"
-          onClick={() => void archiveAll(activeTab)}
-          title="Archive all"
-          className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-        >
-          <Trash2 size={16} />
-        </button>
+        <Tooltip content="Archive all">
+          <Button
+            type="button"
+            variant="unstyled"
+            onClick={() => void archiveAll(activeTab)}
+            aria-label="Archive all"
+            className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            style={classDrivenButtonStyle}
+            preserveChildLayout
+          >
+            <Trash2 size={16} />
+          </Button>
+        </Tooltip>
       )}
     </>
   );
@@ -249,21 +275,27 @@ export function NotificationPanel({
         {soundEnabled ? "Sound on" : "Sound off"}
       </span>
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          variant="unstyled"
           onClick={onOpenPreferences}
           className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-700"
+          style={classDrivenButtonStyle}
+          preserveChildLayout
         >
           Preferences
-        </button>
+        </Button>
         {centerState.nextCursor && (
-          <button
+          <Button
             type="button"
+            variant="unstyled"
             onClick={() => void loadTab(activeTab)}
             className="text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+            style={classDrivenButtonStyle}
+            preserveChildLayout
           >
             Load more
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -278,18 +310,21 @@ export function NotificationPanel({
       >
         <div className={`flex ${isMobile ? "gap-2 overflow-x-auto" : "items-center gap-1"}`}>
           {(["new", "archived", "all"] as const).map((tab) => (
-            <button
+            <Button
               key={tab}
               type="button"
+              variant="unstyled"
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === tab
                   ? "bg-indigo-50 text-indigo-600"
                   : "text-gray-500 hover:bg-gray-100"
               }`}
+              style={classDrivenButtonStyle}
+              preserveChildLayout
             >
               {tab === "new" ? "New" : tab === "archived" ? "Archived" : "All"}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -304,13 +339,16 @@ export function NotificationPanel({
             <p className="text-sm font-medium text-gray-600">
               Could not load notifications
             </p>
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => void loadTab(activeTab, true)}
               className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              style={classDrivenButtonStyle}
+              preserveChildLayout
             >
               Try again
-            </button>
+            </Button>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
@@ -391,8 +429,9 @@ export function NotificationPanel({
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-2">
                         {notificationPath && (
-                          <button
+                          <Button
                             type="button"
+                            variant="unstyled"
                             onClick={(event) => {
                               event.stopPropagation();
                               onNavigateToInbox(notificationPath);
@@ -402,13 +441,16 @@ export function NotificationPanel({
                               onClose();
                             }}
                             className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-slate-800"
+                            style={classDrivenButtonStyle}
+                            preserveChildLayout
                           >
                             Open
-                          </button>
+                          </Button>
                         )}
                         {activeTab === "new" && (
-                          <button
+                          <Button
                             type="button"
+                            variant="unstyled"
                             onClick={(event) => {
                               event.stopPropagation();
                               void updateNotificationState(notification.id, {
@@ -416,12 +458,15 @@ export function NotificationPanel({
                               });
                             }}
                             className={actionButtonClassName}
+                            style={classDrivenButtonStyle}
+                            preserveChildLayout
                           >
                             Archive
-                          </button>
+                          </Button>
                         )}
-                        <button
+                        <Button
                           type="button"
+                          variant="unstyled"
                           onClick={(event) => {
                             event.stopPropagation();
                             void updateNotificationState(notification.id, {
@@ -429,12 +474,15 @@ export function NotificationPanel({
                             });
                           }}
                           className={actionButtonClassName}
+                          style={classDrivenButtonStyle}
+                          preserveChildLayout
                         >
                           {notification.readAt ? "Mark unread" : "Mark read"}
-                        </button>
+                        </Button>
                         {notification.archivedAt && (
-                          <button
+                          <Button
                             type="button"
+                            variant="unstyled"
                             onClick={(event) => {
                               event.stopPropagation();
                               void updateNotificationState(notification.id, {
@@ -442,9 +490,11 @@ export function NotificationPanel({
                               });
                             }}
                             className={actionButtonClassName}
+                            style={classDrivenButtonStyle}
+                            preserveChildLayout
                           >
                             Unarchive
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -461,7 +511,7 @@ export function NotificationPanel({
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         title={
           <div className="flex items-center gap-2">
             <Bell size={16} className="text-slate-700" />
@@ -506,13 +556,19 @@ export function NotificationPanel({
           </div>
           <div className="flex items-center gap-1">
             {headerActions}
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            >
-              <X size={14} />
-            </button>
+            <Tooltip content="Close">
+              <Button
+                type="button"
+                variant="unstyled"
+                onClick={onClose}
+                aria-label="Close notifications"
+                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                style={classDrivenButtonStyle}
+                preserveChildLayout
+              >
+                <X size={14} />
+              </Button>
+            </Tooltip>
           </div>
         </div>
         {panelBody}

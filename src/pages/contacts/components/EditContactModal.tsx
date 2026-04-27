@@ -1,5 +1,5 @@
-import type { ComponentProps } from "react";
-import { MobileSheet } from "../../../components/topbar/MobileSheet";
+import type { ComponentProps, ReactNode } from "react";
+import { MobileSheet } from "../../../components/ui/modal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { ContactSidebarHybrid } from "../../inbox/ContactSidebarHybrid";
 import type { LifecycleStage } from "../../workspace/types";
@@ -12,6 +12,11 @@ interface EditContactModalProps {
   onClose: () => void;
   onDelete?: () => void;
   onContactChange?: (contact: Contact) => void | Promise<void>;
+  mobileTitle?: ReactNode;
+  desktopVariant?: ComponentProps<typeof ContactSidebarHybrid>["desktopVariant"];
+  desktopEyebrow?: string;
+  desktopTitle?: string;
+  desktopContainerClassName?: string;
 }
 
 export function EditContactModal({
@@ -21,6 +26,11 @@ export function EditContactModal({
   onClose,
   onDelete,
   onContactChange,
+  mobileTitle,
+  desktopVariant = "floating",
+  desktopEyebrow,
+  desktopTitle = "Contact details",
+  desktopContainerClassName,
 }: EditContactModalProps) {
   const isMobile = useIsMobile();
 
@@ -49,12 +59,22 @@ export function EditContactModal({
     showAiPanel: false,
   } satisfies Omit<
     ComponentProps<typeof ContactSidebarHybrid>,
-    "mode" | "desktopVariant" | "desktopEyebrow" | "desktopTitle" | "onDesktopClose"
+    | "mode"
+    | "desktopVariant"
+    | "desktopEyebrow"
+    | "desktopTitle"
+    | "onDesktopClose"
+    | "desktopContainerClassName"
   >;
 
   if (isMobile) {
     return (
-      <MobileSheet open onClose={onClose} borderless title={title}>
+      <MobileSheet
+        isOpen
+        onClose={onClose}
+        borderless
+        title={mobileTitle ?? title}
+      >
         <ContactSidebarHybrid {...sharedProps} mode="mobile" />
       </MobileSheet>
     );
@@ -64,8 +84,10 @@ export function EditContactModal({
     <ContactSidebarHybrid
       {...sharedProps}
       mode="desktop"
-      desktopVariant="floating"
-      desktopTitle="Contact details"
+      desktopVariant={desktopVariant}
+      desktopEyebrow={desktopEyebrow}
+      desktopTitle={desktopTitle}
+      desktopContainerClassName={desktopContainerClassName}
       onDesktopClose={onClose}
     />
   );

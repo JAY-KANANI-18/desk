@@ -1,11 +1,13 @@
 import { ChevronRight } from "lucide-react";
+import { Button } from "../../components/ui/Button";
 import {
   DataTable,
   type DataTableColumn,
 } from "../../components/ui/DataTable";
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
+import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastSortableField } from "./types";
-import { formatDateTime, statusBadgeClass, statusLabel } from "./utils";
+import { formatDateTime } from "./utils";
 
 type BroadcastTableViewProps = {
   runs: BroadcastRunRow[];
@@ -42,15 +44,7 @@ export function BroadcastTableView({
       header: "Status",
       sortable: true,
       sortField: "status",
-      cell: (run) => (
-        <span
-          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass(
-            run.status,
-          )}`}
-        >
-          {statusLabel(run.status)}
-        </span>
-      ),
+      cell: (run) => <BroadcastStatusTag status={run.status} />,
       mobile: "hidden",
     },
     {
@@ -111,17 +105,16 @@ export function BroadcastTableView({
   const footer =
     hasMoreRuns || runsLoadingMore ? (
       <div className="flex justify-center bg-white px-4 pb-6 pt-3 md:border-t md:border-gray-100">
-        <button
+        <Button
           type="button"
           onClick={() => onLoadMore(nextCursor)}
-          disabled={runsLoadingMore || !nextCursor}
-          className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
+          disabled={!nextCursor}
+          loading={runsLoadingMore}
+          loadingMode="inline"
+          variant="secondary"
         >
-          {runsLoadingMore ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
-          ) : null}
           Load more broadcasts
-        </button>
+        </Button>
       </div>
     ) : null;
 
@@ -185,13 +178,7 @@ export function BroadcastTableView({
                   <p className="truncate text-[17px] font-semibold leading-tight text-slate-900">
                     {run.name}
                   </p>
-                  <span
-                    className={`inline-flex flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${statusBadgeClass(
-                      run.status,
-                    )}`}
-                  >
-                    {statusLabel(run.status)}
-                  </span>
+                  <BroadcastStatusTag status={run.status} size="sm" />
                 </div>
                 <p className="mt-1 truncate text-sm font-medium text-slate-500">
                   {run.channel?.name ?? "-"}{" "}

@@ -1,132 +1,226 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, X, Search } from 'lucide-react';
+import { useCallback, useEffect, useState } from "react";
+import { Edit2, Plus, Search, Trash2 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { TextareaInput } from "../../../components/ui/inputs/TextareaInput";
+import { CenterModal } from "../../../components/ui/modal/CenterModal";
+import { Tag } from "../../../components/ui/Tag";
+import { TruncatedText } from "../../../components/ui/TruncatedText";
+import { workspaceApi } from "../../../lib/workspaceApi";
+import { DataLoader } from "../../Loader";
+import { SectionError } from "../components/SectionError";
+import type { Snippet } from "../types";
 
-import { SectionError } from '../components/SectionError';
-import type { Snippet } from '../types';
-import { workspaceApi } from '../../../lib/workspaceApi';
-import { DataLoader } from '../../Loader';
+const EMPTY_FORM = { shortcut: "", title: "", content: "" };
 
 export const Snippets = () => {
-  const [snippets, setSnippets]           = useState<Snippet[]>([]);
-  const [loading, setLoading]             = useState(false);
-  const [error, setError]                 = useState<string | null>(null);
-  const [search, setSearch]               = useState('');
-  const [showAdd, setShowAdd]             = useState(false);
-  const [editSnippet, setEditSnippet]     = useState<Snippet | null>(null);
-  const [form, setForm]                   = useState({ shortcut: '', title: '', content: '' });
-  const [saving, setSaving]               = useState(false);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [editSnippet, setEditSnippet] = useState<Snippet | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    // setLoading(true); 
+    setLoading(true);
     setError(null);
-   setSnippets(await workspaceApi.getSnippets()); 
-    
+    try {
+      setSnippets(await workspaceApi.getSnippets());
+    } catch {
+      setError("Failed to load snippets.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const filtered = snippets.filter(s =>
-    s.title.toLowerCase().includes(search.toLowerCase()) ||
-    s.shortcut.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = snippets.filter((snippet) => {
+    const query = search.toLowerCase();
+    return (
+      snippet.title.toLowerCase().includes(query) ||
+      snippet.shortcut.toLowerCase().includes(query)
+    );
+  });
+
+  const closeModal = () => {
+    setShowAdd(false);
+    setEditSnippet(null);
+    setForm(EMPTY_FORM);
+  };
 
   const handleSave = async () => {
-    if (!form.shortcut || !form.content) return;
+    if (!form.shortcut.trim() || !form.content.trim()) return;
+
+    const payload = {
+      shortcut: form.shortcut.trim(),
+      title: form.title.trim(),
+      content: form.content.trim(),
+    };
+
     setSaving(true);
+    setError(null);
+    try {
       if (editSnippet) {
-        await workspaceApi.updateSnippet(editSnippet.id, form);
-        setSnippets(prev => prev.map(s => s.id === editSnippet.id ? { ...s, ...form } : s));
+        await workspaceApi.updateSnippet(editSnippet.id, payload);
+        setSnippets((prev) =>
+          prev.map((snippet) =>
+            snippet.id === editSnippet.id ? { ...snippet, ...payload } : snippet,
+          ),
+        );
       } else {
-        const created = await workspaceApi.addSnippet(form);
-        setSnippets(prev => [...prev, created]);
+        const created = await workspaceApi.addSnippet(payload);
+        setSnippets((prev) => [...prev, created]);
       }
-      setForm({ shortcut: '', title: '', content: '' });
-      setShowAdd(false); setEditSnippet(null);
- 
+      closeModal();
+    } catch {
+      setError("Failed to save snippet.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
-    setSnippets(prev => prev.filter(s => s.id !== id));
-   await workspaceApi.deleteSnippet(id); 
+    setSnippets((prev) => prev.filter((snippet) => snippet.id !== id));
+    try {
+      await workspaceApi.deleteSnippet(id);
+    } catch {
+      void load();
+    }
   };
 
-  const openEdit = (s: Snippet) => {
-    setEditSnippet(s);
-    setForm({ shortcut: s.shortcut, title: s.title, content: s.content });
+  const openCreate = () => {
+    setEditSnippet(null);
+    setForm(EMPTY_FORM);
     setShowAdd(true);
   };
 
-  if (loading) return <DataLoader type={"snippets"} />;
+  const openEdit = (snippet: Snippet) => {
+    setEditSnippet(snippet);
+    setForm({
+      shortcut: snippet.shortcut,
+      title: snippet.title,
+      content: snippet.content,
+    });
+    setShowAdd(true);
+  };
+
+  if (loading) return <DataLoader type="snippets" />;
   if (error && snippets.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Canned responses</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Type a shortcut in the reply box to insert</p>
+            <p className="mt-0.5 text-xs text-gray-500">Type a shortcut in the reply box to insert</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search snippets…" className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-44" />
+            <div className="w-44">
+              <BaseInput
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search snippets..."
+                size="sm"
+                leftIcon={<Search size={14} />}
+                aria-label="Search snippets"
+              />
             </div>
-            <button onClick={() => { setEditSnippet(null); setForm({ shortcut: '', title: '', content: '' }); setShowAdd(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-              <Plus size={16} /> Add snippet
-            </button>
+            <Button onClick={openCreate} leftIcon={<Plus size={16} />}>
+              Add snippet
+            </Button>
           </div>
         </div>
         <div className="divide-y divide-gray-100">
-          {filtered.map(s => (
-            <div key={s.id} className="flex items-start gap-4 px-6 py-4 hover:bg-gray-50">
-              <code className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-mono flex-shrink-0 mt-0.5">{s.shortcut}</code>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">{s.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{s.content}</p>
+          {filtered.map((snippet) => (
+            <div key={snippet.id} className="flex items-start gap-4 px-6 py-4 hover:bg-gray-50">
+              <Tag label={snippet.shortcut} size="sm" bgColor="tag-indigo" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-800">{snippet.title}</p>
+                <TruncatedText
+                  text={snippet.content}
+                  maxLines={1}
+                  className="mt-0.5 text-xs text-gray-500"
+                />
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"><Edit2 size={14} /></button>
-                <button onClick={() => handleDelete(s.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+              <div className="flex flex-shrink-0 gap-1">
+                <IconButton
+                  onClick={() => openEdit(snippet)}
+                  icon={<Edit2 size={14} />}
+                  variant="ghost"
+                  size="xs"
+                  aria-label={`Edit ${snippet.title || snippet.shortcut}`}
+                />
+                <IconButton
+                  onClick={() => handleDelete(snippet.id)}
+                  icon={<Trash2 size={14} />}
+                  variant="danger-ghost"
+                  size="xs"
+                  aria-label={`Delete ${snippet.title || snippet.shortcut}`}
+                />
               </div>
             </div>
           ))}
-          {filtered.length === 0 && <div className="px-6 py-8 text-center text-sm text-gray-400">No snippets found</div>}
+          {filtered.length === 0 ? (
+            <div className="px-6 py-8 text-center text-sm text-gray-400">No snippets found</div>
+          ) : null}
         </div>
       </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">{editSnippet ? 'Edit snippet' : 'Add snippet'}</h3>
-              <button onClick={() => { setShowAdd(false); setEditSnippet(null); }}><X size={20} className="text-gray-400" /></button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shortcut</label>
-                  <input value={form.shortcut} onChange={e => setForm({ ...form, shortcut: e.target.value })} placeholder="/shortcut" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Snippet title" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={4} placeholder="Message content. Use {{contact.firstName}} for variables." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => { setShowAdd(false); setEditSnippet(null); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2">
-                {saving ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</> : editSnippet ? 'Save changes' : 'Add snippet'}
-              </button>
-            </div>
+      {error ? <p className="text-sm text-red-500">{error}</p> : null}
+
+      <CenterModal
+        isOpen={showAdd}
+        onClose={closeModal}
+        title={editSnippet ? "Edit snippet" : "Add snippet"}
+        size="md"
+        secondaryAction={
+          <Button onClick={closeModal} variant="secondary">
+            Cancel
+          </Button>
+        }
+        primaryAction={
+          <Button
+            onClick={handleSave}
+            disabled={saving || !form.shortcut.trim() || !form.content.trim()}
+            loading={saving}
+            loadingMode="inline"
+          >
+            {saving ? "Saving..." : editSnippet ? "Save changes" : "Add snippet"}
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <BaseInput
+              label="Shortcut"
+              value={form.shortcut}
+              onChange={(event) => setForm({ ...form, shortcut: event.target.value })}
+              placeholder="/shortcut"
+              className="font-mono"
+            />
+            <BaseInput
+              label="Title"
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              placeholder="Snippet title"
+            />
           </div>
+          <TextareaInput
+            label="Content"
+            value={form.content}
+            onChange={(event) => setForm({ ...form, content: event.target.value })}
+            rows={4}
+            placeholder="Message content. Use {{contact.firstName}} for variables."
+          />
         </div>
-      )}
+      </CenterModal>
     </div>
   );
 };

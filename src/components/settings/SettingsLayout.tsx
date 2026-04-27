@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthorization } from "../../context/AuthorizationContext";
 import { useAuth } from "../../context/AuthContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { PageLayout } from "../ui/PageLayout";
+import { IconButton } from "../ui/button/IconButton";
 import {
   MobileHeaderActionButtons,
   useMobileHeaderActionState,
@@ -21,12 +23,14 @@ interface SettingsLayoutProps {
   config: SettingsModuleConfig;
   children: ReactNode;
   contentClassName?: string;
+  toolbar?: ReactNode;
 }
 
 export const SettingsLayout = ({
   config,
   children,
   contentClassName = "",
+  toolbar,
 }: SettingsLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,6 +55,17 @@ export const SettingsLayout = ({
     [config.storageKey, user?.id],
   );
   const isSelectionScreen = location.pathname === config.basePath;
+  const desktopTitle = useMemo(() => {
+    if (!activeMatch) {
+      return config.title;
+    }
+
+    if (config.basePath === "/reports") {
+      return `${activeMatch.item.label} report`;
+    }
+
+    return activeMatch.item.label;
+  }, [activeMatch, config.basePath, config.title]);
 
   useEffect(() => {
     if (!activeMatch?.item.to || typeof window === "undefined") {
@@ -84,13 +99,14 @@ export const SettingsLayout = ({
           <div className="sticky top-0 z-10 bg-white md:hidden">
             <div className="flex items-center gap-3 px-4 py-3">
               {!isSelectionScreen && (
-                <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-50"
-                  onClick={handleMobileBack}
+                <IconButton
                   type="button"
-                >
-                  <ArrowLeft size={18} />
-                </button>
+                  variant="ghost"
+                  size="md"
+                  icon={<ArrowLeft size={18} />}
+                  aria-label="Back"
+                  onClick={handleMobileBack}
+                />
               )}
 
               <div className="min-w-0 flex-1">
@@ -113,13 +129,17 @@ export const SettingsLayout = ({
             ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <div
-              className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-24 pt-2 md:px-6 md:pb-8 md:pt-8 lg:px-8 ${
-                !isMobile && !activeMatch ? "pt-8" : ""
-              } ${contentClassName}`}
-            >
-              {isMobile ? (
+          <div
+            className={`min-h-0 flex-1 ${
+              isMobile ? "overflow-y-auto" : "overflow-hidden"
+            }`}
+          >
+            {isMobile ? (
+              <div
+                className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-24 pt-2 md:px-6 md:pb-8 md:pt-8 lg:px-8 ${
+                  !activeMatch ? "pt-8" : ""
+                } ${contentClassName}`}
+              >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={location.pathname}
@@ -132,10 +152,22 @@ export const SettingsLayout = ({
                     {children}
                   </motion.div>
                 </AnimatePresence>
-              ) : (
-                children
-              )}
-            </div>
+              </div>
+            ) : (
+              <PageLayout
+                eyebrow={activeMatch ? config.title : undefined}
+                title={desktopTitle}
+                toolbar={toolbar}
+                className="bg-white"
+                contentClassName="min-h-0 flex-1 overflow-y-auto px-0 py-0"
+              >
+                <div
+                  className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-6 md:px-6 md:py-8 lg:px-8 ${contentClassName}`}
+                >
+                  {children}
+                </div>
+              </PageLayout>
+            )}
           </div>
         </div>
       </div>

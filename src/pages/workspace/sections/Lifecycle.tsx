@@ -6,6 +6,13 @@ import {
 } from "lucide-react";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { DataLoader } from "../../Loader";
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { CountBadge } from "../../../components/ui/CountBadge";
+import { Tag } from "../../../components/ui/Tag";
+import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
+import { useDisclosure } from "../../../hooks/useDisclosure";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,37 +89,37 @@ interface EmojiPickerProps {
 }
 
 const EmojiPicker = ({ value, onChange }: EmojiPickerProps) => {
-  const [open, setOpen] = useState(false);
+  const emojiMenu = useDisclosure();
   const ref = useRef<HTMLDivElement>(null);
-  useOutsideClick(ref as React.RefObject<HTMLElement>, () => setOpen(false));
+  useOutsideClick(ref as React.RefObject<HTMLElement>, emojiMenu.close);
 
   return (
     <div className="relative shrink-0" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(p => !p)}
-        className="w-9 h-9 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-lg hover:border-indigo-400 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      <Button
+        onClick={emojiMenu.toggle}
+        variant="secondary"
+        iconOnly
+        size="sm"
+        
         aria-label="Pick emoji"
       >
         {value}
-      </button>
+      </Button>
 
-      {open && (
-        <div
-          className="absolute left-0 bottom-11 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 grid grid-cols-5 gap-1 w-52"
-          style={{ animation: "fadeSlideIn 120ms ease" }}
-        >
+      {emojiMenu.isOpen && (
+        <div className="absolute left-0 bottom-11 z-50 grid w-52 grid-cols-5 gap-1 rounded-2xl border border-gray-100 bg-white p-3 shadow-2xl">
           {EMOJIS.map(e => (
-            <button
+            <Button
               key={e}
-              type="button"
-              onClick={() => { onChange(e); setOpen(false); }}
-              className={`w-8 h-8 text-base rounded-lg flex items-center justify-center transition-colors ${
-                e === value ? "bg-indigo-100 ring-1 ring-indigo-400" : "hover:bg-gray-100"
-              }`}
+              onClick={() => { onChange(e); emojiMenu.close(); }}
+              variant={e === value ? "soft-primary" : "ghost"}
+              iconOnly
+              size="sm"
+              
+              aria-label={`Use emoji ${e}`}
             >
               {e}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -141,12 +148,12 @@ const StageRow = ({
   stage, index, onChange, onBlurSave, onDelete, onMenuAction, onCommitNew,
   dragHandleProps, isDragging, isDragOver, dragOverPosition,
 }: RowProps) => {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const stageMenu = useDisclosure();
   const menuRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 
-  useOutsideClick(menuRef as React.RefObject<HTMLElement>, () => setMenuOpen(false));
+  useOutsideClick(menuRef as React.RefObject<HTMLElement>, stageMenu.close);
 
   // Auto-focus new stage name input
   useEffect(() => {
@@ -158,12 +165,14 @@ const StageRow = ({
     if (!stage._isNew) await onBlurSave(stage.id, { emoji });
   }, [stage.id, stage._isNew, onChange, onBlurSave]);
 
+  const dragButtonProps = dragHandleProps as React.HTMLAttributes<HTMLButtonElement>;
+
   return (
     <div
   className={[
     "relative flex flex-col gap-2 py-3 transition-all duration-150 sm:gap-1.5",
     isDragging ? "opacity-30 scale-[0.99]" : "opacity-100 scale-100",
-    menuOpen ? "z-50" : "z-0",
+    stageMenu.isOpen ? "z-50" : "z-0",
   ].join(" ")}
 >
       {/* Drop indicator line */}
@@ -180,18 +189,20 @@ const StageRow = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Drag handle */}
-        <div
-          {...dragHandleProps}
-          className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 transition-colors touch-none select-none"
+        <IconButton
+          {...dragButtonProps}
+          icon={<GripVertical size={16} />}
+          variant="ghost"
+          size="xs"
+          
           aria-label="Drag to reorder"
-        >
-          <GripVertical size={16} />
-        </div>
+        />
 
         <EmojiPicker value={stage.emoji} onChange={handleEmojiChange} />
 
         {/* Name input */}
-        <input
+        <div className="min-w-[12rem] flex-1 basis-[12rem]">
+          <BaseInput
           ref={nameInputRef}
           id={inputId}
           value={stage.name}
@@ -206,23 +217,17 @@ const StageRow = ({
           }}
           placeholder="Stage name…"
           autoComplete="off"
-          className={[
-            "min-w-[12rem] flex-1 basis-[12rem] border rounded-lg bg-white px-3 py-2 text-sm transition-all",
-            "focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-300",
-            !stage.name ? "border-red-300 ring-1 ring-red-100" : "border-gray-200 hover:border-gray-300",
-          ].join(" ")}
+          size="sm"
+          invalid={!stage.name}
         />
+        </div>
 
         {/* Badges */}
         {stage.isDefault && (
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100 whitespace-nowrap leading-5">
-            Default
-          </span>
+          <Tag label="Default" bgColor="info" size="sm" />
         )}
         {stage.isWon && (
-          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-xs font-semibold rounded-full border border-emerald-100 whitespace-nowrap leading-5">
-            Won
-          </span>
+          <Tag label="Won" bgColor="success" size="sm" />
         )}
 
         {/* Saving spinner */}
@@ -231,68 +236,74 @@ const StageRow = ({
         {/* New stage actions */}
         {stage._isNew ? (
           <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-1">
-            <button
-              type="button"
+            <Button
               onClick={() => onCommitNew(stage.id)}
               disabled={!stage.name.trim() || stage._saving}
-              className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed sm:flex-none sm:whitespace-nowrap"
+              loading={stage._saving}
+              loadingMode="inline"
+              loadingLabel="Adding..."
+              size="sm"
+              
             >
               {stage._saving ? "Adding…" : "Add"}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <IconButton
               onClick={() => onDelete(stage.id)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 leading-none transition-colors hover:bg-red-50 hover:text-red-500 sm:h-7 sm:w-7 sm:border-0 sm:text-lg"
+              icon={<span aria-hidden="true">x</span>}
+              variant="danger-ghost"
+              size="sm"
+              
               aria-label="Cancel"
-            >
-              ×
-            </button>
+            />
           </div>
         ) : (
           /* 3-dot menu */
           <div className="relative ml-auto shrink-0" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(p => !p)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            <IconButton
+              onClick={stageMenu.toggle}
+              icon={<MoreHorizontal size={16} />}
+              variant="ghost"
+              size="xs"
+              
               aria-label="More options"
-            >
-              <MoreHorizontal size={16} />
-            </button>
+            />
 
-            {menuOpen && (
-              <div
-                className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-52 text-sm"
-                style={{ animation: "fadeSlideIn 120ms ease" }}
-              >
+            {stageMenu.isOpen && (
+              <div className="absolute right-0 top-9 z-50 w-52 rounded-xl border border-gray-100 bg-white py-1 text-sm shadow-xl">
                 {!stage.isDefault && (
-                  <button
-                    type="button"
-                    onClick={() => { setMenuOpen(false); onMenuAction(stage.id, "setDefault"); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-gray-700 transition-colors"
+                  <Button
+                    onClick={() => { stageMenu.close(); onMenuAction(stage.id, "setDefault"); }}
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    contentAlign="start"
                   >
                     Set as Default stage
-                  </button>
+                  </Button>
                 )}
                 {!stage.isWon && stage.type === "lifecycle" && (
-                  <button
-                    type="button"
-                    onClick={() => { setMenuOpen(false); onMenuAction(stage.id, "setWon"); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-gray-700 transition-colors"
+                  <Button
+                    onClick={() => { stageMenu.close(); onMenuAction(stage.id, "setWon"); }}
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    contentAlign="start"
                   >
                     Set as Won stage
-                  </button>
+                  </Button>
                 )}
                 {(stage.isDefault || stage.isWon || stage.type === "lifecycle") && (
                   <div className="my-1 border-t border-gray-100" />
                 )}
-                <button
-                  type="button"
-                  onClick={() => { setMenuOpen(false); onDelete(stage.id); }}
-                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-500 transition-colors"
+                <Button
+                  onClick={() => { stageMenu.close(); onDelete(stage.id); }}
+                  variant="danger-ghost"
+                  size="sm"
+                  fullWidth
+                  contentAlign="start"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -308,16 +319,19 @@ const StageRow = ({
 
       {/* Description toggle */}
       {!stage._showDesc ? (
-        <button
-          type="button"
-          onClick={() => onChange(stage.id, { _showDesc: true })}
-          className="pl-9 text-xs text-gray-400 hover:text-indigo-500 text-left flex items-center gap-1 transition-colors w-fit"
-        >
-          <ChevronDown size={11} /> Add description
-        </button>
+        <div className="pl-9">
+          <Button
+            onClick={() => onChange(stage.id, { _showDesc: true })}
+            variant="link"
+            size="xs"
+            leftIcon={<ChevronDown size={11} />}
+          >
+            Add description
+          </Button>
+        </div>
       ) : (
         <div className="pl-9 flex flex-col gap-1">
-          <input
+          <BaseInput
             value={stage.description}
             onChange={e => onChange(stage.id, { description: e.target.value })}
             onBlur={() => {
@@ -325,15 +339,16 @@ const StageRow = ({
             }}
             placeholder="Optional description…"
             autoComplete="off"
-            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 hover:border-gray-300 transition-all"
+            size="sm"
           />
-          <button
-            type="button"
+          <Button
             onClick={() => onChange(stage.id, { _showDesc: false })}
-            className="text-xs text-gray-400 hover:text-indigo-500 text-left flex items-center gap-1 transition-colors w-fit"
+            variant="link"
+            size="xs"
+            leftIcon={<ChevronUp size={11} />}
           >
-            <ChevronUp size={11} /> Hide description
-          </button>
+            Hide description
+          </Button>
         </div>
       )}
     </div>
@@ -470,9 +485,9 @@ const StagePanel = ({
         <p className="font-semibold text-gray-900 text-sm leading-tight">{title}</p>
         <p className="text-xs text-gray-500 mt-1 leading-relaxed">{subtitle}</p>
       </div>
-      <span className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500">
-        {stages.length}
-      </span>
+      <div className="ml-auto">
+        <CountBadge count={stages.length} tone="neutral" size="md" showZero />
+      </div>
     </div>
 
     {/* Stage rows */}
@@ -501,41 +516,20 @@ const StagePanel = ({
 
     {/* Add button */}
     <div className="border-t border-gray-100 bg-white/60 px-3 py-3 sm:px-4">
-      <button
-        type="button"
+      <Button
         onClick={() => onAddNew(type)}
-        className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 flex items-center justify-center gap-1.5 transition-all"
+        variant="dashed"
+        fullWidth
+        
+        leftIcon={<Plus size={14} />}
       >
-        <Plus size={14} /> Add Stage
-      </button>
+        Add Stage
+      </Button>
     </div>
   </div>
 );
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
-
-interface ToggleProps {
-  enabled: boolean;
-  disabled?: boolean;
-  onToggle: () => void;
-}
-
-const Toggle = ({ enabled, disabled, onToggle }: ToggleProps) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={enabled}
-    onClick={onToggle}
-    disabled={disabled}
-    className={[
-      "relative inline-flex h-6 w-11 items-center rounded-full shrink-0 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2",
-      enabled ? "bg-indigo-600" : "bg-gray-300",
-      disabled ? "opacity-60 cursor-wait" : "cursor-pointer",
-    ].join(" ")}
-  >
-    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${enabled ? "translate-x-6" : "translate-x-1"}`} />
-  </button>
-);
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -730,31 +724,19 @@ export const Lifecycle = () => {
           <AlertCircle size={22} className="text-red-400" />
         </div>
         <p className="text-sm text-gray-700 font-medium">{loadError}</p>
-        <button
-          type="button"
+        <Button
           onClick={load}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+          leftIcon={<RefreshCw size={13} />}
+          
         >
-          <RefreshCw size={13} /> Try again
-        </button>
+          Try again
+        </Button>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Global micro-animation keyframe */}
-      <style>{`
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes toastIn {
-          from { opacity: 0; transform: translateX(12px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-      `}</style>
-
       <div className="space-y-4 px-0 py-1 sm:space-y-5 sm:p-6">
 
         {/* Toast stack */}
@@ -767,7 +749,6 @@ export const Lifecycle = () => {
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-red-50 text-red-700 border-red-200"
               }`}
-              style={{ animation: "toastIn 200ms ease" }}
             >
               {t.ok
                 ? <CheckCircle2 size={14} className="shrink-0" />
@@ -798,7 +779,12 @@ export const Lifecycle = () => {
             </p>
           </div>
           <div className="self-start sm:self-auto">
-            <Toggle enabled={enabled} disabled={togglingVis} onToggle={handleToggleVisibility} />
+            <ToggleSwitch
+              checked={enabled}
+              disabled={togglingVis}
+              onChange={handleToggleVisibility}
+              aria-label={enabled ? "Hide lifecycle stages" : "Show lifecycle stages"}
+            />
           </div>
         </div>
 

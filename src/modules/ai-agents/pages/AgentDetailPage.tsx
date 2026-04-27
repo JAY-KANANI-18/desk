@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   Activity,
@@ -18,18 +18,21 @@ import {
   RotateCcw,
   Save,
   ShieldCheck,
-  SlidersHorizontal,
   TestTube2,
   Wrench,
 } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Button } from "../../../components/ui/Button";
+import { BaseInput, RangeInput, TextareaInput } from "../../../components/ui/inputs";
+import { Select } from "../../../components/ui/Select";
+import { Tag } from "../../../components/ui/Tag";
+import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import type { AiAgentDetail, AiAgentVersion, AiAnalyticsSummary, AiKnowledgeSource, AiRunDetail, AiSandboxRun, AiToolMeta } from "../types";
 import {
+  AiPageLayout,
   ChannelPills,
   MetricTile,
-  PageHeader,
-  PageShell,
   StatusBadge,
   agentTypeLabels,
 } from "../components/AiAgentPrimitives";
@@ -44,6 +47,14 @@ const tabs = [
   { id: "playground", label: "Test Playground", icon: TestTube2 },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
 ] as const;
+
+const sourceTypeOptions = [
+  { value: "website", label: "Website crawler" },
+  { value: "file", label: "PDF / DOCX / TXT" },
+  { value: "faq", label: "FAQ import" },
+  { value: "product_catalog", label: "Product catalog" },
+  { value: "manual", label: "Manual entry" },
+];
 
 type TabId = (typeof tabs)[number]["id"];
 
@@ -90,20 +101,27 @@ export function AgentDetailPage() {
 
   if (loading) {
     return (
-      <PageShell>
+      <AiPageLayout title="AI Agent" eyebrow="Automation" description="Loading the latest agent configuration.">
         <div className="flex h-full items-center justify-center text-sm text-slate-500">
           <Loader2 size={16} className="mr-2 animate-spin" />
           Loading agent...
         </div>
-      </PageShell>
+      </AiPageLayout>
     );
   }
 
   if (!detail || !draft) {
     return (
-      <PageShell>
-        <PageHeader title="Agent not found" actions={<Link to="/ai-agents" className="text-sm font-semibold text-slate-700">Back to AI Agents</Link>} />
-      </PageShell>
+      <AiPageLayout
+        title="Agent not found"
+        actions={
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate("/ai-agents")}>
+            Back to AI Agents
+          </Button>
+        }
+      >
+        <div className="p-6 text-sm text-slate-500">This agent may have been archived or you may not have access.</div>
+      </AiPageLayout>
     );
   }
 
@@ -114,32 +132,34 @@ export function AgentDetailPage() {
   };
 
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow={agentTypeLabels[detail.agent.agentType]}
-        title={detail.agent.name}
-        description={detail.agent.description || "Configure, test, and supervise this AI agent."}
-        actions={
-          <>
-            <button
-              onClick={() => navigate("/ai-agents")}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <ArrowLeft size={16} />
-              Back
-            </button>
-            <StatusBadge status={detail.agent.status} />
-            <button
-              onClick={publish}
-              className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              <Play size={16} />
-              Publish
-            </button>
-          </>
-        }
-      />
-
+    <AiPageLayout
+      eyebrow={agentTypeLabels[detail.agent.agentType]}
+      title={detail.agent.name}
+      description={detail.agent.description || "Configure, test, and supervise this AI agent."}
+      actions={
+        <>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            leftIcon={<ArrowLeft size={16} />}
+            onClick={() => navigate("/ai-agents")}
+          >
+            Back
+          </Button>
+          <StatusBadge status={detail.agent.status} />
+          <Button
+            type="button"
+            variant="dark"
+            size="sm"
+            leftIcon={<Play size={16} />}
+            onClick={publish}
+          >
+            Publish
+          </Button>
+        </>
+      }
+    >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:grid lg:grid-cols-[260px_1fr]">
         <aside className="overflow-x-auto border-b border-slate-200 bg-white lg:border-b-0 lg:border-r">
           <nav className="flex gap-1 p-3 lg:flex-col">
@@ -147,16 +167,18 @@ export function AgentDetailPage() {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               return (
-                <button
+                <Button
                   key={tab.id}
+                  type="button"
+                  variant={active ? "dark" : "ghost"}
+                  size="sm"
+                  fullWidth
+                  contentAlign="start"
+                  leftIcon={<Icon size={17} />}
                   onClick={() => setTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold transition ${
-                    active ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"
-                  }`}
                 >
-                  <Icon size={17} />
                   {tab.label}
-                </button>
+                </Button>
               );
             })}
           </nav>
@@ -173,7 +195,7 @@ export function AgentDetailPage() {
           {activeTab === "analytics" ? <AnalyticsTab analytics={analytics} /> : null}
         </main>
       </div>
-    </PageShell>
+    </AiPageLayout>
   );
 }
 
@@ -263,23 +285,37 @@ function BehaviorTab({ agentId, version, onSaved }: { agentId: string; version: 
           <h2 className="text-base font-semibold text-slate-950">Prompt & Behavior</h2>
           <p className="mt-1 text-sm text-slate-500">Set the agent identity, tone, escalation posture, and office hours.</p>
         </div>
-        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-          <Save size={16} />
+        <Button
+          type="button"
+          variant="dark"
+          leftIcon={<Save size={16} />}
+          loading={saving}
+          loadingMode="inline"
+          loadingLabel="Saving"
+          onClick={save}
+        >
           Save
-        </button>
+        </Button>
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <Field label="Name" value={draft.name} onChange={(name) => setDraft((state) => ({ ...state, name }))} />
         <Field label="Tone" value={draft.tone} onChange={(tone) => setDraft((state) => ({ ...state, tone }))} />
         <Field label="Language" value={draft.defaultLanguage} onChange={(defaultLanguage) => setDraft((state) => ({ ...state, defaultLanguage }))} />
-        <label>
-          <span className="text-sm font-semibold text-slate-700">Office hours JSON</span>
-          <textarea value={draft.businessHours} onChange={(event) => setDraft((state) => ({ ...state, businessHours: event.target.value }))} className="mt-1 min-h-28 w-full rounded-md border border-slate-200 p-3 font-mono text-xs outline-none focus:border-slate-400" />
-        </label>
-        <label className="md:col-span-2">
-          <span className="text-sm font-semibold text-slate-700">System instructions</span>
-          <textarea value={draft.systemPrompt} onChange={(event) => setDraft((state) => ({ ...state, systemPrompt: event.target.value }))} className="mt-1 min-h-56 w-full rounded-md border border-slate-200 p-3 text-sm outline-none focus:border-slate-400" />
-        </label>
+        <TextareaInput
+          label="Office hours JSON"
+          value={draft.businessHours}
+          onChange={(event) => setDraft((state) => ({ ...state, businessHours: event.target.value }))}
+          rows={5}
+          className="font-mono text-xs"
+        />
+        <div className="md:col-span-2">
+          <TextareaInput
+            label="System instructions"
+            value={draft.systemPrompt}
+            onChange={(event) => setDraft((state) => ({ ...state, systemPrompt: event.target.value }))}
+            rows={9}
+          />
+        </div>
       </div>
     </div>
   );
@@ -314,16 +350,12 @@ function KnowledgeTab({ sources, onChanged }: { sources: AiKnowledgeSource[]; on
         <p className="mt-1 text-sm text-slate-500">Upload files, crawl websites, or import FAQs and catalogs.</p>
         <div className="mt-5 space-y-3">
           <Field label="Source name" value={name} onChange={setName} />
-          <label>
-            <span className="text-sm font-semibold text-slate-700">Type</span>
-            <select value={sourceType} onChange={(event) => setSourceType(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 bg-white p-2 text-sm">
-              <option value="website">Website crawler</option>
-              <option value="file">PDF / DOCX / TXT</option>
-              <option value="faq">FAQ import</option>
-              <option value="product_catalog">Product catalog</option>
-              <option value="manual">Manual entry</option>
-            </select>
-          </label>
+          <Select
+            label="Type"
+            value={sourceType}
+            onChange={(event) => setSourceType(event.target.value)}
+            options={sourceTypeOptions}
+          />
           <Field label={sourceType === "website" ? "Website URL" : "Source URI or note"} value={uri} onChange={setUri} />
           {sourceType === "file" ? (
             <div className="rounded-md border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">
@@ -331,9 +363,18 @@ function KnowledgeTab({ sources, onChanged }: { sources: AiKnowledgeSource[]; on
               <p className="mt-1 text-xs">File storage upload plugs into the existing media/files flow.</p>
             </div>
           ) : null}
-          <button disabled={saving || !name.trim()} onClick={create} className="w-full rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+          <Button
+            type="button"
+            variant="dark"
+            fullWidth
+            disabled={saving || !name.trim()}
+            loading={saving}
+            loadingMode="inline"
+            loadingLabel="Adding source"
+            onClick={create}
+          >
             Add source
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -343,7 +384,7 @@ function KnowledgeTab({ sources, onChanged }: { sources: AiKnowledgeSource[]; on
             <h2 className="text-base font-semibold text-slate-950">Knowledge sources</h2>
             <p className="text-sm text-slate-500">Indexing progress, errors, sync state, and re-sync actions live here.</p>
           </div>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge" className="rounded-md border border-slate-200 px-3 py-2 text-sm outline-none" />
+          <BaseInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge" size="sm" />
         </div>
         <div className="divide-y divide-slate-100">
           {filtered.length ? filtered.map((source) => (
@@ -357,7 +398,7 @@ function KnowledgeTab({ sources, onChanged }: { sources: AiKnowledgeSource[]; on
               </div>
               <StatusBadge status={source.status} />
               <p className="text-sm text-slate-500">{source.lastIndexedAt ? new Date(source.lastIndexedAt).toLocaleDateString() : "Not synced"}</p>
-              <button className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Re-sync</button>
+              <Button type="button" variant="secondary" size="sm">Re-sync</Button>
             </div>
           )) : (
             <p className="p-8 text-center text-sm text-slate-500">No knowledge sources yet.</p>
@@ -377,24 +418,36 @@ function ToolsTab({ agentId, version, tools, onSaved }: { agentId: string; versi
   };
   return (
     <section className="max-w-4xl rounded-lg border border-slate-200 bg-white p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">Tools / Actions</h2>
           <p className="mt-1 text-sm text-slate-500">Only enabled tools can be invoked by this agent.</p>
         </div>
-        <button onClick={save} className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Save</button>
+        <Button type="button" variant="dark" onClick={save}>Save</Button>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         {tools.map((tool) => {
           const checked = allowed.includes(tool.name);
           return (
-            <button key={tool.name} onClick={() => setAllowed((state) => checked ? state.filter((item) => item !== tool.name) : [...state, tool.name])} className={`rounded-lg border p-4 text-left ${checked ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200"}`}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold text-slate-950">{tool.name}</p>
-                <span className={`rounded-md px-2 py-1 text-xs font-semibold ${tool.risk === "high" ? "bg-rose-50 text-rose-700" : tool.risk === "medium" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{tool.risk}</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-500">{tool.description}</p>
-            </button>
+            <Button
+              key={tool.name}
+              type="button"
+              variant="select-card"
+              selected={checked}
+              radius="lg"
+              fullWidth
+              contentAlign="start"
+              preserveChildLayout
+              onClick={() => setAllowed((state) => checked ? state.filter((item) => item !== tool.name) : [...state, tool.name])}
+            >
+              <span className="block w-full text-left">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-slate-950">{tool.name}</span>
+                  <Tag label={tool.risk} bgColor={riskColor(tool.risk)} size="sm" />
+                </span>
+                <span className="mt-2 block text-sm font-normal text-slate-500">{tool.description}</span>
+              </span>
+            </Button>
           );
         })}
       </div>
@@ -433,12 +486,12 @@ function GuardrailsTab({ agentId, version, onSaved }: { agentId: string; version
 
   return (
     <section className="max-w-3xl rounded-lg border border-slate-200 bg-white p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">Guardrails</h2>
           <p className="mt-1 text-sm text-slate-500">Controls that keep the agent grounded and escalation-friendly.</p>
         </div>
-        <button onClick={save} className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">Save</button>
+        <Button type="button" variant="dark" onClick={save}>Save</Button>
       </div>
       <div className="mt-5 space-y-4">
         <Range label="Confidence threshold" value={config.confidenceThreshold} min={0.4} max={0.95} step={0.05} onChange={(confidenceThreshold) => setConfig((state) => ({ ...state, confidenceThreshold }))} />
@@ -448,14 +501,19 @@ function GuardrailsTab({ agentId, version, onSaved }: { agentId: string; version
           ["noUnsupportedRefunds", "Block unsupported refunds"],
           ["noLegalAdvice", "No legal advice"],
           ["noMedicalClaims", "No medical claims"],
-        ].map(([key, label]) => (
-          <button key={key} onClick={() => setConfig((state: any) => ({ ...state, [key]: !state[key] }))} className="flex w-full items-center justify-between rounded-md border border-slate-200 p-3 text-sm font-semibold text-slate-800">
-            {label}
-            <span className={`h-5 w-9 rounded-full p-0.5 ${config[key as keyof typeof config] ? "bg-emerald-500" : "bg-slate-200"}`}>
-              <span className={`block h-4 w-4 rounded-full bg-white transition ${config[key as keyof typeof config] ? "translate-x-4" : ""}`} />
-            </span>
-          </button>
-        ))}
+        ].map(([key, label]) => {
+          const checked = Boolean(config[key as keyof typeof config]);
+          return (
+            <div key={key} className="flex w-full items-center justify-between gap-3 rounded-md border border-slate-200 p-3 text-sm font-semibold text-slate-800">
+              {label}
+              <ToggleSwitch
+                checked={checked}
+                aria-label={label}
+                onChange={() => setConfig((state) => ({ ...state, [key]: !checked }))}
+              />
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -479,15 +537,20 @@ function VersionsTab({ agentId, detail, onChanged }: { agentId: string; detail: 
           <div key={version.id} className="grid gap-3 p-4 md:grid-cols-[1fr_130px_160px_120px] md:items-center">
             <div>
               <p className="font-semibold text-slate-950">Version {version.version}</p>
-              <p className="text-sm text-slate-500">{version.tone} · {version.defaultLanguage}</p>
+              <p className="text-sm text-slate-500">{version.tone} - {version.defaultLanguage}</p>
             </div>
             <StatusBadge status={version.status} />
             <p className="text-sm text-slate-500">{version.publishedAt ? new Date(version.publishedAt).toLocaleDateString() : "Not published"}</p>
             {version.status === "published" ? (
-              <button onClick={() => rollback(version.id)} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
-                <RotateCcw size={14} />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                leftIcon={<RotateCcw size={14} />}
+                onClick={() => rollback(version.id)}
+              >
                 Rollback
-              </button>
+              </Button>
             ) : null}
           </div>
         ))}
@@ -497,6 +560,7 @@ function VersionsTab({ agentId, detail, onChanged }: { agentId: string; detail: 
 }
 
 function PlaygroundTab({ agentId }: { agentId: string }) {
+  const navigate = useNavigate();
   const [conversationId, setConversationId] = useState("");
   const [message, setMessage] = useState("Hi, I need help choosing the right plan.");
   const [result, setResult] = useState<AiSandboxRun | null>(null);
@@ -535,14 +599,25 @@ function PlaygroundTab({ agentId }: { agentId: string }) {
         </div>
         <div className="space-y-3 border-t border-slate-100 p-4">
           <Field label="Conversation fixture ID" value={conversationId} onChange={setConversationId} />
-          <label>
-            <span className="text-sm font-semibold text-slate-700">Customer message</span>
-            <textarea value={message} onChange={(event) => setMessage(event.target.value)} className="mt-1 min-h-24 w-full rounded-md border border-slate-200 p-3 text-sm outline-none" />
-          </label>
-          <button disabled={loading} onClick={run} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+          <TextareaInput
+            label="Customer message"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            rows={4}
+          />
+          <Button
+            type="button"
+            variant="dark"
+            fullWidth
+            disabled={loading}
+            loading={loading}
+            loadingMode="inline"
+            loadingLabel="Simulating"
+            leftIcon={!loading ? <Play size={16} /> : undefined}
+            onClick={run}
+          >
             Simulate customer
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -560,12 +635,17 @@ function PlaygroundTab({ agentId }: { agentId: string }) {
           <DebugBlock title="Memory updates" data={result?.decision?.memoryUpdates || []} />
           <DebugBlock title="Run messages and tokens" data={runDetail?.messages || []} />
           <div className="flex flex-wrap gap-2">
-            <button onClick={run} disabled={loading} className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">Retry</button>
-            <button className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">Compare responses</button>
-            <Link to={`/ai-agents/${agentId}?tab=versions`} className="inline-flex items-center gap-1 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">
+            <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={run}>Retry</Button>
+            <Button type="button" variant="secondary" size="sm">Compare responses</Button>
+            <Button
+              type="button"
+              variant="dark"
+              size="sm"
+              rightIcon={<ChevronRight size={14} />}
+              onClick={() => navigate(`/ai-agents/${agentId}?tab=versions`)}
+            >
               Publish if good
-              <ChevronRight size={14} />
-            </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -608,7 +688,7 @@ function AnalyticsTab({ analytics }: { analytics: AiAnalyticsSummary | null }) {
         <div className="mt-4 divide-y divide-slate-100">
           {(analytics?.usage || []).map((item) => (
             <div key={`${item.provider}-${item.model}`} className="flex items-center justify-between py-3 text-sm">
-              <span className="font-semibold text-slate-800">{item.provider} · {item.model}</span>
+              <span className="font-semibold text-slate-800">{item.provider} - {item.model}</span>
               <span className="text-slate-500">{Number(item.total_tokens || 0).toLocaleString()} tokens</span>
             </div>
           ))}
@@ -620,22 +700,18 @@ function AnalyticsTab({ analytics }: { analytics: AiAnalyticsSummary | null }) {
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <label>
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 p-2 text-sm outline-none focus:border-slate-400" />
-    </label>
+    <BaseInput value={value} label={label} onChange={(event) => onChange(event.target.value)} />
   );
 }
 
 function Range({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) {
   return (
-    <label className="block rounded-md border border-slate-200 p-3">
-      <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
+    <div className="rounded-md border border-slate-200 p-3">
+      <div className="mb-3 text-sm font-semibold text-slate-700">
         <span>{label}</span>
-        <span>{value}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} className="mt-3 w-full" />
-    </label>
+      <RangeInput min={min} max={max} step={step} value={value} valueLabel={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </div>
   );
 }
 
@@ -648,7 +724,7 @@ function DebugRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DebugBlock({ title, data }: { title: string; data: any }) {
+function DebugBlock({ title, data }: { title: string; data: unknown }) {
   return (
     <div className="rounded-md border border-slate-100 bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{title}</p>
@@ -657,6 +733,12 @@ function DebugBlock({ title, data }: { title: string; data: any }) {
       </pre>
     </div>
   );
+}
+
+function riskColor(risk: AiToolMeta["risk"]) {
+  if (risk === "high") return "error";
+  if (risk === "medium") return "warning";
+  return "success";
 }
 
 function safeJson(value: string) {

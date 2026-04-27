@@ -1,14 +1,10 @@
 import { useState } from "react";
-import {
-  Calendar,
-  ListFilter,
-  Plus,
-  RefreshCw,
-  Search,
-  X,
-} from "lucide-react";
+import { Calendar, ListFilter, Plus, RefreshCw, Search, Table, X } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { BaseInput } from "../../components/ui/inputs/BaseInput";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { STATUS_FILTERS } from "./constants";
 import type { BroadcastViewMode } from "./types";
 
 type BroadcastToolbarProps = {
@@ -21,7 +17,9 @@ type BroadcastToolbarProps = {
   onViewModeChange: (mode: BroadcastViewMode) => void;
   onNewBroadcast: () => void;
   selectedStatus: string;
+  onStatusChange: (value: string) => void;
   onOpenFilters: () => void;
+  desktopMode?: "standalone" | "embedded";
 };
 
 export function BroadcastToolbar({
@@ -34,7 +32,9 @@ export function BroadcastToolbar({
   onViewModeChange,
   onNewBroadcast,
   selectedStatus,
+  onStatusChange,
   onOpenFilters,
+  desktopMode = "standalone",
 }: BroadcastToolbarProps) {
   const isMobile = useIsMobile();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -66,20 +66,15 @@ export function BroadcastToolbar({
             },
           ],
           panel: mobileSearchOpen ? (
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={15}
-              />
-              <input
-                autoFocus
-                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search broadcasts"
-                type="text"
-                value={searchQuery}
-              />
-            </div>
+            <BaseInput
+              autoFocus
+              appearance="toolbar"
+              leftIcon={<Search size={15} />}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search broadcasts"
+              type="text"
+              value={searchQuery}
+            />
           ) : null,
         }
       : {},
@@ -95,107 +90,129 @@ export function BroadcastToolbar({
   );
 
   return (
-    <div className="flex-shrink-0 bg-white px-3 py-2 sm:px-4 md:border-b md:border-gray-200 md:py-4">
+    <div
+      className={
+        desktopMode === "embedded"
+          ? "flex-shrink-0 bg-transparent px-0 py-0 md:border-0"
+          : "flex-shrink-0 bg-white px-3 py-2 sm:px-4 md:border-b md:border-gray-200 md:py-4"
+      }
+    >
       {isMobile ? (
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-xs text-gray-400">
             {activeRunLabel}
           </p>
 
-          <button
-            type="button"
+          <Button
             onClick={onRefresh}
             disabled={refreshing}
-            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:opacity-60"
+            iconOnly
+            size="sm"
+            variant="secondary"
+            leftIcon={
+              <RefreshCw
+                size={15}
+                className={refreshing ? "animate-spin" : ""}
+              />
+            }
             aria-label="Refresh broadcasts"
           >
-            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
-          </button>
+            Refresh
+          </Button>
 
           <div className="flex flex-shrink-0 items-center rounded-xl bg-slate-100 p-0.5">
-            <button
+            <Button
               type="button"
+                            leftIcon={<Table size={14} />}
+
+              variant={viewMode === "table" ? "secondary" : "ghost"}
               onClick={() => onViewModeChange("table")}
-              className={`h-8 rounded-lg px-3 text-xs font-medium transition ${
-                viewMode === "table"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
             >
               Table
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+            
+              variant={viewMode === "calendar" ? "secondary" : "ghost"}
+              leftIcon={<Calendar size={14} />}
               onClick={() => onViewModeChange("calendar")}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition ${
-                viewMode === "calendar"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
             >
-              <Calendar size={14} />
               Cal
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative hidden w-full md:block md:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search broadcasts"
-                value={searchQuery}
-                onChange={(event) => onSearchChange(event.target.value)}
-                className="w-full rounded-lg bg-slate-100 py-2 pl-9 pr-4 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 md:w-64 md:border md:border-gray-300 md:bg-white"
-              />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-0.5 overflow-x-auto">
+              {STATUS_FILTERS.map((filter) => (
+                <Button
+                  key={filter.name}
+                  type="button"
+                  onClick={() => onStatusChange(filter.name)}
+                  variant="tab"
+                  selected={selectedStatus === filter.name}
+                  radius="none"
+                >
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                    <span className={`h-2 w-2 rounded-full ${filter.color}`} />
+                    {filter.name}
+                  </span>
+                </Button>
+              ))}
             </div>
 
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="hidden items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-gray-700 transition hover:bg-slate-200 disabled:opacity-60 md:inline-flex md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
-            >
-              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-              Refresh
-            </button>
+            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+              <div className="w-full md:w-64">
+                <BaseInput
+                  appearance="toolbar"
+                  type="text"
+                  placeholder="Search broadcasts"
+                  value={searchQuery}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  leftIcon={<Search size={16} />}
+                />
+              </div>
+
+              <Button
+                onClick={onRefresh}
+                disabled={refreshing}
+                variant="secondary"
+                leftIcon={
+                  <RefreshCw
+                    size={16}
+                    className={refreshing ? "animate-spin" : ""}
+                  />
+                }
+              >
+                Refresh
+              </Button>
+
+              <Button onClick={onNewBroadcast} leftIcon={<Plus size={16} />}>
+                New broadcast
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-gray-400">{activeRunLabel}</span>
-            <button
+            <div className="flex  min-w-0 flex-1 flex-shrink-0 items-center gap-2 md:justify-end rounded-xl  p-0.5">
+            <Button
               type="button"
+                            leftIcon={<Table size={14} />}
+
+              variant={viewMode === "table" ? "secondary" : "ghost"}
               onClick={() => onViewModeChange("table")}
-              className={`rounded-lg px-3 py-2 text-sm transition md:border ${
-                viewMode === "table"
-                  ? "bg-gray-100 text-gray-900 md:border-gray-300"
-                  : "bg-slate-100 text-gray-600 hover:bg-slate-200 md:border-gray-200 md:bg-white md:hover:bg-gray-50"
-              }`}
             >
               Table
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+            
+              variant={viewMode === "calendar" ? "secondary" : "ghost"}
+              leftIcon={<Calendar size={14} />}
               onClick={() => onViewModeChange("calendar")}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition md:border ${
-                viewMode === "calendar"
-                  ? "bg-gray-100 text-gray-900 md:border-gray-300"
-                  : "bg-slate-100 text-gray-600 hover:bg-slate-200 md:border-gray-200 md:bg-white md:hover:bg-gray-50"
-              }`}
             >
-              <Calendar size={16} />
-              Calendar
-            </button>
-            <button
-              type="button"
-              onClick={onNewBroadcast}
-              className="hidden items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 md:inline-flex"
-            >
-              <Plus size={16} />
-              New broadcast
-            </button>
+              Cal
+            </Button>
           </div>
         </div>
       )}

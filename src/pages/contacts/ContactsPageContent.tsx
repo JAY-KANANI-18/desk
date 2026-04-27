@@ -1,14 +1,15 @@
 import type { ContactsPageContentProps } from "./types";
-import { MobileSheet } from "../../components/topbar/MobileSheet";
 import { useIsMobile } from "../../hooks/useIsMobile";
-import { ContactSidebarHybrid } from "../inbox/ContactSidebarHybrid";
 import { CONTACT_SIDEBAR_WIDTH } from "../inbox/contact-sidebar/DesktopShell";
 import { ContactsHeader } from "./components/ContactsHeader";
 import { ContactsTable } from "./components/ContactsTable";
 import { CreateContactModal } from "./components/CreateContactModal";
+import { EditContactModal } from "./components/EditContactModal";
 import { ImportContactsModal } from "./components/ImportContactsModal";
 
 export function ContactsPageContent({
+  showDesktopHeader = true,
+  renderDesktopSidebar = true,
   navigate,
   contacts,
   totalContacts,
@@ -66,16 +67,6 @@ export function ContactsPageContent({
   handlePersistedContact,
 }: ContactsPageContentProps) {
   const isMobile = useIsMobile();
-  const mobileSidebarTitle = (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Contacts
-      </p>
-      <h2 className="mt-1 text-base font-semibold text-slate-900">
-        Contact Details
-      </h2>
-    </div>
-  );
   const handleCloseEditingContact = () => setEditingContact(null);
   const handleDeleteEditingContact = editingContact
     ? () => {
@@ -84,28 +75,43 @@ export function ContactsPageContent({
         void handleDeleteOne(contactId);
       }
     : undefined;
+  const editContactModal = (
+    <EditContactModal
+      contact={editingContact}
+      stages={stages}
+      workspaceUsers={workspaceUsers}
+      onClose={handleCloseEditingContact}
+      onDelete={handleDeleteEditingContact}
+      onContactChange={handlePersistedContact}
+      desktopVariant="inline"
+      desktopTitle="Contact details"
+      desktopContainerClassName="flex h-full"
+    />
+  );
 
   return (
     <div className="relative flex h-full min-h-0 bg-white">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <ContactsHeader
-          contactsCount={contacts.length}
-          totalContacts={totalContacts}
-          toast={toast}
-          setToast={setToast}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          showActionsMenu={showActionsMenu}
-          setShowActionsMenu={setShowActionsMenu}
-          selectedLifecycle={selectedLifecycle}
-          setSelectedLifecycle={setSelectedLifecycle}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-          onOpenImport={() => navigate("/contacts/import") }
-          onExport={() => void handleExport()}
-          onOpenImportJobs={() => navigate("/contacts/import-jobs")}
-          onNewContact={() => setShowNewContact(true)}
-        />
+        {(showDesktopHeader || isMobile) && (
+          <ContactsHeader
+            contactsCount={contacts.length}
+            totalContacts={totalContacts}
+            toast={toast}
+            setToast={setToast}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            showActionsMenu={showActionsMenu}
+            setShowActionsMenu={setShowActionsMenu}
+            selectedLifecycle={selectedLifecycle}
+            setSelectedLifecycle={setSelectedLifecycle}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            onOpenImport={() => navigate("/contacts/import")}
+            onExport={() => void handleExport()}
+            onOpenImportJobs={() => navigate("/contacts/import-jobs")}
+            onNewContact={() => setShowNewContact(true)}
+          />
+        )}
 
         <ContactsTable
           loading={loading}
@@ -132,31 +138,17 @@ export function ContactsPageContent({
         />
       </div>
 
-      <div
-        className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out md:flex"
-        style={{
-          width: editingContact && !isMobile ? CONTACT_SIDEBAR_WIDTH : 0,
-          opacity: editingContact && !isMobile ? 1 : 0,
-        }}
-      >
-        {editingContact && !isMobile ? (
-          <ContactSidebarHybrid
-            contactDetails={editingContact}
-            mode="desktop"
-            workspaceUsers={workspaceUsers}
-            lifecycleStages={stages}
-            onDelete={handleDeleteEditingContact}
-            onContactChange={(nextContact) =>
-              handlePersistedContact(nextContact as any)
-            }
-            showAiPanel={false}
-            desktopVariant="inline"
-            desktopTitle="Contact details"
-            desktopContainerClassName="flex h-full"
-            onDesktopClose={handleCloseEditingContact}
-          />
-        ) : null}
-      </div>
+      {renderDesktopSidebar ? (
+        <div
+          className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out md:flex"
+          style={{
+            width: editingContact && !isMobile ? CONTACT_SIDEBAR_WIDTH : 0,
+            opacity: editingContact && !isMobile ? 1 : 0,
+          }}
+        >
+          {!isMobile ? editContactModal : null}
+        </div>
+      ) : null}
 
       <CreateContactModal
         open={showNewContact}
@@ -185,26 +177,7 @@ export function ContactsPageContent({
         onConfirmImport={handleConfirmImport}
       />
 
-      {editingContact && isMobile ? (
-        <MobileSheet
-          open
-          onClose={handleCloseEditingContact}
-          borderless
-          title={mobileSidebarTitle}
-        >
-          <ContactSidebarHybrid
-            contactDetails={editingContact}
-            mode="mobile"
-            workspaceUsers={workspaceUsers}
-            lifecycleStages={stages}
-            onDelete={handleDeleteEditingContact}
-            onContactChange={(nextContact) =>
-              handlePersistedContact(nextContact as any)
-            }
-            showAiPanel={false}
-          />
-        </MobileSheet>
-      ) : null}
+      {isMobile ? editContactModal : null}
 
       {showActionsMenu && <div className="fixed inset-0 z-10" onClick={() => setShowActionsMenu(false)} />}
     </div>

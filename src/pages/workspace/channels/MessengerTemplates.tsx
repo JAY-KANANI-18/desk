@@ -1,36 +1,47 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, Check, Eye, Loader, RefreshCw, Search, X } from 'lucide-react';
+import { AlertCircle, Check, Eye, RefreshCw, Search } from 'lucide-react';
 
 import {
   DataTable,
   type DataTableColumn,
   type DataTableSortDirection,
 } from '../../../components/ui/DataTable';
+import { Button } from '../../../components/ui/button/Button';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { CenterModal } from '../../../components/ui/modal/CenterModal';
+import { BaseSelect } from '../../../components/ui/select/BaseSelect';
+import type { SelectOption } from '../../../components/ui/select/shared';
+import { Tag } from '../../../components/ui/tag/Tag';
 import { ChannelApi, type MessengerTemplate } from '../../../lib/channelApi';
 import { useSocket } from '../../../socket/socket-provider';
 import { ConnectedChannel } from '../../channels/ManageChannelPage';
 
 type MessengerTemplateSortField = 'name' | 'templateType' | 'category' | 'status';
 
+const categoryOptions: SelectOption[] = [
+  { value: '', label: 'All categories' },
+  { value: 'SERVICE', label: 'SERVICE' },
+  { value: 'UTILITY', label: 'UTILITY' },
+  { value: 'MARKETING', label: 'MARKETING' },
+];
+
 const CategoryBadge = ({ category }: { category: string }) => {
-  const map: Record<string, string> = {
-    MARKETING: 'bg-orange-50 text-orange-700',
-    UTILITY: 'bg-blue-50 text-blue-700',
-    SERVICE: 'bg-violet-50 text-violet-700',
+  const colorMap: Record<string, string> = {
+    MARKETING: 'tag-orange',
+    UTILITY: 'tag-blue',
+    SERVICE: 'tag-purple',
   };
 
   return (
-    <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${map[category] ?? 'bg-gray-100 text-gray-500'}`}>
-      {category}
-    </span>
+    <Tag
+      label={category}
+      size="sm"
+      bgColor={colorMap[category] ?? 'gray'}
+    />
   );
 };
 
-const ApprovalBadge = () => (
-  <span className="inline-flex rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-    APPROVED
-  </span>
-);
+const ApprovalBadge = () => <Tag label="APPROVED" size="sm" bgColor="success" />;
 
 const TemplatePreview = ({
   template,
@@ -47,11 +58,11 @@ const TemplatePreview = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const next: Record<string, string> = {};
+    const nextVariables: Record<string, string> = {};
     template.variables?.forEach((key) => {
-      next[key] = '';
+      nextVariables[key] = '';
     });
-    setVariables(next);
+    setVariables(nextVariables);
     setPreview(null);
   }, [template.id, template.variables]);
 
@@ -73,103 +84,99 @@ const TemplatePreview = ({
   };
 
   useEffect(() => {
-    if (template.variables.length === 0) {
+    if ((template.variables?.length ?? 0) === 0) {
       void loadPreview();
     }
   }, [template.id]);
 
   const body =
-    preview?.components?.find?.((component: any) => component.type === 'BODY')?.text ??
-    template.components?.find?.((component: any) => component.type === 'BODY')?.text ??
+    preview?.components?.find?.((component: any) => component.type === 'BODY')
+      ?.text ??
+    template.components?.find?.((component: any) => component.type === 'BODY')
+      ?.text ??
     '';
   const buttons =
-    preview?.preview?.quick_replies ?? preview?.preview?.attachment?.payload?.buttons ?? [];
+    preview?.preview?.quick_replies ??
+    preview?.preview?.attachment?.payload?.buttons ??
+    [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <p className="text-sm font-semibold text-gray-900">{template.name}</p>
-            <p className="text-xs text-gray-400">
-              {template.templateType} - Meta-provided Messenger template
+    <CenterModal
+      isOpen
+      onClose={onClose}
+      title={template.name}
+      subtitle={`${template.templateType} - Meta-provided Messenger template`}
+      size="lg"
+    >
+      <div className="space-y-4">
+        {(template.variables?.length ?? 0) > 0 ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Variables
             </p>
+            {template.variables.map((key) => (
+              <BaseInput
+                key={key}
+                label={`{{${key}}}`}
+                value={variables[key] ?? ''}
+                onChange={(event) =>
+                  setVariables((current) => ({
+                    ...current,
+                    [key]: event.target.value,
+                  }))
+                }
+                placeholder={`Value for {{${key}}}`}
+              />
+            ))}
+            <Button
+              leftIcon={!loading ? <Eye size={13} /> : undefined}
+              onClick={() => void loadPreview()}
+              loading={loading}
+              loadingMode="inline"
+              loadingLabel="Previewing..."
+            >
+              Preview
+            </Button>
           </div>
-          <button
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            onClick={onClose}
-          >
-            <X size={16} />
-          </button>
-        </div>
+        ) : null}
 
-        <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
-          {template.variables.length > 0 ? (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Variables
-              </p>
-              {template.variables.map((key) => (
-                <div key={key}>
-                  <label className="mb-1 block text-xs text-gray-500">{`{{${key}}}`}</label>
-                  <input
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    onChange={(event) =>
-                      setVariables((current) => ({
-                        ...current,
-                        [key]: event.target.value,
-                      }))
-                    }
-                    placeholder={`Value for {{${key}}}`}
-                    value={variables[key] ?? ''}
+        <div className="rounded-xl bg-gray-50 p-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+            Messenger Preview
+          </p>
+          <div className="max-w-[300px] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-gray-800 shadow-sm">
+            <p className="whitespace-pre-wrap">{body || template.description}</p>
+            {buttons.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {buttons.map((button: any, index: number) => (
+                  <Tag
+                    key={`${button.title}-${index}`}
+                    label={button.title}
+                    size="sm"
+                    bgColor="info"
                   />
-                </div>
-              ))}
-              <button
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-                disabled={loading}
-                onClick={loadPreview}
-              >
-                {loading ? <Loader className="animate-spin" size={13} /> : <Eye size={13} />}
-                Preview
-              </button>
-            </div>
-          ) : null}
-
-          <div className="rounded-xl bg-gray-50 p-4">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-              Messenger Preview
-            </p>
-            <div className="max-w-[300px] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-gray-800 shadow-sm">
-              <p className="whitespace-pre-wrap">{body || template.description}</p>
-              {buttons.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {buttons.map((button: any, index: number) => (
-                    <span
-                      className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700"
-                      key={`${button.title}-${index}`}
-                    >
-                      {button.title}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+                ))}
+              </div>
+            ) : null}
           </div>
-
-          {error ? (
-            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-              <AlertCircle size={13} />
-              {error}
-            </div>
-          ) : null}
         </div>
+
+        {error ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+            <AlertCircle size={13} />
+            {error}
+          </div>
+        ) : null}
       </div>
-    </div>
+    </CenterModal>
   );
 };
 
-export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChannel }) => {
+export const MessengerTemplatesSection = ({
+  channel,
+}: {
+  channel: ConnectedChannel;
+}) => {
   const { socket } = useSocket();
   const [templates, setTemplates] = useState<MessengerTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,8 +186,10 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [preview, setPreview] = useState<MessengerTemplate | null>(null);
-  const [sortField, setSortField] = useState<MessengerTemplateSortField>('name');
-  const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
+  const [sortField, setSortField] =
+    useState<MessengerTemplateSortField>('name');
+  const [sortDirection, setSortDirection] =
+    useState<DataTableSortDirection>('asc');
 
   const load = async () => {
     setLoading(true);
@@ -233,7 +242,7 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
       setError(err?.message ?? 'Sync failed');
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMsg(null), 4000);
+      window.setTimeout(() => setSyncMsg(null), 4000);
     }
   };
 
@@ -267,7 +276,9 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
     });
   }, [sortDirection, sortField, templates]);
 
-  const columns: Array<DataTableColumn<MessengerTemplate, MessengerTemplateSortField>> = [
+  const columns: Array<
+    DataTableColumn<MessengerTemplate, MessengerTemplateSortField>
+  > = [
     {
       id: 'name',
       header: 'Name',
@@ -295,7 +306,9 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
       sortField: 'templateType',
       mobile: 'detail',
       cell: (template) => (
-        <span className="text-xs capitalize text-gray-500">{template.templateType}</span>
+        <span className="text-xs capitalize text-gray-500">
+          {template.templateType}
+        </span>
       ),
     },
     {
@@ -332,39 +345,36 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
               {syncMsg}
             </span>
           ) : null}
-          <button
-            className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
-            disabled={syncing}
-            onClick={handleSync}
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={!syncing ? <RefreshCw size={13} /> : undefined}
+            onClick={() => void handleSync()}
+            loading={syncing}
+            loadingMode="inline"
+            loadingLabel="Syncing..."
           >
-            {syncing ? <Loader className="animate-spin" size={13} /> : <RefreshCw size={13} />}
-            {syncing ? 'Syncing...' : 'Sync'}
-          </button>
+            Sync
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
-        <form className="relative min-w-[200px] flex-1" onSubmit={handleSearch}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-          <input
-            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      <div className="flex flex-shrink-0 flex-wrap items-start gap-2">
+        <form className="min-w-[200px] flex-1" onSubmit={handleSearch}>
+          <BaseInput
+            value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search templates..."
-            value={search}
+            leftIcon={<Search size={14} />}
           />
         </form>
-        <select
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          onChange={(event) => setCategory(event.target.value)}
-          value={category}
-        >
-          <option value="">All categories</option>
-          {['SERVICE', 'UTILITY', 'MARKETING'].map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+        <div className="min-w-[180px]">
+          <BaseSelect
+            value={category}
+            onChange={setCategory}
+            options={categoryOptions}
+          />
+        </div>
       </div>
 
       {error ? (
@@ -403,7 +413,8 @@ export const MessengerTemplatesSection = ({ channel }: { channel: ConnectedChann
       </div>
 
       <p className="flex-shrink-0 text-xs text-gray-400">
-        {templates.length} template{templates.length !== 1 ? 's' : ''} - Messenger templates are platform formats provided by Meta.
+        {templates.length} template{templates.length !== 1 ? 's' : ''} -
+        Messenger templates are platform formats provided by Meta.
       </p>
 
       {preview ? (

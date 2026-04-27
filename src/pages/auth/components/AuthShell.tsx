@@ -1,5 +1,5 @@
 import type {
-  ButtonHTMLAttributes,
+  ComponentProps,
   HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
@@ -8,6 +8,9 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { Button } from "../../../components/ui/Button";
+import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { PasswordInput } from "../../../components/ui/inputs/PasswordInput";
 
 const cx = (...values: Array<string | false | null | undefined>) =>
   values.filter(Boolean).join(" ");
@@ -25,7 +28,7 @@ interface AuthShellProps {
   headerAlign?: "left" | "center";
 }
 
-interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+interface AuthFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   label: string;
   icon?: LucideIcon;
   trailing?: ReactNode;
@@ -33,8 +36,10 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
 }
 
-interface AuthButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface AuthButtonProps extends Omit<ComponentProps<typeof Button>, "children"> {
   children: ReactNode;
+  loading?: boolean;
+  loadingLabel?: ReactNode;
 }
 
 interface AuthNoticeProps extends HTMLAttributes<HTMLDivElement> {
@@ -158,66 +163,76 @@ export const AuthField = ({
   icon: Icon,
   trailing,
   helpText,
-  className,
   error,
   ...props
 }: AuthFieldProps) => (
   <label className="block space-y-2">
     <span className="text-sm font-medium text-gray-700">{label}</span>
-    <div
-      className={cx(
-        "flex items-center rounded-2xl border bg-white px-3 transition",
-        error
-          ? "border-red-300 bg-red-50/80"
-          : "border-gray-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-100",
-      )}
-    >
-      {Icon ? <Icon size={16} className="shrink-0 text-gray-400" /> : null}
-      <input
-        {...props}
-        className={cx(
-          "w-full bg-transparent py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400",
-          Icon ? "pl-2.5" : "",
-          trailing ? "pr-2" : "",
-          className,
-        )}
-      />
-      {trailing ? <div className="ml-1 shrink-0">{trailing}</div> : null}
-    </div>
+    <BaseInput
+      {...props}
+      appearance="auth"
+      leftIcon={Icon ? <Icon size={16} className="shrink-0 text-gray-400" /> : undefined}
+      rightIcon={trailing}
+      invalid={Boolean(error)}
+    />
+    {helpText ? <div className="text-xs leading-5 text-gray-500">{helpText}</div> : null}
+  </label>
+);
+
+export const AuthPasswordField = ({
+  label,
+  icon: Icon,
+  helpText,
+  error,
+  ...props
+}: Omit<AuthFieldProps, "trailing">) => (
+  <label className="block space-y-2">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <PasswordInput
+      {...props}
+      appearance="auth"
+      leftIcon={Icon ? <Icon size={16} className="shrink-0 text-gray-400" /> : undefined}
+      invalid={Boolean(error)}
+    />
     {helpText ? <div className="text-xs leading-5 text-gray-500">{helpText}</div> : null}
   </label>
 );
 
 export const AuthPrimaryButton = ({
   children,
-  className,
+  loading = false,
+  loadingLabel,
   ...props
 }: AuthButtonProps) => (
-  <button
+  <Button
     {...props}
-    className={cx(
-      "inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300",
-      className,
-    )}
+    fullWidth
+    
+    loading={loading}
+    loadingMode="inline"
+    loadingLabel={loadingLabel}
   >
     {children}
-  </button>
+  </Button>
 );
 
 export const AuthSecondaryButton = ({
   children,
-  className,
+  loading = false,
+  loadingLabel,
   ...props
 }: AuthButtonProps) => (
-  <button
+  <Button
     {...props}
-    className={cx(
-      "inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60",
-      className,
-    )}
+    variant="secondary"
+    fullWidth
+
+    loading={loading}
+    loadingMode="inline"
+    loadingLabel={loadingLabel}
   >
     {children}
-  </button>
+  </Button>
 );
 
 export const AuthDivider = ({ label }: { label: string }) => (

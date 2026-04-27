@@ -1,28 +1,75 @@
-import { SelectHTMLAttributes, forwardRef } from 'react';
+import { forwardRef, useId, type SelectHTMLAttributes } from "react";
+import {
+  FieldShell,
+  getDescriptionId,
+  getInputControlClassName,
+  getInputControlStyle,
+  type FieldLabelVariant,
+  type InputAppearance,
+  type InputSize,
+} from "./inputs/shared";
 
-interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps
+  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   label?: string;
   error?: string;
   helperText?: string;
   options: Array<{ value: string; label: string }>;
+  size?: InputSize;
+  appearance?: InputAppearance;
+  labelVariant?: FieldLabelVariant;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options, className = '', ...props }, ref) => {
+  (
+    {
+      id,
+      label,
+      error,
+      helperText,
+      options,
+      size = "md",
+      appearance = "default",
+      labelVariant = "default",
+      className,
+      required,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
+    const generatedId = useId();
+    const selectId = id ?? generatedId;
+    const descriptionId = getDescriptionId(
+      selectId,
+      Boolean(error || helperText),
+    );
+
     return (
-      <div className="w-full">
-        {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-            {props.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-        )}
+      <FieldShell
+        id={selectId}
+        label={label}
+        required={required}
+        error={error}
+        hint={helperText}
+        labelVariant={labelVariant}
+      >
         <select
-          ref={ref}
-          className={`select focus-visible ${
-            error ? 'border-red-500 focus:border-red-500 focus:shadow-red-200' : ''
-          } ${className}`}
           {...props}
+          ref={ref}
+          id={selectId}
+          required={required}
+          disabled={disabled}
+          aria-invalid={error ? "true" : undefined}
+          aria-describedby={descriptionId}
+          className={getInputControlClassName({
+            size,
+            appearance,
+            className,
+          })}
+          style={getInputControlStyle({
+            hasError: Boolean(error),
+          })}
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -30,15 +77,49 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && (
-          <p className="mt-1 text-xs text-red-600">{error}</p>
-        )}
-        {helperText && !error && (
-          <p className="mt-1 text-xs text-gray-500">{helperText}</p>
-        )}
-      </div>
+      </FieldShell>
     );
-  }
+  },
 );
 
-Select.displayName = 'Select';
+Select.displayName = "Select";
+
+export {
+  BaseSelect,
+  CompactSelectMenu,
+  MultiSelect,
+  SearchableSelect,
+  SelectWithIconLabel,
+  TagSelect,
+  UserAssignSelect,
+  VariableSuggestionMenu,
+  WorkspaceTagManager,
+  WorkspaceTagSelect,
+} from "./select/index";
+export type {
+  BaseSelectProps,
+  CompactSelectMenuDescriptionTone,
+  CompactSelectMenuGroup,
+  CompactSelectMenuOption,
+  CompactSelectMenuProps,
+  MultiSelectProps,
+  SearchableSelectProps,
+  SelectOption,
+  SelectOptionSurface,
+  SelectOptionTone,
+  SelectSize,
+  SelectTriggerAppearance,
+  SelectWithIconLabelProps,
+  TagSelectGroup,
+  TagSelectOption,
+  TagSelectProps,
+  UserSelectOption,
+  UserAssignSelectProps,
+  VariableSuggestionMenuProps,
+  VariableSuggestionOption,
+  WorkspaceTagManagerLabelAppearance,
+  WorkspaceTagManagerProps,
+  WorkspaceTagSelectOption,
+  WorkspaceTagSelectProps,
+  WorkspaceTagSelectRenderTriggerProps,
+} from "./select/index";

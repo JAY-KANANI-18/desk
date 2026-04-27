@@ -22,6 +22,8 @@ import {
   YAxis,
 } from "recharts";
 import { Card } from "../../components/ui/Card";
+import { IconButton } from "../../components/ui/button/IconButton";
+import { BaseInput } from "../../components/ui/inputs/BaseInput";
 
 export type DateFilter = {
   from: string;
@@ -119,8 +121,8 @@ export const ReportsDateRangeBar = () => {
   const { filters, setFilters } = useReportFilters();
 
   return (
-    <div className="flex flex-col gap-3 pb-2 md:flex-row md:items-end md:justify-between">
-      <div>
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+      <div className="md:text-right">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
           Date range
         </p>
@@ -170,29 +172,27 @@ const ReportDateInput = ({
   };
 
   return (
-    <label className="block min-w-0">
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-        {label}
-      </span>
-      <div className="relative min-w-0">
-        <input
-          ref={inputRef}
-          className="h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 pr-11 text-sm text-slate-800 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 [&::-webkit-calendar-picker-indicator]:opacity-0"
-          onChange={(event) => onChange(event.target.value)}
-          type="date"
-          value={value}
-        />
-        <button
+    <BaseInput
+      ref={inputRef}
+      label={label}
+      labelVariant="sidebar"
+      type="date"
+      size="sm"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      hideNativePickerIndicator
+      rightIcon={
+        <IconButton
           type="button"
           onClick={openPicker}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          icon={<Calendar size={16} />}
           aria-label={`Choose ${label.toLowerCase()} date`}
+          size="xs"
+          variant="ghost"
           tabIndex={-1}
-        >
-          <Calendar size={16} />
-        </button>
-      </div>
-    </label>
+        />
+      }
+    />
   );
 };
 
@@ -336,9 +336,13 @@ export const ReportChartCard = ({
           <span className="text-sm font-semibold text-slate-800">{title}</span>
           <Info size={14} className="text-slate-400" />
         </div>
-        <button className="rounded-xl p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
-          <MoreVertical size={16} />
-        </button>
+        <IconButton
+          type="button"
+          icon={<MoreVertical size={16} />}
+          aria-label={`More options for ${title}`}
+          size="xs"
+          variant="ghost"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2 xl:items-center">

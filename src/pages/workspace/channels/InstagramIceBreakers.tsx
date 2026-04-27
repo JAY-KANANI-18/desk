@@ -1,24 +1,30 @@
-// src/pages/workspace/channels/InstagramIceBreakers.tsx
-import { useState, useEffect } from 'react';
-import { RefreshCw, Plus, Trash2, Save, Loader, AlertCircle, Info, Check, GripVertical } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, Check, Info, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Button } from '../../../components/ui/button/Button';
+import { IconButton } from '../../../components/ui/button/IconButton';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { ChannelApi, IceBreakerItem } from '../../../lib/channelApi';
-import { ConnectedChannel, useSave, SaveButton } from '../../channels/ManageChannelPage';
 import { useSocket } from '../../../socket/socket-provider';
+import { ConnectedChannel, SaveButton, useSave } from '../../channels/ManageChannelPage';
 
 const MAX_ICEBREAKERS = 4;
 const MAX_QUESTION_LEN = 80;
-const MAX_PAYLOAD_LEN  = 1000;
+const MAX_PAYLOAD_LEN = 1000;
 
-export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedChannel }) => {
+export const InstagramIceBreakersSection = ({
+  channel,
+}: {
+  channel: ConnectedChannel;
+}) => {
   const { socket } = useSocket();
   const { saving, saved, error: saveError, save } = useSave();
 
-  const [items,    setItems]   = useState<IceBreakerItem[]>([]);
-  const [loading,  setLoading] = useState(true);
-  const [syncing,  setSyncing] = useState(false);
-  const [syncMsg,  setSyncMsg] = useState<string | null>(null);
-  const [loadErr,  setLoadErr] = useState<string | null>(null);
-  const [dirty,    setDirty]   = useState(false);
+  const [items, setItems] = useState<IceBreakerItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -34,7 +40,9 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
     }
   };
 
-  useEffect(() => { void load(); }, [channel.id]);
+  useEffect(() => {
+    void load();
+  }, [channel.id]);
 
   useEffect(() => {
     if (!socket) return;
@@ -73,7 +81,7 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
       const result = await ChannelApi.syncIceBreakers(String(channel.id));
       setSyncMsg(`Synced ${result?.synced ?? 0} ice-breakers`);
       await load();
-      setTimeout(() => setSyncMsg(null), 3500);
+      window.setTimeout(() => setSyncMsg(null), 3500);
     } catch (err: any) {
       setLoadErr(err?.message ?? 'Sync failed');
     } finally {
@@ -83,24 +91,37 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
 
   const addItem = () => {
     if (items.length >= MAX_ICEBREAKERS) return;
-    setItems(p => [...p, { question: '', payload: '' }]);
+    setItems((current) => [...current, { question: '', payload: '' }]);
     setDirty(true);
   };
 
-  const updateItem = (i: number, field: keyof IceBreakerItem, value: string) => {
-    setItems(p => p.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
+  const updateItem = (
+    index: number,
+    field: keyof IceBreakerItem,
+    value: string,
+  ) => {
+    setItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    );
     setDirty(true);
   };
 
-  const removeItem = (i: number) => {
-    setItems(p => p.filter((_, idx) => idx !== i));
+  const removeItem = (index: number) => {
+    setItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
     setDirty(true);
   };
 
   const handleSave = () =>
     save(async () => {
-      const invalid = items.some(it => !it.question.trim());
-      if (invalid) return { success: false, error: 'All ice-breakers must have a question' };
+      const invalid = items.some((item) => !item.question.trim());
+      if (invalid) {
+        return {
+          success: false,
+          error: 'All ice-breakers must have a question',
+        };
+      }
       const result = await ChannelApi.pushIceBreakers(String(channel.id), items);
       setDirty(false);
       return result;
@@ -108,98 +129,143 @@ export const InstagramIceBreakersSection = ({ channel }: { channel: ConnectedCha
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Ice-Breakers</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Quick-reply buttons shown to new contacts when they open a conversation.</p>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Quick-reply buttons shown to new contacts when they open a
+            conversation.
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          {syncMsg && <span className="text-xs text-green-600 flex items-center gap-1"><Check size={12}/>{syncMsg}</span>}
-          <button onClick={handleSync} disabled={syncing}
-            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60">
-            {syncing ? <Loader size={13} className="animate-spin"/> : <RefreshCw size={13}/>}
-            {syncing ? 'Syncing…' : 'Sync from Meta'}
-          </button>
+          {syncMsg ? (
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: 'var(--color-success)' }}
+            >
+              <Check size={12} />
+              {syncMsg}
+            </span>
+          ) : null}
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={!syncing ? <RefreshCw size={13} /> : undefined}
+            onClick={() => void handleSync()}
+            loading={syncing}
+            loadingMode="inline"
+            loadingLabel="Syncing..."
+          >
+            Sync from Meta
+          </Button>
         </div>
       </div>
 
-      {/* Info box */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
-        <Info size={15} className="text-indigo-500 flex-shrink-0 mt-0.5"/>
+      <div className="flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+        <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
         <p className="text-xs text-indigo-800">
-          Ice-breakers are shown to contacts <strong>before</strong> they send their first message. 
-          You can add up to {MAX_ICEBREAKERS}. Changes are pushed live to Instagram when you save.
+          Ice-breakers are shown to contacts <strong>before</strong> they send
+          their first message. You can add up to {MAX_ICEBREAKERS}. Changes are
+          pushed live to Instagram when you save.
         </p>
       </div>
 
-      {/* Error */}
-      {loadErr && (
-        <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-          <AlertCircle size={14}/>{loadErr}
+      {loadErr ? (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+          <AlertCircle size={14} />
+          {loadErr}
         </div>
-      )}
+      ) : null}
 
-      {/* Items */}
       {loading ? (
-        <div className="flex items-center justify-center py-12 gap-2 text-gray-400">
-          <Loader size={18} className="animate-spin"/><span className="text-sm">Loading…</span>
+        <div className="flex items-center justify-center py-12">
+          <Button
+            variant="ghost"
+            size="sm"
+            loading
+            loadingMode="inline"
+            loadingLabel="Loading..."
+          >
+            Loading...
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="space-y-3 rounded-xl border border-gray-200 bg-white p-4"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ice-Breaker {i + 1}</span>
-                <button onClick={() => removeItem(i)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                  <Trash2 size={13}/>
-                </button>
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Ice-Breaker {index + 1}
+                </span>
+                <IconButton
+                  icon={<Trash2 size={13} />}
+                  aria-label={`Remove ice-breaker ${index + 1}`}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeItem(index)}
+                />
               </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-600 mb-1 block">
-                  Question <span className="text-gray-400 font-normal">{item.question.length}/{MAX_QUESTION_LEN}</span>
-                </label>
-                <input value={item.question} maxLength={MAX_QUESTION_LEN}
-                  onChange={e => updateItem(i, 'question', e.target.value)}
-                  placeholder="What are your business hours?"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-600 mb-1 block">
-                  Payload <span className="text-gray-400 font-normal">(optional — sent to your webhook)</span>
-                </label>
-                <input value={item.payload} maxLength={MAX_PAYLOAD_LEN}
-                  onChange={e => updateItem(i, 'payload', e.target.value)}
-                  placeholder="business_hours_query"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
+              <BaseInput
+                label="Question"
+                value={item.question}
+                onChange={(event) =>
+                  updateItem(index, 'question', event.target.value)
+                }
+                placeholder="What are your business hours?"
+                maxLength={MAX_QUESTION_LEN}
+                hint={`${item.question.length}/${MAX_QUESTION_LEN}`}
+              />
+              <BaseInput
+                label="Payload"
+                value={item.payload}
+                onChange={(event) =>
+                  updateItem(index, 'payload', event.target.value)
+                }
+                placeholder="business_hours_query"
+                maxLength={MAX_PAYLOAD_LEN}
+                hint="Optional - sent to your webhook"
+              />
             </div>
           ))}
 
-          {items.length < MAX_ICEBREAKERS && (
-            <button onClick={addItem}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-              <Plus size={15}/>Add ice-breaker ({items.length}/{MAX_ICEBREAKERS})
-            </button>
-          )}
+          {items.length < MAX_ICEBREAKERS ? (
+            <Button
+              variant="secondary"
+              fullWidth
+              leftIcon={<Plus size={15} />}
+              onClick={addItem}
+              className="border-dashed"
+            >
+              Add ice-breaker ({items.length}/{MAX_ICEBREAKERS})
+            </Button>
+          ) : null}
 
-          {items.length === 0 && (
-            <div className="text-center py-8 text-gray-400 text-sm">
+          {items.length === 0 ? (
+            <div className="py-8 text-center text-sm text-gray-400">
               No ice-breakers configured. Add your first one above.
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
-      {dirty && (
-        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <Info size={13}/>Unsaved changes — click Save to push to Instagram
+      {dirty ? (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <Info size={13} />
+          Unsaved changes - click Save to push to Instagram
         </div>
-      )}
+      ) : null}
 
-      <SaveButton saving={saving} saved={saved} error={saveError} onClick={handleSave}
-        label="Save & Push to Instagram" disabled={!dirty && items.length === 0} />
+      <SaveButton
+        saving={saving}
+        saved={saved}
+        error={saveError}
+        onClick={handleSave}
+        label="Save & Push to Instagram"
+        disabled={!dirty && items.length === 0}
+      />
     </div>
   );
 };

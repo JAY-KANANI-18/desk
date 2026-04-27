@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   BarChart3,
@@ -12,18 +12,23 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { BaseInput } from "../../../components/ui/inputs";
+import { CompactSelectMenu, type CompactSelectMenuGroup } from "../../../components/ui/Select";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useSocket } from "../../../socket/socket-provider";
 import { useAuthorization } from "../../../context/AuthorizationContext";
+import { useDisclosure } from "../../../hooks/useDisclosure";
 import type { AiAgentListItem, AiAgentStatus, AiAgentType } from "../types";
 import {
+  AiPageLayout,
   ChannelPills,
   EmptyState,
-  PageHeader,
-  PageShell,
   SkeletonRows,
   StatusBadge,
   agentTypeLabels,
+  channelLabels,
 } from "../components/AiAgentPrimitives";
 
 const statuses: Array<"all" | AiAgentStatus> = ["all", "draft", "active", "paused"];
@@ -41,6 +46,7 @@ export function AiAgentsListPage() {
   const [type, setType] = useState<"all" | AiAgentType>("all");
   const [channel, setChannel] = useState("all");
   const [menuId, setMenuId] = useState<string | null>(null);
+  const agentActionsMenu = useDisclosure();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const canManage = canWs("ws:ai-agents:manage");
@@ -89,9 +95,24 @@ export function AiAgentsListPage() {
     });
   }, [agents, query, status, type, channel]);
 
-  const doAction = async (agent: AiAgentListItem, action: () => Promise<any>, success: string) => {
-    setBusyId(agent.id);
+  const closeAgentMenu = () => {
     setMenuId(null);
+    agentActionsMenu.close();
+  };
+
+  const toggleAgentMenu = (agentId: string) => {
+    if (agentActionsMenu.isOpen && menuId === agentId) {
+      closeAgentMenu();
+      return;
+    }
+
+    setMenuId(agentId);
+    agentActionsMenu.open();
+  };
+
+  const doAction = async (agent: AiAgentListItem, action: () => Promise<unknown>, success: string) => {
+    setBusyId(agent.id);
+    closeAgentMenu();
     try {
       await action();
       toast.success(success);
@@ -116,59 +137,66 @@ export function AiAgentsListPage() {
       "Agent duplicated as a draft",
     );
 
+  const actions = (
+    <>
+      <Button type="button" variant="secondary" size="sm" onClick={() => navigate("/ai-agents/approvals")}>
+        Approval queue
+      </Button>
+      <Button type="button" variant="secondary" size="sm" onClick={() => navigate("/ai-agents/usage")}>
+        Usage
+      </Button>
+      {canManage ? (
+        <Button
+          type="button"
+          variant="dark"
+          size="sm"
+          leftIcon={<Plus size={16} />}
+          onClick={() => navigate("/ai-agents/new")}
+        >
+          Create Agent
+        </Button>
+      ) : null}
+    </>
+  );
+
+  const toolbar = (
+    <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+      <div className="max-w-md flex-1">
+        <BaseInput
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search agents"
+          leftIcon={<Search size={15} />}
+          size="sm"
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <FilterSelect
+          value={status}
+          onChange={(value) => setStatus(value as "all" | AiAgentStatus)}
+          options={statuses}
+          label="Status"
+        />
+        <FilterSelect
+          value={type}
+          onChange={(value) => setType(value as "all" | AiAgentType)}
+          options={types}
+          label="Type"
+        />
+        <FilterSelect value={channel} onChange={setChannel} options={channels} label="Channel" />
+      </div>
+    </div>
+  );
+
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow="Automation"
-        title="AI Agents"
-        description="Build, test, publish, and supervise AI teammates for customer conversations."
-        actions={
-          <>
-            <Link
-              to="/ai-agents/approvals"
-              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Approval queue
-            </Link>
-            <Link
-              to="/ai-agents/usage"
-              className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Usage
-            </Link>
-            {canManage ? (
-              <Link
-                to="/ai-agents/new"
-                className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                <Plus size={16} />
-                Create Agent
-              </Link>
-            ) : null}
-          </>
-        }
-      />
-
+    <AiPageLayout
+      eyebrow="Automation"
+      title="AI Agents"
+      description="Build, test, publish, and supervise AI teammates for customer conversations."
+      actions={actions}
+      toolbar={toolbar}
+    >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="relative max-w-md flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search agents"
-                className="w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <FilterSelect value={status} onChange={(value) => setStatus(value as any)} options={statuses} label="Status" />
-              <FilterSelect value={type} onChange={(value) => setType(value as any)} options={types} label="Type" />
-              <FilterSelect value={channel} onChange={setChannel} options={channels} label="Channel" />
-            </div>
-          </div>
-        </div>
-
         <div className="min-h-0 flex-1 overflow-auto">
           {loading ? (
             <SkeletonRows rows={7} />
@@ -182,13 +210,15 @@ export function AiAgentsListPage() {
               }
               action={
                 canManage ? (
-                  <Link
-                    to="/ai-agents/new"
-                    className="inline-flex items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
+                  <Button
+                    type="button"
+                    variant="dark"
+                    size="sm"
+                    leftIcon={<Plus size={16} />}
+                    onClick={() => navigate("/ai-agents/new")}
                   >
-                    <Plus size={16} />
                     Create Agent
-                  </Link>
+                  </Button>
                 ) : null
               }
             />
@@ -208,11 +238,15 @@ export function AiAgentsListPage() {
                     key={agent.id}
                     className="grid grid-cols-1 gap-3 px-4 py-4 hover:bg-slate-50 lg:grid-cols-[minmax(260px,1fr)_120px_220px_150px_150px_56px] lg:items-center lg:px-6"
                   >
-                    <button
+                    <Button
+                      type="button"
+                      variant="unstyled"
+                      fullWidth
+                      contentAlign="start"
+                      preserveChildLayout
                       onClick={() => navigate(`/ai-agents/${agent.id}`)}
-                      className="min-w-0 text-left"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3 text-left">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white">
                           <Rocket size={18} />
                         </div>
@@ -220,11 +254,11 @@ export function AiAgentsListPage() {
                           <p className="truncate text-sm font-semibold text-slate-950">{agent.name}</p>
                           <p className="truncate text-xs text-slate-500">
                             {agentTypeLabels[agent.agentType]} agent
-                            {agent.description ? ` · ${agent.description}` : ""}
+                            {agent.description ? ` - ${agent.description}` : ""}
                           </p>
                         </div>
                       </div>
-                    </button>
+                    </Button>
                     <StatusBadge status={agent.status} />
                     <ChannelPills channels={agent.activeChannels || []} />
                     <div>
@@ -233,14 +267,15 @@ export function AiAgentsListPage() {
                     </div>
                     <p className="text-sm text-slate-500">{formatDate(agent.updatedAt)}</p>
                     <div className="relative flex justify-end">
-                      <button
-                        onClick={() => setMenuId((id) => (id === agent.id ? null : agent.id))}
-                        className="rounded-md p-2 text-slate-400 hover:bg-white hover:text-slate-700"
+                      <IconButton
+                        aria-label={`Open actions for ${agent.name}`}
+                        icon={<MoreHorizontal size={17} />}
+                        variant="ghost"
+                        size="sm"
                         disabled={busyId === agent.id}
-                      >
-                        <MoreHorizontal size={17} />
-                      </button>
-                      {menuId === agent.id ? (
+                        onClick={() => toggleAgentMenu(agent.id)}
+                      />
+                      {agentActionsMenu.isOpen && menuId === agent.id ? (
                         <div className="absolute right-0 top-9 z-20 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
                           <MenuAction icon={<Pencil size={14} />} label="Edit" onClick={() => navigate(`/ai-agents/${agent.id}`)} />
                           <MenuAction icon={<BarChart3 size={14} />} label="View analytics" onClick={() => navigate(`/ai-agents/${agent.id}?tab=analytics`)} />
@@ -262,7 +297,7 @@ export function AiAgentsListPage() {
           )}
         </div>
       </div>
-    </PageShell>
+    </AiPageLayout>
   );
 }
 
@@ -277,21 +312,27 @@ function FilterSelect({
   options: string[];
   onChange: (value: string) => void;
 }) {
+  const groups: CompactSelectMenuGroup[] = [
+    {
+      options: options.map((option) => ({
+        value: option,
+        label: formatOption(option),
+      })),
+    },
+  ];
+
   return (
-    <label className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-500">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="bg-transparent text-sm font-medium capitalize text-slate-800 outline-none"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option.replace(/_/g, " ")}
-          </option>
-        ))}
-      </select>
-    </label>
+    <CompactSelectMenu
+      value={value}
+      groups={groups}
+      onChange={onChange}
+      triggerAppearance="pill"
+      triggerContent={
+        <span className="truncate">
+          {label}: <span className="font-semibold">{formatOption(value)}</span>
+        </span>
+      }
+    />
   );
 }
 
@@ -301,22 +342,30 @@ function MenuAction({
   onClick,
   danger,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   onClick: () => void;
   danger?: boolean;
 }) {
   return (
-    <button
+    <Button
+      type="button"
+      variant={danger ? "danger-ghost" : "ghost"}
+      size="sm"
+      fullWidth
+      contentAlign="start"
+      leftIcon={icon}
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium ${
-        danger ? "text-rose-600 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-50"
-      }`}
     >
-      {icon}
       {label}
-    </button>
+    </Button>
   );
+}
+
+function formatOption(value: string) {
+  if (value === "all") return "All";
+  if (value in agentTypeLabels) return agentTypeLabels[value as AiAgentType];
+  return channelLabels[value] || value.replace(/_/g, " ");
 }
 
 function formatDate(value?: string) {

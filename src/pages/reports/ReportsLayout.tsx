@@ -8,9 +8,11 @@ export const ReportsLayout = () => {
   const showFilters = location.pathname !== reportsSettingsConfig.basePath;
 
   return (
-    <SettingsLayout config={reportsSettingsConfig}>
+    <SettingsLayout
+      config={reportsSettingsConfig}
+      toolbar={showFilters ? <ReportsDateRangeBar /> : undefined}
+    >
       <div className="space-y-6">
-        {showFilters && <ReportsDateRangeBar />}
         <Outlet />
       </div>
     </SettingsLayout>

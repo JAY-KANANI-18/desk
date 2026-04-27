@@ -8,6 +8,8 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlarmClock, RefreshCw } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { Tag } from "../../components/ui/Tag";
 import { useChannel } from "../../context/ChannelContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useAuth } from "../../context/AuthContext";
@@ -464,25 +466,36 @@ export function MessageArea({
         ? "ring-1 ring-yellow-200 ring-offset-1 rounded-2xl"
         : "";
 
+  const snoozeLabel =
+    snoozedUntil === "30m"
+      ? "This chat is snoozed for 30 minutes"
+      : snoozedUntil === "1h"
+        ? "This chat is snoozed for 1 hour"
+        : snoozedUntil === "3h"
+          ? "This chat is snoozed for 3 hours"
+          : snoozedUntil === "tomorrow"
+            ? "This chat is snoozed until tomorrow morning"
+            : snoozedUntil === "nextweek"
+              ? "This chat is snoozed until next week"
+              : "This chat is snoozed";
+
   return (
     <>
       {snoozedUntil && (
         <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
           <AlarmClock size={14} className="text-amber-600 flex-shrink-0" />
           <span className="text-sm text-amber-700 font-medium">
-            This chat is snoozed
-            {snoozedUntil === "30m" && " for 30 minutes"}
-            {snoozedUntil === "1h" && " for 1 hour"}
-            {snoozedUntil === "3h" && " for 3 hours"}
-            {snoozedUntil === "tomorrow" && " until tomorrow morning"}
-            {snoozedUntil === "nextweek" && " until next week"}
+            {snoozeLabel}
           </span>
-          <button
+          <Button
             onClick={onUnsnooze}
-            className="ml-auto text-xs text-amber-600 hover:text-amber-800 font-medium px-2 py-0.5 rounded hover:bg-amber-100 transition-colors"
+            type="button"
+            variant="soft-warning"
+            size="xs"
+            className="ml-auto"
           >
             Unsnooze
-          </button>
+          </Button>
         </div>
       )}
 
@@ -544,25 +557,28 @@ export function MessageArea({
 
         {loadingOlderTimeline && (
           <div className="absolute top-5 left-1/2 -translate-x-1/2 flex justify-center mb-5">
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <RefreshCw size={12} className="animate-spin" />
-              Loading messages...
-            </div>
+            <Tag
+              label="Loading messages..."
+              icon={<RefreshCw size={12} className="animate-spin" />}
+              size="sm"
+              bgColor="gray"
+            />
           </div>
         )}
 
         {!hasMoreOlderTimeline && !loadingOlderTimeline && (
           <div className="flex justify-center mb-6">
-            <span className="text-[11px] text-gray-400 bg-gray-50 border border-gray-200 px-3 py-1 rounded-full">
-              Beginning of conversation
-            </span>
+            <Tag label="Beginning of conversation" size="sm" bgColor="gray" />
           </div>
         )}
 
         {loadingTimeline ? (
           <div className="flex items-center gap-2 text-sm text-gray-500 justify-center py-10">
-            <RefreshCw size={14} className="animate-spin" />
-            Loading conversation...
+            <Tag
+              label="Loading conversation..."
+              icon={<RefreshCw size={14} className="animate-spin" />}
+              bgColor="gray"
+            />
           </div>
         ) : (
           <>

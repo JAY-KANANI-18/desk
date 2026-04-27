@@ -11,7 +11,9 @@ import { APP_NAV_ITEMS } from "./appNavigation";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useDisclosure } from "../hooks/useDisclosure";
 import { useSettingsLinks } from "./settingsLinks";
+import { Button } from "./ui/Button";
 
 type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
 
@@ -30,7 +32,7 @@ export function MobileBottomNav() {
   const { dismissed, isComplete } = useGetStarted();
   const { flags } = useFeatureFlags();
   const settingsLinks = useSettingsLinks();
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenu = useDisclosure();
 
   const tabRefs = useRef<TabElement[]>([]);
   const [indicatorStyle, setIndicatorStyle] = useState({
@@ -130,7 +132,7 @@ export function MobileBottomNav() {
   const isMoreRouteActive =
     isSettingsRouteActive ||
     moreNavItems.some((item) => isPathActive([item.path]));
-  const isMoreTabActive = isMoreRouteActive || showMoreMenu;
+  const isMoreTabActive = isMoreRouteActive || moreMenu.isOpen;
   const shouldHideForGetStarted =
     location.pathname.startsWith("/get-started") && !showGetStartedTab;
 
@@ -153,7 +155,7 @@ export function MobileBottomNav() {
 
   useLayoutEffect(() => {
     updateIndicator();
-  }, [activeIndex, location.pathname, showMoreMenu, navItems.length]);
+  }, [activeIndex, location.pathname, moreMenu.isOpen, navItems.length]);
 
   useEffect(() => {
     const handleResize = () => updateIndicator();
@@ -183,7 +185,7 @@ export function MobileBottomNav() {
   </div>
 
   {navItems.map((item, index) => {
-    const isActive = showMoreMenu
+    const isActive = moreMenu.isOpen
       ? "isMore" in item && item.isMore
       : "isMore" in item && item.isMore
         ? isMoreTabActive
@@ -210,18 +212,20 @@ export function MobileBottomNav() {
 
     if ("isMore" in item && item.isMore) {
       return (
-        <button
+        <Button
           key="mobile-more"
           ref={(el) => {
             tabRefs.current[index] = el;
           }}
           type="button"
           aria-label="More"
-          onClick={() => setShowMoreMenu((prev) => !prev)}
+          onClick={moreMenu.toggle}
           className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
+          preserveChildLayout
+          variant="unstyled"
         >
           {content}
-        </button>
+        </Button>
       );
     }
 
@@ -233,7 +237,7 @@ export function MobileBottomNav() {
         }}
         to={item.path}
         aria-label={item.label}
-        onClick={() => setShowMoreMenu(false)}
+        onClick={moreMenu.close}
         className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
       >
         {content}
@@ -242,13 +246,14 @@ export function MobileBottomNav() {
   })}
 </nav>
 
-      {showMoreMenu && (
+      {moreMenu.isOpen && (
         <>
-          <button
+          <Button
             type="button"
             aria-label="Close more menu"
             className="fixed inset-0 z-40 bg-slate-950/35 md:hidden"
-            onClick={() => setShowMoreMenu(false)}
+            onClick={moreMenu.close}
+            variant="unstyled"
           />
 
           <div className=" fixed inset-x-3 bottom-[5.75rem] z-50 rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.22)] md:hidden">
@@ -264,7 +269,7 @@ export function MobileBottomNav() {
                   <NavLink
                     key={item.path}
                     to={item.path}
-                    onClick={() => setShowMoreMenu(false)}
+                    onClick={moreMenu.close}
                     className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200 ${
                       isActive
                         ? "scale-[1.01] bg-slate-100 text-slate-900"
@@ -297,7 +302,7 @@ export function MobileBottomNav() {
                   <NavLink
                     key={link.path}
                     to={link.path}
-                    onClick={() => setShowMoreMenu(false)}
+                    onClick={moreMenu.close}
                     className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200 ${
                       isActive
                         ? "scale-[1.01] bg-slate-100 text-slate-900"

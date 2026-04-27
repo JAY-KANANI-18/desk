@@ -1,22 +1,31 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Check, Copy, Loader2, X } from 'lucide-react';
+import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
+import { Tooltip } from '../../../components/ui/Tooltip';
+import { IconButton } from '../../../components/ui/button/IconButton';
 
 function CopyBtn({ value }: { value: string }) {
   const [ok, setOk] = useState(false);
 
   return (
-    <button
-      onClick={(event) => {
-        event.stopPropagation();
-        navigator.clipboard.writeText(value).catch(() => undefined);
-        setOk(true);
-        setTimeout(() => setOk(false), 1500);
-      }}
-      className="inline-flex h-6 w-6 items-center justify-center text-[#98a2b3] transition-colors hover:text-[#1c2030] flex-shrink-0"
-      title="Copy"
-    >
-      {ok ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-    </button>
+    <Tooltip content={ok ? 'Copied' : 'Copy'}>
+      <span className="inline-flex">
+        <IconButton
+          type="button"
+          aria-label={ok ? 'Copied' : 'Copy'}
+          icon={ok ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+          size="xs"
+          variant="ghost"
+          onClick={(event) => {
+            event.stopPropagation();
+            navigator.clipboard.writeText(value).catch(() => undefined);
+            setOk(true);
+            setTimeout(() => setOk(false), 1500);
+          }}
+        />
+      </span>
+    </Tooltip>
   );
 }
 
@@ -25,29 +34,31 @@ function InlineActionButton({
   title,
   disabled,
   tone = 'neutral',
-  children,
+  icon,
+  loading = false,
 }: {
   onClick: () => void;
   title: string;
   disabled?: boolean;
   tone?: 'neutral' | 'primary';
-  children: ReactNode;
+  icon: ReactNode;
+  loading?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      aria-label={title}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-all disabled:opacity-50 ${
-        tone === 'primary'
-          ? 'h-7 w-7 border border-transparent bg-transparent text-emerald-600 hover:bg-emerald-50'
-          : 'h-7 w-7 border border-transparent bg-transparent text-[#6b7280] hover:bg-[#f3f4f6]'
-      }`}
-    >
-      {children}
-    </button>
+    <Tooltip content={title}>
+      <span className="inline-flex">
+        <IconButton
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          loading={loading}
+          aria-label={title}
+          icon={icon}
+          size="xs"
+          variant={tone === 'primary' ? 'primary' : 'ghost'}
+        />
+      </span>
+    </Tooltip>
   );
 }
 
@@ -63,7 +74,7 @@ interface SharedRowProps {
 interface FieldRowProps extends SharedRowProps {
   value: string;
   placeholder?: string;
-  type?: string;
+  type?: ComponentProps<typeof Input>['type'];
   copyable?: boolean;
   warn?: boolean;
   onSave: (value: string) => Promise<void>;
@@ -148,25 +159,27 @@ export function FieldRow({
       {isActive ? (
         <div className="space-y-1.5 pb-1">
           <div className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type={type}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') save();
-                if (event.key === 'Escape') {
-                  setDraft(value);
-                  onDeactivate();
-                }
-              }}
-              className={`min-w-0 flex-1 text-[13px] px-3 py-2 rounded-lg border focus:outline-none transition-all placeholder:text-[#c8cdd8] text-[#1c2030] ${
-                warn
-                  ? 'border-amber-300 bg-amber-50 focus:ring-2 focus:ring-amber-200'
-                  : 'border-[#e0e4ed] bg-[#fafbfc] focus:ring-2 focus:ring-[#1c2030]/15 focus:border-[#1c2030]'
-              }`}
-              placeholder={placeholder}
-            />
+            <div className="min-w-0 flex-1">
+              <Input
+                ref={inputRef}
+                type={type}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    void save();
+                  }
+                  if (event.key === 'Escape') {
+                    setDraft(value);
+                    onDeactivate();
+                  }
+                }}
+                placeholder={placeholder}
+                aria-label={label}
+                appearance="sidebar"
+                inputSize="sm"
+              />
+            </div>
             <InlineActionButton
               title="Cancel"
               onClick={() => {
@@ -174,17 +187,33 @@ export function FieldRow({
                 setErr('');
                 onDeactivate();
               }}
-            >
-              <X size={14} />
-            </InlineActionButton>
-            <InlineActionButton title="Save" onClick={save} disabled={saving} tone="primary">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            </InlineActionButton>
+              icon={<X size={14} />}
+            />
+            <InlineActionButton
+              title="Save"
+              onClick={() => void save()}
+              disabled={saving}
+              tone="primary"
+              icon={<Check size={14} />}
+              loading={saving}
+            />
           </div>
           {err ? <p className="text-[11px] text-red-500 px-0.5">{err}</p> : null}
         </div>
       ) : (
-        <div className="group/row flex items-center justify-between gap-2 cursor-pointer py-0.5" onClick={() => onActivate(fieldKey)}>
+        <div
+          role="button"
+          tabIndex={isBlocked ? -1 : 0}
+          aria-disabled={isBlocked || undefined}
+          className="group/row flex items-center justify-between gap-2 cursor-pointer py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+          onClick={() => onActivate(fieldKey)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onActivate(fieldKey);
+            }
+          }}
+        >
           <span className={`text-[13px] leading-snug truncate ${value ? 'text-[#1c2030]' : 'text-[#c8cdd8] italic font-normal'}`}>
             {value || placeholder}
           </span>
@@ -272,17 +301,16 @@ export function SelectRow({
       {isActive ? (
         <div className="space-y-1.5 pb-1">
           <div className="flex items-center gap-2">
-            <select
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              className="min-w-0 flex-1 text-[13px] px-3 py-2 rounded-lg border border-[#e0e4ed] bg-[#fafbfc] focus:outline-none transition-all text-[#1c2030] focus:ring-2 focus:ring-[#1c2030]/15 focus:border-[#1c2030]"
-            >
-              {options.map((option) => (
-                <option key={`${fieldKey}-${option.value || 'empty'}`} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="min-w-0 flex-1">
+              <Select
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                options={options}
+                aria-label={label}
+                appearance="sidebar"
+                size="sm"
+              />
+            </div>
             <InlineActionButton
               title="Cancel"
               onClick={() => {
@@ -290,17 +318,33 @@ export function SelectRow({
                 setErr('');
                 onDeactivate();
               }}
-            >
-              <X size={14} />
-            </InlineActionButton>
-            <InlineActionButton title="Save" onClick={save} disabled={saving} tone="primary">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            </InlineActionButton>
+              icon={<X size={14} />}
+            />
+            <InlineActionButton
+              title="Save"
+              onClick={() => void save()}
+              disabled={saving}
+              tone="primary"
+              icon={<Check size={14} />}
+              loading={saving}
+            />
           </div>
           {err ? <p className="text-[11px] text-red-500 px-0.5">{err}</p> : null}
         </div>
       ) : (
-        <div className="group/row flex items-center justify-between gap-2 cursor-pointer py-0.5" onClick={() => onActivate(fieldKey)}>
+        <div
+          role="button"
+          tabIndex={isBlocked ? -1 : 0}
+          aria-disabled={isBlocked || undefined}
+          className="group/row flex items-center justify-between gap-2 cursor-pointer py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+          onClick={() => onActivate(fieldKey)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onActivate(fieldKey);
+            }
+          }}
+        >
           <span className={`text-[13px] leading-snug truncate ${value ? 'text-[#1c2030]' : 'text-[#c8cdd8] italic font-normal'}`}>
             {selectedLabel}
           </span>

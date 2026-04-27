@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { Button } from "../../components/ui/Button";
 
 // ─── WhatsApp SVG icon ────────────────────────────────────────────────────────
 function WhatsAppIcon({
@@ -111,10 +112,9 @@ export const WhatsAppFees = () => {
         <p className="text-sm text-gray-500 mb-5">
           Connect a WhatsApp Channel to view and manage your fees.
         </p>
-        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+        <Button variant="secondary"  rightIcon={<ExternalLink size={14} />}>
           Connect WhatsApp Channel
-          <ExternalLink size={14} />
-        </button>
+        </Button>
       </div>
     </div>
   );

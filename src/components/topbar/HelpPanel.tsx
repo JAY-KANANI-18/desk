@@ -1,5 +1,5 @@
 import { BookOpen, CheckSquare, ExternalLink, MessageSquare } from "lucide-react";
-import { MobileSheet } from "./MobileSheet";
+import { MobileSheet } from "../ui/modal";
 
 export function HelpPanel({
   isMobile = false,
@@ -43,7 +43,7 @@ export function HelpPanel({
   if (isMobile) {
     return (
       <MobileSheet
-        open
+        isOpen
         title={
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">

@@ -11,6 +11,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { Button } from "../components/ui/Button";
+import { PageLayout } from "../components/ui/PageLayout";
+import { Tag } from "../components/ui/Tag";
 
 interface GetStartedSteps {
   connectChannel: boolean;
@@ -63,14 +66,13 @@ const STEPS: Step[] = [
           ].map((channel) => (
             <span
               key={channel.label}
-              className="inline-flex items-center gap-2 rounded-full  px-3 py-1.5 text-xs font-medium text-slate-600 "
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600"
             >
               <img
                 src={channel.src}
                 alt={channel.label}
                 className="h-8 w-8 object-contain"
               />
-              {/* {channel.label} */}
             </span>
           ))}
         </div>
@@ -155,42 +157,59 @@ export const GetStartedChecklist = ({
     mobileCircumference - (pct / 100) * mobileCircumference;
 
   return (
-    <div
-      className={`min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg,#f8fafc)] px-3 py-6 text-[var(--color-text,#0f172a)] transition-all duration-500 sm:px-4 sm:py-8 md:px-6 md:py-14 ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-      }`}
+    <PageLayout
+      leading={<span className="text-3xl">👋</span>}
+      title={`Hey ${userName}, let's get you set up.`}
+      subtitle="Three steps. Takes under 5 minutes."
+      actions={
+        onDismiss ? (
+          <Button
+            type="button"
+            onClick={onDismiss}
+            variant="secondary"
+            leftIcon={<X size={16} />}
+          >
+            Don&apos;t Show Again
+          </Button>
+        ) : undefined
+      }
+      className="bg-[var(--color-bg,#f8fafc)]"
+      contentClassName="min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg,#f8fafc)] px-3 py-6 sm:px-4 sm:py-8 md:px-6 md:py-14"
     >
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-6 flex flex-col gap-4 md:mb-10 md:gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div
+        className={`mx-auto max-w-7xl text-[var(--color-text,#0f172a)] transition-all duration-500 ${
+          visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+        }`}
+      >
+        <div className="mb-6 flex flex-col gap-4 md:hidden">
           <div>
-            <div className="mb-2 flex items-center gap-2 md:gap-3">
+            <div className="mb-2 flex items-center gap-2">
               <span className="text-3xl">👋</span>
-              <h1 className="text-xl font-bold leading-tight tracking-tight text-[var(--color-text,#0f172a)] sm:text-2xl md:text-3xl">
-                Hey {userName}, let’s get you set up.
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-[var(--color-text,#0f172a)] sm:text-2xl">
+                Hey {userName}, let&apos;s get you set up.
               </h1>
             </div>
-            <p className="ml-9 text-sm text-[var(--color-text-secondary,#64748b)] md:ml-11">
+            <p className="ml-9 text-sm text-[var(--color-text-secondary,#64748b)]">
               Three steps. Takes under 5 minutes.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {onDismiss && (
-              <button
+          {onDismiss ? (
+            <div className="w-full sm:w-auto">
+              <Button
+                type="button"
                 onClick={onDismiss}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary,#64748b)] transition hover:border-indigo-600 hover:text-indigo-600 sm:w-auto md:py-2"
+                variant="secondary"
+                leftIcon={<X size={16} />}
+                fullWidth
               >
-                <X size={16} />
-                Don't Show Again
-              </button>
-            )}
-          </div>
+                Don&apos;t Show Again
+              </Button>
+            </div>
+          ) : null}
         </div>
 
-        {/* Body */}
         <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Left: Steps */}
           <div className="space-y-4">
             <div className="rounded-2xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] p-4 shadow-sm md:hidden">
               <div className="flex items-center justify-between gap-4">
@@ -285,22 +304,20 @@ export const GetStartedChecklist = ({
                     animation: `fadeInUp 0.45s ease ${i * 0.08}s both`,
                   }}
                 >
-                  {/* Timeline */}
                   <div className="flex w-8 flex-col items-center pt-4 md:w-10 md:pt-5">
                     <div
-                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 md:h-9 md:w-9 md:text-sm
-                        ${
-                          done
-                            ? "border-transparent bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md"
-                            : isOpen
-                              ? "border-[var(--color-primary,#6366f1)] bg-indigo-600 text-white shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
-                              : "border-[var(--color-border,#cbd5e1)] bg-[var(--color-card,#ffffff)] text-[var(--color-text-secondary,#94a3b8)]"
-                        }`}
+                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 md:h-9 md:w-9 md:text-sm ${
+                        done
+                          ? "border-transparent bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md"
+                          : isOpen
+                            ? "border-[var(--color-primary,#6366f1)] bg-indigo-600 text-white shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
+                            : "border-[var(--color-border,#cbd5e1)] bg-[var(--color-card,#ffffff)] text-[var(--color-text-secondary,#94a3b8)]"
+                      }`}
                     >
                       {done ? <CheckCircle2 size={18} /> : i + 1}
                     </div>
 
-                    {i < STEPS.length - 1 && (
+                    {i < STEPS.length - 1 ? (
                       <div
                         className={`mt-2 w-[2px] flex-1 rounded-full ${
                           done
@@ -308,76 +325,74 @@ export const GetStartedChecklist = ({
                             : "bg-[var(--color-border,#e2e8f0)]"
                         }`}
                       />
-                    )}
+                    ) : null}
                   </div>
 
-                  {/* Card */}
                   <div
-                    className={`flex-1 overflow-hidden rounded-[20px] border bg-[var(--color-card,#ffffff)] transition-all duration-300 md:rounded-2xl
-                      ${
-                        isOpen
-                          ? "border-indigo-600 shadow-xl shadow-slate-200/50"
-                          : done
-                            ? "border-[var(--color-border,#eef2f7)] opacity-70"
-                            : "border-[var(--color-border,#e2e8f0)] shadow-sm"
-                      }`}
+                    className={`flex-1 overflow-hidden rounded-[20px] border bg-[var(--color-card,#ffffff)] transition-all duration-300 md:rounded-2xl ${
+                      isOpen
+                        ? "border-indigo-600 shadow-xl shadow-slate-200/50"
+                        : done
+                          ? "border-[var(--color-border,#eef2f7)] opacity-70"
+                          : "border-[var(--color-border,#e2e8f0)] shadow-sm"
+                    }`}
                   >
-                    {/* Header */}
-                    <button
+                    <Button
                       type="button"
                       onClick={() => toggle(step.key, done)}
-                      className={`flex w-full items-start gap-3 px-4 py-4 text-left md:items-center md:gap-4 md:px-5 md:py-5 ${
-                        done ? "cursor-default" : "cursor-pointer"
-                      }`}
+                      variant="inherit-ghost"
+                      size="lg"
+                      fullWidth
+                      radius="none"
+                      contentAlign="start"
+                      aria-expanded={!done ? isOpen : undefined}
                     >
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all md:h-11 md:w-11
-                          ${
+                      <div className="flex w-full items-start gap-3 md:items-center md:gap-4">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all md:h-11 md:w-11 ${
                             done
                               ? "bg-slate-100 text-slate-300"
                               : isOpen
-                                ? "bg-indigo-600  text-white"
+                                ? "bg-indigo-600 text-white"
                                 : "bg-[var(--color-muted,#f1f5f9)] text-[var(--color-text,#334155)]"
                           }`}
-                      >
-                        <Icon size={19} strokeWidth={2} />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <h3
-                            className={`text-sm sm:text-[15px] font-semibold ${
-                              done
-                                ? "text-slate-400 line-through"
-                                : "text-[var(--color-text,#0f172a)]"
-                            }`}
-                          >
-                            {step.title}
-                          </h3>
-
-                          {done && (
-                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">
-                              Done ✓
-                            </span>
-                          )}
+                        >
+                          <Icon size={19} strokeWidth={2} />
                         </div>
 
-                        <p className="text-xs text-[var(--color-text-secondary,#94a3b8)]">
-                          {step.subtitle}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <h3
+                              className={`text-sm font-semibold sm:text-[15px] ${
+                                done
+                                  ? "text-slate-400 line-through"
+                                  : "text-[var(--color-text,#0f172a)]"
+                              }`}
+                            >
+                              {step.title}
+                            </h3>
+
+                            {done ? (
+                              <Tag label="Done" bgColor="success" size="sm" />
+                            ) : null}
+                          </div>
+
+                          <p className="text-xs text-[var(--color-text-secondary,#94a3b8)]">
+                            {step.subtitle}
+                          </p>
+                        </div>
+
+                        {!done ? (
+                          <ChevronDown
+                            size={18}
+                            className={`mt-1 shrink-0 text-slate-400 transition-transform duration-300 md:mt-0 ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        ) : null}
                       </div>
+                    </Button>
 
-                      {!done && (
-                        <ChevronDown
-                          size={18}
-                          className={`mt-1 shrink-0 text-slate-400 transition-transform duration-300 md:mt-0 ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
-                        />
-                      )}
-                    </button>
-
-                    {/* Expandable body */}
                     <div
                       className={`grid transition-all duration-300 ease-in-out ${
                         isOpen
@@ -396,13 +411,16 @@ export const GetStartedChecklist = ({
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => navigate(step.path)}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:translate-y-[-1px] hover:shadow-lg sm:w-auto"
-                          >
-                            {step.cta}
-                            <ArrowRight size={16} strokeWidth={2.4} />
-                          </button>
+                          <div className="w-full sm:w-auto">
+                            <Button
+                              type="button"
+                              onClick={() => navigate(step.path)}
+                              rightIcon={<ArrowRight size={16} strokeWidth={2.4} />}
+                              fullWidth
+                            >
+                              {step.cta}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -411,8 +429,7 @@ export const GetStartedChecklist = ({
               );
             })}
 
-            {/* All done banner */}
-            {allDone && (
+            {allDone ? (
               <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-950 p-5 text-white shadow-2xl sm:mt-6 sm:flex-row sm:items-center sm:p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                   <Zap size={22} className="text-violet-300" />
@@ -427,23 +444,24 @@ export const GetStartedChecklist = ({
                   </p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    onComplete();
-                    navigate("/inbox");
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:shadow-lg sm:w-auto"
-                >
-                  Open inbox
-                  <ArrowRight size={15} />
-                </button>
+                <div className="w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      onComplete();
+                      navigate("/inbox");
+                    }}
+                    rightIcon={<ArrowRight size={15} />}
+                    fullWidth
+                  >
+                    Open inbox
+                  </Button>
+                </div>
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Right Panel */}
           <div className="hidden space-y-4 md:block">
-            {/* Progress Card */}
             <div className="rounded-2xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] p-5 shadow-sm">
               <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary,#94a3b8)]">
                 Progress
@@ -503,11 +521,11 @@ export const GetStartedChecklist = ({
               </div>
 
               <div className="space-y-2">
-                {STEPS.map((s) => {
-                  const isDone = completedSteps[s.key];
+                {STEPS.map((step) => {
+                  const isDone = completedSteps[step.key];
                   return (
                     <div
-                      key={s.key}
+                      key={step.key}
                       className={`flex items-center gap-2 rounded-xl px-3 py-2 ${
                         isDone ? "bg-emerald-50" : "bg-slate-50"
                       }`}
@@ -522,80 +540,30 @@ export const GetStartedChecklist = ({
                           isDone ? "text-emerald-700" : "text-slate-600"
                         }`}
                       >
-                        {s.title}
+                        {step.title}
                       </span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* Resources */}
-            {/* <div className="rounded-2xl border border-[var(--color-border,#e2e8f0)] bg-[var(--color-card,#ffffff)] p-5 shadow-sm">
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary,#94a3b8)]">
-                Resources
-              </p>
-
-              <div className="space-y-2">
-                {[
-                  {
-                    icon: PlayCircle,
-                    label: "Watch intro video",
-                    onClick: () => {},
-                  },
-                  {
-                    icon: MessageCircleQuestion,
-                    label: "Contact support",
-                    onClick: () => {},
-                  },
-                  {
-                    icon: CalendarDays,
-                    label: "Book a demo",
-                    onClick: () => {},
-                  },
-                  {
-                    icon: LifeBuoy,
-                    label: "Help center",
-                    onClick: () => {},
-                  },
-                  {
-                    icon: Clapperboard,
-                    label: "Video guides",
-                    onClick: () => {},
-                  },
-                ].map((item) => {
-                  const ResourceIcon = item.icon;
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={item.onClick}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                    >
-                      <ResourceIcon size={17} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div> */}
           </div>
         </div>
-      </div>
 
-      {/* optional tiny animation helper */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(14px);
+        <style>{`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(14px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+        `}</style>
+      </div>
+    </PageLayout>
   );
 };
 

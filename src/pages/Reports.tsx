@@ -1,3 +1,4 @@
+// LEGACY - not mounted in current router, pending removal
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Calendar,

@@ -1,4 +1,4 @@
-import React from "react";
+import { type ReactNode } from "react";
 import {
   Bot,
   CheckCircle2,
@@ -11,6 +11,9 @@ import {
   MessageSquare,
   Phone,
 } from "lucide-react";
+import { PageLayout } from "../../../components/ui/PageLayout";
+import { Tag, type TagPresetColor } from "../../../components/ui/Tag";
+import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { AiAgentStatus, AiAgentType } from "../types";
 
 export const agentTypeLabels: Record<AiAgentType, string> = {
@@ -28,7 +31,7 @@ export const channelLabels: Record<string, string> = {
   webchat: "Webchat",
 };
 
-const channelIcons: Record<string, React.ReactNode> = {
+const channelIcons: Record<string, ReactNode> = {
   whatsapp: <Phone size={13} />,
   instagram: <MessageCircle size={13} />,
   messenger: <MessageSquare size={13} />,
@@ -36,59 +39,101 @@ const channelIcons: Record<string, React.ReactNode> = {
   webchat: <Globe2 size={13} />,
 };
 
-export function PageShell({ children }: { children: React.ReactNode }) {
-  return <div className="flex h-full min-h-0 flex-col bg-[#f7f8fb]">{children}</div>;
+interface AiPageLayoutProps {
+  title: string;
+  eyebrow?: ReactNode;
+  description?: ReactNode;
+  leading?: ReactNode;
+  actions?: ReactNode;
+  toolbar?: ReactNode;
+  children: ReactNode;
 }
 
-export function PageHeader({
+export function AiPageLayout({
   title,
   eyebrow,
   description,
+  leading,
   actions,
-}: {
-  title: string;
-  eyebrow?: string;
-  description?: string;
-  actions?: React.ReactNode;
-}) {
+  toolbar,
+  children,
+}: AiPageLayoutProps) {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          {eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              {eyebrow}
-            </p>
-          ) : null}
-          <h1 className="mt-1 truncate text-xl font-semibold text-slate-950">{title}</h1>
-          {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
-        </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    <PageLayout
+      leading={leading}
+      eyebrow={eyebrow}
+      title={title}
+      subtitle={typeof description === "string" ? description : undefined}
+      actions={actions}
+      toolbar={toolbar}
+      className="bg-[#f7f8fb]"
+      contentClassName="min-h-0 flex-1 overflow-hidden bg-[#f7f8fb] px-0 py-0"
+    >
+      <div className="flex h-full min-h-0 flex-col bg-[#f7f8fb]">
+        {isMobile ? (
+          <div className="border-b border-slate-200 bg-white px-4 py-4">
+            <div className="flex min-w-0 items-start gap-3">
+              {leading ? <div className="shrink-0">{leading}</div> : null}
+              <div className="min-w-0 flex-1">
+                {eyebrow ? (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    {eyebrow}
+                  </p>
+                ) : null}
+                <h1 className="mt-1 truncate text-xl font-semibold text-slate-950">{title}</h1>
+                {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+              </div>
+            </div>
+            {actions ? <div className="mt-4 flex flex-wrap items-center gap-2">{actions}</div> : null}
+            {toolbar ? <div className="mt-4">{toolbar}</div> : null}
+          </div>
+        ) : null}
+        {children}
       </div>
-    </div>
+    </PageLayout>
   );
+}
+
+const statusColors: Record<string, TagPresetColor> = {
+  active: "success",
+  completed: "success",
+  published: "success",
+  ready: "success",
+  draft: "gray",
+  pending: "warning",
+  paused: "warning",
+  indexing: "info",
+  waiting_approval: "info",
+  archived: "error",
+  failed: "error",
+  disabled: "gray",
+  escalated: "warning",
+};
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, " ");
 }
 
 export function StatusBadge({ status }: { status?: AiAgentStatus | string | null }) {
   const normalized = status || "draft";
-  const styles: Record<string, string> = {
-    active: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    draft: "border-slate-200 bg-slate-50 text-slate-600",
-    paused: "border-amber-200 bg-amber-50 text-amber-700",
-    archived: "border-rose-200 bg-rose-50 text-rose-700",
-    completed: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    escalated: "border-amber-200 bg-amber-50 text-amber-700",
-    failed: "border-rose-200 bg-rose-50 text-rose-700",
-    waiting_approval: "border-sky-200 bg-sky-50 text-sky-700",
-  };
+  const icon =
+    normalized === "active" || normalized === "completed" || normalized === "published" || normalized === "ready" ? (
+      <CheckCircle2 size={12} />
+    ) : normalized === "paused" ? (
+      <CirclePause size={12} />
+    ) : normalized === "draft" || normalized === "pending" || normalized === "indexing" ? (
+      <Clock3 size={12} />
+    ) : null;
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${styles[normalized] || styles.draft}`}>
-      {normalized === "active" || normalized === "completed" ? <CheckCircle2 size={12} /> : null}
-      {normalized === "paused" ? <CirclePause size={12} /> : null}
-      {normalized === "draft" ? <Clock3 size={12} /> : null}
-      {String(normalized).replace(/_/g, " ")}
-    </span>
+    <Tag
+      label={formatStatus(String(normalized))}
+      icon={icon}
+      size="sm"
+      bgColor={statusColors[String(normalized)] || "gray"}
+    />
   );
 }
 
@@ -100,13 +145,13 @@ export function ChannelPills({ channels = [] }: { channels?: string[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {channels.map((channel) => (
-        <span
+        <Tag
           key={channel}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
-        >
-          {channelIcons[channel] || <Bot size={13} />}
-          {channelLabels[channel] || channel}
-        </span>
+          label={channelLabels[channel] || channel}
+          icon={channelIcons[channel] || <Bot size={13} />}
+          size="sm"
+          bgColor="gray"
+        />
       ))}
     </div>
   );
@@ -121,7 +166,7 @@ export function MetricTile({
   label: string;
   value: string | number;
   detail?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
@@ -142,7 +187,7 @@ export function EmptyState({
 }: {
   title: string;
   body: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex min-h-[360px] items-center justify-center px-4 py-12">

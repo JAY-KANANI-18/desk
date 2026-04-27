@@ -1,6 +1,12 @@
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
 
-export type TagRow = { id: string; name: string };
+export type TagRow = {
+  id: string;
+  name: string;
+  emoji?: string | null;
+  color?: string | null;
+  description?: string | null;
+};
 
 export type LifecycleRow = {
   id: string;

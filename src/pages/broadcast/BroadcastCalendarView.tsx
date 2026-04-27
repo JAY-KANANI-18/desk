@@ -1,5 +1,7 @@
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "../../components/ui/Button";
+import { Tag } from "../../components/ui/Tag";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
 import { CALENDAR_WEEK_DAYS } from "./constants";
@@ -9,6 +11,45 @@ import {
   formatDateKey,
   formatTime,
 } from "./utils";
+
+function BroadcastCalendarEventButton({
+  event,
+  onOpenDetail,
+  compact = false,
+}: {
+  event: BroadcastRunRow;
+  onOpenDetail: (run: BroadcastRunRow) => void;
+  compact?: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="unstyled"
+      fullWidth
+      contentAlign="start"
+      size={compact ? "xs" : "md"}
+      radius={compact ? "default" : "lg"}
+      onClick={() => onOpenDetail(event)}
+      className={`items-start whitespace-normal border border-l-2 text-left ${calendarEventClass(
+        event.status,
+      )} ${compact ? "rounded-md" : "rounded-2xl"}`}
+    >
+      <div className="w-full min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium">{event.name}</p>
+            <p className={`mt-1 opacity-80 ${compact ? "text-[11px]" : "text-xs"}`}>
+              {formatTime(event.scheduledAt)} | {calendarStatusLabel(event.status)}
+            </p>
+          </div>
+          <span className={`shrink-0 opacity-70 ${compact ? "text-[11px]" : "text-xs"}`}>
+            {event.totalAudience}
+          </span>
+        </div>
+      </div>
+    </Button>
+  );
+}
 
 type BroadcastCalendarViewProps = {
   monthLabel: string;
@@ -45,12 +86,12 @@ export function BroadcastCalendarView({
   const mobileCalendarDays = useMemo(
     () =>
       calendarDays.map((day) => ({
-      day,
-      key: formatDateKey(day),
-      events: calendarEventsByDate[formatDateKey(day)] ?? [],
-      isCurrentMonth: day.getMonth() === calendarMonth.getMonth(),
-      isToday: formatDateKey(day) === todayKey,
-    })),
+        day,
+        key: formatDateKey(day),
+        events: calendarEventsByDate[formatDateKey(day)] ?? [],
+        isCurrentMonth: day.getMonth() === calendarMonth.getMonth(),
+        isToday: formatDateKey(day) === todayKey,
+      })),
     [calendarDays, calendarEventsByDate, calendarMonth, todayKey],
   );
   const defaultSelectedDateKey = useMemo(() => {
@@ -82,30 +123,28 @@ export function BroadcastCalendarView({
               <p className="text-xs text-gray-500">Scheduled broadcasts by send date</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onToday}
-                className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-200"
-              >
+              <Button type="button" variant="soft"  onClick={onToday}>
                 Today
-              </button>
+              </Button>
               <div className="flex items-center gap-1 rounded-2xl bg-slate-100 p-1">
-                <button
+                <Button
                   type="button"
-                  onClick={onPreviousMonth}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white"
+                  variant="ghost"
+                 
+                  iconOnly
+                  leftIcon={<ChevronLeft size={16} />}
                   aria-label="Previous month"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
+                  onClick={onPreviousMonth}
+                />
+                <Button
                   type="button"
-                  onClick={onNextMonth}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white"
+                  variant="ghost"
+                
+                  iconOnly
+                  leftIcon={<ChevronRight size={16} />}
                   aria-label="Next month"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                  onClick={onNextMonth}
+                />
               </div>
             </div>
           </div>
@@ -126,37 +165,47 @@ export function BroadcastCalendarView({
               {mobileCalendarDays.map(({ day, key, events, isCurrentMonth, isToday }) => {
                 const isSelected = selectedDay?.key === key;
                 return (
-                  <button
+                  <Button
                     key={key}
                     type="button"
-                    onClick={() => setSelectedDateKey(key)}
-                    className={`flex min-h-[54px] flex-col items-center justify-start rounded-2xl px-1.5 py-2 text-center transition ${
+                    fullWidth
+                  
+                    variant={
                       isSelected
-                        ? "bg-indigo-600 text-white shadow-sm"
+                        ? "primary"
                         : isCurrentMonth
-                          ? "bg-white text-slate-800 hover:bg-slate-100"
-                          : "bg-transparent text-slate-300"
-                    }`}
+                          ? "secondary"
+                          : "ghost"
+                    }
+                    onClick={() => setSelectedDateKey(key)}
                   >
-                    <span
-                      className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                        isToday && !isSelected ? "bg-indigo-50 text-indigo-600" : ""
-                      }`}
-                    >
-                      {day.getDate()}
-                    </span>
-                    {events.length > 0 ? (
+                    <div className="flex flex-col items-center text-center">
                       <span
-                        className={`mt-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold ${
+                        className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-semibold ${
                           isSelected
                             ? "bg-white/20 text-white"
-                            : "bg-indigo-50 text-indigo-600"
+                            : isToday
+                              ? "bg-indigo-50 text-indigo-600"
+                              : isCurrentMonth
+                                ? "text-slate-800"
+                                : "text-slate-300"
                         }`}
                       >
-                        {events.length}
+                        {day.getDate()}
                       </span>
-                    ) : null}
-                  </button>
+                      {events.length > 0 ? (
+                        <span
+                          className={`mt-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold ${
+                            isSelected
+                              ? "bg-white/20 text-white"
+                              : "bg-indigo-50 text-indigo-600"
+                          }`}
+                        >
+                          {events.length}
+                        </span>
+                      ) : null}
+                    </div>
+                  </Button>
                 );
               })}
             </div>
@@ -177,33 +226,18 @@ export function BroadcastCalendarView({
                 </h4>
               </div>
               {selectedDay?.isToday ? (
-                <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-600">
-                  Today
-                </span>
+                <Tag label="Today" size="sm" bgColor="tag-indigo" />
               ) : null}
             </div>
 
             {selectedDay && selectedDay.events.length > 0 ? (
               <div className="space-y-2">
                 {selectedDay.events.map((event) => (
-                  <button
+                  <BroadcastCalendarEventButton
                     key={event.id}
-                    type="button"
-                    onClick={() => onOpenDetail(event)}
-                    className={`w-full rounded-2xl border-l-2 px-3 py-3 text-left text-sm transition ${calendarEventClass(
-                      event.status,
-                    )}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{event.name}</p>
-                        <p className="mt-1 text-xs opacity-80">
-                          {formatTime(event.scheduledAt)} | {calendarStatusLabel(event.status)}
-                        </p>
-                      </div>
-                      <span className="text-xs opacity-70">{event.totalAudience}</span>
-                    </div>
-                  </button>
+                    event={event}
+                    onOpenDetail={onOpenDetail}
+                  />
                 ))}
               </div>
             ) : (
@@ -216,15 +250,17 @@ export function BroadcastCalendarView({
 
         {(hasMoreRuns || runsLoadingMore) && (
           <div className="mt-4 flex justify-center">
-            <button
+            <Button
               type="button"
+              variant="soft"
               onClick={() => onLoadMore(nextCursor)}
-              disabled={runsLoadingMore || !nextCursor}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!nextCursor}
+              loading={runsLoadingMore}
+              loadingMode="inline"
+              loadingLabel="Loading more broadcasts"
             >
-              {runsLoadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
               Load more broadcasts
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -240,30 +276,27 @@ export function BroadcastCalendarView({
             <p className="text-xs text-gray-500">Scheduled broadcasts by send date</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onToday}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50"
-            >
+            <Button type="button" variant="secondary"  onClick={onToday}>
               Today
-            </button>
+            </Button>
             <div className="flex items-center overflow-hidden rounded-lg border border-gray-300">
-              <button
+              <Button
                 type="button"
-                onClick={onPreviousMonth}
-                className="border-r border-gray-300 p-2 transition hover:bg-gray-50"
+                variant="ghost"
+                iconOnly
+                leftIcon={<ChevronLeft size={16} />}
                 aria-label="Previous month"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
+                onClick={onPreviousMonth}
+              />
+              <Button
                 type="button"
-                onClick={onNextMonth}
-                className="p-2 transition hover:bg-gray-50"
+                variant="ghost"
+                size="sm"
+                iconOnly
+                leftIcon={<ChevronRight size={16} />}
                 aria-label="Next month"
-              >
-                <ChevronRight size={16} />
-              </button>
+                onClick={onNextMonth}
+              />
             </div>
           </div>
         </div>
@@ -311,28 +344,24 @@ export function BroadcastCalendarView({
 
                 <div className="space-y-1">
                   {visibleEvents.map((event) => (
-                    <button
+                    <BroadcastCalendarEventButton
                       key={event.id}
-                      type="button"
-                      onClick={() => onOpenDetail(event)}
-                      className={`w-full rounded-md border-l-2 px-2 py-1 text-left text-xs transition ${calendarEventClass(
-                        event.status,
-                      )}`}
-                    >
-                      <span className="block truncate font-medium">{event.name}</span>
-                      <span className="block text-[11px] opacity-75">
-                        {formatTime(event.scheduledAt)} | {calendarStatusLabel(event.status)}
-                      </span>
-                    </button>
+                      event={event}
+                      onOpenDetail={onOpenDetail}
+                      compact
+                    />
                   ))}
                   {overflow > 0 && dayEvents[3] && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
+                      fullWidth
+                      contentAlign="start"
                       onClick={() => onOpenDetail(dayEvents[3])}
-                      className="w-full rounded-md px-2 py-1 text-left text-xs text-gray-500 transition hover:bg-gray-100"
                     >
                       +{overflow} more
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -343,15 +372,17 @@ export function BroadcastCalendarView({
 
       {(hasMoreRuns || runsLoadingMore) && (
         <div className="mt-4 flex justify-center">
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => onLoadMore(nextCursor)}
-            disabled={runsLoadingMore || !nextCursor}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!nextCursor}
+            loading={runsLoadingMore}
+            loadingMode="inline"
+            loadingLabel="Loading more broadcasts"
           >
-            {runsLoadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
             Load more broadcasts
-          </button>
+          </Button>
         </div>
       )}
     </div>

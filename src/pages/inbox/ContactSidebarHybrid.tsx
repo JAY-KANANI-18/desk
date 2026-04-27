@@ -9,24 +9,20 @@ import {
   Loader2,
   Mail,
   Phone,
-  Plus,
-  Search,
   Smile,
   Trash2,
   Users,
   Workflow,
-  X,
 } from 'lucide-react';
 import {
   contactsApi,
   type ContactDuplicateSuggestion,
   type ContactMergePreview,
 } from '../../lib/contactApi';
-import { ContactAvatar } from '../../components/contact/ContactAvatar';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
-import { getTagSurfaceStyle, TAG_COLOR_OPTIONS } from '../../lib/tagAppearance';
+import { TAG_COLOR_OPTIONS } from '../../lib/tagAppearance';
 import type { LifecycleStage } from '../workspace/types';
 import { EmojiPicker } from './EmojiPicker';
 import { ContactSidebarDesktopShell } from './contact-sidebar/DesktopShell';
@@ -46,6 +42,16 @@ import {
   resolveLifecycleLabel,
   workspaceUserLabel,
 } from './contact-sidebar/utils';
+import { Avatar } from '../../components/ui/Avatar';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { CenterModal } from '../../components/ui/Modal';
+import { Tag } from '../../components/ui/Tag';
+import { Textarea } from '../../components/ui/Textarea';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { IconButton } from '../../components/ui/button/IconButton';
+import { TagColorSwatchPicker } from '../../components/ui/inputs';
+import { WorkspaceTagManager } from '../../components/ui/select';
 
 export interface ContactSidebarHybridProps {
   selectedConversation?: SidebarConversation | null;
@@ -98,9 +104,6 @@ export function ContactSidebarHybrid({
   const [duplicatesLoading, setDuplicatesLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [flashSaved, setFlashSaved] = useState(false);
-  const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null);
-  const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const [tagQuery, setTagQuery] = useState('');
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
   const [tagBusyName, setTagBusyName] = useState<string | null>(null);
   const [showCreateTagModal, setShowCreateTagModal] = useState(false);
@@ -108,7 +111,6 @@ export function ContactSidebarHybrid({
   const [creatingTag, setCreatingTag] = useState(false);
   const [identifierCopied, setIdentifierCopied] = useState(false);
   const [loadedLifecycleStages, setLoadedLifecycleStages] = useState<LifecycleStage[]>(lifecycleStages ?? []);
-  const tagDropdownRef = useRef<HTMLDivElement>(null);
   const tagEmojiRef = useRef<HTMLDivElement>(null);
   const [tagEmojiOpen, setTagEmojiOpen] = useState(false);
 
@@ -119,18 +121,6 @@ export function ContactSidebarHybrid({
   const selectedSuggestion = useMemo(
     () => duplicateSuggestions.find((item) => String((item.contact as any).id) === selectedSuggestionId) ?? duplicateSuggestions[0] ?? null,
     [duplicateSuggestions, selectedSuggestionId],
-  );
-  const normalizedTagQuery = tagQuery.trim().toLowerCase();
-  const filteredWorkspaceTags = useMemo(
-    () =>
-      workspaceTags.filter((tag) =>
-        !normalizedTagQuery || tag.name.toLowerCase().includes(normalizedTagQuery),
-      ),
-    [workspaceTags, normalizedTagQuery],
-  );
-  const exactTagMatch = useMemo(
-    () => workspaceTags.find((tag) => tag.name.trim().toLowerCase() === normalizedTagQuery) ?? null,
-    [workspaceTags, normalizedTagQuery],
   );
   const tagMetaByValue = useMemo(
     () =>
@@ -184,6 +174,38 @@ export function ContactSidebarHybrid({
 
     return Array.from(tagsByKey.values());
   }, [contact?.tagIds, contact?.tags, tagMetaByValue]);
+  const visibleContactTagValues = useMemo(
+    () => visibleContactTags.map((tag) => tag.id ?? tag.name),
+    [visibleContactTags],
+  );
+  const contactTagOptions = useMemo(() => {
+    const options = workspaceTags.map((tag) => ({
+      value: String(tag.id),
+      label: tag.name,
+      color: tag.bundle?.color || tag.color || 'tag-indigo',
+      emoji: tag.bundle?.emoji || tag.emoji || '\u{1F3F7}\uFE0F',
+      description: tag.bundle?.description || tag.description,
+      busy: tagBusyName === tag.name,
+    }));
+    const existingValues = new Set(options.map((option) => option.value));
+
+    visibleContactTags.forEach((tag) => {
+      const value = tag.id ?? tag.name;
+      if (existingValues.has(value)) {
+        return;
+      }
+
+      options.unshift({
+        value,
+        label: tag.name,
+        color: tag.color || 'tag-indigo',
+        emoji: tag.emoji || '\u{1F3F7}\uFE0F',
+        busy: tagBusyName === tag.name || tagBusyName === tag.id,
+      });
+    });
+
+    return options;
+  }, [tagBusyName, visibleContactTags, workspaceTags]);
   const lifecycleValue = contact?.lifecycleId != null ? String(contact.lifecycleId) : '';
   const lifecycleOptions = useMemo(
     () => [
@@ -277,22 +299,7 @@ export function ContactSidebarHybrid({
   useEffect(() => {
     setActiveField(null);
     setActivePreview(null);
-    setTagPickerOpen(false);
-    setTagQuery('');
   }, [contact?.id, selectedConversation?.id]);
-
-  useEffect(() => {
-    if (!tagPickerOpen) return;
-
-    const handleOutside = (event: MouseEvent) => {
-      if (!tagDropdownRef.current?.contains(event.target as Node)) {
-        setTagPickerOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [tagPickerOpen]);
 
   useEffect(() => {
     if (!tagEmojiOpen) return;
@@ -406,7 +413,6 @@ export function ContactSidebarHybrid({
     try {
       await contactsApi.addTagToContact(contact.id, tag.id);
       await refreshSidebarContact(contact.id);
-      setTagQuery('');
       flash();
     } finally {
       setTagBusyName(null);
@@ -443,10 +449,8 @@ export function ContactSidebarHybrid({
       setWorkspaceTags((prev) => [created, ...prev]);
       await contactsApi.addTagToContact(contact.id, created.id);
       await refreshSidebarContact(contact.id);
-      setTagQuery('');
       setNewTag({ name: '', color: 'tag-indigo', emoji: '\u{1F600}', description: '' });
       setShowCreateTagModal(false);
-      setTagPickerOpen(false);
       setTagEmojiOpen(false);
       flash();
     } finally {
@@ -454,15 +458,34 @@ export function ContactSidebarHybrid({
     }
   };
 
-  const openCreateTagModal = () => {
+  const toggleContactTag = async (
+    option: { value: string; label: string },
+    nextSelected: boolean,
+  ) => {
+    if (nextSelected) {
+      const match = workspaceTags.find(
+        (tag) => String(tag.id) === option.value || tag.name === option.label,
+      );
+      if (match) {
+        await attachTag(match);
+      }
+      return;
+    }
+
+    await detachTag(option.value);
+  };
+
+  const openCreateTagModal = (initialName = '') => {
+    const normalizedName = initialName.trim().toLowerCase();
+    const matchingTag =
+      workspaceTags.find((tag) => tag.name.trim().toLowerCase() === normalizedName) ?? null;
     setNewTag({
-      name: tagQuery.trim(),
-      color: exactTagMatch?.bundle?.color || exactTagMatch?.color || 'tag-indigo',
-      emoji: exactTagMatch?.bundle?.emoji || exactTagMatch?.emoji || '\u{1F600}',
-      description: exactTagMatch?.bundle?.description || exactTagMatch?.description || '',
+      name: initialName.trim(),
+      color: matchingTag?.bundle?.color || matchingTag?.color || 'tag-indigo',
+      emoji: matchingTag?.bundle?.emoji || matchingTag?.emoji || '\u{1F600}',
+      description: matchingTag?.bundle?.description || matchingTag?.description || '',
     });
     setShowCreateTagModal(true);
-    setTagPickerOpen(false);
   };
 
   const openMergeModal = async () => {
@@ -560,11 +583,11 @@ export function ContactSidebarHybrid({
 
         <div className="flex items-center gap-3 pr-10">
           <div className="flex-shrink-0">
-            <ContactAvatar
-              firstName={contact?.firstName ?? undefined}
-              lastName={contact?.lastName ?? undefined}
-              avatarUrl={contact?.avatarUrl}
-              size="md"
+            <Avatar
+              src={contact?.avatarUrl ?? undefined}
+              name={contactName(contact)}
+              size="base"
+              fallbackTone="neutral"
             />
           </div>
           <div className="min-w-0 flex-1">
@@ -576,19 +599,28 @@ export function ContactSidebarHybrid({
                 ID: {contactIdentifier}
               </p>
               {contactIdentifier ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(contactIdentifier).catch(() => undefined);
-                    setIdentifierCopied(true);
-                    setTimeout(() => setIdentifierCopied(false), 1500);
-                  }}
-                  className="inline-flex h-5 w-5 items-center justify-center text-[#98a2b3] transition-colors hover:text-[#1c2030] flex-shrink-0"
-                  title="Copy contact ID"
-                  aria-label="Copy contact ID"
-                >
-                  {identifierCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                </button>
+                <Tooltip content={identifierCopied ? 'Copied' : 'Copy contact ID'}>
+                  <span className="inline-flex shrink-0">
+                    <IconButton
+                      type="button"
+                      aria-label={identifierCopied ? 'Copied' : 'Copy contact ID'}
+                      icon={
+                        identifierCopied ? (
+                          <Check size={11} className="text-emerald-500" />
+                        ) : (
+                          <Copy size={11} />
+                        )
+                      }
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(contactIdentifier).catch(() => undefined);
+                        setIdentifierCopied(true);
+                        setTimeout(() => setIdentifierCopied(false), 1500);
+                      }}
+                    />
+                  </span>
+                </Tooltip>
               ) : null}
             </div>
           </div>
@@ -613,14 +645,17 @@ export function ContactSidebarHybrid({
                 <b>{contactName(selectedSuggestion.contact as SidebarContact)}</b> is a merge suggestion.
               </p>
               <p className="text-[10px] text-amber-600 mt-0.5">Suggested from identity overlap</p>
-              <button
-                onClick={openMergeModal}
-                disabled={previewLoading}
-                className="mt-2 inline-flex items-center gap-1.5 underline font-bold text-[11px] text-amber-800 disabled:opacity-50"
+              <Button
+                type="button"
+                onClick={() => void openMergeModal()}
+                loading={previewLoading}
+                loadingMode="inline"
+                variant="link"
+                size="xs"
+                leftIcon={<GitMerge size={11} />}
               >
-                {previewLoading ? <Loader2 size={11} className="animate-spin" /> : <GitMerge size={11} />}
                 Merge
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -629,17 +664,16 @@ export function ContactSidebarHybrid({
               {duplicateSuggestions.map((item) => {
                 const active = String((item.contact as any).id) === String((selectedSuggestion.contact as any).id);
                 return (
-                  <button
+                  <Button
                     key={(item.contact as any).id}
+                    type="button"
                     onClick={() => setSelectedSuggestionId(String((item.contact as any).id))}
-                    className={`px-2 py-1 rounded-md text-[10px] font-medium border ${
-                      active
-                        ? 'border-[#1c2030] bg-[#1c2030] text-white'
-                        : 'border-[#e2e7f0] text-[#677086] bg-white'
-                    }`}
+                    size="xs"
+                    radius="full"
+                    variant={active ? 'primary' : 'secondary'}
                   >
                     {contactName(item.contact as SidebarContact)}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -655,33 +689,36 @@ export function ContactSidebarHybrid({
                 icon: 'https://cdn.simpleicons.org/googlechat',
                 label: channel.channelType || 'Channel',
               };
+              const channelKey = String(
+                channel.id ??
+                  channel.channelId ??
+                  `${channel.channelType}-${channel.identifier}`,
+              );
 
               return (
-                <div
-                  key={String(channel.id ?? channel.channelId ?? `${channel.channelType}-${channel.identifier}`)}
-                  onMouseEnter={() => setHoveredChannelId(String(channel.id ?? channel.channelId ?? channel.identifier ?? channel.channelType))}
-                  onFocus={() => setHoveredChannelId(String(channel.id ?? channel.channelId ?? channel.identifier ?? channel.channelType))}
-                  onMouseLeave={() => setHoveredChannelId(null)}
-                  className="relative"
-                >
-                  <button
-                    className="w-[24px] h-[24px] rounded-md flex items-center justify-center hover:bg-[#f3f5f9] transition-colors"
-                    title={meta.label}
-                  >
-                    <img src={meta.icon} alt={meta.label} className="w-3.5 h-3.5 object-contain opacity-80" />
-                  </button>
-                  {hoveredChannelId === String(channel.id ?? channel.channelId ?? channel.identifier ?? channel.channelType) ? (
-                    <div className="absolute top-[calc(100%+6px)] left-0 z-20 min-w-[180px] rounded-xl border border-[#e6eaf2] bg-white px-3 py-2 shadow-lg">
-                      <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#a8b0c0]">
+                <Tooltip
+                  key={channelKey}
+                  content={
+                    <div className="min-w-[180px]">
+                      <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-white/70">
                         {meta.label}
                       </p>
-                      <p className="text-[11px] text-[#5a6280] mt-1 break-all">{channel.identifier}</p>
+                      <p className="mt-1 break-all text-[11px] text-white">
+                        {channel.identifier || 'No identifier available'}
+                      </p>
                       {channel.displayName ? (
-                        <p className="text-[10px] text-[#9aa1b2] mt-0.5">{channel.displayName}</p>
+                        <p className="mt-0.5 text-[10px] text-white/80">{channel.displayName}</p>
                       ) : null}
                     </div>
-                  ) : null}
-                </div>
+                  }
+                >
+                  <span
+                    tabIndex={0}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-[#f3f5f9] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+                  >
+                    <img src={meta.icon} alt={meta.label} className="w-3.5 h-3.5 object-contain opacity-80" />
+                  </span>
+                </Tooltip>
               );
             })}
           </div>
@@ -780,116 +817,42 @@ export function ContactSidebarHybrid({
       )}
 
       <div className="px-4 py-3.5">
-        <div className="flex items-center justify-between gap-2 relative" ref={tagDropdownRef}>
-          <span className="text-[12px] font-semibold text-[#374151]">Tags</span>
-          <button
-            type="button"
-            onClick={() => setTagPickerOpen((prev) => !prev)}
-            className="w-8 h-8 rounded-xl border border-[#d1d5db] bg-white flex items-center justify-center text-[#4b5563] hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-          >
-            <Plus size={14} />
-          </button>
-
-          {tagPickerOpen ? (
-            <div className="absolute right-0 bottom-[calc(100%+8px)] z-30 w-[230px] rounded-2xl border border-[#e5e7eb] bg-white shadow-xl p-3">
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[#d1d5db] bg-[#f9fafb]">
-                <Search size={14} className="text-[#9ca3af]" />
-                <input
-                  value={tagQuery}
-                  onChange={(event) => setTagQuery(event.target.value)}
-                  placeholder="Search and select tags"
-                  className="flex-1 bg-transparent text-[13px] text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
-                />
-              </div>
-
-              <div className="mt-3 max-h-52 overflow-y-auto space-y-2">
-                {filteredWorkspaceTags.map((tag) => {
-                  const selected = visibleContactTags.some(
-                    (selectedTag) => selectedTag.name === tag.name || selectedTag.id === String(tag.id),
-                  );
-                  const busy = tagBusyName === tag.name;
-                  const tagColor = tag.bundle?.color || tag.color;
-                  const tagEmoji = tag.bundle?.emoji || tag.emoji || '\u{1F3F7}\uFE0F';
-                  const tagStyle = getTagSurfaceStyle(tagColor);
-
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => (selected ? detachTag(tag.name) : attachTag(tag))}
-                      className="w-full flex items-center gap-2.5 text-left rounded-xl px-1 py-1 hover:bg-[#f8fafc] transition-colors disabled:opacity-60"
-                    >
-                      <span className="flex-1 min-w-0">
-                        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[13px] text-[#374151]" style={tagStyle}>
-                          <span>{tagEmoji}</span>
-                          {tag.name}
-                        </span>
-                      </span>
-                      <span className="w-4 h-4 flex items-center justify-center text-indigo-600 flex-shrink-0">
-                        {busy ? <Loader2 size={12} className="animate-spin" /> : selected ? <Check size={13} /> : null}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {!filteredWorkspaceTags.length && normalizedTagQuery ? (
-                  <button
-                    type="button"
-                    onClick={openCreateTagModal}
-                    disabled={!!tagBusyName}
-                    className="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50 px-3 py-2 text-left text-[13px] text-indigo-700 font-medium hover:bg-indigo-100 transition-colors disabled:opacity-60"
-                  >
-                    Create "{tagQuery.trim()}" tag
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {visibleContactTags.length ? (
-            visibleContactTags.map((tag) => {
-              const busy = tagBusyName === tag.name || tagBusyName === tag.id;
-
-              return (
-              <span
-                key={tag.key}
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-medium shadow-[0_1px_2px_rgba(15,23,42,0.05)] border"
-                style={getTagSurfaceStyle(tag.color)}
-              >
-                <span>{tag.emoji || '\u{1F3F7}\uFE0F'}</span>
-                {tag.name}
-                <button
-                  type="button"
-                  onClick={() => detachTag(tag.id ?? tag.name)}
-                  disabled={busy}
-                  className="text-[#6b7280] hover:text-[#111827] disabled:opacity-50"
-                >
-                  {busy ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                </button>
-              </span>
-              );
-            })
-          ) : (
+        <WorkspaceTagManager
+          label="Tags"
+          labelAppearance="sidebar"
+          options={contactTagOptions}
+          value={visibleContactTagValues}
+          onToggleOption={toggleContactTag}
+          searchPlaceholder="Search and select tags"
+          emptyMessage="No matching workspace tags."
+          emptyActionLabel={(query) => `Create "${query}" tag`}
+          onEmptyAction={openCreateTagModal}
+          selectedDisplay="below"
+          selectedAppearance="tag"
+          optionAppearance="tag"
+          dropdownPlacement="top"
+          dropdownAlign="end"
+          dropdownWidth="sm"
+          menuTitle=""
+          emptySelectedContent={
             <span className="text-[12px] text-[#9ca3af] italic">No tags added</span>
-          )}
-        </div>
+          }
+        />
       </div>
 
       {onDelete ? (
         <>
           <div className="mx-4 border-t border-[#f0f2f8]" />
           <div className="px-4 py-4">
-            <button
+            <Button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-semibold text-red-600 hover:bg-red-50 transition-colors"
+              variant="danger-ghost"
+              
+              leftIcon={<Trash2 size={13} />}
             >
-              <Trash2 size={13} />
               Delete contact
-            </button>
+            </Button>
           </div>
         </>
       ) : null}
@@ -917,101 +880,89 @@ export function ContactSidebarHybrid({
       ) : null}
 
       {showCreateTagModal ? (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[110]">
-          <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Add tag</h3>
-              <button onClick={() => setShowCreateTagModal(false)}>
-                <X size={20} className="text-gray-400" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
-                <span>{newTag.emoji || '\u{1F3F7}\uFE0F'}</span>
-                <span className="text-sm text-gray-600">{newTag.name || 'New tag'}</span>
-              </div>
-              <div className="grid grid-cols-[76px_1fr] gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Emoji</label>
-                  <div className="relative" ref={tagEmojiRef}>
-                    <button
-                      type="button"
-                      onClick={() => setTagEmojiOpen((prev) => !prev)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-2xl flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <span>{newTag.emoji}</span>
-                      <Smile size={16} className="text-indigo-600" />
-                    </button>
-                    {tagEmojiOpen ? (
-                      <EmojiPicker
-                        mode="tag"
-                        accent="indigo"
-                        onSelect={(emoji) => {
-                          setNewTag((prev) => ({ ...prev, emoji }));
-                          setTagEmojiOpen(false);
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    value={newTag.name}
-                    onChange={(event) => setNewTag((prev) => ({ ...prev, name: event.target.value }))}
-                    placeholder="e.g. Priority"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
+        <CenterModal
+          isOpen
+          onClose={() => setShowCreateTagModal(false)}
+          title="Add tag"
+          size="sm"
+          width={480}
+          closeOnOverlayClick={false}
+          bodyPadding="lg"
+          secondaryAction={
+            <Button
+              onClick={() => setShowCreateTagModal(false)}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+          }
+          primaryAction={
+            <Button
+              onClick={handleCreateTag}
+              disabled={creatingTag || !newTag.name.trim()}
+              loading={creatingTag}
+              loadingMode="inline"
+            >
+              Add tag
+            </Button>
+          }
+        >
+          <div className="space-y-4">
+            <Tag
+              label={newTag.name || 'New tag'}
+              emoji={newTag.emoji || '\u{1F3F7}\uFE0F'}
+              bgColor={newTag.color}
+              size="sm"
+            />
+            <div className="grid grid-cols-[76px_1fr] gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Colors</label>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {TAG_COLOR_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setNewTag((prev) => ({ ...prev, color: option.value }))}
-                      className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${newTag.color === option.value ? 'border-gray-800 scale-110' : 'border-transparent'}`}
-                      style={{ backgroundColor: option.hex }}
+                <label className="mb-1 block text-sm font-medium text-gray-700">Emoji</label>
+                <div className="relative" ref={tagEmojiRef}>
+                  <Button
+                    type="button"
+                    onClick={() => setTagEmojiOpen((prev) => !prev)}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    contentAlign="start"
+                    radius="lg"
+                    rightIcon={<Smile size={16} className="text-indigo-600" />}
+                  >
+                    <span className="text-2xl leading-none">{newTag.emoji}</span>
+                  </Button>
+                  {tagEmojiOpen ? (
+                    <EmojiPicker
+                      mode="tag"
+                      accent="indigo"
+                      onSelect={(emoji) => {
+                        setNewTag((prev) => ({ ...prev, emoji }));
+                        setTagEmojiOpen(false);
+                      }}
                     />
-                  ))}
+                  ) : null}
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={newTag.description}
-                  onChange={(event) => setNewTag((prev) => ({ ...prev, description: event.target.value }))}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+              <Input
+                value={newTag.name}
+                onChange={(event) => setNewTag((prev) => ({ ...prev, name: event.target.value }))}
+                label="Name"
+                placeholder="e.g. Priority"
+              />
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => setShowCreateTagModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateTag}
-                disabled={creatingTag || !newTag.name.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2"
-              >
-                {creatingTag ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  'Add tag'
-                )}
-              </button>
-            </div>
+            <TagColorSwatchPicker
+              label="Colors"
+              value={newTag.color}
+              options={TAG_COLOR_OPTIONS}
+              onChange={(color) => setNewTag((prev) => ({ ...prev, color }))}
+            />
+            <Textarea
+              value={newTag.description}
+              onChange={(event) => setNewTag((prev) => ({ ...prev, description: event.target.value }))}
+              label="Description"
+              rows={4}
+            />
           </div>
-        </div>
+        </CenterModal>
       ) : null}
     </>
   );

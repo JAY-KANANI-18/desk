@@ -1,17 +1,21 @@
-import { BarChart3, Loader2, X } from "lucide-react";
-import { MobileSheet } from "../../components/topbar/MobileSheet";
+import { BarChart3, Loader2, PanelLeftOpen } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { SideModal } from "../../components/ui/Modal";
+import { Tooltip } from "../../components/ui/Tooltip";
+import { IconButton } from "../../components/ui/button/IconButton";
+import { MobileSheet } from "../../components/ui/modal";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import type {
   BroadcastAnalytics,
   BroadcastRunRow,
   BroadcastTrace,
 } from "../../lib/broadcastApi";
+import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastDraftState } from "./types";
 import {
   canMutateBroadcast,
   formatDateTime,
-  statusBadgeClass,
-  statusLabel,
 } from "./utils";
 
 type BroadcastDetailsDrawerProps = {
@@ -31,6 +35,8 @@ type BroadcastDetailsDrawerProps = {
   onSendNow: () => void;
   onRefreshAnalytics: () => void;
   onRefreshTrace: () => void;
+  desktopVariant?: "modal" | "inline";
+  desktopContainerClassName?: string;
 };
 
 function StatItem({
@@ -65,6 +71,8 @@ export function BroadcastDetailsDrawer({
   onSendNow,
   onRefreshAnalytics,
   onRefreshTrace,
+  desktopVariant = "modal",
+  desktopContainerClassName,
 }: BroadcastDetailsDrawerProps) {
   const isMobile = useIsMobile();
 
@@ -78,13 +86,9 @@ export function BroadcastDetailsDrawer({
       </div>
       <div>
         <p className="text-[11px] font-medium text-gray-500">Status</p>
-        <span
-          className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs ${statusBadgeClass(
-            selectedRun.status,
-          )}`}
-        >
-          {statusLabel(selectedRun.status)}
-        </span>
+        <div className="mt-1">
+          <BroadcastStatusTag status={selectedRun.status} />
+        </div>
       </div>
       <div>
         <p className="text-[11px] font-medium text-gray-500">Channel</p>
@@ -97,36 +101,37 @@ export function BroadcastDetailsDrawer({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
+        <Button
           disabled={
             !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
           }
           onClick={() => onOpenBroadcastAction("edit")}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
+          variant="secondary"
+         
+          fullWidth
         >
           Edit
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           disabled={
             !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
           }
           onClick={() => onOpenBroadcastAction("reschedule")}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
+          variant="secondary"
+          fullWidth
         >
           Reschedule
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           disabled={
             !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
           }
           onClick={onSendNow}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
+          variant="secondary"
+          fullWidth
         >
           Send now
-        </button>
+        </Button>
       </div>
 
       {!canMutateBroadcast(selectedRun.status) ? (
@@ -144,59 +149,48 @@ export function BroadcastDetailsDrawer({
               : "Reschedule broadcast"}
           </p>
           {broadcastAction === "edit" ? (
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Broadcast name
-              </label>
-              <input
-                type="text"
-                value={broadcastDraft.name}
-                onChange={(event) =>
-                  onBroadcastDraftChange({
-                    ...broadcastDraft,
-                    name: event.target.value,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          ) : null}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Schedule time
-            </label>
-            <input
-              type="datetime-local"
-              value={broadcastDraft.scheduledAt}
+            <Input
+              label="Broadcast name"
+              inputSize="sm"
+              value={broadcastDraft.name}
               onChange={(event) =>
                 onBroadcastDraftChange({
                   ...broadcastDraft,
-                  scheduledAt: event.target.value,
+                  name: event.target.value,
                 })
               }
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-          </div>
+          ) : null}
+          <Input
+            label="Schedule time"
+            type="datetime-local"
+            inputSize="sm"
+            value={broadcastDraft.scheduledAt}
+            onChange={(event) =>
+              onBroadcastDraftChange({
+                ...broadcastDraft,
+                scheduledAt: event.target.value,
+              })
+            }
+          />
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
+            <Button
               onClick={onCancelBroadcastAction}
               disabled={broadcastActionSaving}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 transition hover:bg-white disabled:opacity-50"
+              variant="secondary"
+          
             >
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={onSaveBroadcastAction}
               disabled={broadcastActionSaving}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs text-white transition hover:bg-indigo-700 disabled:opacity-50"
+          
+              loading={broadcastActionSaving}
+              loadingMode="inline"
             >
-              {broadcastActionSaving ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : null}
               Save
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -235,13 +229,14 @@ export function BroadcastDetailsDrawer({
           <p className="text-[11px] font-medium text-gray-500">
             Delivery analytics
           </p>
-          <button
+          <Button
             type="button"
-            className="text-xs text-indigo-600 transition hover:text-indigo-700 hover:underline"
+            variant="link"
+            size="sm"
             onClick={onRefreshAnalytics}
           >
             Refresh
-          </button>
+          </Button>
         </div>
         {analyticsLoading ? (
           <div className="flex items-center gap-2 py-4 text-gray-500">
@@ -299,13 +294,14 @@ export function BroadcastDetailsDrawer({
           <p className="text-[11px] font-medium text-gray-500">
             Recipient trace
           </p>
-          <button
+          <Button
             type="button"
-            className="text-xs text-indigo-600 transition hover:text-indigo-700 hover:underline"
+            variant="link"
+            size="sm"
             onClick={onRefreshTrace}
           >
             Refresh trace
-          </button>
+          </Button>
         </div>
         {traceLoading ? (
           <div className="flex items-center gap-2 py-4 text-gray-500">
@@ -328,13 +324,7 @@ export function BroadcastDetailsDrawer({
                       {row.identifier ?? row.channelMsgId ?? "-"}
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs ${statusBadgeClass(
-                      row.messageStatus,
-                    )}`}
-                  >
-                    {statusLabel(row.messageStatus)}
-                  </span>
+                  <BroadcastStatusTag status={row.messageStatus} />
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-gray-600">
                   <p>Created: {formatDateTime(row.createdAt)}</p>
@@ -365,7 +355,7 @@ export function BroadcastDetailsDrawer({
   if (isMobile) {
     return (
       <MobileSheet
-        open
+        isOpen
         onClose={onClose}
         fullScreen
         title={
@@ -385,24 +375,58 @@ export function BroadcastDetailsDrawer({
     );
   }
 
-  return (
-    <div className="pointer-events-none fixed inset-y-0 right-0 z-50 flex justify-end">
-      <div className="pointer-events-auto relative h-full w-full max-w-md overflow-y-auto border-l border-gray-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <h3 className="flex items-center gap-2 font-semibold text-gray-900">
-            <BarChart3 size={18} />
-            Broadcast details
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-gray-400 transition hover:text-gray-700"
-          >
-            <X size={22} />
-          </button>
+  if (desktopVariant === "inline") {
+    return (
+      <aside className={desktopContainerClassName ?? "flex h-full"}>
+        <div className="relative flex h-full w-full flex-col overflow-hidden border-l border-[var(--color-gray-200)] bg-white">
+          <div className="border-b border-[var(--color-gray-200)] py-4 pl-16 pr-4">
+            <div className="absolute left-3 top-3 z-20">
+              <Tooltip content="Collapse broadcast details">
+                <span className="inline-flex">
+                  <IconButton
+                    type="button"
+                    onClick={onClose}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Collapse broadcast details"
+                    icon={<PanelLeftOpen size={18} />}
+                  />
+                </span>
+              </Tooltip>
+            </div>
+
+            <div className="flex min-h-[26px] min-w-0 items-center gap-2">
+              <BarChart3 size={16} className="flex-shrink-0 text-[var(--color-primary)]" />
+              <h2 className="truncate text-sm font-semibold text-[var(--color-gray-900)]">
+                Broadcast details
+              </h2>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {content}
+          </div>
         </div>
+      </aside>
+    );
+  }
+
+  return (
+    <SideModal
+      isOpen
+      onClose={onClose}
+      title="Broadcast details"
+      headerIcon={<BarChart3 size={18} />}
+      width={448}
+      bodyPadding="none"
+      closeOnOverlayClick={false}
+      showOverlay={false}
+      allowBackgroundInteraction
+      lockBodyScroll={false}
+    >
+      <div className="h-full overflow-y-auto">
         {content}
       </div>
-    </div>
+    </SideModal>
   );
 }

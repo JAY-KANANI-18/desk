@@ -8,6 +8,11 @@ import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
 import { ListPagination } from '../../components/ui/ListPagination';
 import { DataTable, type DataTableColumn, type DataTableSortDirection } from '../../components/ui/DataTable';
+import { PageLayout } from '../../components/ui/PageLayout';
+import { Button } from '../../components/ui/Button';
+import { IconButton } from '../../components/ui/button/IconButton';
+import { BaseInput } from '../../components/ui/inputs/BaseInput';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -143,17 +148,15 @@ export function WorkflowList() {
             },
           ],
           panel: mobileSearchOpen ? (
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search workflows..."
-                value={searchDraft}
-                onChange={(e) => setSearchDraft(e.target.value)}
-                className="h-10 w-full rounded-xl bg-slate-100 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+            <BaseInput
+              autoFocus
+              type="search"
+              placeholder="Search workflows..."
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              appearance="toolbar"
+              leftIcon={<Search size={15} />}
+            />
           ) : null,
         }
       : {},
@@ -213,8 +216,9 @@ export function WorkflowList() {
           </div>
           <div className="min-w-0">
             {renameId === wf.id ? (
-              <input
+              <BaseInput
                 autoFocus
+                type="text"
                 value={renameDraft}
                 onClick={(event) => event.stopPropagation()}
                 onChange={(e) => setRenameDraft(e.target.value)}
@@ -223,7 +227,9 @@ export function WorkflowList() {
                   if (e.key === 'Enter') handleRenameSubmit(wf.id);
                   if (e.key === 'Escape') setRenameId(null);
                 }}
-                className="w-full border-b border-gray-400 bg-transparent text-sm font-medium outline-none"
+                appearance="inline-edit"
+                size="sm"
+                aria-label={`Rename ${wf.name}`}
               />
             ) : (
               <span className="block truncate text-sm font-medium text-gray-800">
@@ -351,99 +357,138 @@ export function WorkflowList() {
     ];
   };
 
-  return (
-    <div className="mobile-borderless flex h-full min-h-0 flex-col overflow-hidden bg-white">
-      {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 md:border-b md:border-gray-100 md:px-6 md:py-4">
-        <div className="mb-4 hidden items-center justify-end md:flex md:justify-between">
-          <h1 className="hidden text-base font-semibold text-gray-900 md:block">Workflows</h1>
-          <div className="flex items-center gap-2">
-            <button className="rounded-md bg-slate-100 p-1.5 transition-colors hover:bg-slate-200 md:border md:border-gray-200 md:bg-white md:hover:bg-gray-50" title="Import">
-              <Upload size={14} className="text-gray-400" />
-            </button>
-            <button
-              onClick={handleCreateNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
-            >
-              <Plus size={14} />
-              New Workflow
-            </button>
-          </div>
-        </div>
+  const desktopActions = isMobile ? undefined : (
+    <div className="flex items-center gap-2">
+      <Tooltip content="Import workflows">
+        <span className="inline-flex">
+          <IconButton
+            aria-label="Import workflows"
+            icon={<Upload size={14} />}
+            variant="secondary"
+          />
+        </span>
+      </Tooltip>
+      <Button
+        onClick={handleCreateNew}
+        leftIcon={<Plus size={14} />}
+      >
+        New Workflow
+      </Button>
+    </div>
+  );
 
-        {/* Filters + search */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <div className="flex items-center gap-0.5 overflow-x-auto">
-            {(['all', 'published', 'draft', 'stopped'] as FilterStatus[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => { setFilter(f); setPage(1); }}
-                className={`rounded-2xl px-3 py-2 text-sm capitalize transition-colors md:rounded-md md:px-2.5 md:py-1.5 ${
-                  filter === f ? 'bg-indigo-100 text-indigo-600 font-medium' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {f}
-                <span className={`ml-1.5 text-xs tabular-nums ${filter === f ? 'text-indigo-600' : 'text-gray-400'}`}>
-                  {counts[f]}
-                </span>
-              </button>
-            ))}
-          </div>
+  const desktopToolbar = isMobile ? undefined : (
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+      <div className="flex items-center gap-0.5 overflow-x-auto">
+        {(['all', 'published', 'draft', 'stopped'] as FilterStatus[]).map((f) => (
+          <Button
+            key={f}
+            onClick={() => {
+              setFilter(f);
+              setPage(1);
+            }}
 
-          <div className="relative hidden md:ml-auto md:block">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              className="w-full rounded-md bg-slate-100 py-1.5 pl-8 pr-3 text-sm placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 md:w-48 md:border md:border-gray-200 md:bg-white"
-            />
-          </div>
-        </div>
+                              variant="tab"
+                selected={filter === f}
+
+                      radius="none"
+          
+            rightIcon={<span className="text-xs tabular-nums opacity-75">{counts[f]}</span>}
+          >
+            <span className="capitalize">{f}</span>
+          </Button>
+        ))}
       </div>
 
-      {/* Content */}
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <DataTable
-          className="h-full"
-          rows={sortedWorkflows}
-          columns={workflowColumns}
-          getRowId={(workflow) => workflow.id}
-          loading={loading}
-          loadingLabel="Loading workflows..."
-          emptyTitle={search || filter !== 'all' ? 'No workflows found' : 'No workflows yet'}
-          emptyDescription={
-            search || filter !== 'all'
-              ? 'Try a different search or filter.'
-              : 'Create your first workflow to automate conversations and contact management.'
-          }
-          sort={{
-            field: sortField,
-            direction: sortDirection,
-            onChange: handleSort,
-          }}
-          rowActions={workflowActions}
-          onRowClick={(workflow) => handleOpenBuilder(workflow.id)}
-          minTableWidth={720}
-          mobileLoadMore={{
-            hasMore: pagination.hasNextPage,
-            loading: mobileLoadingMore,
-            onLoadMore: loadNextMobilePage,
-            loadingLabel: 'Loading more workflows...',
-          }}
-          footer={
-            <ListPagination
-              page={pagination.page}
-              totalPages={pagination.totalPages}
-              total={pagination.total}
-              limit={pagination.limit}
-              itemLabel="workflows"
-              onPageChange={setPage}
-            />
-          }
+      <div className="hidden md:ml-auto md:block md:w-48">
+        <BaseInput
+          type="search"
+          placeholder="Search..."
+          value={searchDraft}
+          onChange={(e) => setSearchDraft(e.target.value)}
+          appearance="toolbar"
+   
+          leftIcon={<Search size={13} />}
         />
       </div>
     </div>
+  );
+
+  return (
+    <PageLayout
+      title="Workflows"
+      actions={desktopActions}
+      toolbar={desktopToolbar}
+      className="bg-white"
+      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
+    >
+      <div className="mobile-borderless flex h-full min-h-0 flex-col overflow-hidden bg-white">
+        {isMobile ? (
+          <div className="flex-shrink-0 px-4 py-3">
+            <div className="flex items-center gap-0.5 overflow-x-auto">
+              {(['all', 'published', 'draft', 'stopped'] as FilterStatus[]).map((f) => (
+                 <Button
+            key={f}
+            onClick={() => {
+              setFilter(f);
+              setPage(1);
+            }}
+
+                              variant="tab"
+                selected={filter === f}
+
+                      radius="none"
+          
+            rightIcon={<span className="text-xs tabular-nums opacity-75">{counts[f]}</span>}
+          >
+            <span className="capitalize">{f}</span>
+          </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <DataTable
+            className="h-full"
+            rows={sortedWorkflows}
+            columns={workflowColumns}
+            getRowId={(workflow) => workflow.id}
+            loading={loading}
+            loadingLabel="Loading workflows..."
+            emptyTitle={search || filter !== 'all' ? 'No workflows found' : 'No workflows yet'}
+            emptyDescription={
+              search || filter !== 'all'
+                ? 'Try a different search or filter.'
+                : 'Create your first workflow to automate conversations and contact management.'
+            }
+            sort={{
+              field: sortField,
+              direction: sortDirection,
+              onChange: handleSort,
+            }}
+            rowActions={workflowActions}
+            onRowClick={(workflow) => handleOpenBuilder(workflow.id)}
+            minTableWidth={720}
+            mobileLoadMore={{
+              hasMore: pagination.hasNextPage,
+              loading: mobileLoadingMore,
+              onLoadMore: loadNextMobilePage,
+              loadingLabel: 'Loading more workflows...',
+            }}
+            footer={
+              <ListPagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={pagination.limit}
+                itemLabel="workflows"
+                onPageChange={setPage}
+              />
+            }
+          />
+        </div>
+      </div>
+    </PageLayout>
   );
 }

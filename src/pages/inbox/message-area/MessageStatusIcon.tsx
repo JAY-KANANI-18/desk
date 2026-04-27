@@ -1,19 +1,34 @@
-import React from "react";
 import { Check, CheckCheck, Clock } from "lucide-react";
+import { Tooltip } from "../../../components/ui/Tooltip";
 import type { MessageStatus } from "./types";
 
 export function MessageStatusIcon({ status }: { status?: MessageStatus }) {
-  if (status === "read") {
-    return <CheckCheck size={14} className="text-sky-500 flex-shrink-0" />;
-  }
+  const resolvedStatus = status ?? "pending";
 
-  if (status === "delivered") {
-    return <CheckCheck size={14} className="text-gray-400 flex-shrink-0" />;
-  }
+  const config =
+    resolvedStatus === "read"
+      ? { Icon: CheckCheck, colorClass: "text-sky-500", label: "Read" }
+      : resolvedStatus === "delivered"
+        ? {
+            Icon: CheckCheck,
+            colorClass: "text-gray-400",
+            label: "Delivered",
+          }
+        : resolvedStatus === "sent"
+          ? { Icon: Check, colorClass: "text-gray-400", label: "Sent" }
+          : { Icon: Clock, colorClass: "text-gray-400", label: "Pending" };
 
-  if (status === "sent") {
-    return <Check size={14} className="text-gray-400 flex-shrink-0" />;
-  }
-
-  return <Clock size={13} className="text-gray-400 flex-shrink-0" />;
+  return (
+    <Tooltip content={config.label}>
+      <span
+        aria-label={config.label}
+        className="inline-flex items-center"
+      >
+        <config.Icon
+          size={resolvedStatus === "pending" ? 13 : 14}
+          className={`${config.colorClass} flex-shrink-0`}
+        />
+      </span>
+    </Tooltip>
+  );
 }

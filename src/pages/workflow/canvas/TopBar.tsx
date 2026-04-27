@@ -6,12 +6,15 @@ import {
   Settings,
   Play,
   Square,
-  Loader2,
   Check,
   Pencil,
 } from 'lucide-react';
 import { useWorkflow } from '../WorkflowContext';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import { Button } from '../../../components/ui/Button';
+import { IconButton } from '../../../components/ui/button/IconButton';
+import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { Tag } from '../../../components/ui/Tag';
 
 interface TopBarProps {
   onBack: () => void;
@@ -51,52 +54,55 @@ export function TopBar({ onBack }: TopBarProps) {
   const actions = (
     <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap">
       {errorCount > 0 && (
-        <div className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-600">
-          <AlertTriangle size={12} />
-          <span>{errorCount}</span>
-        </div>
+        <Tag
+          label={String(errorCount)}
+          bgColor="warning"
+          size="sm"
+          icon={<AlertTriangle size={12} />}
+        />
       )}
 
-      <button
+      <IconButton
         onClick={toggleSettings}
-        className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
         aria-label="Workflow settings"
-      >
-        <Settings size={15} />
-      </button>
+        icon={<Settings size={15} />}
+        variant="ghost"
+        size="xs"
+      />
 
-      <button
+      <Button
         onClick={saveWorkflow}
         disabled={isSaving || !isDirty}
-        className="flex items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+        variant="secondary"
+        size="xs"
+        loading={isSaving}
+        loadingMode="inline"
+        leftIcon={isDirty ? <Save size={13} /> : <Check size={13} className="text-green-500" />}
       >
-        {isSaving ? (
-          <Loader2 size={13} className="animate-spin" />
-        ) : isDirty ? (
-          <Save size={13} />
-        ) : (
-          <Check size={13} className="text-green-500" />
-        )}
-        <span>{isSaving ? 'Saving' : 'Save'}</span>
-      </button>
+        {isSaving ? 'Saving' : 'Save'}
+      </Button>
 
       {isPublished ? (
-        <button
+        <Button
           onClick={stopWorkflow}
-          className="flex items-center gap-1.5 rounded-md bg-red-500 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+          variant="danger"
+          size="xs"
+          leftIcon={<Square size={12} />}
         >
-          <Square size={12} />
           Stop
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           onClick={publishWorkflow}
           disabled={!canPublish || isPublishing}
-          className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          variant="dark"
+          size="xs"
+          loading={isPublishing}
+          loadingMode="inline"
+          leftIcon={<Play size={12} />}
         >
-          {isPublishing ? <Loader2 size={13} className="animate-spin" /> : <Play size={12} />}
           {isPublishing ? 'Publishing' : 'Publish'}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -104,22 +110,25 @@ export function TopBar({ onBack }: TopBarProps) {
   return (
     <div className="z-20 flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3 md:h-12 md:py-0">
       <div className="flex items-start gap-3 md:h-full md:items-center">
-        <button
+        <Button
           onClick={onBack}
-          className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 md:h-auto md:w-auto md:gap-1 md:rounded-none md:hover:bg-transparent"
           aria-label="Back to workflows"
+          variant="ghost"
+          size="sm"
+          leftIcon={<ChevronLeft size={16} />}
+          className="flex-shrink-0"
         >
-          <ChevronLeft size={16} />
           <span className="hidden text-sm md:inline">Workflows</span>
-        </button>
+        </Button>
 
         <div className="hidden h-4 w-px bg-gray-200 md:block" />
 
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
             {editingName ? (
-              <input
+              <BaseInput
                 autoFocus
+                type="text"
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
                 onBlur={handleNameSubmit}
@@ -130,28 +139,36 @@ export function TopBar({ onBack }: TopBarProps) {
                     setNameDraft(workflow.name);
                   }
                 }}
-                className="min-w-[120px] max-w-full border-b border-gray-400 bg-transparent text-sm font-medium outline-none md:max-w-[240px]"
+                appearance="inline-edit"
+                size="xs"
+                autoWidth
+                minWidthCh={12}
+                maxWidthCh={28}
+                aria-label="Workflow name"
               />
             ) : (
-              <button
+              <Button
                 onClick={() => {
                   setNameDraft(workflow.name);
                   setEditingName(true);
                 }}
+                variant="unstyled"
+                contentAlign="start"
+                preserveChildLayout
                 className="group flex min-w-0 items-center gap-1.5"
               >
                 <span className="truncate text-sm font-medium text-gray-900 md:max-w-[200px]">
                   {workflow.name}
                 </span>
                 <Pencil size={12} className="flex-shrink-0 text-gray-300 transition-colors group-hover:text-gray-500" />
-              </button>
+              </Button>
             )}
-          </div>
 
-          <div className="mt-1 flex items-center gap-1.5 md:mt-0">
-            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${statusDot}`} />
-            <span className="text-xs capitalize text-gray-400">{workflow.status}</span>
-            {isDirty && <span className="text-xs text-gray-400">/ unsaved</span>}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${statusDot}`} />
+              <span className="text-xs capitalize text-gray-400">{workflow.status}</span>
+              {isDirty && <span className="text-xs text-gray-400">/ unsaved</span>}
+            </div>
           </div>
         </div>
 

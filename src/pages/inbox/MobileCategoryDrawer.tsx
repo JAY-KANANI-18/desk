@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { Inbox, UserCircle2, UserMinus } from "lucide-react";
 import { useInbox } from "../../context/InboxContext";
-import { MobileSheet } from "../../components/topbar/MobileSheet";
+import { MobileSheet } from "../../components/ui/modal";
+import { Button } from "../../components/ui/Button";
+import { Tag } from "../../components/ui/Tag";
 
 type LifecycleItem = {
   id: string | number;
@@ -30,6 +32,32 @@ const SECTIONS: SidebarItem[] = [
     filter: { assigneeId: "unassigned" },
   },
 ];
+
+function DrawerRow({
+  selected,
+  tone = "primary",
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  tone?: "primary" | "warning";
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      onClick={onClick}
+      variant={selected ? (tone === "warning" ? "soft-warning" : "soft-primary") : "ghost"}
+      size="md"
+      radius="lg"
+      fullWidth
+      contentAlign="start"
+    >
+      <div className="flex w-full items-center gap-3 text-left">{children}</div>
+    </Button>
+  );
+}
 
 export function getActiveCategoryLabel(
   filters: {
@@ -118,7 +146,7 @@ export function MobileCategoryDrawer({
 
   return (
     <MobileSheet
-      open={open}
+      isOpen={open}
       title={
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -132,87 +160,75 @@ export function MobileCategoryDrawer({
       onClose={onClose}
     >
       <div className="p-3">
+        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Inbox
+        </p>
+        <div className="space-y-1">
+          {SECTIONS.map((item) => (
+            <DrawerRow
+              key={item.id}
+              selected={activeId === item.id}
+              onClick={() => selectSection(item)}
+            >
+              <item.icon size={18} className="flex-shrink-0" />
+              <span className="flex-1 truncate text-sm font-semibold">
+                {item.label}
+              </span>
+              {unreadBySection[item.id] > 0 ? (
+                <Tag
+                  label={unreadBySection[item.id] > 99 ? "99+" : String(unreadBySection[item.id])}
+                  size="sm"
+                  bgColor={activeId === item.id ? "primary" : "gray"}
+                />
+              ) : null}
+            </DrawerRow>
+          ))}
+        </div>
+
+        {lifecycleStages.length > 0 ? (
+          <div className="mt-5">
             <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Inbox
+              Lifecycle
             </p>
             <div className="space-y-1">
-              {SECTIONS.map((item) => (
-                <button
+              {lifecycleStages.map((item) => (
+                <DrawerRow
                   key={item.id}
-                  type="button"
-                  onClick={() => selectSection(item)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${
-                    activeId === item.id
-                      ? "bg-indigo-50 text-indigo-600"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
+                  selected={activeId === String(item.id)}
+                  onClick={() => selectLifecycle(item)}
                 >
-                  <item.icon size={18} className="flex-shrink-0" />
-                  <span className="flex-1 truncate text-sm font-semibold">
-                    {item.label}
+                  <span className="text-base">{item.emoji}</span>
+                  <span className="truncate text-sm font-semibold">
+                    {item.name}
                   </span>
-                  {unreadBySection[item.id] > 0 ? (
-                    <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-600">
-                      {unreadBySection[item.id] > 99 ? "99+" : unreadBySection[item.id]}
-                    </span>
-                  ) : null}
-                </button>
+                </DrawerRow>
               ))}
             </div>
+          </div>
+        ) : null}
 
-            {lifecycleStages.length > 0 ? (
-              <div className="mt-5">
-                <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Lifecycle
-                </p>
-                <div className="space-y-1">
-                  {lifecycleStages.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => selectLifecycle(item)}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${
-                        activeId === String(item.id)
-                          ? "bg-indigo-50 text-indigo-600"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      <span className="text-base">{item.emoji}</span>
-                      <span className="truncate text-sm font-semibold">
-                        {item.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {lostStages.length > 0 ? (
-              <div className="mt-5">
-                <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Lost
-                </p>
-                <div className="space-y-1">
-                  {lostStages.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => selectLifecycle(item)}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${
-                        activeId === String(item.id)
-                          ? "bg-orange-50 text-orange-700"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      <span className="text-base">{item.emoji}</span>
-                      <span className="truncate text-sm font-semibold">
-                        {item.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+        {lostStages.length > 0 ? (
+          <div className="mt-5">
+            <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Lost
+            </p>
+            <div className="space-y-1">
+              {lostStages.map((item) => (
+                <DrawerRow
+                  key={item.id}
+                  selected={activeId === String(item.id)}
+                  tone="warning"
+                  onClick={() => selectLifecycle(item)}
+                >
+                  <span className="text-base">{item.emoji}</span>
+                  <span className="truncate text-sm font-semibold">
+                    {item.name}
+                  </span>
+                </DrawerRow>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </MobileSheet>
   );

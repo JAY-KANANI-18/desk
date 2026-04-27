@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useOrganization } from "../../context/OrganizationContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
-import { MobileSheet } from "./MobileSheet";
+import { Avatar } from "../ui/Avatar";
+import { Button } from "../ui/Button";
+import { MobileSheet } from "../ui/modal";
 import type { WorkspaceGroup, WorkspaceOption } from "./types";
+
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
 
 export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
   const [open, setOpen] = useState(false);
@@ -22,16 +33,27 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
 
   return (
     <div className="relative">
-      <button
+      <Button
         type="button"
+        variant="unstyled"
         onClick={() => setOpen((value) => !value)}
         className={`flex h-10 max-w-[160px] items-center gap-2 rounded-2xl px-2.5 transition-colors sm:max-w-none ${
           open ? "bg-slate-100" : "hover:bg-slate-100"
         }`}
+        style={classDrivenButtonStyle}
+        preserveChildLayout
       >
-        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-bold text-indigo-600">
-          {activeWorkspace?.initial || activeWorkspace?.name?.slice(0, 1)}
-        </div>
+        <Avatar
+          name={
+            activeWorkspace?.initial ||
+            activeWorkspace?.name?.slice(0, 1) ||
+            "Workspace"
+          }
+          size="xs"
+          shape="square"
+          fallbackTone="primary"
+          alt={activeWorkspace?.name ?? "Workspace"}
+        />
 
         <span className="hidden max-w-[140px] truncate text-sm font-semibold text-gray-800 sm:block">
           {activeWorkspace?.name}
@@ -42,11 +64,11 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
             open ? "rotate-180" : ""
           }`}
         />
-      </button>
+      </Button>
 
       {isMobile && (
         <MobileSheet
-          open={open}
+          isOpen={open}
           title={
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -59,16 +81,20 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
           }
           onClose={() => setOpen(false)}
           footer={
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => {
                 navigate("/organization/workspaces");
                 setOpen(false);
               }}
               className="flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+              style={classDrivenButtonStyle}
+              fullWidth
+              preserveChildLayout
             >
               Add workspace
-            </button>
+            </Button>
           }
         >
           <div className="p-3">
@@ -79,30 +105,36 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
                 </div>
                 <div className="space-y-2">
                   {org.workspaces?.map((workspace) => (
-                    <button
+                    <Button
                       key={workspace.id}
                       type="button"
+                      variant="unstyled"
                       onClick={() => selectWorkspace(workspace)}
                       className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${
                         activeWorkspace?.id === workspace.id
                           ? "border-indigo-200 bg-indigo-50 text-indigo-700"
                           : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                       }`}
+                      style={classDrivenButtonStyle}
+                      fullWidth
+                      preserveChildLayout
                     >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">
-                          {workspace.name}
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold">
+                            {workspace.name}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            {activeWorkspace?.id === workspace.id
+                              ? "Current workspace"
+                              : "Tap to switch"}
+                          </div>
                         </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {activeWorkspace?.id === workspace.id
-                            ? "Current workspace"
-                            : "Tap to switch"}
-                        </div>
-                      </div>
-                      {activeWorkspace?.id === workspace.id && (
-                        <Check size={16} className="flex-shrink-0" />
-                      )}
-                    </button>
+                        {activeWorkspace?.id === workspace.id && (
+                          <Check size={16} className="flex-shrink-0" />
+                        )}
+                      </span>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -128,44 +160,55 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
                   </div>
 
                   {org.workspaces?.map((workspace) => (
-                    <button
+                    <Button
                       key={workspace.id}
                       type="button"
+                      variant="unstyled"
                       onClick={() => selectWorkspace(workspace)}
                       className="flex w-full items-center justify-between rounded-lg px-3 py-2 hover:bg-gray-50"
+                      style={classDrivenButtonStyle}
+                      fullWidth
+                      preserveChildLayout
                     >
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">
-                          {workspace.name}
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-medium text-gray-800">
+                            {workspace.name}
+                          </div>
                         </div>
-                      </div>
 
-                      {activeWorkspace?.id === workspace.id && (
-                        <Check size={14} className="text-indigo-600" />
-                      )}
-                    </button>
+                        {activeWorkspace?.id === workspace.id && (
+                          <Check size={14} className="text-indigo-600" />
+                        )}
+                      </span>
+                    </Button>
                   ))}
                 </div>
               ))}
             </div>
-            <div
-              className="border-t border-gray-100 p-1.5"
-              onClick={() => {
-                navigate("/organization/workspaces");
-                setOpen(false);
-              }}
-            >
-              <button
+            <div className="border-t border-gray-100 p-1.5">
+              <Button
                 type="button"
+                variant="unstyled"
+                onClick={() => {
+                  navigate("/organization/workspaces");
+                  setOpen(false);
+                }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-50"
+                style={classDrivenButtonStyle}
+                fullWidth
+                contentAlign="start"
+                preserveChildLayout
               >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300">
-                  <Plus size={14} className="text-gray-400" />
-                </div>
-                <span className="text-sm font-medium text-gray-500">
-                  Add workspace
+                <span className="flex w-full items-center gap-3">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300">
+                    <Plus size={14} className="text-gray-400" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Add workspace
+                  </span>
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
         </>

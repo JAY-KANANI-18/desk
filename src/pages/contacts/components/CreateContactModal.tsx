@@ -1,5 +1,7 @@
-import { UserPlus2, X } from "lucide-react";
-import { MobileSheet } from "../../../components/topbar/MobileSheet";
+import { UserPlus2 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { CenterModal } from "../../../components/ui/Modal";
+import { MobileSheet } from "../../../components/ui/modal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { LifecycleStage } from "../../workspace/types";
 import type { ContactFormState, ContactTagOption } from "../types";
@@ -32,22 +34,26 @@ export function CreateContactModal({
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
         borderless
         title={<h2 className="text-base font-semibold text-slate-900">New Contact</h2>}
         footer={
           <div className="flex flex-col-reverse gap-2">
-            <button onClick={onClose} className="rounded-lg bg-slate-100 px-4 py-2 text-sm hover:bg-slate-200">
+            <Button
+              onClick={onClose}
+              variant="secondary"
+              fullWidth
+            >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => void onSubmit()}
               disabled={!value.firstName.trim()}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              fullWidth
             >
               Create
-            </button>
+            </Button>
           </div>
         }
       >
@@ -64,42 +70,37 @@ export function CreateContactModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full">
-              <UserPlus2 size={24} className="text-indigo-600" />
-            </div>
-            <h2 className="text-xl font-semibold">New Contact</h2>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <ContactFormFields
-            value={value}
-            onChange={onChange}
-            stages={stages}
-            availableTags={availableTags}
-          />
-        </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void onSubmit()}
-            disabled={!value.firstName.trim()}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Create
-          </button>
-        </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title="New Contact"
+      headerIcon={<UserPlus2 size={20} className="text-indigo-600" />}
+      size="lg"
+      width={768}
+      closeOnOverlayClick={false}
+      bodyPadding="lg"
+      secondaryAction={
+        <Button variant="secondary"  onClick={onClose}>
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={() => void onSubmit()}
+          disabled={!value.firstName.trim()}
+        >
+          Create
+        </Button>
+      }
+    >
+      <div className="max-h-[70vh] overflow-y-auto pr-1">
+        <ContactFormFields
+          value={value}
+          onChange={onChange}
+          stages={stages}
+          availableTags={availableTags}
+        />
       </div>
-    </div>
+    </CenterModal>
   );
 }

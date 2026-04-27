@@ -27,7 +27,7 @@ export const SettingsSidebar = ({
   };
 
   return (
-    <aside className="flex h-full w-72 flex-col bg-white">
+    <aside className="flex h-full w-72 flex-col bg-white border-r border-gray-200">
       {headerContent ? (
         <div className="border-b border-slate-100 px-4 py-5">{headerContent}</div>
       ) : null}

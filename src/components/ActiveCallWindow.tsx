@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Mic, MicOff, Pause, Play, Volume2, VolumeX,
   Grid3x3, ArrowRightLeft, Circle, Square,
-  PhoneOff, ChevronDown, ChevronUp, User,
+  PhoneOff, ChevronDown, ChevronUp,
   FileText, Search, Phone,
 } from 'lucide-react';
 import { useCall } from '../context/CallContext';
+import { Avatar } from './ui/Avatar';
+import { Button } from './ui/Button';
+import { BaseInput, TextareaInput } from './ui/inputs';
+import { Tag } from './ui/Tag';
+import { Tooltip } from './ui/Tooltip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -26,17 +31,32 @@ const AGENTS = [
   { id: '5', name: 'Casey Nguyen', initials: 'CN', status: 'online'  },
 ];
 
-const DOT: Record<string, string> = {
-  online:  'bg-green-400',
-  busy:    'bg-amber-400',
-  offline: 'bg-gray-500',
+const STATUS_COLOR: Record<string, string> = {
+  online: 'var(--color-success)',
+  busy: 'var(--color-warning)',
+  offline: 'var(--color-gray-500)',
 };
+
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
+
+const classDrivenTagStyle = {
+  backgroundColor: undefined,
+  borderColor: undefined,
+  color: undefined,
+} satisfies CSSProperties;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Control button
 // ─────────────────────────────────────────────────────────────────────────────
 interface CtrlBtnProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   active?: boolean;
   activeClass?: string;
@@ -48,17 +68,23 @@ const CtrlBtn = ({
   activeClass = 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
   onClick,
 }: CtrlBtnProps) => (
-  <button
+  <Button
+    type="button"
+    variant="unstyled"
     onClick={onClick}
     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-95 select-none ${
       active
         ? activeClass
         : 'bg-gray-800 text-gray-400 border-gray-700/50 hover:bg-gray-700 hover:text-gray-200'
     }`}
+    style={classDrivenButtonStyle}
+    preserveChildLayout
   >
-    {icon}
-    <span className="text-[10px] font-medium leading-none">{label}</span>
-  </button>
+    <span className="flex flex-col items-center gap-1.5">
+      {icon}
+      <span className="text-[10px] font-medium leading-none">{label}</span>
+    </span>
+  </Button>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,29 +118,44 @@ export const ActiveCallWindow = () => {
     return (
       <div className="fixed bottom-5 left-4 z-[9999] active-call-enter">
         <div className="bg-gray-900 rounded-2xl shadow-2xl border border-white/5 flex items-center gap-3 px-4 py-3 min-w-[260px]">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            {contact.isKnown ? initials : <User size={14} />}
-          </div>
+          <Avatar
+            name={contact.isKnown ? initials : '?'}
+            size="sm"
+            fallbackTone="primary"
+            alt={contact.name}
+          />
           <div className="flex-1 min-w-0">
             <p className="text-white text-sm font-medium truncate leading-tight">{contact.name}</p>
             <p className={`text-xs font-mono font-semibold ${isOnHold ? 'text-amber-400' : 'text-green-400'}`}>
               {isOnHold ? '⏸ On Hold' : fmt(duration)}
             </p>
           </div>
-          <button
-            onClick={() => setMinimized(false)}
-            className="text-gray-500 hover:text-gray-300 p-1 transition-colors"
-            title="Expand"
-          >
-            <ChevronUp size={16} />
-          </button>
-          <button
-            onClick={endCall}
-            className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
-            title="End call"
-          >
-            <PhoneOff size={14} className="text-white" />
-          </button>
+          <Tooltip content="Expand">
+            <Button
+              type="button"
+              variant="unstyled"
+              onClick={() => setMinimized(false)}
+              className="text-gray-500 hover:text-gray-300 p-1 transition-colors"
+              style={classDrivenButtonStyle}
+              aria-label="Expand"
+              preserveChildLayout
+            >
+              <ChevronUp size={16} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="End call">
+            <Button
+              type="button"
+              variant="unstyled"
+              onClick={endCall}
+              className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors flex-shrink-0"
+              style={classDrivenButtonStyle}
+              aria-label="End call"
+              preserveChildLayout
+            >
+              <PhoneOff size={14} className="text-white" />
+            </Button>
+          </Tooltip>
         </div>
       </div>
     );
@@ -129,15 +170,20 @@ export const ActiveCallWindow = () => {
         <div className="px-5 pt-5 pb-4">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="relative flex-shrink-0">
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                  {contact.isKnown ? initials : <User size={16} />}
-                </div>
-                {/* Live status dot */}
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900 ${
-                  isOnHold ? 'bg-amber-400' : 'bg-green-400 call-active-dot'
-                }`} />
-              </div>
+              <Avatar
+                name={contact.isKnown ? initials : '?'}
+                size="base"
+                fallbackTone="primary"
+                showStatus
+                statusColor={
+                  isOnHold ? 'var(--color-warning)' : 'var(--color-success)'
+                }
+                alt={contact.name}
+                style={{
+                  width: 'calc(var(--spacing-xl) + var(--spacing-md) - var(--spacing-xs))',
+                  height: 'calc(var(--spacing-xl) + var(--spacing-md) - var(--spacing-xs))',
+                }}
+              />
               <div className="min-w-0">
                 <h3 className="text-white font-semibold text-sm leading-tight truncate">{contact.name}</h3>
                 <p className="text-gray-400 text-xs font-mono truncate">{contact.phone}</p>
@@ -146,13 +192,19 @@ export const ActiveCallWindow = () => {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => setMinimized(true)}
-              className="text-gray-600 hover:text-gray-400 p-1 transition-colors flex-shrink-0 ml-2"
-              title="Minimize"
-            >
-              <ChevronDown size={16} />
-            </button>
+            <Tooltip content="Minimize">
+              <Button
+                type="button"
+                variant="unstyled"
+                onClick={() => setMinimized(true)}
+                className="text-gray-600 hover:text-gray-400 p-1 transition-colors flex-shrink-0 ml-2"
+                style={classDrivenButtonStyle}
+                aria-label="Minimize"
+                preserveChildLayout
+              >
+                <ChevronDown size={16} />
+              </Button>
+            </Tooltip>
           </div>
 
           {/* Timer + status chips */}
@@ -164,25 +216,37 @@ export const ActiveCallWindow = () => {
               </p>
             </div>
             <div className="flex items-center justify-center gap-1.5 flex-wrap">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                isOnHold ? 'bg-amber-500/15 text-amber-400' : 'bg-green-500/15 text-green-400'
-              }`}>
-                {isOnHold ? '⏸ On Hold' : '● Active'}
-              </span>
+              <Tag
+                label={isOnHold ? '⏸ On Hold' : '● Active'}
+                size="sm"
+                className={`border-0 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                  isOnHold ? 'bg-amber-500/15 text-amber-400' : 'bg-green-500/15 text-green-400'
+                }`}
+                style={classDrivenTagStyle}
+              />
               {isMuted && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/15 text-red-400">
-                  🔇 Muted
-                </span>
+                <Tag
+                  label="🔇 Muted"
+                  size="sm"
+                  className="border-0 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-500/15 text-red-400"
+                  style={classDrivenTagStyle}
+                />
               )}
               {isRecording && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/15 text-rose-400 recording-blink">
-                  ⏺ Rec
-                </span>
+                <Tag
+                  label="⏺ Rec"
+                  size="sm"
+                  className="border-0 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/15 text-rose-400 recording-blink"
+                  style={classDrivenTagStyle}
+                />
               )}
               {isSpeaker && (
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/15 text-blue-400">
-                  🔊 Speaker
-                </span>
+                <Tag
+                  label="🔊 Speaker"
+                  size="sm"
+                  className="border-0 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/15 text-blue-400"
+                  style={classDrivenTagStyle}
+                />
               )}
             </div>
           </div>
@@ -237,18 +301,25 @@ export const ActiveCallWindow = () => {
           </div>
 
           {/* Note toggle button */}
-          <button
+          <Button
+            type="button"
+            variant="unstyled"
             onClick={() => togglePanel('note')}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-colors ${
               panel === 'note'
                 ? 'bg-gray-700 text-gray-200'
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
             }`}
+            style={classDrivenButtonStyle}
+            fullWidth
+            preserveChildLayout
           >
-            <FileText size={13} />
-            <span>{note ? 'Edit call note' : 'Add call note'}</span>
-            {note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
-          </button>
+            <span className="flex w-full items-center gap-2">
+              <FileText size={13} />
+              <span>{note ? 'Edit call note' : 'Add call note'}</span>
+              {note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
+            </span>
+          </Button>
 
           {/* ── Keypad panel ── */}
           {panel === 'keypad' && (
@@ -258,22 +329,31 @@ export const ActiveCallWindow = () => {
               </p>
               <div className="grid grid-cols-3 gap-1.5">
                 {KEYPAD.map(k => (
-                  <button
+                  <Button
                     key={k}
+                    type="button"
+                    variant="unstyled"
                     onClick={() => setDtmf(p => p + k)}
                     className="h-10 rounded-xl bg-gray-700 hover:bg-gray-600 active:scale-95 text-white font-semibold text-sm transition-all"
+                    style={classDrivenButtonStyle}
+                    preserveChildLayout
                   >
                     {k}
-                  </button>
+                  </Button>
                 ))}
               </div>
               {dtmf && (
-                <button
+                <Button
+                  type="button"
+                  variant="unstyled"
                   onClick={() => setDtmf('')}
                   className="w-full mt-2 text-[11px] text-gray-500 hover:text-gray-400 transition-colors"
+                  style={classDrivenButtonStyle}
+                  fullWidth
+                  preserveChildLayout
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -284,7 +364,8 @@ export const ActiveCallWindow = () => {
               <p className="text-gray-300 text-xs font-semibold mb-2.5">Transfer to agent</p>
               <div className="relative mb-2">
                 <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                <input
+                <BaseInput
+                  type="search"
                   value={transferSearch}
                   onChange={e => setTransferSearch(e.target.value)}
                   placeholder="Search agents…"
@@ -296,16 +377,27 @@ export const ActiveCallWindow = () => {
                   <p className="text-gray-500 text-xs text-center py-3">No agents found</p>
                 )}
                 {filtered.map(agent => (
-                  <button
+                  <Button
                     key={agent.id}
+                    type="button"
+                    variant="unstyled"
                     className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-700 transition-colors text-left"
+                    style={classDrivenButtonStyle}
+                    fullWidth
+                    preserveChildLayout
                   >
-                    <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                      {agent.initials}
-                    </div>
-                    <span className="text-gray-300 text-xs flex-1 truncate">{agent.name}</span>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${DOT[agent.status]}`} />
-                  </button>
+                    <span className="flex w-full items-center gap-2.5">
+                      <Avatar
+                        name={agent.initials}
+                        size="xs"
+                        fallbackTone="primary"
+                        showStatus
+                        statusColor={STATUS_COLOR[agent.status]}
+                        alt={agent.name}
+                      />
+                      <span className="text-gray-300 text-xs flex-1 truncate">{agent.name}</span>
+                    </span>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -313,7 +405,7 @@ export const ActiveCallWindow = () => {
 
           {/* ── Note panel ── */}
           {panel === 'note' && (
-            <textarea
+            <TextareaInput
               value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="Type your call note…"
@@ -323,13 +415,20 @@ export const ActiveCallWindow = () => {
           )}
 
           {/* ── End call ── */}
-          <button
+          <Button
+            type="button"
+            variant="unstyled"
             onClick={endCall}
             className="w-full h-11 rounded-2xl bg-red-500 hover:bg-red-600 active:scale-[0.98] text-white font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-500/20"
+            style={classDrivenButtonStyle}
+            fullWidth
+            preserveChildLayout
           >
-            <PhoneOff size={17} />
-            End Call
-          </button>
+            <span className="flex items-center justify-center gap-2">
+              <PhoneOff size={17} />
+              End Call
+            </span>
+          </Button>
         </div>
       </div>
     </div>

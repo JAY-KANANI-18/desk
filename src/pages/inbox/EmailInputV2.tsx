@@ -1,18 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   AtSign,
   Bold,
-  Check,
-  ChevronDown,
-  DollarSign,
-  FileText,
   Italic,
   Link,
   List,
   ListOrdered,
-  Loader2,
   MessageSquare,
-  Mic,
   Paperclip,
   Send,
   Smile,
@@ -29,14 +23,31 @@ import { useInbox } from '../../context/InboxContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import type { SharedInputProps } from './InputArea';
 import { EmojiPicker } from './EmojiPicker';
-import { AiComposerInlineStatus, AiPromptMenu, useInboxAiComposer } from './composerShared';
+import {
+  AiComposerInlineStatus,
+  AiPromptMenu,
+  ComposerAttachmentPreviewStrip,
+  useInboxAiComposer,
+} from './composerShared';
 import { extractMentionIds } from './utils';
 import { normalizeEmailChannelConfig } from '../../lib/emailChannel';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useDisclosure } from '../../hooks/useDisclosure';
 import { getContactScopedChannels, isSameChannel } from './channelUtils';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { CompactSelectMenu, VariableSuggestionMenu } from '../../components/ui/Select';
 
 type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
+const classDrivenButtonStyle = {
+  padding: undefined,
+  borderRadius: undefined,
+  borderWidth: undefined,
+  color: undefined,
+  boxShadow: undefined,
+  fontSize: undefined,
+} satisfies CSSProperties;
 
 function getAttachmentType(file: File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
@@ -56,6 +67,10 @@ function escapeHtml(text: string) {
 
 function plainTextToHtml(text: string) {
   return escapeHtml(text).replace(/\n/g, '<br />');
+}
+
+function getEmailChannelOptionValue(channel: any) {
+  return `${String(channel?.type ?? 'unknown')}::${String(channel?.id ?? channel?.name ?? '')}`;
 }
 
 export function EmailInput({
@@ -82,14 +97,12 @@ export function EmailInput({
   const [draftText, setDraftText] = useState('');
   const [trigger, setTrigger] = useState<TriggerState>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
-  const [emojiOpen, setEmojiOpen] = useState(false);
-  const [channelMenuOpen, setChannelMenuOpen] = useState(false);
-  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const emojiMenu = useDisclosure();
+  const aiMenu = useDisclosure();
 
   const editorRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<HTMLDivElement>(null);
   const triggerMenuRef = useRef<HTMLDivElement>(null);
   const aiMenuRef = useRef<HTMLDivElement>(null);
 
@@ -124,6 +137,38 @@ export function EmailInput({
     );
   }, [availableEmailChannels, selectedChannel]);
   const normalizedChannel = useMemo(() => normalizeEmailChannelConfig(activeComposerChannel), [activeComposerChannel]);
+  const activeComposerChannelValue = activeComposerChannel
+    ? getEmailChannelOptionValue(activeComposerChannel)
+    : undefined;
+  const emailChannelGroups = useMemo(
+    () => [
+      {
+        label: 'Send via channel',
+        options: availableEmailChannels.map((channel) => ({
+          value: getEmailChannelOptionValue(channel),
+          label: channel.name || 'Unnamed',
+          leading: (
+            <img
+              src={channelConfig[channel.type]?.icon}
+              alt={channel.name || 'Email channel'}
+              className="h-4 w-4 rounded-sm object-contain"
+            />
+          ),
+          tone: 'neutral' as const,
+          searchText: [channel.name, channel.type].filter(Boolean).join(' '),
+        })),
+      },
+    ],
+    [availableEmailChannels],
+  );
+  const handleComposerChannelChange = useCallback((value: string) => {
+    const nextChannel = availableEmailChannels.find(
+      (channel) => getEmailChannelOptionValue(channel) === value,
+    );
+    if (nextChannel) {
+      onChannelChange(nextChannel);
+    }
+  }, [availableEmailChannels, onChannelChange]);
 
   const aiComposer = useInboxAiComposer({
     conversationId: selectedConversation?.id,
@@ -154,19 +199,18 @@ export function EmailInput({
   useEffect(() => {
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (emojiRef.current && !emojiRef.current.contains(target)) setEmojiOpen(false);
-      if (channelRef.current && !channelRef.current.contains(target)) setChannelMenuOpen(false);
+      if (emojiRef.current && !emojiRef.current.contains(target)) emojiMenu.close();
       if (triggerMenuRef.current && !triggerMenuRef.current.contains(target) && editorRef.current && !editorRef.current.contains(target)) {
         setTrigger(null);
       }
       if (aiMenuRef.current && !aiMenuRef.current.contains(target)) {
-        setAiMenuOpen(false);
+        aiMenu.close();
         aiComposer.setActivePromptParent(null);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [aiComposer]);
+  }, [aiComposer, aiMenu, emojiMenu]);
 
   useEffect(() => {
     if (emailReply) {
@@ -290,6 +334,7 @@ export function EmailInput({
   };
 
   const canSend = !isAiBusy && (draftText.trim().length > 0 || attachedFiles.length > 0);
+  const actionButtonSize = 'xs';
 
   const handleSend = () => {
     if (!canSend) return;
@@ -348,68 +393,52 @@ export function EmailInput({
     onClearReplyContext?.();
   };
 
-  const toolbarButtonClass = 'p-1.5 rounded text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors';
   const activeBg = isNote ? 'bg-amber-50' : 'bg-white';
   const borderClass = isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50';
   const channelSelector = !isNote && activeComposerChannel ? (
-    <div className="relative" ref={channelRef}>
-      <button
-        onClick={() => setChannelMenuOpen((open) => !open)}
-        className={`flex min-w-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white/90 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 ${
-          channelMenuOpen ? 'border-indigo-200 text-indigo-600' : ''
-        }`}
-        title="Switch channel"
-      >
-        <img src={channelConfig[activeComposerChannel?.type]?.icon} alt={activeComposerChannel?.name} className="h-3.5 w-3.5 flex-shrink-0" />
-        <span className={`truncate ${isMobile ? 'max-w-[7rem]' : 'hidden max-w-[5rem] sm:inline'}`}>
-          {activeComposerChannel?.name}
+    <CompactSelectMenu
+      value={activeComposerChannelValue}
+      groups={emailChannelGroups}
+      onChange={handleComposerChannelChange}
+      hasValue
+      size="sm"
+      triggerAppearance="inline"
+      dropdownWidth="sm"
+      dropdownPlacement="top"
+      triggerContent={(
+        <span className="flex min-w-0 items-center gap-1.5">
+          <img
+            src={channelConfig[activeComposerChannel.type]?.icon}
+            alt={activeComposerChannel.name || 'Email channel'}
+            className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
+          />
+          <span className="max-w-[7rem] truncate">
+            {activeComposerChannel.name}
+          </span>
         </span>
-        <ChevronDown size={10} className={`flex-shrink-0 transition-transform ${channelMenuOpen ? 'rotate-180' : ''}`} />
-      </button>
-      {channelMenuOpen && (
-        <div className="absolute bottom-full left-0 z-50 mb-1.5 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            Send via channel
-          </p>
-          {availableEmailChannels.map((channel) => (
-            <button
-              key={channel.id}
-              onClick={() => { onChannelChange(channel); setChannelMenuOpen(false); }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-gray-50 ${isSameChannel(activeComposerChannel, channel) ? 'bg-gray-50' : ''}`}
-            >
-              <img src={channelConfig[channel.type]?.icon} alt={channel.name} className="h-4 w-4" />
-              <span className="flex-1 text-left font-medium text-gray-700">{channel.name || 'Unnamed'}</span>
-              {isSameChannel(activeComposerChannel, channel) && <Check size={13} className="flex-shrink-0 text-indigo-600" />}
-            </button>
-          ))}
-        </div>
       )}
-    </div>
+    />
   ) : null;
   const assistButton = !isNote ? (
-    <button
+    <Button
       onClick={aiComposer.handleAssistDraft}
       disabled={aiComposer.aiLoadingAction !== null}
-      className={`inline-flex items-center gap-2 rounded-xl bg-violet-50 font-medium text-violet-700 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${
-        isMobile ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-1.5 text-sm'
-      }`}
+      variant="link"
+      size={actionButtonSize}
+      radius="full"
+      loading={aiComposer.aiLoadingAction === 'assist'}
+      loadingMode="inline"
+      leftIcon={<Sparkles size={15} />}
     >
-      {aiComposer.aiLoadingAction === 'assist' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
       AI Assist
-    </button>
+    </Button>
   ) : null;
 
   return (
     <div className="flex flex-col transition-colors duration-150">
-      <div className={`mx-2 mb-2 rounded-[20px] border p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-shadow sm:mx-3 sm:mb-2.5 sm:rounded-xl ${activeBg}`}>
-        {!isMobile && assistButton && (
-          <div className="flex items-center justify-end px-2 pt-1 pb-1">
-            {assistButton}
-          </div>
-        )}
-
-        {isMobile && !isNote && (
-          <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-1.5">
+      <div className={`mx-2 mb-2 rounded-[20px] border bg-clip-padding p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-shadow sm:mx-3 sm:mb-2.5 sm:rounded-xl ${activeBg}`}>
+        {!isNote && (channelSelector || assistButton) && (
+          <div className="flex items-center justify-between gap-2 px-2 pt-2 pb-1.5 sm:pt-1 sm:pb-1">
             {channelSelector}
             {assistButton}
           </div>
@@ -419,30 +448,79 @@ export function EmailInput({
           <div className={`${isMobile ? 'border-0' : 'border-t border-gray-200'} divide-y divide-gray-100`}>
             <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
               <span className="w-8 flex-shrink-0 text-[11px] font-semibold text-gray-400">Sub</span>
-              <input
-                type="text"
+              <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] font-medium text-gray-800 placeholder-gray-400 focus:outline-none sm:text-sm"
+                appearance="composer-inline"
+                inputSize="sm"
                 placeholder="Subject"
+                autoComplete="off"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                {!showCc && <button onClick={() => setShowCc(true)} className="text-xs text-gray-400 hover:text-indigo-600 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition-colors font-medium">Cc</button>}
-                {!showBcc && <button onClick={() => setShowBcc(true)} className="text-xs text-gray-400 hover:text-indigo-600 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition-colors font-medium">Bcc</button>}
+                {!showCc && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setShowCc(true)}
+                  >
+                    Cc
+                  </Button>
+                )}
+                {!showBcc && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setShowBcc(true)}
+                  >
+                    Bcc
+                  </Button>
+                )}
               </div>
             </div>
             {showCc && (
               <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
                 <span className="w-8 flex-shrink-0 text-[11px] font-semibold text-gray-400">Cc</span>
-                <input value={cc} onChange={(e) => setCc(e.target.value)} className="flex-1 bg-transparent text-[13px] text-gray-800 placeholder-gray-400 focus:outline-none sm:text-sm" placeholder="cc@example.com" />
-                <button onClick={() => { setShowCc(false); setCc(''); }} className="text-gray-400 hover:text-gray-600 p-0.5 rounded flex-shrink-0"><X size={13} /></button>
+                <Input
+                  type="email"
+                  value={cc}
+                  onChange={(e) => setCc(e.target.value)}
+                  appearance="composer-inline"
+                  inputSize="sm"
+                  placeholder="cc@example.com"
+                  autoComplete="off"
+                />
+                <Button
+                  onClick={() => { setShowCc(false); setCc(''); }}
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
+                  radius="full"
+                  aria-label="Remove cc field"
+                  leftIcon={<X size={13} />}
+                />
               </div>
             )}
             {showBcc && (
               <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
                 <span className="w-8 flex-shrink-0 text-[11px] font-semibold text-gray-400">Bcc</span>
-                <input value={bcc} onChange={(e) => setBcc(e.target.value)} className="flex-1 bg-transparent text-[13px] text-gray-800 placeholder-gray-400 focus:outline-none sm:text-sm" placeholder="bcc@example.com" />
-                <button onClick={() => { setShowBcc(false); setBcc(''); }} className="text-gray-400 hover:text-gray-600 p-0.5 rounded flex-shrink-0"><X size={13} /></button>
+                <Input
+                  type="email"
+                  value={bcc}
+                  onChange={(e) => setBcc(e.target.value)}
+                  appearance="composer-inline"
+                  inputSize="sm"
+                  placeholder="bcc@example.com"
+                  autoComplete="off"
+                />
+                <Button
+                  onClick={() => { setShowBcc(false); setBcc(''); }}
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
+                  radius="full"
+                  aria-label="Remove bcc field"
+                  leftIcon={<X size={13} />}
+                />
               </div>
             )}
           </div>
@@ -458,7 +536,7 @@ export function EmailInput({
               ['insertUnorderedList', <List size={14} key="ul" />],
               ['insertOrderedList', <ListOrdered size={14} key="ol" />],
             ].map(([command, icon]) => (
-              <button
+              <Button
                 key={command}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -466,59 +544,73 @@ export function EmailInput({
                   document.execCommand(command, false);
                   updateDraftState();
                 }}
-                className={toolbarButtonClass}
+                variant="ghost"
+                size="xs"
+                iconOnly
+                aria-label={`Apply ${command} formatting`}
+                leftIcon={icon}
               >
                 {icon}
-              </button>
+              </Button>
             ))}
-            <button onMouseDown={(e) => { e.preventDefault(); handleInsertLink(); }} className={toolbarButtonClass}><Link size={14} /></button>
+            <Button
+              onMouseDown={(e) => { e.preventDefault(); handleInsertLink(); }}
+              variant="ghost"
+              size="xs"
+              iconOnly
+              aria-label="Insert link"
+              leftIcon={<Link size={14} />}
+            />
           </div>
         )}
 
         <div className={`relative min-h-[80px] max-h-[220px] overflow-y-auto ${activeBg}`}>
-          {trigger && filteredTriggerItems.length > 0 && (
+          {trigger?.type === 'variable' ? (
+            <VariableSuggestionMenu
+              ref={triggerMenuRef}
+              isOpen
+              query={trigger.query}
+              options={filteredTriggerItems}
+              highlightedIndex={highlightIndex}
+              onHighlightChange={setHighlightIndex}
+              onSelect={insertVariable}
+              showEmptyState={Boolean(trigger.query)}
+              className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-[320px]"
+            />
+          ) : null}
+          {trigger?.type === 'mention' && filteredTriggerItems.length > 0 && (
             <div ref={triggerMenuRef} className="absolute bottom-full left-2 right-2 sm:left-4 sm:right-auto sm:w-80 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
               <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
-                {trigger.type === 'variable' ? <DollarSign size={13} className="text-violet-500" /> : <AtSign size={13} className="text-amber-500" />}
+                <AtSign size={13} className="text-amber-500" />
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  {trigger.type === 'variable' ? 'Insert variable' : 'Mention teammate'}
+                  Mention teammate
                 </span>
               </div>
               <div className="max-h-52 overflow-y-auto py-1">
                 {filteredTriggerItems.map((item: any, index) => {
                   const isActive = index === highlightIndex;
-                  if (trigger.type === 'variable') {
-                    return (
-                      <button
-                        key={item.key}
-                        onMouseDown={(e) => { e.preventDefault(); insertVariable(item); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${isActive ? 'bg-violet-50' : 'hover:bg-gray-50'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                          <DollarSign size={13} className="text-violet-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800">{item.label}</p>
-                          <p className="text-xs text-gray-400 truncate">{item.description}</p>
-                        </div>
-                      </button>
-                    );
-                  }
                   const label = [item.firstName, item.lastName].filter(Boolean).join(' ').trim() || item.email || 'User';
                   return (
-                    <button
+                    <Button
                       key={item.id}
+                      type="button"
+                      variant="unstyled"
                       onMouseDown={(e) => { e.preventDefault(); insertMention(item); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${isActive ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
+                      style={classDrivenButtonStyle}
+                      fullWidth
+                      preserveChildLayout
                     >
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                        {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
-                        <p className="text-xs text-gray-400 truncate">{item.email}</p>
-                      </div>
-                    </button>
+                      <span className="flex w-full items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
+                          {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
+                          <p className="text-xs text-gray-400 truncate">{item.email}</p>
+                        </div>
+                      </span>
+                    </Button>
                   );
                 })}
               </div>
@@ -571,36 +663,18 @@ export function EmailInput({
           />
         </div>
 
-        {attachedFiles.length > 0 && (
-          <div className="border-t border-gray-100 bg-gray-50 px-2.5 py-2 sm:px-4">
-            <div className="flex flex-wrap gap-2 items-start">
-              {attachedFiles.map((file, index) => (
-                file.type === 'image' ? (
-                  <div key={index} className="relative group flex-shrink-0">
-                    <img src={file.previewUrl} alt={file.file.name} className="w-14 h-14 object-cover rounded-lg border border-gray-200 shadow-sm" />
-                    <button onMouseDown={(e) => { e.preventDefault(); removeFile(index); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                      <X size={10} />
-                    </button>
-                  </div>
-                ) : (
-                  <span key={index} className="flex items-center gap-1.5 text-xs border rounded-full px-2.5 py-1.5 bg-indigo-50 text-indigo-700 border-indigo-200">
-                    {file.type === 'audio' ? <Mic size={11} /> : <FileText size={11} />}
-                    <span className="max-w-[120px] truncate font-medium">{file.file.name}</span>
-                    <button onMouseDown={(e) => { e.preventDefault(); removeFile(index); }} className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"><X size={10} /></button>
-                  </span>
-                )
-              ))}
-            </div>
-          </div>
-        )}
+        <ComposerAttachmentPreviewStrip
+          files={attachedFiles}
+          onRemove={removeFile}
+        />
 
         <div className="relative" ref={aiMenuRef}>
           {!isNote && (
             <AiPromptMenu
-              open={aiMenuOpen}
+              open={aiMenu.isOpen}
               prompts={aiComposer.rewritePrompts}
               activePromptParent={aiComposer.activePromptParent}
-              onClose={() => setAiMenuOpen(false)}
+              onClose={aiMenu.close}
               onSelectPrompt={aiComposer.handleRewrite}
               onSetActiveParent={aiComposer.setActivePromptParent}
             />
@@ -608,29 +682,43 @@ export function EmailInput({
           <div className={`flex items-center gap-2 border-t px-2.5 py-1.5 sm:flex-wrap sm:py-2 ${borderClass}`}>
           <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pr-1 sm:flex-wrap sm:overflow-visible sm:pr-0">
             {!isNote && (
-              <button onClick={() => setAiMenuOpen((value) => !value)} className="mr-1 p-1.5 hover:bg-violet-100 rounded-lg text-violet-600 transition-colors" title="AI prompts">
-                <Wand2 size={16} />
-              </button>
+              <Button
+                onClick={aiMenu.toggle}
+                variant={aiMenu.isOpen ? 'soft-primary' : 'ghost'}
+                size="xs"
+                iconOnly
+                aria-label="Open AI prompts"
+                leftIcon={<Wand2 size={16} />}
+                className="mr-1"
+              />
             )}
 
-            {!isMobile && channelSelector}
-
-            <button onClick={() => fileRef.current?.click()} className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors" title="Attach file">
-              <Paperclip size={16} />
-            </button>
+            <Button
+              onClick={() => fileRef.current?.click()}
+              variant="ghost"
+              size="xs"
+              iconOnly
+              aria-label="Attach file"
+              leftIcon={<Paperclip size={16} />}
+            />
 
             <div className="relative" ref={emojiRef}>
-              <button onClick={() => setEmojiOpen((open) => !open)} className={`p-1.5 rounded-lg transition-colors ${emojiOpen ? 'bg-yellow-100 text-yellow-600' : 'hover:bg-gray-200 text-gray-500'}`} title="Emoji">
-                <Smile size={16} />
-              </button>
-              {emojiOpen && (
+              <Button
+                onClick={emojiMenu.toggle}
+                variant={emojiMenu.isOpen ? 'soft-warning' : 'ghost'}
+                size="xs"
+                iconOnly
+                aria-label="Insert emoji"
+                leftIcon={<Smile size={16} />}
+              />
+              {emojiMenu.isOpen && (
                 <EmojiPicker
                   mode="reply"
                   accent="gray"
                   onSelect={(emoji) => {
                     editorRef.current?.focus();
                     document.execCommand('insertText', false, emoji);
-                    setEmojiOpen(false);
+                    emojiMenu.close();
                     updateDraftState();
                   }}
                 />
@@ -638,45 +726,67 @@ export function EmailInput({
             </div>
 
             {isNote && (
-              <button
+              <Button
                 onMouseDown={(e) => {
                   e.preventDefault();
                   editorRef.current?.focus();
                   document.execCommand('insertText', false, '@');
                   updateDraftState();
                 }}
-                className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-600 transition-colors"
-                title="Mention teammate"
+                variant="soft-warning"
+                size="xs"
+                iconOnly
+                aria-label="Mention teammate"
+                leftIcon={<AtSign size={16} />}
               >
                 <AtSign size={16} />
-              </button>
+              </Button>
             )}
           </div>
 
           <div className="ml-auto flex flex-shrink-0 items-center gap-1.5 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-2">
             {!isNote && (
-              <button onClick={aiComposer.handleSummarize} disabled={aiComposer.aiLoadingAction !== null} className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 hover:bg-violet-50 disabled:opacity-60 sm:h-auto sm:w-auto sm:gap-1 sm:rounded-lg sm:px-2 sm:py-1 sm:text-sm sm:font-medium">
-                {aiComposer.aiLoadingAction === 'summarize' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                <span className="hidden sm:inline">Summarize</span>
-              </button>
+              <Button
+                onClick={aiComposer.handleSummarize}
+                disabled={aiComposer.aiLoadingAction !== null}
+                variant="link"
+                size="xs"
+                iconOnly={isMobile}
+                aria-label="Summarize conversation"
+                loading={aiComposer.aiLoadingAction === 'summarize'}
+                loadingMode="inline"
+                leftIcon={<Sparkles size={14} />}
+              >
+                {!isMobile ? 'Summarize' : null}
+              </Button>
             )}
             <div className="flex items-center rounded-xl bg-gray-100 p-0.5">
-              <button onClick={() => onInputModeChange('reply')} className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${!isNote ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                <MessageSquare size={11} />
+              <Button
+                onClick={() => onInputModeChange('reply')}
+                variant={!isNote ? 'secondary' : 'ghost'}
+                size="xs"
+                leftIcon={<MessageSquare size={11} />}
+              >
                 <span className="hidden sm:inline">Reply</span>
-              </button>
-              <button onClick={() => onInputModeChange('note')} className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all sm:px-2.5 sm:py-1 sm:text-xs ${isNote ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                <StickyNote size={11} />
+              </Button>
+              <Button
+                onClick={() => onInputModeChange('note')}
+                variant={isNote ? 'soft-warning' : 'ghost'}
+                size="xs"
+                leftIcon={<StickyNote size={11} />}
+              >
                 <span className="hidden sm:inline">Note</span>
-              </button>
+              </Button>
             </div>
-            <button
+            <Button
               onClick={handleSend}
               disabled={!canSend}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-sm font-medium transition-colors sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 ${canSend ? isNote ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-            >
-              <Send size={14} />
-            </button>
+              variant={canSend ? (isNote ? 'warning' : 'primary') : 'soft'}
+              size="sm"
+              iconOnly
+              aria-label={isNote ? 'Add note' : 'Send email'}
+              leftIcon={<Send size={14} />}
+            />
           </div>
         </div>
         </div>

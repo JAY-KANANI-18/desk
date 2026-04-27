@@ -1,3 +1,4 @@
+// LEGACY - not mounted in current router, pending removal
 import { useEffect, useState } from "react";
 import { ArrowLeft, BriefcaseBusiness, Loader2, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";

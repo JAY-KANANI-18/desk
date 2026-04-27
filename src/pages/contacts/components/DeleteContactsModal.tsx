@@ -1,5 +1,7 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { MobileSheet } from "../../../components/topbar/MobileSheet";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { CenterModal } from "../../../components/ui/Modal";
+import { MobileSheet } from "../../../components/ui/modal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 
 interface DeleteContactsModalProps {
@@ -50,27 +52,30 @@ export function DeleteContactsModal({
   if (isMobile) {
     return (
       <MobileSheet
-        open={open}
+        isOpen={open}
         onClose={onClose}
         borderless
         title={<h3 className="text-base font-semibold text-slate-900">{copy.title}</h3>}
         footer={
           <div className="flex flex-col-reverse gap-2">
-            <button
+            <Button
               onClick={onClose}
               disabled={isDeleting}
-              className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-gray-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              variant="secondary"
+              fullWidth
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => void onConfirm()}
               disabled={isDeleting}
-              className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              variant="danger"
+              fullWidth
+              loading={isDeleting}
+              loadingMode="inline"
             >
-              {isDeleting ? <Loader2 size={14} className="animate-spin" /> : null}
               {copy.confirmLabel}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -90,37 +95,50 @@ export function DeleteContactsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
-        <div className="flex items-start gap-3">
-          <div className="rounded-full bg-red-100 p-2 text-red-600">
-            <AlertTriangle size={18} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{copy.title}</h3>
-            <p className="mt-2 text-sm font-medium text-gray-900">{copy.heading}</p>
-            <p className="mt-2 text-sm text-gray-600">{copy.body}</p>
-          </div>
+    <CenterModal
+      isOpen={open}
+      onClose={onClose}
+      title={copy.title}
+      headerIcon={
+        <div className="rounded-full bg-red-100 p-2 text-red-600">
+          <AlertTriangle size={18} />
         </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => void onConfirm()}
-            disabled={isDeleting}
-            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isDeleting ? <Loader2 size={14} className="animate-spin" /> : null}
-            {copy.confirmLabel}
-          </button>
+      }
+      size="sm"
+      width={480}
+      closeOnOverlayClick={false}
+      showCloseButton={false}
+      bodyPadding="lg"
+      secondaryAction={
+        <Button
+          onClick={onClose}
+          disabled={isDeleting}
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={() => void onConfirm()}
+          disabled={isDeleting}
+          loading={isDeleting}
+          variant="danger"
+          loadingMode="inline"
+        >
+          {copy.confirmLabel}
+        </Button>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-gray-900">{copy.heading}</p>
+        <p className="text-sm text-gray-600">{copy.body}</p>
+        <div className="rounded-2xl bg-red-50 p-4">
+          <p className="text-sm text-red-800">
+            This action cannot be undone.
+          </p>
         </div>
       </div>
-    </div>
+    </CenterModal>
   );
 }

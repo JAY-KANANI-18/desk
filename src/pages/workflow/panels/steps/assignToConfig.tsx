@@ -1,7 +1,6 @@
 
 // ─── 3. Assign To ─────────────────────────────────────────────────────────────
 
-import { MOCK_TEAMS, MOCK_USERS } from ".";
 import { useWorkspace } from "../../../../context/WorkspaceContext";
 import { SP, AssignToData } from "../../workflow.types";
 import { Field, Select, ToggleRow, TextInput, DurationInput, Section } from "../PanelShell";
@@ -12,7 +11,7 @@ export function AssignToConfig({ step, onChange }: SP) {
   const showLogic = data.action === 'user_in_team' || data.action === 'user_in_workspace';
 
   const {workspaceUsers} = useWorkspace();
-  const usersOptions = workspaceUsers?.map(u => ({ value: u.id, label: u.firstName + ' ' + u?.lastName  }));
+  const usersOptions = workspaceUsers?.map(u => ({ value: u.id, label: u.firstName + ' ' + u?.lastName  })) ?? [];
   return (
     <>
       <Section title="Assignment">

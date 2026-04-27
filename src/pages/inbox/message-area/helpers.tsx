@@ -1,4 +1,11 @@
 import React from "react";
+import {
+  CornerUpLeft,
+  ExternalLink,
+  Phone,
+  type LucideIcon,
+} from "lucide-react";
+import type { WaTemplateButtonType } from "./types";
 
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -86,4 +93,18 @@ export function formatWaBody(text: string): string {
     .replace(/~([^~]+)~/g, "<s>$1</s>")
     .replace(/```([\s\S]*?)```/g, "<code>$1</code>")
     .replace(/\n/g, "<br/>");
+}
+
+export function getWaTemplateButtonIcon(
+  type?: WaTemplateButtonType,
+): LucideIcon {
+  if (type === "URL") {
+    return ExternalLink;
+  }
+
+  if (type === "PHONE_NUMBER") {
+    return Phone;
+  }
+
+  return CornerUpLeft;
 }

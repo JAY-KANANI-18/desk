@@ -1,13 +1,12 @@
 
 // ─── 6. Update Contact Field ──────────────────────────────────────────────────
 
-import { Select } from "../../../../components/ui/Select";
-import { MOCK_FIELDS, SP } from "../../workflow.types";
-import { Field, InfoBox, Section, TextInput } from "../PanelShell";
+import { MOCK_FIELDS, SP, type UpdateContactFieldData } from "../../workflow.types";
+import { Field, InfoBox, Section, Select, TextInput } from "../PanelShell";
 
 export function UpdateContactFieldConfig({ step, onChange }: SP) {
-  const data = step.data as any;
-  const u = (p: any) => onChange({ ...data, ...p });
+  const data = step.data as UpdateContactFieldData;
+  const u = (p: Partial<UpdateContactFieldData>) => onChange({ ...data, ...p });
   return (
     <Section title="Configuration">
       <Field label="Contact Field" required>

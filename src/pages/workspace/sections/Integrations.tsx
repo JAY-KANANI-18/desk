@@ -4,6 +4,7 @@ import { SectionError } from "../components/SectionError";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { DataLoader } from "../../Loader";
 import type { Integration } from "../types";
+import { Button } from "../../../components/ui/Button";
 
 const API_ROOT =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/api\/?$/, "") ||
@@ -210,41 +211,53 @@ export const Integrations = () => {
               {int.id === "meta_ads" && (
                 <>
                   {!int.connected ? (
-                    <button
-                      type="button"
+                    <Button
                       onClick={() => {
                         setError(null);
                         connectMetaAds();
                       }}
-                      disabled={busyId !== null}
-                      className="text-xs px-4 py-2 rounded-lg font-medium bg-[#1877F2] text-white hover:bg-[#166FE5] disabled:opacity-50"
+                      loading={busyId === "meta_ads"}
+                      disabled={busyId !== null && busyId !== "meta_ads"}
+                      loadingMode="inline"
+                      loadingLabel="Connecting..."
+                      variant="facebook"
+                      size="sm"
+                      
                     >
-                      {busyId === "meta_ads" ? "Connecting…" : "Continue with Facebook"}
-                    </button>
+                      Continue with Facebook
+                    </Button>
                   ) : (
                     <>
-                      <button
-                        type="button"
+                      <Button
                         onClick={() => {
                           setError(null);
                           refreshMetaAds();
                         }}
-                        disabled={busyId !== null}
-                        className="text-xs px-3 py-2 rounded-lg font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        loading={busyId === "meta_ads_refresh"}
+                        disabled={busyId !== null && busyId !== "meta_ads_refresh"}
+                        loadingMode="inline"
+                        loadingLabel="Refreshing..."
+                        variant="secondary"
+                        size="sm"
+                        
                       >
-                        {busyId === "meta_ads_refresh" ? "Refreshing…" : "Refresh stats"}
-                      </button>
-                      <button
-                        type="button"
+                        Refresh stats
+                      </Button>
+                      <Button
                         onClick={() => {
                           setError(null);
                           disconnectMetaAds();
                         }}
-                        disabled={busyId !== null}
-                        className="text-xs px-3 py-2 rounded-lg font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50"
+                        loading={busyId === "meta_ads"}
+                        disabled={busyId !== null && busyId !== "meta_ads"}
+                        loadingMode="inline"
+                        loadingLabel="Disconnecting..."
+                        variant="danger-ghost"
+                        size="sm"
+                        
                       >
-                        {busyId === "meta_ads" ? "…" : "Disconnect"}
-                      </button>
+                        Disconnect
+                      </Button>
                     </>
                   )}
                 </>

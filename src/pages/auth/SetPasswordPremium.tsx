@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "./auth.utils";
 import {
-  AuthField,
   AuthNotice,
+  AuthPasswordField,
   AuthPrimaryButton,
   AuthShell,
 } from "./components/AuthShell";
@@ -13,8 +13,6 @@ export const SetPasswordPremium = () => {
   const { resetPassword, user } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -93,10 +91,9 @@ export const SetPasswordPremium = () => {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <AuthField
+          <AuthPasswordField
             label="Password"
             icon={Lock}
-            type={showPassword ? "text" : "password"}
             value={password}
             onChange={(event) => {
               setPassword(event.target.value);
@@ -104,16 +101,6 @@ export const SetPasswordPremium = () => {
             }}
             placeholder="Create a password"
             autoComplete="new-password"
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="text-gray-400 transition hover:text-gray-600"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
           />
 
           {password ? (
@@ -129,10 +116,9 @@ export const SetPasswordPremium = () => {
           ) : null}
         </div>
 
-        <AuthField
+        <AuthPasswordField
           label="Confirm password"
           icon={Lock}
-          type={showConfirm ? "text" : "password"}
           value={confirmPassword}
           onChange={(event) => {
             setConfirmPassword(event.target.value);
@@ -141,32 +127,18 @@ export const SetPasswordPremium = () => {
           placeholder="Repeat password"
           autoComplete="new-password"
           error={Boolean(confirmPassword && confirmPassword !== password)}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowConfirm((prev) => !prev)}
-              className="text-gray-400 transition hover:text-gray-600"
-              aria-label={showConfirm ? "Hide password" : "Show password"}
-            >
-              {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          }
         />
 
         {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
 
-        <AuthPrimaryButton type="submit" disabled={loading}>
-          {loading ? (
-            <>
-              <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              Activate account
-              <ArrowRight size={15} />
-            </>
-          )}
+        <AuthPrimaryButton
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          loadingLabel="Saving..."
+          rightIcon={!loading ? <ArrowRight size={15} /> : undefined}
+        >
+          Activate account
         </AuthPrimaryButton>
       </form>
     </AuthShell>

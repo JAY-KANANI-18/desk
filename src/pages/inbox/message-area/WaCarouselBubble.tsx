@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import {
-  CornerUpLeft,
-  ExternalLink,
   ImageIcon,
-  Phone,
   Play,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Button } from "../../../components/ui/Button";
+import { TruncatedText } from "../../../components/ui/TruncatedText";
 import { formatTime } from "../utils";
+import { getWaTemplateButtonIcon } from "./helpers";
+import type { WaTemplateCarouselCard } from "./types";
 
 export function WaCarouselBubble({
   body,
@@ -16,15 +17,7 @@ export function WaCarouselBubble({
   createdAt,
 }: {
   body?: string;
-  cards: Array<{
-    components: Array<{
-      type: string;
-      format?: string;
-      text?: string;
-      example?: any;
-      buttons?: any[];
-    }>;
-  }>;
+  cards: WaTemplateCarouselCard[];
   createdAt: string;
 }) {
   const [cardIdx, setCardIdx] = useState(0);
@@ -32,21 +25,11 @@ export function WaCarouselBubble({
 
   return (
     <div
-      style={{
-        maxWidth: 300,
-        fontFamily: '-apple-system, "Segoe UI", sans-serif',
-      }}
+      className="max-w-[300px]"
+      style={{ fontFamily: '-apple-system, "Segoe UI", sans-serif' }}
     >
       {body && (
-        <div
-          className="shadow-sm mb-1.5"
-          style={{
-            background: "#fff",
-            borderRadius: 14,
-            borderBottomLeftRadius: 4,
-            maxWidth: 280,
-          }}
-        >
+        <div className="mb-1.5 max-w-[280px] rounded-[14px] rounded-bl-[4px] bg-white shadow-sm">
           <div className="px-3 pt-2.5 pb-1">
             <p className="text-[12.5px] text-[#303030] leading-snug whitespace-pre-wrap">
               {body}
@@ -60,10 +43,7 @@ export function WaCarouselBubble({
         </div>
       )}
 
-      <div
-        className="overflow-hidden shadow-sm"
-        style={{ background: "#fff", borderRadius: 14, width: CARD_W }}
-      >
+      <div className="w-[230px] overflow-hidden rounded-[14px] bg-white shadow-sm">
         <div className="overflow-hidden">
           <div
             className="flex transition-transform duration-300 ease-in-out"
@@ -80,28 +60,21 @@ export function WaCarouselBubble({
                 .flatMap((c) => c.buttons ?? []);
 
               return (
-                <div key={i} style={{ width: CARD_W, flexShrink: 0 }}>
+                <div key={i} className="w-[230px] shrink-0">
                   {cHeader?.format === "IMAGE" &&
                     (cHeader.example?.header_handle?.[0] ? (
                       <img
                         src={cHeader.example.header_handle[0]}
                         alt=""
-                        className="w-full object-cover"
-                        style={{ height: 130 }}
+                        className="h-[130px] w-full object-cover"
                       />
                     ) : (
-                      <div
-                        className="w-full bg-[#f0f4f8] flex items-center justify-center"
-                        style={{ height: 130 }}
-                      >
+                      <div className="flex h-[130px] w-full items-center justify-center bg-[#f0f4f8]">
                         <ImageIcon size={24} className="text-gray-400" />
                       </div>
                     ))}
                   {cHeader?.format === "VIDEO" && (
-                    <div
-                      className="w-full bg-gray-900 flex items-center justify-center relative"
-                      style={{ height: 130 }}
-                    >
+                    <div className="relative flex h-[130px] w-full items-center justify-center bg-gray-900">
                       <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
                         <Play
                           size={16}
@@ -114,23 +87,41 @@ export function WaCarouselBubble({
 
                   {cBody?.text && (
                     <div className="px-3 py-2">
-                      <p className="text-[11.5px] text-[#606060] leading-snug whitespace-pre-wrap">
-                        {cBody.text}
-                      </p>
+                      <TruncatedText
+                        as="p"
+                        text={cBody.text}
+                        maxLines={6}
+                        className="text-[11.5px] text-[#606060] leading-snug whitespace-pre-wrap"
+                      />
                     </div>
                   )}
 
-                  {cButtons.map((btn, bi) => (
-                    <div
-                      key={bi}
-                      className={`flex items-center justify-center gap-1.5 py-2.5 text-[#00a5f4] text-[12.5px] font-medium cursor-pointer hover:bg-[#f5f5f5] transition-colors ${bi === 0 ? "border-t border-[#e9edef]" : "border-t border-[#e9edef]"}`}
-                    >
-                      {btn.type === "URL" && <ExternalLink size={12} />}
-                      {btn.type === "PHONE_NUMBER" && <Phone size={12} />}
-                      {btn.type === "QUICK_REPLY" && <CornerUpLeft size={12} />}
-                      <span>{btn.text}</span>
-                    </div>
-                  ))}
+                  {cButtons.map((btn, bi) => {
+                    const Icon = getWaTemplateButtonIcon(btn.type);
+
+                    return (
+                      <div
+                        key={`${btn.type}-${btn.text}-${bi}`}
+                        className="border-t border-[#e9edef] text-[var(--color-info)]"
+                      >
+                        <Button
+                          type="button"
+                          variant="inherit-ghost"
+                          size="sm"
+                          radius="none"
+                          fullWidth
+                          leftIcon={<Icon size={12} />}
+                        >
+                          <TruncatedText
+                            as="span"
+                            text={btn.text}
+                            maxLines={1}
+                            className="max-w-full"
+                          />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -139,13 +130,17 @@ export function WaCarouselBubble({
 
         {cards.length > 1 && (
           <div className="flex items-center justify-center gap-3 py-2 border-t border-[#e9edef]">
-            <button
+            <Button
               onClick={() => setCardIdx((i) => Math.max(0, i - 1))}
-              className={`w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center ${cardIdx === 0 ? "opacity-40" : ""}`}
+              type="button"
+              variant="secondary"
+              size="xs"
+              radius="full"
+              iconOnly
+              leftIcon={<ChevronLeft size={14} />}
+              aria-label="Show previous carousel card"
               disabled={cardIdx === 0}
-            >
-              <ChevronLeft size={14} />
-            </button>
+            />
             <div className="flex items-center gap-1">
               {cards.map((_, i) => (
                 <span
@@ -154,13 +149,17 @@ export function WaCarouselBubble({
                 />
               ))}
             </div>
-            <button
+            <Button
               onClick={() => setCardIdx((i) => Math.min(cards.length - 1, i + 1))}
-              className={`w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center ${cardIdx === cards.length - 1 ? "opacity-40" : ""}`}
+              type="button"
+              variant="secondary"
+              size="xs"
+              radius="full"
+              iconOnly
+              leftIcon={<ChevronRight size={14} />}
+              aria-label="Show next carousel card"
               disabled={cardIdx === cards.length - 1}
-            >
-              <ChevronRight size={14} />
-            </button>
+            />
           </div>
         )}
       </div>

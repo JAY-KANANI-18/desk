@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { DisclosureButton } from "../../components/ui/button/DisclosureButton";
 import { useAuth } from "../../context/AuthContext";
 import { DUMMY_MODE, MOCK_USERS } from "../../lib/authApi";
 import {
   AuthDivider,
   AuthField,
   AuthNotice,
+  AuthPasswordField,
   AuthPrimaryButton,
+  AuthSecondaryButton,
   AuthShell,
 } from "./components/AuthShell";
 
@@ -16,7 +20,6 @@ export const LoginPremium = () => {
   const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -83,23 +86,23 @@ export const LoginPremium = () => {
       }
     >
       <div className="space-y-4">
-        <button
+        <AuthSecondaryButton
           type="button"
           onClick={handleGoogle}
           disabled={googleLoading}
-          className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {googleLoading ? (
-            <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
-          ) : (
+          loading={googleLoading}
+          loadingLabel="Connecting Google..."
+          leftIcon={
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
+              alt=""
+              aria-hidden="true"
               className="h-5 w-5"
             />
-          )}
+          }
+        >
           Continue with Google
-        </button>
+        </AuthSecondaryButton>
 
         <AuthDivider label="or sign in with email" />
 
@@ -117,10 +120,9 @@ export const LoginPremium = () => {
             autoComplete="email"
           />
 
-          <AuthField
+          <AuthPasswordField
             label="Password"
             icon={Lock}
-            type={showPassword ? "text" : "password"}
             value={password}
             onChange={(event) => {
               setPassword(event.target.value);
@@ -128,16 +130,6 @@ export const LoginPremium = () => {
             }}
             placeholder="Enter your password"
             autoComplete="current-password"
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="text-gray-400 transition hover:text-gray-600"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            }
             helpText={
               <Link
                 to="/auth/forgot-password"
@@ -150,54 +142,53 @@ export const LoginPremium = () => {
 
           {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
 
-          <AuthPrimaryButton type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              "Sign in"
-            )}
+          <AuthPrimaryButton
+            type="submit"
+            disabled={loading}
+            loading={loading}
+            loadingLabel="Signing in..."
+          >
+            Sign in
           </AuthPrimaryButton>
         </form>
 
         {DUMMY_MODE ? (
           <div className="overflow-hidden rounded-2xl border border-amber-200">
-            <button
+            <DisclosureButton
               type="button"
+              tone="warning"
+              open={showDemo}
               onClick={() => setShowDemo((prev) => !prev)}
-              className="flex w-full items-center justify-between bg-amber-50 px-4 py-3 text-left transition hover:bg-amber-100"
             >
               <span className="text-xs font-semibold text-amber-700">
                 Demo mode test credentials
               </span>
-              {showDemo ? (
-                <ChevronUp size={15} className="text-amber-600" />
-              ) : (
-                <ChevronDown size={15} className="text-amber-600" />
-              )}
-            </button>
+            </DisclosureButton>
 
             {showDemo ? (
               <div className="space-y-2 border-t border-amber-200 bg-amber-50 px-4 py-3">
                 {MOCK_USERS.map((user) => (
-                  <button
+                  <Button
                     key={user.email}
                     type="button"
                     onClick={() => fillDemo(user.email)}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-amber-100"
+                    variant="soft-warning"
+                    
+                    fullWidth
+                    contentAlign="start"
                   >
-                    <span className="font-mono text-xs text-amber-900">{user.email}</span>
-                    <span
-                      className={[
-                        "rounded-full px-2 py-0.5 text-xs font-semibold capitalize",
-                        roleColors[user.role] ?? "bg-gray-100 text-gray-600",
-                      ].join(" ")}
-                    >
-                      {user.role}
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span className="font-mono text-xs text-amber-900">{user.email}</span>
+                      <span
+                        className={[
+                          "rounded-full px-2 py-0.5 text-xs font-semibold capitalize",
+                          roleColors[user.role] ?? "bg-gray-100 text-gray-600",
+                        ].join(" ")}
+                      >
+                        {user.role}
+                      </span>
                     </span>
-                  </button>
+                  </Button>
                 ))}
 
                 <p className="text-xs leading-5 text-amber-600">

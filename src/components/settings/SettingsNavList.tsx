@@ -1,7 +1,7 @@
 import { type KeyboardEvent } from "react";
 import { ChevronRight } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { Badge } from "../ui/Badge";
+import { Tag } from "../ui/Tag";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
 
 const navLinkClassName = (isActive: boolean, depth: number) =>
@@ -157,7 +157,9 @@ const SidebarItem = ({
           </div>
 
           <div className="ml-3 flex items-center gap-2">
-            {item.badge && <Badge variant="primary">{item.badge}</Badge>}
+            {item.badge && (
+              <Tag label={item.badge} bgColor="primary" size="sm" />
+            )}
             <ChevronRight
               className={isActive ? "text-slate-500" : "text-slate-300"}
               size={16}
