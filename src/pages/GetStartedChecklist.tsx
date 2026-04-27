@@ -177,7 +177,7 @@ export const GetStartedChecklist = ({
       contentClassName="min-h-0 flex-1 overflow-y-auto bg-[var(--color-bg,#f8fafc)] px-3 py-6 sm:px-4 sm:py-8 md:px-6 md:py-14"
     >
       <div
-        className={`mx-auto max-w-7xl text-[var(--color-text,#0f172a)] transition-all duration-500 ${
+        className={`mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-4 pb-8 text-[var(--color-text,#0f172a)] transition-all duration-500 md:block md:overflow-visible md:px-0 md:py-0 md:pb-0 ${
           visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
