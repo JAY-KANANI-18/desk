@@ -70,6 +70,7 @@ export const LoginPremium = () => {
 
   return (
     <AuthShell
+    headerAlign="center"
       eyebrow="Welcome back"
       title="Sign in to AxoDesk"
       subtitle="Pick up where your team left off and keep customer conversations moving."
@@ -104,7 +105,7 @@ export const LoginPremium = () => {
           Continue with Google
         </AuthSecondaryButton>
 
-        <AuthDivider label="or sign in with email" />
+        <AuthDivider label="OR" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <AuthField

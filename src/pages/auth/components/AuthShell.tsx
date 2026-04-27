@@ -101,14 +101,14 @@ export const AuthShell = ({
               <div className="space-y-4">
                 <div className="flex justify-center">
                   <img
-                    src="/axodesk-full.png"
+                    src="/axodesk-logo.png"
                     alt="AxoDesk"
                     className="h-14 w-auto object-contain sm:h-16"
                   />
                 </div>
 
                 {(eyebrow || typeof progress === "number") && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 ">
                     {eyebrow ? (
                       <p
                         className={cx(
@@ -138,7 +138,7 @@ export const AuthShell = ({
                     headerAlign === "center" ? "text-center" : "text-left",
                   )}
                 >
-                  <h1 className="text-[clamp(1.8rem,5vw,2.35rem)] font-semibold leading-[1.1] tracking-tight text-gray-950">
+                  <h1 className="text-[clamp(1.8rem,5vw,2.35rem)] text-center font-semibold leading-[1.1] tracking-tight text-gray-950">
                     {title}
                   </h1>
                   {subtitle ? (

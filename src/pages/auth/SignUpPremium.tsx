@@ -72,6 +72,7 @@ export const SignUpPremium = () => {
 
   return (
     <AuthShell
+      headerAlign="center"
       eyebrow="Create your account"
       title="Start with a calm inbox"
       subtitle="Set up your account and we&apos;ll guide the rest in a few quick steps."
@@ -106,7 +107,7 @@ export const SignUpPremium = () => {
           Continue with Google
         </AuthSecondaryButton>
 
-        <AuthDivider label="or continue with email" />
+        <AuthDivider label="OR" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <AuthField
