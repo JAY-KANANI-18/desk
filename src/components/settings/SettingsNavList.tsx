@@ -5,12 +5,12 @@ import { Tag } from "../ui/Tag";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
 
 const navLinkClassName = (isActive: boolean, depth: number) =>
-  `group flex  w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
+  `group flex  w-full items-center justify-between rounded-2xl px-2 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
     depth > 0 ? "pl-11 md:pl-10" : ""
   } ${
     isActive
       ? "bg-slate-100 text-slate-900"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
   }`;
 
 export const handleSettingsListKeyNavigation = (

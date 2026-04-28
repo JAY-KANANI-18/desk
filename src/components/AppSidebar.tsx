@@ -134,7 +134,7 @@ export const AppSidebar = ({
               >
                 <span className="flex h-full w-full flex-col items-center justify-center gap-1.5">
                   <Settings size={22} />
-                  <span className="line-clamp-2 text-[9.5px] font-semibold leading-tight">
+                  <span className="line-clamp-2 text-[9.5px]  leading-tight">
                     Settings
                   </span>
                 </span>
