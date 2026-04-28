@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   Megaphone,
   MessageCircleMore,
-  Plug,
+  RadioTower,
   Workflow,
 } from "lucide-react";
 import type { WorkspacePermission } from "../context/AuthorizationContext";
@@ -72,7 +72,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     mobile: true,
   },
   {
-    icon: Plug,
+    icon: RadioTower,
     label: "Channels",
     path: "/channels",
     ws: "ws:settings:view",

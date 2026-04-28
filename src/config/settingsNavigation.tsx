@@ -6,7 +6,8 @@ import {
   CircleUserRound,
   GitBranch,
   MessageSquareText,
-  Plug,
+  RadioTower,
+  RadioTower,
   RefreshCw,
   Settings,
   Sparkles,
@@ -64,7 +65,7 @@ export const workspaceSettingsConfig: SettingsModuleConfig = {
         {
           id: "workspace-integrations",
           label: "Integrations",
-          icon: <Plug size={18} />,
+          icon: <RadioTower size={18} />,
           permission: { ws: "ws:channels:manage" },
           to: "/workspace/settings/integrations",
         },

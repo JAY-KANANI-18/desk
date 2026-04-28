@@ -1,16 +1,19 @@
-import { Plus, Plug } from "lucide-react";
+import { Globe, Plus, RadioTower } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ChannelBadgeStack } from "../../components/channels/ChannelBadges";
 import { useAuthorization } from "../../context/AuthorizationContext";
 import { Button } from "../../components/ui/Button";
 
 interface InboxAddChannelPromptProps {
   message: string;
   compact?: boolean;
+  title?: string;
 }
 
 export function InboxAddChannelPrompt({
   message,
   compact = false,
+  title = "No channels connected yet",
 }: InboxAddChannelPromptProps) {
   const navigate = useNavigate();
   const { canWs } = useAuthorization();
@@ -23,23 +26,31 @@ export function InboxAddChannelPrompt({
       }`}
     >
       <div
-        className={`mb-4 flex items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 ${
+        className={`mb-4 flex items-center justify-center rounded-2xl bg-gray-100 ${
           compact ? "h-14 w-14" : "h-16 w-16"
         }`}
       >
-        <Plug
+        <RadioTower
           size={compact ? 22 : 26}
-          className="text-indigo-600"
+          className="text-gray-400"
         />
       </div>
 
+      <p className="text-base font-semibold text-slate-800">{title}</p>
+
       <p
-        className={`text-slate-600 ${
+        className={`mt-1 text-slate-500 ${
           compact ? "max-w-[18rem] text-sm leading-6" : "text-base leading-7"
         }`}
       >
         {message}
       </p>
+
+      <ChannelBadgeStack
+        linked={canManageChannels}
+        size={compact ? "sm" : "md"}
+        className={compact ? "mt-3" : "mt-4"}
+      />
 
       {canManageChannels ? (
         <Button
@@ -49,7 +60,7 @@ export function InboxAddChannelPrompt({
           size={compact ? "sm" : "md"}
           className="mt-4"
         >
-          Add channel
+          Connect a channel
         </Button>
       ) : null}
     </div>

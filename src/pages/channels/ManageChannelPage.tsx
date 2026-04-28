@@ -813,7 +813,7 @@ export const ManageChannelPage = () => {
       <div className="flex h-full items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-3xl">
-            Plug
+            RadioTower
           </div>
           <p className="text-lg font-semibold text-gray-700">Channel not found</p>
           <p className="mt-1 text-sm text-gray-400">

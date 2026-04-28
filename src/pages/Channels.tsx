@@ -4,7 +4,7 @@ import {
   ChevronRight,
   Globe,
   Loader2,
-  Plug,
+  RadioTower,
   Plus,
   Search,
   Settings,
@@ -15,6 +15,7 @@ import { ListPagination } from "../components/ui/ListPagination";
 import { PageLayout } from "../components/ui/PageLayout";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useMobileHeaderActions } from "../components/mobileHeaderActions";
+import { ChannelBadgeStack } from "../components/channels/ChannelBadges";
 import { Button } from "../components/ui/button/Button";
 import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 import { BaseInput } from "../components/ui/inputs";
@@ -99,7 +100,7 @@ const ConnectedChannelsView = ({
           <>
             <div className="hidden items-start gap-3 md:flex">
               <div className="pt-1 text-slate-700">
-                <Plug size={20} />
+                <RadioTower size={20} />
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg font-semibold text-gray-900 md:text-xl">
@@ -125,10 +126,7 @@ const ConnectedChannelsView = ({
               </div>
 
               <div className="flex w-full justify-end md:ml-auto md:w-auto">
-                <Button
-                  onClick={onConnectNew}
-                  leftIcon={<Plus size={14} />}
-                >
+                <Button onClick={onConnectNew} leftIcon={<Plus size={14} />}>
                   Add Channel
                 </Button>
               </div>
@@ -144,7 +142,7 @@ const ConnectedChannelsView = ({
         ) : channels.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
-              <Globe size={28} className="text-gray-400" />
+              <RadioTower size={28} className="text-gray-400" />
             </div>
             <p className="text-base font-medium text-gray-700">
               No channels connected yet
@@ -152,10 +150,8 @@ const ConnectedChannelsView = ({
             <p className="mb-4 mt-1 text-sm text-gray-500">
               Connect your first channel to start receiving messages.
             </p>
-            <Button
-              onClick={onConnectNew}
-              leftIcon={<Plus size={15} />}
-            >
+            <ChannelBadgeStack className="mb-4" />
+            <Button onClick={onConnectNew} leftIcon={<Plus size={15} />}>
               Connect a channel
             </Button>
           </div>
@@ -174,52 +170,53 @@ const ConnectedChannelsView = ({
                 className="relative"
               >
                 <div
-                  className={` w-full text-left ${
-                    isMobile ? "" : "space-y-5"
-                  }`}
+                  className={` w-full text-left ${isMobile ? "" : "space-y-5"}`}
                 >
-                {isMobile ? (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300"
-                  >
-                    <ChevronRight size={16} />
+                  {isMobile ? (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300"
+                    >
+                      <ChevronRight size={16} />
+                    </span>
+                  ) : null}
+
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
+                      <img
+                        src={channelConfig[channel.type]?.icon}
+                        className={
+                          !isMobile ? "h-10 w-10 object-contain" : "h-8 w-8"
+                        }
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-gray-900 md:text-base">
+                        {channel.name}
+                      </p>
+                      <p className="mt-1 truncate text-sm text-gray-500">
+                        {channelConfig[channel.type]?.label} ·{" "}
+                        {channel.identifier}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      isMobile
+                        ? "hidden"
+                        : "grid grid-cols-2 gap-3 rounded-2xl p-3 text-xs text-slate-500"
+                    }
+                  />
+
+                  <span className="hidden items-center gap-1.5 text-xs font-medium text-gray-700 md:inline-flex">
+                    <Settings size={14} />
+                    Manage
                   </span>
-                ) : null}
-
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
-                    <img
-                      src={channelConfig[channel.type]?.icon}
-                      className={!isMobile ? "h-10 w-10 object-contain" : "h-8 w-8"}
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900 md:text-base">
-                      {channel.name}
-                    </p>
-                    <p className="mt-1 truncate text-sm text-gray-500">
-                      {channelConfig[channel.type]?.label} · {channel.identifier}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={
-                    isMobile
-                      ? "hidden"
-                      : "grid grid-cols-2 gap-3 rounded-2xl p-3 text-xs text-slate-500"
-                  }
-                />
-
-                <span className="hidden items-center gap-1.5 text-xs font-medium text-gray-700 md:inline-flex">
-                  <Settings size={14} />
-                  Manage
-                </span>
                 </div>
               </Button>
             ))}

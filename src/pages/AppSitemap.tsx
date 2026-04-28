@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MessageSquare, LayoutDashboard, Users, Radio, Workflow, BarChart3,
-  Plug, UsersRound, Building2, CreditCard, Settings, LogIn, UserPlus,
+  RadioTower, UsersRound, Building2, CreditCard, Settings, LogIn, UserPlus,
   KeyRound, Mail, ShieldCheck, ExternalLink, Search, X, ChevronRight,
   Inbox, Globe, Phone, Wand2, Sparkles, Tag as TagIcon, AlignLeft, CheckCircle,
   Contact, RefreshCw, Smile, UserCog, LayoutGrid, Map, Zap, ArrowRight,
@@ -163,7 +163,7 @@ const PAGES: PageEntry[] = [
     description: 'Browse and manage all connected messaging channels. Connect WhatsApp, Instagram, Facebook, Gmail, and Email from a unified catalog.',
     url: '/channels',
     category: 'channels',
-    icon: <Plug size={22} />,
+    icon: <RadioTower size={22} />,
     color: 'bg-green-100',
     textColor: 'text-green-600',
     borderColor: 'border-green-500',

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ElementType, ReactNode } from "react";
 import {
-  Plug,
+  RadioTower,
   Users,
   GitBranch,
   ChevronDown,
@@ -36,7 +36,7 @@ interface Step {
 const STEPS: Step[] = [
   {
     key: "connectChannel",
-    icon: Plug,
+    icon: RadioTower,
     title: "Connect a channel",
     subtitle: "WhatsApp · Instagram · Email",
     description: (
