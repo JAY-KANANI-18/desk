@@ -114,6 +114,8 @@ export const BaseInput = forwardRef<HTMLInputElement, BaseInputProps>(
               hasLeftIcon: Boolean(leftIcon),
               hasRightIcon: Boolean(rightIcon),
               className: cx(
+                type === "search" &&
+                  "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none",
                 hideNativePickerIndicator && "[&::-webkit-calendar-picker-indicator]:opacity-0",
                 className,
               ),

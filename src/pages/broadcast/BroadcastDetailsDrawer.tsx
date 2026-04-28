@@ -396,7 +396,6 @@ export function BroadcastDetailsDrawer({
             </div>
 
             <div className="flex min-h-[26px] min-w-0 items-center gap-2">
-              <BarChart3 size={16} className="flex-shrink-0 text-[var(--color-primary)]" />
               <h2 className="truncate text-sm font-semibold text-[var(--color-gray-900)]">
                 Broadcast details
               </h2>

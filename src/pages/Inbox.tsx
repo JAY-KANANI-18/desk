@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useCallback, useState } from "react";
+import { ListFilter, PanelLeftOpen } from "lucide-react";
 import {
   useParams,
   useNavigate,
@@ -33,6 +34,7 @@ import { MobileContactSheet } from "./inbox/MobileContactSheet";
 import type { ReplyContext } from "./inbox/MessageArea";
 import type { ApiConversation } from "../lib/inboxApi";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 
 export function InboxPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -174,31 +176,59 @@ export function InboxPage() {
             }}
           />
 
-          <MessageArea
-            selectedConversation={selectedConversation as any}
-            // messages={messages[selectedConversation?.id] ?? []}
-            timelineItems={timeline as any}
-            targetMessageId={resolvedTargetMessageId}
-            snoozedUntil={snoozedUntil}
-            onUnsnooze={() => setSnoozedUntil(null)}
-            msgSearchOpen={msgSearchOpen}
-            msgSearch={msgSearch}
-            onMsgSearchChange={setMsgSearch}
-            onCloseMsgSearch={() => { setMsgSearch(""); toggleMsgSearch(); }}
-            onReply={handleReply}
-          />
+          <div className="flex min-h-0 min-w-0 flex-1">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50 md:bg-white">
+              <MessageArea
+                selectedConversation={selectedConversation as any}
+                // messages={messages[selectedConversation?.id] ?? []}
+                timelineItems={timeline as any}
+                targetMessageId={resolvedTargetMessageId}
+                snoozedUntil={snoozedUntil}
+                onUnsnooze={() => setSnoozedUntil(null)}
+                msgSearchOpen={msgSearchOpen}
+                msgSearch={msgSearch}
+                onMsgSearchChange={setMsgSearch}
+                onCloseMsgSearch={() => { setMsgSearch(""); toggleMsgSearch(); }}
+                onReply={handleReply}
+              />
 
-          <InputArea
-            key={selectedConversation?.id}
-            inputMode={inputMode}
-            onInputModeChange={setInputMode}
-            selectedChannel={selectedChannel}
-            onChannelChange={handleChannelChange}
-            onSendMessage={handleSendMessage}
-            onSendNote={handleSendNote}
-            replyContext={replyContext}
-            onClearReplyContext={handleClearReplyContext}
-          />
+              <InputArea
+                key={selectedConversation?.id}
+                inputMode={inputMode}
+                onInputModeChange={setInputMode}
+                selectedChannel={selectedChannel}
+                onChannelChange={handleChannelChange}
+                onSendMessage={handleSendMessage}
+                onSendNote={handleSendNote}
+                replyContext={replyContext}
+                onClearReplyContext={handleClearReplyContext}
+              />
+            </div>
+
+            {!isMobile ? (
+              <div
+                className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out xl:flex"
+                style={{
+                  width: selectedConversation?.id && showDesktopContact ? CONTACT_SIDEBAR_WIDTH : 0,
+                  opacity: selectedConversation?.id && showDesktopContact ? 1 : 0,
+                }}
+              >
+                {selectedConversation?.id ? (
+                  <ContactSidebarHybrid
+                    selectedConversation={selectedConversation as any}
+                    contactDetails={selectedContact}
+                    refreshContact={refreshContact}
+                    refreshConversations={refreshConversations}
+                    conversationList={convList}
+                    onSelectConversation={(conversation) => selectConversation(conversation as any)}
+                    desktopTitle="Contact details"
+                    onDesktopClose={() => setShowDesktopContact(false)}
+                    desktopContainerClassName="flex h-full"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : hasConversationRoute ? (
         <div className="flex flex-1 items-center justify-center">
@@ -218,30 +248,6 @@ export function InboxPage() {
         </div>
       )}
 
-      {!isMobile ? (
-        <div
-          className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out xl:flex"
-          style={{
-            width: selectedConversation?.id && showDesktopContact ? CONTACT_SIDEBAR_WIDTH : 0,
-            opacity: selectedConversation?.id && showDesktopContact ? 1 : 0,
-          }}
-        >
-          {selectedConversation?.id ? (
-            <ContactSidebarHybrid
-              selectedConversation={selectedConversation as any}
-              contactDetails={selectedContact}
-              refreshContact={refreshContact}
-              refreshConversations={refreshConversations}
-              conversationList={convList}
-              onSelectConversation={(conversation) => selectConversation(conversation as any)}
-              desktopTitle="Contact details"
-              onDesktopClose={() => setShowDesktopContact(false)}
-              desktopContainerClassName="flex h-full"
-            />
-          ) : null}
-        </div>
-      ) : null}
-
       <MobileCategoryDrawer
         open={showMobileCategories}
         onClose={() => setShowMobileCategories(false)}
@@ -253,6 +259,14 @@ export function InboxPage() {
           onClose={() => setShowMobileContact(false)}
           selectedConversation={selectedConversation as any}
           contactDetails={selectedContact}
+        />
+      ) : null}
+
+      {!showConversationView ? (
+        <FloatingActionButton
+          label="Conversation categories"
+          icon={<ListFilter size={22} />}
+          onClick={() => setShowMobileCategories(true)}
         />
       ) : null}
     </div>

@@ -514,7 +514,6 @@ export function NotificationPanel({
         isOpen={open}
         title={
           <div className="flex items-center gap-2">
-            <Bell size={16} className="text-slate-700" />
             <span className="text-base font-semibold text-slate-900">
               Notifications
             </span>
@@ -544,7 +543,6 @@ export function NotificationPanel({
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <div className="flex items-center gap-2">
-            <Bell size={16} className="text-gray-700" />
             <span className="text-sm font-semibold text-gray-800">
               Notifications
             </span>

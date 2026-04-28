@@ -1,5 +1,7 @@
 import {
   Building2,
+  ChevronDown,
+  ChevronUp,
   Mail,
   Pencil,
   Phone,
@@ -7,10 +9,11 @@ import {
   UserRound,
   X,
   type LucideIcon,
-  type ReactNode,
 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
 import { Tag } from "../../../components/ui/Tag";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { Tooltip } from "../../../components/ui/Tooltip";
@@ -229,8 +232,21 @@ export function ContactsTable({
   totalPages,
   setCurrentPage,
 }: ContactsTableProps) {
+  const [expandedMobileContactIds, setExpandedMobileContactIds] = useState<Set<number | string>>(new Set());
   const tagMetaById = new Map(availableTags.map((tag) => [String(tag.id), tag]));
   const tagMetaByName = new Map(availableTags.map((tag) => [tag.name, tag]));
+
+  const toggleMobileContact = (contactId: number | string) => {
+    setExpandedMobileContactIds((current) => {
+      const next = new Set(current);
+      if (next.has(contactId)) {
+        next.delete(contactId);
+      } else {
+        next.add(contactId);
+      }
+      return next;
+    });
+  };
 
   const renderTags = (contact: Contact, mobile = false) => {
     if (!contact.tags?.length) {
@@ -396,62 +412,67 @@ export function ContactsTable({
     const assigneeName = getAssigneeName(contact, workspaceUsers) || "Unassigned";
     const lifecycle = getLifecycleMeta(contact, stages);
     const company = contact.company?.trim();
+    const expanded = expandedMobileContactIds.has(contact.id);
 
     return (
       <article
         key={contact.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => openEditModal(contact)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openEditModal(contact);
-          }
-        }}
-        className="relative min-w-0 max-w-full cursor-pointer overflow-visible rounded-[28px] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] transition-colors hover:bg-slate-50"
+        className="relative min-w-0 max-w-full overflow-visible rounded-2xl bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors"
       >
         <div className="min-w-0">
           <div className="min-w-0 space-y-3">
             <div className="flex items-start gap-3">
-              <Avatar
-                src={contact.avatarUrl ?? undefined}
-                name={getContactName(contact)}
-                size="lg"
-              />
+              <button
+                type="button"
+                onClick={() => openEditModal(contact)}
+                className="flex min-w-0 flex-1 items-start gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-2"
+              >
+                <Avatar
+                  src={contact.avatarUrl ?? undefined}
+                  name={getContactName(contact)}
+                  size="sm"
+                />
 
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <div className="min-w-0">
-                    <p className="truncate text-[17px] font-semibold leading-tight text-slate-900">
+                    <p className="truncate text-[16px] font-semibold leading-tight text-slate-900">
                       {getContactName(contact)}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Tag
-                        label={lifecycle.label}
-                        bgColor={normalizeVisualColor(lifecycle.color)}
-                        size="sm"
-                        maxWidth={220}
-                      />
+                    <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                      <span className="text-xs"
+                       
+                      > {lifecycle.label}</span>
                     </div>
                   </div>
-
-                  <div className="flex flex-shrink-0 items-center gap-1">
-                    <ChannelIcons contact={contact} compact />
-                    {actions}
-                  </div>
                 </div>
+              </button>
+
+              <div className="flex flex-shrink-0 items-center gap-1">
+                <ChannelIcons contact={contact} compact />
+                <IconButton
+                  aria-label={expanded ? "Hide contact details" : "Show contact details"}
+                  aria-expanded={expanded}
+                  icon={expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleMobileContact(contact.id)}
+                />
+                {actions}
               </div>
             </div>
 
-            <div className="grid min-w-0 gap-2.5 rounded-[22px] bg-white p-3">
-              <DetailLine icon={UserRound} value={assigneeName} />
-              {contact.email ? <DetailLine icon={Mail} value={contact.email} breakWords /> : null}
-              {contact.phone ? <DetailLine icon={Phone} value={contact.phone} breakWords /> : null}
-              {company ? <DetailLine icon={Building2} value={company} /> : null}
-            </div>
+            {expanded ? (
+              <>
+                <div className="grid min-w-0 gap-2.5 rounded-xl bg-slate-50 p-3">
+                  <DetailLine icon={UserRound} value={assigneeName} />
+                  {contact.email ? <DetailLine icon={Mail} value={contact.email} breakWords /> : null}
+                  {contact.phone ? <DetailLine icon={Phone} value={contact.phone} breakWords /> : null}
+                  {company ? <DetailLine icon={Building2} value={company} /> : null}
+                </div>
 
-            {contact.tags?.length ? renderTags(contact, true) : null}
+                {contact.tags?.length ? renderTags(contact, true) : null}
+              </>
+            ) : null}
           </div>
         </div>
       </article>
@@ -513,7 +534,7 @@ export function ContactsTable({
         ]}
         onRowClick={openEditModal}
         getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-indigo-50/60" : "")}
-        renderMobileCard={(contact, helpers) => renderMobileCard(contact, helpers.actions)}
+        renderMobileCard={(contact, helpers) => renderMobileCard(contact)}
         minTableWidth={980}
         mobileLoadMore={{
           hasMore: safePage < totalPages,

@@ -5,7 +5,6 @@ import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
-import { useDisclosure } from "../../../hooks/useDisclosure";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { ContactsToast, SortOption } from "../types";
 
@@ -49,7 +48,6 @@ export function ContactsHeader({
   desktopMode = "standalone",
 }: ContactsHeaderProps) {
   const isMobile = useIsMobile();
-  const mobileSearch = useDisclosure();
 
   const closeActionsMenu = () => setShowActionsMenu(false);
 
@@ -94,58 +92,45 @@ export function ContactsHeader({
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: "contacts-search",
-              label: mobileSearch.isOpen ? "Close search" : "Search contacts",
-              icon: mobileSearch.isOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearch.isOpen,
-              hasIndicator: !mobileSearch.isOpen && Boolean(searchQuery),
-              onClick: mobileSearch.toggle,
-            },
-            {
-              id: "contacts-new",
-              label: "New contact",
-              icon: <Plus size={18} />,
-              onClick: onNewContact,
-            },
-            {
-              id: "contacts-actions",
-              label: "Contact actions",
-              icon: <MoreVertical size={17} />,
-              active: showActionsMenu,
-              onClick: () => setShowActionsMenu((prev) => !prev),
-            },
-          ],
-          panel: mobileSearch.isOpen ? (
-            <div className="relative">
-              <BaseInput
-                autoFocus
-                appearance="toolbar"
-                type="search"
-                inputMode="search"
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search contacts..."
-                value={searchQuery}
-                leftIcon={<Search size={15} />}
-                aria-label="Search contacts"
-              />
-              {searchQuery ? (
-                <IconButton
-                  icon={<X size={13} />}
-                  aria-label="Clear contact search"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setSearchQuery("")}
-                  type="button"
+          panel: (
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <BaseInput
+                  appearance="toolbar"
+                  type="search"
+                  inputMode="search"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search contacts..."
+                  value={searchQuery}
+                  leftIcon={<Search size={15} />}
+                  aria-label="Search contacts"
                 />
-              ) : null}
+                {searchQuery ? (
+                  <IconButton
+                    icon={<X size={13} />}
+                    aria-label="Clear contact search"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setSearchQuery("")}
+                    type="button"
+                  />
+                ) : null}
+              </div>
+              <IconButton
+                aria-label="Contact actions"
+                icon={<MoreVertical size={17} />}
+                className={showActionsMenu ? "bg-slate-100 text-indigo-600" : ""}
+                onClick={() => setShowActionsMenu((prev) => !prev)}
+                radius="full"
+                type="button"
+                variant={showActionsMenu ? "soft-primary" : "ghost"}
+              />
             </div>
-          ) : null,
+          ),
         }
       : {},
-    [isMobile, mobileSearch.isOpen, searchQuery, showActionsMenu],
+    [isMobile, searchQuery, showActionsMenu],
   );
 
   return (

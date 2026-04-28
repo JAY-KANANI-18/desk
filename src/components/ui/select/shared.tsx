@@ -154,12 +154,14 @@ export function useSelectController<T>({
   disabled = false,
   closeOnSelect = true,
   getOptionDisabled,
+  outsideDismiss = true,
   onSelect,
 }: {
   options: T[];
   disabled?: boolean;
   closeOnSelect?: boolean;
   getOptionDisabled?: (option: T) => boolean;
+  outsideDismiss?: boolean;
   onSelect: (option: T, index: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -312,7 +314,7 @@ export function useSelectController<T>({
     }
   };
 
-  useOutsideDismiss(containerRef, isOpen, () => close(false));
+  useOutsideDismiss(containerRef, outsideDismiss && isOpen, () => close(false));
 
   useEffect(() => {
     if (!isOpen) {
@@ -394,6 +396,7 @@ export function SelectTrigger({
   size = "md",
   hasValue = false,
   hasClearAction = false,
+  hideIndicator = false,
   appearance = "field",
   fullWidth = false,
   error,
@@ -411,6 +414,7 @@ export function SelectTrigger({
   size?: SelectSize;
   hasValue?: boolean;
   hasClearAction?: boolean;
+  hideIndicator?: boolean;
   fullWidth?: boolean;
   appearance?: SelectTriggerAppearance;
   error?: string;
@@ -493,17 +497,19 @@ export function SelectTrigger({
       <span className="flex min-w-0 flex-1 items-center">
         {children}
       </span>
-        <ChevronDown
-        size={indicatorSize}
-        aria-hidden="true"
-        className={cx(
-          "shrink-0 transition-transform duration-200",
-          appearance === "inline" || appearance === "toolbar"
-            ? "text-current/70"
-            : "text-[var(--color-gray-400)]",
-          isOpen && "rotate-180",
-        )}
-      />
+        {!hideIndicator ? (
+          <ChevronDown
+            size={indicatorSize}
+            aria-hidden="true"
+            className={cx(
+              "shrink-0 transition-transform duration-200",
+              appearance === "inline" || appearance === "toolbar"
+                ? "text-current/70"
+                : "text-[var(--color-gray-400)]",
+              isOpen && "rotate-180",
+            )}
+          />
+        ) : null}
     </button>
   );
 }

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Radio } from "lucide-react";
+import { Plus, Radio } from "lucide-react";
 import { MobileSheet } from "../components/ui/modal";
 import { Button } from "../components/ui/Button";
+import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 import { PageLayout } from "../components/ui/PageLayout";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { BroadcastCalendarView } from "./broadcast/BroadcastCalendarView";
@@ -175,6 +176,7 @@ export const Broadcast = () => {
           onFormChange={page.setForm}
           tags={page.tags}
           lifecycles={page.lifecycles}
+    
           audiencePreview={page.audiencePreview}
           previewLoading={page.previewLoading}
           onPreviewAudience={page.runAudiencePreview}
@@ -188,6 +190,12 @@ export const Broadcast = () => {
           sending={page.sending}
           onClose={page.closeComposer}
           onSend={page.handleSend}
+        />
+
+        <FloatingActionButton
+          label="New broadcast"
+          icon={<Plus size={24} />}
+          onClick={page.openComposer}
         />
 
         {isMobile ? broadcastDetailsDrawer : null}

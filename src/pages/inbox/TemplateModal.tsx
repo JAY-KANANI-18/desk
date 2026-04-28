@@ -8,7 +8,7 @@ import {
 import { ChannelApi } from '../../lib/channelApi';
 import { Button } from '../../components/ui/Button';
 import { IconButton } from '../../components/ui/button/IconButton';
-import { CenterModal } from '../../components/ui/Modal';
+import { ResponsiveModal } from '../../components/ui/modal';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { Tag } from '../../components/ui/Tag';
 import { useInbox } from '../../context/InboxContext';
@@ -484,41 +484,80 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
         </p>
     ) : undefined;
 
+    const secondaryAction = step === 'fill' ? (
+        <Button
+            variant="secondary"
+            onClick={() => setStep('list')}
+        >
+            Cancel
+        </Button>
+    ) : undefined;
+
+    const primaryAction = step === 'fill' ? (
+        <Button
+            onClick={handleUse}
+            disabled={missing.length > 0}
+            leftIcon={<Send size={12} />}
+        >
+            Use Template
+        </Button>
+    ) : undefined;
+
+    const mobileTitle = (
+        <div className="flex min-w-0 items-start gap-2">
+            {step === 'fill' ? (
+                <IconButton
+                    icon={<ChevronLeft size={16} />}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Back to template list"
+                    onClick={() => setStep('list')}
+                />
+            ) : (
+                modalHeaderIcon
+            )}
+            <div className="min-w-0 flex-1">
+                <h2 className="truncate text-base font-semibold text-gray-900">
+                    {modalTitle}
+                </h2>
+                {modalSubtitle ? (
+                    <p className="mt-1 truncate text-sm text-gray-500">
+                        {modalSubtitle}
+                    </p>
+                ) : null}
+            </div>
+        </div>
+    );
+
+    const mobileFooter = step === 'fill' ? (
+        <div className="space-y-3">
+            {modalFooterMeta}
+            <div className="grid grid-cols-2 gap-2">
+                {secondaryAction}
+                {primaryAction}
+            </div>
+        </div>
+    ) : undefined;
+
     if (!open) return null;
 
     return (
-        <CenterModal
+        <ResponsiveModal
             isOpen={open}
             onClose={onClose}
             title={modalTitle}
+            mobileTitle={mobileTitle}
             subtitle={modalSubtitle}
             headerIcon={modalHeaderIcon}
             onBack={step === 'fill' ? () => setStep('list') : undefined}
             size="xl"
             width="56rem"
             bodyPadding="none"
+            mobileBodyClassName="h-full"
+            mobileFooter={mobileFooter}
             footerMeta={modalFooterMeta}
-            secondaryAction={
-                step === 'fill' ? (
-                    <Button
-                        variant="secondary"
-                        onClick={() => setStep('list')}
-                    >
-                        Cancel
-                    </Button>
-                ) : undefined
-            }
-            primaryAction={
-                step === 'fill' ? (
-                    <Button
-                        onClick={handleUse}
-                        disabled={missing.length > 0}
-                        leftIcon={<Send size={12} />}
-                    >
-                        Use Template
-                    </Button>
-                ) : undefined
-            }
+            secondaryAction={secondaryAction}
+            primaryAction={primaryAction}
         >
                 <div className="hidden items-center gap-3 px-5 py-3.5 border-b border-gray-100 bg-white flex-shrink-0">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#128c7e' }}>
@@ -709,6 +748,14 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                         <p className="text-[12px] font-medium" style={{ color: '#128c7e' }}>No variables — ready to send!</p>
                                     </div>
                                 )}
+
+                                <div className="space-y-2 sm:hidden">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-[#25d366]" />
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</p>
+                                    </div>
+                                    <WhatsAppPreview template={selected} values={varValues} />
+                                </div>
                             </div>
 
                             <div className="hidden border-t border-gray-100 px-5 py-3 flex items-center justify-between bg-white flex-shrink-0">
@@ -740,6 +787,6 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                         </div>
                     </div>
                 )}
-        </CenterModal>
+        </ResponsiveModal>
     );
 }

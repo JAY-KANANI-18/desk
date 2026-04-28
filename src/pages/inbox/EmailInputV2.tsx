@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AtSign,
   Bold,
@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import type { AttachmentType, MediaAttachment } from './types';
-import { channelConfig, variables } from './data';
+import { variables } from './data';
 import { useInbox } from '../../context/InboxContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import type { SharedInputProps } from './InputArea';
@@ -36,18 +36,37 @@ import { useDisclosure } from '../../hooks/useDisclosure';
 import { getContactScopedChannels, isSameChannel } from './channelUtils';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { CompactSelectMenu, VariableSuggestionMenu } from '../../components/ui/Select';
+import {
+  ChannelSelectMenu,
+  MentionSuggestionMenu,
+  VariableSuggestionMenu,
+  type MentionSuggestionOption,
+} from '../../components/ui/Select';
+import { workspaceUserLabel } from './contact-sidebar/utils';
+import type { WorkspaceUserLike } from './contact-sidebar/types';
 
 type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
-const classDrivenButtonStyle = {
-  padding: undefined,
-  borderRadius: undefined,
-  borderWidth: undefined,
-  color: undefined,
-  boxShadow: undefined,
-  fontSize: undefined,
-} satisfies CSSProperties;
+
+function getMentionStatus(user: WorkspaceUserLike): MentionSuggestionOption['status'] | undefined {
+  switch (user.activityStatus?.toLowerCase()) {
+    case 'online':
+      return 'online';
+    case 'away':
+      return 'away';
+    case 'busy':
+      return 'busy';
+    case 'offline':
+      return 'offline';
+    default:
+      return undefined;
+  }
+}
+
+function getMentionStatusLabel(status: MentionSuggestionOption['status'] | undefined) {
+  if (!status) return undefined;
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function getAttachmentType(file: File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
@@ -67,10 +86,6 @@ function escapeHtml(text: string) {
 
 function plainTextToHtml(text: string) {
   return escapeHtml(text).replace(/\n/g, '<br />');
-}
-
-function getEmailChannelOptionValue(channel: any) {
-  return `${String(channel?.type ?? 'unknown')}::${String(channel?.id ?? channel?.name ?? '')}`;
 }
 
 export function EmailInput({
@@ -137,38 +152,14 @@ export function EmailInput({
     );
   }, [availableEmailChannels, selectedChannel]);
   const normalizedChannel = useMemo(() => normalizeEmailChannelConfig(activeComposerChannel), [activeComposerChannel]);
-  const activeComposerChannelValue = activeComposerChannel
-    ? getEmailChannelOptionValue(activeComposerChannel)
-    : undefined;
-  const emailChannelGroups = useMemo(
-    () => [
-      {
-        label: 'Send via channel',
-        options: availableEmailChannels.map((channel) => ({
-          value: getEmailChannelOptionValue(channel),
-          label: channel.name || 'Unnamed',
-          leading: (
-            <img
-              src={channelConfig[channel.type]?.icon}
-              alt={channel.name || 'Email channel'}
-              className="h-4 w-4 rounded-sm object-contain"
-            />
-          ),
-          tone: 'neutral' as const,
-          searchText: [channel.name, channel.type].filter(Boolean).join(' '),
-        })),
-      },
-    ],
-    [availableEmailChannels],
-  );
-  const handleComposerChannelChange = useCallback((value: string) => {
-    const nextChannel = availableEmailChannels.find(
-      (channel) => getEmailChannelOptionValue(channel) === value,
-    );
+  const handleComposerChannelChange = useCallback((
+    _value: string,
+    nextChannel: (typeof availableEmailChannels)[number] | null,
+  ) => {
     if (nextChannel) {
       onChannelChange(nextChannel);
     }
-  }, [availableEmailChannels, onChannelChange]);
+  }, [onChannelChange]);
 
   const aiComposer = useInboxAiComposer({
     conversationId: selectedConversation?.id,
@@ -182,19 +173,43 @@ export function EmailInput({
   });
   const isAiBusy = aiComposer.aiLoadingAction !== null;
 
-  const filteredTriggerItems = useMemo(() => {
-    if (!trigger) return [];
-    if (trigger.type === 'variable') {
-      return variables.filter((item) =>
-        item.key.toLowerCase().includes(trigger.query.toLowerCase()) ||
-        item.label.toLowerCase().includes(trigger.query.toLowerCase()),
-      );
-    }
-    return (workspaceUsers ?? []).filter((user: any) => {
-      const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || '';
-      return label.toLowerCase().includes(trigger.query.toLowerCase());
-    });
-  }, [trigger, workspaceUsers]);
+  const filteredVariableTriggerItems = useMemo(() => {
+    if (trigger?.type !== 'variable') return [];
+
+    return variables.filter((item) =>
+      item.key.toLowerCase().includes(trigger.query.toLowerCase()) ||
+      item.label.toLowerCase().includes(trigger.query.toLowerCase()),
+    );
+  }, [trigger?.query, trigger?.type]);
+  const filteredMentionUsers = useMemo(() => {
+    if (trigger?.type !== 'mention') return [];
+
+    return (workspaceUsers ?? []).filter((user) =>
+      workspaceUserLabel(user).toLowerCase().includes(trigger.query.toLowerCase()),
+    );
+  }, [trigger?.query, trigger?.type, workspaceUsers]);
+  const mentionOptions = useMemo(
+    () =>
+      filteredMentionUsers.map((user) => {
+        const status = getMentionStatus(user);
+
+        return {
+          id: String(user.id),
+          label: workspaceUserLabel(user),
+          subtitle: user.email ?? undefined,
+          avatarSrc: user.avatarUrl ?? undefined,
+          status,
+          statusLabel: getMentionStatusLabel(status),
+        };
+      }),
+    [filteredMentionUsers],
+  );
+  const triggerOptionCount =
+    trigger?.type === 'variable'
+      ? filteredVariableTriggerItems.length
+      : trigger?.type === 'mention'
+        ? filteredMentionUsers.length
+        : 0;
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -307,8 +322,8 @@ export function EmailInput({
     insertAtSelection(`{{${variable.key}}}`, /\$(\w*)$/);
   }, [insertAtSelection]);
 
-  const insertMention = useCallback((user: any) => {
-    const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
+  const insertMention = useCallback((user: WorkspaceUserLike) => {
+    const label = workspaceUserLabel(user);
     insertAtSelection(`@[${user.id}|${label}] `, /@([\w.-]*)$/);
   }, [insertAtSelection]);
 
@@ -396,27 +411,13 @@ export function EmailInput({
   const activeBg = isNote ? 'bg-amber-50' : 'bg-white';
   const borderClass = isNote ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-gray-50';
   const channelSelector = !isNote && activeComposerChannel ? (
-    <CompactSelectMenu
-      value={activeComposerChannelValue}
-      groups={emailChannelGroups}
+    <ChannelSelectMenu
+      channels={availableEmailChannels}
+      selectedChannel={activeComposerChannel}
       onChange={handleComposerChannelChange}
-      hasValue
-      size="sm"
-      triggerAppearance="inline"
-      dropdownWidth="sm"
-      dropdownPlacement="top"
-      triggerContent={(
-        <span className="flex min-w-0 items-center gap-1.5">
-          <img
-            src={channelConfig[activeComposerChannel.type]?.icon}
-            alt={activeComposerChannel.name || 'Email channel'}
-            className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
-          />
-          <span className="max-w-[7rem] truncate">
-            {activeComposerChannel.name}
-          </span>
-        </span>
-      )}
+      variant="inline"
+      valueMode="type-id"
+      groupLabel="Send via channel"
     />
   ) : null;
   const assistButton = !isNote ? (
@@ -570,7 +571,7 @@ export function EmailInput({
               ref={triggerMenuRef}
               isOpen
               query={trigger.query}
-              options={filteredTriggerItems}
+              options={filteredVariableTriggerItems}
               highlightedIndex={highlightIndex}
               onHighlightChange={setHighlightIndex}
               onSelect={insertVariable}
@@ -578,44 +579,23 @@ export function EmailInput({
               className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-[320px]"
             />
           ) : null}
-          {trigger?.type === 'mention' && filteredTriggerItems.length > 0 && (
-            <div ref={triggerMenuRef} className="absolute bottom-full left-2 right-2 sm:left-4 sm:right-auto sm:w-80 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
-                <AtSign size={13} className="text-amber-500" />
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Mention teammate
-                </span>
-              </div>
-              <div className="max-h-52 overflow-y-auto py-1">
-                {filteredTriggerItems.map((item: any, index) => {
-                  const isActive = index === highlightIndex;
-                  const label = [item.firstName, item.lastName].filter(Boolean).join(' ').trim() || item.email || 'User';
-                  return (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant="unstyled"
-                      onMouseDown={(e) => { e.preventDefault(); insertMention(item); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${isActive ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
-                      style={classDrivenButtonStyle}
-                      fullWidth
-                      preserveChildLayout
-                    >
-                      <span className="flex w-full items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                          {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
-                          <p className="text-xs text-gray-400 truncate">{item.email}</p>
-                        </div>
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <MentionSuggestionMenu
+            ref={triggerMenuRef}
+            isOpen={trigger?.type === 'mention'}
+            query={trigger?.type === 'mention' ? trigger.query : ""}
+            title="Mention teammate"
+            options={mentionOptions}
+            highlightedIndex={highlightIndex}
+            onHighlightChange={setHighlightIndex}
+            onSelect={(option) => {
+              const user = filteredMentionUsers.find((item) => String(item.id) === option.id);
+              if (user) {
+                insertMention(user);
+              }
+            }}
+            showEmptyState={trigger?.type === 'mention' && Boolean(trigger.query)}
+            className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-80"
+          />
 
           <AiComposerInlineStatus
             loadingAction={aiComposer.aiLoadingAction}
@@ -640,14 +620,18 @@ export function EmailInput({
                 e.preventDefault();
                 return;
               }
-              if (trigger && filteredTriggerItems.length > 0) {
-                if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIndex((value) => Math.min(value + 1, filteredTriggerItems.length - 1)); return; }
+              if (trigger && triggerOptionCount > 0) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIndex((value) => Math.min(value + 1, triggerOptionCount - 1)); return; }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIndex((value) => Math.max(value - 1, 0)); return; }
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  const item = filteredTriggerItems[highlightIndex];
-                  if (trigger.type === 'variable') insertVariable(item);
-                  else insertMention(item);
+                  if (trigger.type === 'variable') {
+                    const item = filteredVariableTriggerItems[highlightIndex];
+                    if (item) insertVariable(item);
+                  } else {
+                    const item = filteredMentionUsers[highlightIndex];
+                    if (item) insertMention(item);
+                  }
                   return;
                 }
                 if (e.key === 'Escape') { setTrigger(null); return; }

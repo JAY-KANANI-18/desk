@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   Plus, Search, Play, Square, Pencil,
-  Copy, Trash2, Download, Upload, ExternalLink, Zap, X,
+  Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight,
 } from 'lucide-react';
 import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
@@ -10,11 +10,13 @@ import { ListPagination } from '../../components/ui/ListPagination';
 import { DataTable, type DataTableColumn, type DataTableSortDirection } from '../../components/ui/DataTable';
 import { PageLayout } from '../../components/ui/PageLayout';
 import { Button } from '../../components/ui/Button';
+import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { ConfirmDeleteModal } from '../../components/ui/modal';
 
 type FilterStatus = 'all' | WorkflowStatus;
 type WorkflowSortField = 'name' | 'status' | 'lastPublishedAt';
@@ -35,12 +37,11 @@ export function WorkflowList() {
     hasNextPage: false,
     hasPrevPage: false,
   });
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteWorkflow, setDeleteWorkflow] = useState<Workflow | null>(null);
   const [renameId, setRenameId]       = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [sortField, setSortField] = useState<WorkflowSortField>('name');
   const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
   const navigate = useNavigate();
@@ -99,11 +100,18 @@ export function WorkflowList() {
     stopped:   filter === 'stopped' ? pagination.total : workflows.filter((w) => w.status === 'stopped').length,
   };
 
-  const doAction = async (id: string, action: () => Promise<unknown>) => {
+  const doAction = async (id: string, action: () => Promise<unknown>): Promise<boolean> => {
     setActionLoading(id);
-    try { await action(); await load(); }
-    catch (e: any) { alert(e.message); }
-    finally { setActionLoading(null); }
+    try {
+      await action();
+      await load();
+      return true;
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Something went wrong');
+      return false;
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleRenameSubmit = async (id: string) => {
@@ -131,36 +139,20 @@ export function WorkflowList() {
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: 'workflows-search',
-              label: mobileSearchOpen ? 'Close search' : 'Search workflows',
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            {
-              id: 'workflows-new',
-              label: 'New workflow',
-              icon: <Plus size={18} />,
-              onClick: handleCreateNew,
-            },
-          ],
-          panel: mobileSearchOpen ? (
+          panel: (
             <BaseInput
-              autoFocus
               type="search"
               placeholder="Search workflows..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               appearance="toolbar"
               leftIcon={<Search size={15} />}
+              aria-label="Search workflows"
             />
-          ) : null,
+          ),
         }
       : {},
-    [handleCreateNew, isMobile, mobileSearchOpen, searchDraft],
+    [isMobile, searchDraft],
   );
 
   const handleOpenBuilder = (id: string) => {
@@ -183,6 +175,24 @@ export function WorkflowList() {
     if (mobileLoadingMore || loading || !pagination.hasNextPage) return;
     setPage((current) => Math.min(pagination.totalPages, current + 1));
   }, [loading, mobileLoadingMore, pagination.hasNextPage, pagination.totalPages]);
+
+  const closeDeleteWorkflow = () => {
+    if (deleteWorkflow && actionLoading === deleteWorkflow.id) return;
+    setDeleteWorkflow(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteWorkflow) return;
+
+    const deleted = await doAction(
+      deleteWorkflow.id,
+      () => workspaceApi.deleteWorkflow(deleteWorkflow.id),
+    );
+
+    if (deleted) {
+      setDeleteWorkflow(null);
+    }
+  };
 
   const sortedWorkflows = useMemo(() => {
     return [...workflows].sort((a, b) => {
@@ -270,7 +280,6 @@ export function WorkflowList() {
 
   const workflowActions = (wf: Workflow) => {
     const disabled = actionLoading === wf.id;
-    const deleteRequested = deleteConfirmId === wf.id;
 
     return [
       {
@@ -286,7 +295,9 @@ export function WorkflowList() {
             label: 'Publish',
             icon: <Play size={13} />,
             disabled,
-            onClick: () => doAction(wf.id, () => workspaceApi.publishWorkflow(wf.id)),
+            onClick: () => {
+              void doAction(wf.id, () => workspaceApi.publishWorkflow(wf.id));
+            },
           }
         : {
             id: 'stop',
@@ -294,7 +305,9 @@ export function WorkflowList() {
             icon: <Square size={13} />,
             tone: 'danger' as const,
             disabled,
-            onClick: () => doAction(wf.id, () => workspaceApi.stopWorkflow(wf.id)),
+            onClick: () => {
+              void doAction(wf.id, () => workspaceApi.stopWorkflow(wf.id));
+            },
           },
       {
         id: 'rename',
@@ -311,7 +324,9 @@ export function WorkflowList() {
         label: 'Clone',
         icon: <Copy size={13} />,
         disabled,
-        onClick: () => doAction(wf.id, () => workspaceApi.cloneWorkflow(wf.id)),
+        onClick: () => {
+          void doAction(wf.id, () => workspaceApi.cloneWorkflow(wf.id));
+        },
       },
       {
         id: 'export',
@@ -320,40 +335,20 @@ export function WorkflowList() {
         disabled,
         onClick: () => undefined,
       },
-      deleteRequested
-        ? {
-            id: 'confirm-delete',
-            label: 'Confirm delete',
-            icon: <Trash2 size={13} />,
-            tone: 'danger' as const,
-            disabled,
-            onClick: () => doAction(wf.id, () => workspaceApi.deleteWorkflow(wf.id)),
+      {
+        id: 'delete',
+        label: 'Delete',
+        icon: <Trash2 size={13} />,
+        tone: 'danger' as const,
+        disabled,
+        onClick: () => {
+          if (wf.status === 'published') {
+            alert('Stop the workflow first.');
+            return;
           }
-        : {
-            id: 'delete',
-            label: 'Delete',
-            icon: <Trash2 size={13} />,
-            tone: 'danger' as const,
-            disabled,
-            onClick: () => {
-              if (wf.status === 'published') {
-                alert('Stop the workflow first.');
-                return;
-              }
-              setDeleteConfirmId(wf.id);
-            },
-          },
-      ...(deleteRequested
-        ? [
-            {
-              id: 'cancel-delete',
-              label: 'Cancel delete',
-              icon: <X size={13} />,
-              disabled,
-              onClick: () => setDeleteConfirmId(null),
-            },
-          ]
-        : []),
+          setDeleteWorkflow(wf);
+        },
+      },
     ];
   };
 
@@ -469,6 +464,85 @@ export function WorkflowList() {
             }}
             rowActions={workflowActions}
             onRowClick={(workflow) => handleOpenBuilder(workflow.id)}
+            renderMobileCard={(workflow, helpers) => {
+              const lastPublishedLabel = workflow.lastPublishedAt
+                ? fmt(workflow.lastPublishedAt)
+                : 'Never published';
+
+              return (
+                <article
+                  key={workflow.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenBuilder(workflow.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleOpenBuilder(workflow.id);
+                    }
+                  }}
+                  className="relative min-w-0 max-w-full flex-shrink-0 cursor-pointer overflow-visible rounded-2xl bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors hover:bg-slate-50"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-300"
+                  >
+                    <ChevronRight size={15} />
+                  </span>
+
+                  <div className="min-w-0 pr-6">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 ring-1 ring-indigo-100">
+                          <Zap size={17} className="text-indigo-600" />
+                        </span>
+
+                        <div className="min-w-0">
+                          {renameId === workflow.id ? (
+                            <BaseInput
+                              autoFocus
+                              type="text"
+                              value={renameDraft}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) => setRenameDraft(event.target.value)}
+                              onBlur={() => handleRenameSubmit(workflow.id)}
+                              onKeyDown={(event) => {
+                                event.stopPropagation();
+                                if (event.key === 'Enter') handleRenameSubmit(workflow.id);
+                                if (event.key === 'Escape') setRenameId(null);
+                              }}
+                              appearance="inline-edit"
+                              size="sm"
+                              aria-label={`Rename ${workflow.name}`}
+                            />
+                          ) : (
+                            <p className="truncate text-sm font-semibold text-slate-900">
+                              {workflow.name}
+                            </p>
+                          )}
+                          <div className="mt-1">
+                            <StatusDot status={workflow.status} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
+                        {helpers.actions}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Last published
+                      </span>
+                      <span className="min-w-0 truncate text-right text-sm font-semibold text-slate-800">
+                        {lastPublishedLabel}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            }}
             minTableWidth={720}
             mobileLoadMore={{
               hasMore: pagination.hasNextPage,
@@ -488,7 +562,25 @@ export function WorkflowList() {
             }
           />
         </div>
+
+        <FloatingActionButton
+          label="New workflow"
+          icon={<Plus size={24} />}
+          onClick={handleCreateNew}
+        />
       </div>
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteWorkflow)}
+        entityName={deleteWorkflow?.name ?? 'this workflow'}
+        entityType="workflow"
+        title="Delete workflow"
+        body="This workflow will be permanently removed. Published workflows must be stopped before deletion."
+        confirmLabel="Delete workflow"
+        isDeleting={Boolean(deleteWorkflow && actionLoading === deleteWorkflow.id)}
+        onCancel={closeDeleteWorkflow}
+        onConfirm={handleConfirmDelete}
+      />
     </PageLayout>
   );
 }

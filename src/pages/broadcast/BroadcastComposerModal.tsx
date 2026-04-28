@@ -2,12 +2,15 @@ import { ShieldCheck, Users } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { CheckboxInput } from "../../components/ui/inputs";
-import { CenterModal } from "../../components/ui/Modal";
-import { Select } from "../../components/ui/Select";
+import {
+  ChannelSelectMenu,
+  LifecycleSelectMenu,
+  Select,
+} from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
-import { MobileSheet } from "../../components/ui/modal";
-import { useIsMobile } from "../../hooks/useIsMobile";
+import { ResponsiveModal } from "../../components/ui/modal";
 import { BroadcastTagPicker } from "./BroadcastTagPicker";
+
 import { templateVariableKeys } from "./utils";
 import type {
   BroadcastAudiencePreviewState,
@@ -24,6 +27,7 @@ type BroadcastComposerModalProps = {
   onFormChange: (next: BroadcastFormState) => void;
   tags: TagRow[];
   lifecycles: LifecycleRow[];
+
   audiencePreview: BroadcastAudiencePreviewState | null;
   previewLoading: boolean;
   onPreviewAudience: () => void;
@@ -46,6 +50,7 @@ export function BroadcastComposerModal({
   onFormChange,
   tags,
   lifecycles,
+
   audiencePreview,
   previewLoading,
   onPreviewAudience,
@@ -60,27 +65,7 @@ export function BroadcastComposerModal({
   onClose,
   onSend,
 }: BroadcastComposerModalProps) {
-  const isMobile = useIsMobile();
-
   if (!open) return null;
-
-  const channelOptions = [
-    { value: "", label: "Select channel" },
-    ...channels
-      .filter((channel) => channel.status === "connected" || !channel.status)
-      .map((channel) => ({
-        value: String(channel.id),
-        label: `${channel.name ?? channel.type} (${channel.type})`,
-      })),
-  ];
-
-  const lifecycleOptions = [
-    { value: "", label: "Any stage" },
-    ...lifecycles.map((stage) => ({
-      value: stage.id,
-      label: `${stage.emoji ?? ""} ${stage.name}`.trim(),
-    })),
-  ];
 
   const templateOptions = [
     { value: "", label: "Select template" },
@@ -101,22 +86,27 @@ export function BroadcastComposerModal({
         }
       />
 
-      <Select
+      <ChannelSelectMenu
         label="Channel"
         value={form.channelId}
-        onChange={(event) =>
-          onFormChange({ ...form, channelId: event.target.value })
+        channels={channels}
+        onChange={(channelId) =>
+          onFormChange({ ...form, channelId })
         }
-        options={channelOptions}
+        placeholder="Select channel"
+        groupLabel="Connected channels"
+        channelFilter={(channel) => channel.status === "connected" || !channel.status}
+        searchable
       />
 
-      <Select
+      <LifecycleSelectMenu
         label="Lifecycle"
         value={form.lifecycleId}
-        onChange={(event) =>
-          onFormChange({ ...form, lifecycleId: event.target.value })
+        stages={lifecycles}
+        onChange={(stageId) =>
+          onFormChange({ ...form, lifecycleId: stageId ?? "" })
         }
-        options={lifecycleOptions}
+        noneLabel="Any stage"
       />
 
       <BroadcastTagPicker
@@ -125,6 +115,7 @@ export function BroadcastComposerModal({
         tags={tags}
         value={form.tagIds}
         onChange={(tagIds) => onFormChange({ ...form, tagIds })}
+       
       />
 
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
@@ -312,40 +303,29 @@ export function BroadcastComposerModal({
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <MobileSheet
-        isOpen={open}
-        onClose={onClose}
-        fullScreen
-        title={
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Broadcast
-            </p>
-            <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
-              <Users size={18} />
-              New broadcast
-            </h2>
-          </div>
-        }
-        footer={footer}
-      >
-        {content}
-      </MobileSheet>
-    );
-  }
-
   return (
-    <CenterModal
+    <ResponsiveModal
       isOpen={open}
       onClose={onClose}
       title="New broadcast"
+      mobileTitle={
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Broadcast
+          </p>
+          <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
+            <Users size={18} />
+            New broadcast
+          </h2>
+        </div>
+      }
       headerIcon={<Users size={20} />}
       size="md"
       width={512}
       closeOnOverlayClick={false}
       bodyPadding="none"
+      mobileFullScreen
+      mobileFooter={footer}
       secondaryAction={
         <Button
           type="button"
@@ -372,6 +352,6 @@ export function BroadcastComposerModal({
       <div className="h-full overflow-y-auto">
         {content}
       </div>
-    </CenterModal>
+    </ResponsiveModal>
   );
 }

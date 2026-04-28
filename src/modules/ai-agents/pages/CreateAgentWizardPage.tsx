@@ -22,8 +22,14 @@ import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { AiPageLayout } from "../components/AiAgentPrimitives";
 import type { AiAgentType } from "../types";
+import { BackButton } from "../../../components/channels/BackButton";
 
-type WizardStep = "template" | "identity" | "channels" | "permissions" | "publish";
+type WizardStep =
+  | "template"
+  | "identity"
+  | "channels"
+  | "permissions"
+  | "publish";
 
 type AgentWizardForm = {
   templateId: string;
@@ -60,47 +66,80 @@ const templates: Array<{
     id: "sales",
     title: "Sales Agent",
     type: "sales",
-    description: "Qualifies inbound prospects, captures budget and timeline, and creates leads.",
+    description:
+      "Qualifies inbound prospects, captures budget and timeline, and creates leads.",
     icon: <BriefcaseBusiness size={20} />,
     tone: "consultative",
-    tools: ["createLead", "updateContactField", "changeLifecycleStage", "assignConversation", "triggerWorkflow", "escalateHuman"],
-    prompt: "Qualify prospects using need, budget, authority, timeline, and next step. Do not promise discounts or pricing that is not in knowledge.",
+    tools: [
+      "createLead",
+      "updateContactField",
+      "changeLifecycleStage",
+      "assignConversation",
+      "triggerWorkflow",
+      "escalateHuman",
+    ],
+    prompt:
+      "Qualify prospects using need, budget, authority, timeline, and next step. Do not promise discounts or pricing that is not in knowledge.",
   },
   {
     id: "support",
     title: "Support Agent",
     type: "support",
-    description: "Answers product questions from knowledge and escalates unresolved issues.",
+    description:
+      "Answers product questions from knowledge and escalates unresolved issues.",
     icon: <Headphones size={20} />,
     tone: "clear",
-    tools: ["createTicket", "assignConversation", "closeConversation", "triggerWorkflow", "escalateHuman"],
-    prompt: "Resolve support questions from verified knowledge. Ask concise clarifying questions and escalate refunds, legal, and angry customers.",
+    tools: [
+      "createTicket",
+      "assignConversation",
+      "closeConversation",
+      "triggerWorkflow",
+      "escalateHuman",
+    ],
+    prompt:
+      "Resolve support questions from verified knowledge. Ask concise clarifying questions and escalate refunds, legal, and angry customers.",
   },
   {
     id: "receptionist",
     title: "Receptionist",
     type: "receptionist",
-    description: "Greets customers, routes conversations, and gathers missing details.",
+    description:
+      "Greets customers, routes conversations, and gathers missing details.",
     icon: <ConciergeBell size={20} />,
     tone: "warm",
-    tools: ["assignConversation", "updateContactField", "bookMeeting", "escalateHuman"],
-    prompt: "Welcome customers, identify the right team, collect context, and route the conversation quickly.",
+    tools: [
+      "assignConversation",
+      "updateContactField",
+      "bookMeeting",
+      "escalateHuman",
+    ],
+    prompt:
+      "Welcome customers, identify the right team, collect context, and route the conversation quickly.",
   },
   {
     id: "lead_qualifier",
     title: "Lead Qualifier",
     type: "sales",
-    description: "Scores new leads and moves qualified contacts to the right lifecycle stage.",
+    description:
+      "Scores new leads and moves qualified contacts to the right lifecycle stage.",
     icon: <ClipboardList size={20} />,
     tone: "direct",
-    tools: ["createLead", "updateContactField", "changeLifecycleStage", "assignConversation", "escalateHuman"],
-    prompt: "Ask only the minimum questions needed to qualify the lead and route it to the sales team.",
+    tools: [
+      "createLead",
+      "updateContactField",
+      "changeLifecycleStage",
+      "assignConversation",
+      "escalateHuman",
+    ],
+    prompt:
+      "Ask only the minimum questions needed to qualify the lead and route it to the sales team.",
   },
   {
     id: "custom",
     title: "Custom Blank",
     type: "custom",
-    description: "Start from a clean agent and choose only the behavior you want.",
+    description:
+      "Start from a clean agent and choose only the behavior you want.",
     icon: <Bot size={20} />,
     tone: "professional",
     tools: ["escalateHuman"],
@@ -108,8 +147,21 @@ const templates: Array<{
   },
 ];
 
-const channelOptions = ["whatsapp", "instagram", "messenger", "email", "webchat"];
-const languageOptions = ["auto", "English", "Hindi", "Spanish", "Arabic", "Portuguese"];
+const channelOptions = [
+  "whatsapp",
+  "instagram",
+  "messenger",
+  "email",
+  "webchat",
+];
+const languageOptions = [
+  "auto",
+  "English",
+  "Hindi",
+  "Spanish",
+  "Arabic",
+  "Portuguese",
+];
 const approvalModeOptions = [
   { value: "off", label: "No approval" },
   { value: "first_reply", label: "First reply" },
@@ -129,23 +181,33 @@ export function CreateAgentWizardPage() {
     tone: "clear",
     defaultLanguage: "auto",
     channels: ["whatsapp", "instagram", "messenger", "email"],
-    toolsAllowed: ["createTicket", "assignConversation", "closeConversation", "triggerWorkflow", "escalateHuman"],
+    toolsAllowed: [
+      "createTicket",
+      "assignConversation",
+      "closeConversation",
+      "triggerWorkflow",
+      "escalateHuman",
+    ],
     approvalMode: "tools_only",
     canReply: true,
   });
 
   const currentStep = steps[stepIndex].id;
-  const selectedTemplate = templates.find((template) => template.id === form.templateId) || templates[0];
+  const selectedTemplate =
+    templates.find((template) => template.id === form.templateId) ||
+    templates[0];
   const canNext = useMemo(() => {
     if (currentStep === "identity") return form.name.trim().length >= 2;
     if (currentStep === "channels") return form.channels.length > 0;
     return true;
   }, [currentStep, form.name, form.channels.length]);
 
-  const update = (patch: Partial<AgentWizardForm>) => setForm((state) => ({ ...state, ...patch }));
+  const update = (patch: Partial<AgentWizardForm>) =>
+    setForm((state) => ({ ...state, ...patch }));
 
   const chooseTemplate = (templateId: string) => {
-    const template = templates.find((item) => item.id === templateId) || templates[0];
+    const template =
+      templates.find((item) => item.id === templateId) || templates[0];
     update({
       templateId,
       name: template.title,
@@ -165,7 +227,9 @@ export function CreateAgentWizardPage() {
         tone: form.tone,
         defaultLanguage: form.defaultLanguage,
         channelAllowlist: form.channels,
-        toolsAllowed: form.canReply ? form.toolsAllowed : form.toolsAllowed.filter((tool) => tool !== "sendTemplate"),
+        toolsAllowed: form.canReply
+          ? form.toolsAllowed
+          : form.toolsAllowed.filter((tool) => tool !== "sendTemplate"),
         runtimeConfig: {
           maxAutoReplies: 5,
           confidenceThreshold: 0.65,
@@ -198,15 +262,11 @@ export function CreateAgentWizardPage() {
       title="Launch a supervised AI teammate"
       description="Start from a proven workflow, connect channels, choose permissions, then test before going live."
       actions={
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          leftIcon={<ArrowLeft size={16} />}
+        <BackButton
+          ariaLabel="Back"
           onClick={() => navigate("/ai-agents")}
-        >
-          Back
-        </Button>
+          size="sm"
+        />
       }
     >
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[280px_1fr]">
@@ -223,13 +283,15 @@ export function CreateAgentWizardPage() {
                 preserveChildLayout
               >
                 <span className="flex w-full items-center gap-3">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
-                    index < stepIndex
-                      ? "bg-emerald-500 text-white"
-                      : index === stepIndex
-                        ? "bg-white text-slate-950"
-                        : "bg-slate-100 text-slate-500"
-                  }`}>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                      index < stepIndex
+                        ? "bg-emerald-500 text-white"
+                        : index === stepIndex
+                          ? "bg-white text-slate-950"
+                          : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
                     {index < stepIndex ? <Check size={14} /> : index + 1}
                   </span>
                   <span className="text-sm font-semibold">{step.label}</span>
@@ -243,8 +305,12 @@ export function CreateAgentWizardPage() {
           <div className="mx-auto max-w-5xl">
             {currentStep === "template" ? (
               <section>
-                <h2 className="text-lg font-semibold text-slate-950">Choose a template</h2>
-                <p className="mt-1 text-sm text-slate-500">You can tune every setting after creation.</p>
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Choose a template
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  You can tune every setting after creation.
+                </p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {templates.map((template) => (
                     <Button
@@ -264,11 +330,17 @@ export function CreateAgentWizardPage() {
                             {template.icon}
                           </span>
                           <span>
-                            <span className="block font-semibold text-slate-950">{template.title}</span>
-                            <span className="block text-xs text-slate-500">{template.type}</span>
+                            <span className="block font-semibold text-slate-950">
+                              {template.title}
+                            </span>
+                            <span className="block text-xs text-slate-500">
+                              {template.type}
+                            </span>
                           </span>
                         </span>
-                        <span className="mt-4 block text-sm font-normal text-slate-500">{template.description}</span>
+                        <span className="mt-4 block text-sm font-normal text-slate-500">
+                          {template.description}
+                        </span>
                       </span>
                     </Button>
                   ))}
@@ -281,30 +353,50 @@ export function CreateAgentWizardPage() {
                 <div className="flex items-center gap-3">
                   <Sparkles size={20} className="text-slate-500" />
                   <div>
-                    <h2 className="text-lg font-semibold text-slate-950">Identity</h2>
-                    <p className="text-sm text-slate-500">This is how teammates recognize the agent in Axodesk.</p>
+                    <h2 className="text-lg font-semibold text-slate-950">
+                      Identity
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      This is how teammates recognize the agent in Axodesk.
+                    </p>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <Field label="Name" value={form.name} onChange={(name) => update({ name })} />
-                  <Field label="Tone" value={form.tone} onChange={(tone) => update({ tone })} />
+                  <Field
+                    label="Name"
+                    value={form.name}
+                    onChange={(name) => update({ name })}
+                  />
+                  <Field
+                    label="Tone"
+                    value={form.tone}
+                    onChange={(tone) => update({ tone })}
+                  />
                   <div className="md:col-span-2">
                     <TextareaInput
                       label="Description"
                       value={form.description}
-                      onChange={(event) => update({ description: event.target.value })}
+                      onChange={(event) =>
+                        update({ description: event.target.value })
+                      }
                       rows={4}
                     />
                   </div>
                   <Select
                     label="Language"
                     value={form.defaultLanguage}
-                    onChange={(event) => update({ defaultLanguage: event.target.value })}
-                    options={languageOptions.map((language) => ({ value: language, label: language }))}
+                    onChange={(event) =>
+                      update({ defaultLanguage: event.target.value })
+                    }
+                    options={languageOptions.map((language) => ({
+                      value: language,
+                      label: language,
+                    }))}
                   />
                   <div className="hidden items-end gap-2 text-sm font-semibold text-slate-500 md:flex">
                     <Languages size={15} />
-                    Keep language set to auto when channels serve multiple regions.
+                    Keep language set to auto when channels serve multiple
+                    regions.
                   </div>
                 </div>
               </section>
@@ -312,8 +404,12 @@ export function CreateAgentWizardPage() {
 
             {currentStep === "channels" ? (
               <section>
-                <h2 className="text-lg font-semibold text-slate-950">Channels</h2>
-                <p className="mt-1 text-sm text-slate-500">Choose where this agent is allowed to reply.</p>
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Channels
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Choose where this agent is allowed to reply.
+                </p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {channelOptions.map((channel) => {
                     const checked = form.channels.includes(channel);
@@ -340,7 +436,9 @@ export function CreateAgentWizardPage() {
                             <MessageCircle size={18} />
                             {channel}
                           </span>
-                          {checked ? <Check size={18} className="text-emerald-600" /> : null}
+                          {checked ? (
+                            <Check size={18} className="text-emerald-600" />
+                          ) : null}
                         </span>
                       </Button>
                     );
@@ -351,15 +449,49 @@ export function CreateAgentWizardPage() {
 
             {currentStep === "permissions" ? (
               <section>
-                <h2 className="text-lg font-semibold text-slate-950">Permissions</h2>
-                <p className="mt-1 text-sm text-slate-500">Start conservative. Managers can loosen approvals after testing.</p>
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Permissions
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Start conservative. Managers can loosen approvals after
+                  testing.
+                </p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  <ToggleSetting label="Can reply automatically" checked={form.canReply} onChange={(canReply) => update({ canReply })} />
-                  <PermissionTool name="assignConversation" label="Can assign conversations" form={form} update={update} />
-                  <PermissionTool name="createLead" label="Can create leads" form={form} update={update} />
-                  <PermissionTool name="updateContactField" label="Can update CRM fields" form={form} update={update} />
-                  <PermissionTool name="triggerWorkflow" label="Can trigger workflows" form={form} update={update} />
-                  <PermissionTool name="escalateHuman" label="Can escalate to humans" form={form} update={update} />
+                  <ToggleSetting
+                    label="Can reply automatically"
+                    checked={form.canReply}
+                    onChange={(canReply) => update({ canReply })}
+                  />
+                  <PermissionTool
+                    name="assignConversation"
+                    label="Can assign conversations"
+                    form={form}
+                    update={update}
+                  />
+                  <PermissionTool
+                    name="createLead"
+                    label="Can create leads"
+                    form={form}
+                    update={update}
+                  />
+                  <PermissionTool
+                    name="updateContactField"
+                    label="Can update CRM fields"
+                    form={form}
+                    update={update}
+                  />
+                  <PermissionTool
+                    name="triggerWorkflow"
+                    label="Can trigger workflows"
+                    form={form}
+                    update={update}
+                  />
+                  <PermissionTool
+                    name="escalateHuman"
+                    label="Can escalate to humans"
+                    form={form}
+                    update={update}
+                  />
                 </div>
                 <div className="mt-5 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
                   <LockKeyhole size={18} className="mt-7 text-slate-500" />
@@ -367,7 +499,9 @@ export function CreateAgentWizardPage() {
                     <Select
                       label="Needs approval for actions"
                       value={form.approvalMode}
-                      onChange={(event) => update({ approvalMode: event.target.value })}
+                      onChange={(event) =>
+                        update({ approvalMode: event.target.value })
+                      }
                       options={approvalModeOptions}
                     />
                   </div>
@@ -384,7 +518,10 @@ export function CreateAgentWizardPage() {
                   <Review label="Tone" value={form.tone} />
                   <Review label="Language" value={form.defaultLanguage} />
                   <Review label="Channels" value={form.channels.join(", ")} />
-                  <Review label="Approval mode" value={form.approvalMode.replace(/_/g, " ")} />
+                  <Review
+                    label="Approval mode"
+                    value={form.approvalMode.replace(/_/g, " ")}
+                  />
                 </div>
               </section>
             ) : null}
@@ -429,7 +566,11 @@ export function CreateAgentWizardPage() {
                   variant="dark"
                   disabled={!canNext}
                   rightIcon={<ArrowRight size={16} />}
-                  onClick={() => setStepIndex((index) => Math.min(steps.length - 1, index + 1))}
+                  onClick={() =>
+                    setStepIndex((index) =>
+                      Math.min(steps.length - 1, index + 1),
+                    )
+                  }
                 >
                   Continue
                 </Button>
@@ -442,7 +583,15 @@ export function CreateAgentWizardPage() {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <BaseInput
       label={label}
@@ -452,11 +601,23 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   );
 }
 
-function ToggleSetting({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function ToggleSetting({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-lg border p-4 ${
-      checked ? "border-emerald-300 bg-emerald-50/40" : "border-slate-200 bg-white"
-    }`}>
+    <div
+      className={`flex items-center justify-between gap-3 rounded-lg border p-4 ${
+        checked
+          ? "border-emerald-300 bg-emerald-50/40"
+          : "border-slate-200 bg-white"
+      }`}
+    >
       <span className="text-sm font-semibold text-slate-800">{label}</span>
       <ToggleSwitch checked={checked} onChange={onChange} aria-label={label} />
     </div>
@@ -493,8 +654,12 @@ function PermissionTool({
 function Review({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-slate-100 bg-slate-50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold capitalize text-slate-900">{value || "Not set"}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
+        {value || "Not set"}
+      </p>
     </div>
   );
 }

@@ -91,6 +91,14 @@ export interface StoryRepliesConfig {
     updatedAt?: string | null;
 }
 
+export interface WebsiteChatUpdatePayload {
+    welcomeMessage?: string;
+    awayMessage?: string;
+    primaryColor?: string;
+    agentName?: string;
+    position?: 'bottom-right' | 'bottom-left';
+}
+
 export interface AutomationTarget {
     id: string;
     title: string;
@@ -264,7 +272,7 @@ rotateWebchatToken: (workspaceId: string, channelId: string) =>
 // updateWebsiteChatChannel already exists in your file — just fix the URL to match your BE:
 // Change: api.put(`/channels/website-chat/${channelId}`, data)
 // To:
-updateWebsiteChatChannel: ( channelId: string, data: any) =>
+updateWebsiteChatChannel: (channelId: string, data: WebsiteChatUpdatePayload) =>
     api.patch(`/channels/webchat/${channelId}`, data),
 
 connectMsg91: (payload: {

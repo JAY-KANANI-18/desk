@@ -406,7 +406,7 @@ body {
   }
 }
 
-@media (max-width: 767px) {
+/* @media (max-width: 767px) {
   .mobile-borderless :where(
     .border,
     .border-0,
@@ -433,11 +433,12 @@ body {
   .mobile-borderless :where(button.border):not(.bg-indigo-600):not(.bg-red-600):not(.bg-gray-900) {
     background-color: #f1f5f9;
   }
-}
+} */
 
 /* Scrollbar Styles */
 ::-webkit-scrollbar {
-  width: 8px;
+  /* width: 8px; */
+  width: 0px;
   height: 8px;
 }
 

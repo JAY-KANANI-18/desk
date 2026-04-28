@@ -1,13 +1,17 @@
-import React, { ReactNode } from 'react';
-import { ArrowLeft, X } from 'lucide-react';
-import { IconButton } from '../../../components/ui/button/IconButton';
-import { DisclosureButton } from '../../../components/ui/button/DisclosureButton';
-import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
-import { BaseInput, type BaseInputProps } from '../../../components/ui/inputs/BaseInput';
-import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
-import { TagInput as SharedTagInput } from '../../../components/ui/inputs/TagInput';
-import { BaseSelect } from '../../../components/ui/select/BaseSelect';
-import { useIsMobile } from '../../../hooks/useIsMobile';
+import React, { ReactNode } from "react";
+import { ArrowLeft, X } from "lucide-react";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { DisclosureButton } from "../../../components/ui/button/DisclosureButton";
+import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
+import {
+  BaseInput,
+  type BaseInputProps,
+} from "../../../components/ui/inputs/BaseInput";
+import { TextareaInput } from "../../../components/ui/inputs/TextareaInput";
+import { TagInput as SharedTagInput } from "../../../components/ui/inputs/TagInput";
+import { BaseSelect } from "../../../components/ui/select/BaseSelect";
+import { useIsMobile } from "../../../hooks/useIsMobile";
+import { BackButton } from "../../../components/channels/BackButton";
 
 interface PanelShellProps {
   title: string;
@@ -16,27 +20,27 @@ interface PanelShellProps {
   children: ReactNode;
 }
 
-export function PanelShell({ title, subtitle, onClose, children }: PanelShellProps) {
+export function PanelShell({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: PanelShellProps) {
   const isMobile = useIsMobile();
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
-      <div className="flex flex-shrink-0 items-start justify-between border-b border-gray-100 px-4 py-3">
+      <div className="flex flex-shrink-0 items-start  border-b border-gray-100  py-3">
+          {onClose ? (
+            <BackButton ariaLabel="Back" onClick={onClose} size={isMobile ? "sm" : "md"} />
+          ) : null}
         <div>
           <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          {subtitle ? <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>
+          ) : null}
         </div>
 
-        {onClose ? (
-          <IconButton
-            onClick={onClose}
-            aria-label={isMobile ? 'Back to canvas' : 'Close panel'}
-            icon={isMobile ? <ArrowLeft size={16} /> : <X size={14} />}
-            variant="ghost"
-            size="sm"
-            className="ml-3 flex-shrink-0"
-          />
-        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto">{children}</div>
@@ -57,7 +61,7 @@ export function Section({
   children,
   collapsible = false,
   defaultOpen = true,
-  className = '',
+  className = "",
 }: SectionProps) {
   const [open, setOpen] = React.useState(defaultOpen);
 
@@ -74,7 +78,9 @@ export function Section({
         </DisclosureButton>
       ) : (
         <div className="flex w-full items-center justify-between px-4 py-3 text-left">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{title}</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            {title}
+          </span>
         </div>
       )}
 
@@ -92,7 +98,14 @@ interface FieldProps {
   className?: string;
 }
 
-export function Field({ label, required, hint, error, children, className = '' }: FieldProps) {
+export function Field({
+  label,
+  required,
+  hint,
+  error,
+  children,
+  className = "",
+}: FieldProps) {
   return (
     <div className={`mb-3 ${className}`}>
       <label className="mb-1.5 block text-xs font-medium text-gray-600">
@@ -100,7 +113,9 @@ export function Field({ label, required, hint, error, children, className = '' }
         {required ? <span className="ml-0.5 text-gray-400">*</span> : null}
       </label>
       {children}
-      {hint && !error ? <p className="mt-1 text-xs text-gray-400">{hint}</p> : null}
+      {hint && !error ? (
+        <p className="mt-1 text-xs text-gray-400">{hint}</p>
+      ) : null}
       {error ? <p className="mt-1 text-xs text-red-500">{error}</p> : null}
     </div>
   );
@@ -114,12 +129,20 @@ interface ToggleRowProps {
   disabled?: boolean;
 }
 
-export function ToggleRow({ label, description, checked, onChange, disabled }: ToggleRowProps) {
+export function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: ToggleRowProps) {
   return (
     <div className="flex items-start justify-between gap-3 py-2">
       <div className="flex-1">
         <p className="text-sm text-gray-700">{label}</p>
-        {description ? <p className="mt-0.5 text-xs text-gray-400">{description}</p> : null}
+        {description ? (
+          <p className="mt-0.5 text-xs text-gray-400">{description}</p>
+        ) : null}
       </div>
       <ToggleSwitch
         checked={checked}
@@ -141,9 +164,15 @@ interface SelectProps {
   className?: string;
 }
 
-export function Select({ value, onChange, options, placeholder, className = '' }: SelectProps) {
+export function Select({
+  value,
+  onChange,
+  options,
+  placeholder,
+  className = "",
+}: SelectProps) {
   const resolvedOptions = placeholder
-    ? [{ value: '', label: placeholder }, ...options]
+    ? [{ value: "", label: placeholder }, ...options]
     : options;
 
   return (
@@ -164,7 +193,7 @@ interface TextInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  type?: BaseInputProps['type'];
+  type?: BaseInputProps["type"];
 }
 
 export function TextInput({
@@ -172,8 +201,8 @@ export function TextInput({
   onChange,
   placeholder,
   disabled,
-  className = '',
-  type = 'text',
+  className = "",
+  type = "text",
 }: TextInputProps) {
   return (
     <BaseInput
@@ -202,7 +231,7 @@ export function Textarea({
   onChange,
   placeholder,
   rows = 4,
-  className = '',
+  className = "",
   maxLength,
 }: TextareaProps) {
   return (
@@ -232,13 +261,25 @@ interface TagInputProps {
   suggestions?: any[];
 }
 
-export function TagInput({ values, onChange, placeholder, suggestions = [] }: TagInputProps) {
+export function TagInput({
+  values,
+  onChange,
+  placeholder,
+  suggestions = [],
+}: TagInputProps) {
   const normalizedSuggestions = suggestions.map((suggestion) => ({
-    value: String(suggestion?.id ?? suggestion?.value ?? suggestion?.name ?? ''),
-    label: String(suggestion?.name ?? suggestion?.label ?? suggestion?.id ?? ''),
+    value: String(
+      suggestion?.id ?? suggestion?.value ?? suggestion?.name ?? "",
+    ),
+    label: String(
+      suggestion?.name ?? suggestion?.label ?? suggestion?.id ?? "",
+    ),
   }));
   const labelByValue = new Map(
-    normalizedSuggestions.map((suggestion) => [suggestion.value, suggestion.label]),
+    normalizedSuggestions.map((suggestion) => [
+      suggestion.value,
+      suggestion.label,
+    ]),
   );
 
   return (
@@ -255,13 +296,15 @@ export function TagInput({ values, onChange, placeholder, suggestions = [] }: Ta
 
 interface InfoBoxProps {
   children: ReactNode;
-  type?: 'info' | 'warning' | 'tip';
+  type?: "info" | "warning" | "tip";
 }
 
-export function InfoBox({ children, type = 'info' }: InfoBoxProps) {
+export function InfoBox({ children, type = "info" }: InfoBoxProps) {
   return (
     <div className="flex gap-2 rounded-md border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-500">
-      <span className="mt-px flex-shrink-0">{type === 'warning' ? '!' : 'i'}</span>
+      <span className="mt-px flex-shrink-0">
+        {type === "warning" ? "!" : "i"}
+      </span>
       <span className="leading-relaxed">{children}</span>
     </div>
   );
@@ -269,13 +312,19 @@ export function InfoBox({ children, type = 'info' }: InfoBoxProps) {
 
 interface DurationInputProps {
   value: number;
-  unit: 'seconds' | 'minutes' | 'hours' | 'days';
+  unit: "seconds" | "minutes" | "hours" | "days";
   onValueChange: (v: number) => void;
-  onUnitChange: (u: 'seconds' | 'minutes' | 'hours' | 'days') => void;
+  onUnitChange: (u: "seconds" | "minutes" | "hours" | "days") => void;
   max?: number;
 }
 
-export function DurationInput({ value, unit, onValueChange, onUnitChange, max }: DurationInputProps) {
+export function DurationInput({
+  value,
+  unit,
+  onValueChange,
+  onUnitChange,
+  max,
+}: DurationInputProps) {
   return (
     <div className="flex gap-2">
       <BaseInput
@@ -289,13 +338,15 @@ export function DurationInput({ value, unit, onValueChange, onUnitChange, max }:
       />
       <BaseSelect
         value={unit}
-        onChange={(nextUnit) => onUnitChange(nextUnit as DurationInputProps['unit'])}
+        onChange={(nextUnit) =>
+          onUnitChange(nextUnit as DurationInputProps["unit"])
+        }
         size="sm"
         options={[
-          { value: 'seconds', label: 'Seconds' },
-          { value: 'minutes', label: 'Minutes' },
-          { value: 'hours', label: 'Hours' },
-          { value: 'days', label: 'Days' },
+          { value: "seconds", label: "Seconds" },
+          { value: "minutes", label: "Minutes" },
+          { value: "hours", label: "Hours" },
+          { value: "days", label: "Days" },
         ]}
         className="w-32"
       />

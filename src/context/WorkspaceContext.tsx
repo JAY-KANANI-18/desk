@@ -46,10 +46,10 @@ interface WorkspaceContextType {
   ) => Promise<any>;
   uploadFile: (file: File, entityId: string) => Promise<string>;
   createWorkspace: (ws: WorkspaceCreate) => void;
-  deleteWorkspace: (ws: Workspace) => void;
+  deleteWorkspace: (ws: Workspace) => Promise<void>;
   setWorkspaces: (ws: Workspace[]) => void;
   setActiveWorkspaceFunc: (ws: Workspace) => void;
-  refreshWorkspaceUsers:() => void
+  refreshWorkspaceUsers:() => Promise<void>
 }
 
 interface User {
@@ -106,12 +106,14 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   let { organizations, activeOrganization, refreshOrganizations, setActiveOrganizationFunc } =
     useOrganization();
 
-  const fetchWorkspaces = () => {
+  const fetchWorkspaces = async () => {
     setWorkspaceLoading(true);
-    workspaceApi.me().then((res) => {
+    try {
+      const res = await workspaceApi.me();
       setWorkspaces(res);
+    } finally {
       setWorkspaceLoading(false);
-    });
+    }
 
   };
   useEffect(() => {
@@ -229,10 +231,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  const deleteWorkspace = (ws: Workspace) => {
-    workspaceApi.delete(ws.id).then(() => {
-      fetchWorkspaces();
-    });
+  const deleteWorkspace = async (ws: Workspace) => {
+    await workspaceApi.delete(ws.id);
+    await fetchWorkspaces();
   };
 
     const uploadFile = useCallback(

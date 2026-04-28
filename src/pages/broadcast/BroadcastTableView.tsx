@@ -5,6 +5,7 @@ import {
   type DataTableColumn,
 } from "../../components/ui/DataTable";
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
+import { channelConfig } from "../inbox/data";
 import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastSortableField } from "./types";
 import { formatDateTime } from "./utils";
@@ -150,83 +151,80 @@ export function BroadcastTableView({
         loadingLabel: "Loading more broadcasts...",
       }}
       footer={footer}
-      renderMobileCard={(run) => (
-        <article
-          key={run.id}
-          role="button"
-          tabIndex={0}
-          onClick={() => onOpenDetail(run)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onOpenDetail(run);
-            }
-          }}
-          className="relative min-w-0 max-w-full flex-shrink-0 cursor-pointer overflow-visible rounded-[28px] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)] transition-colors hover:bg-slate-50"
-        >
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300"
-          >
-            <ChevronRight size={16} />
-          </span>
+      renderMobileCard={(run) => {
+        const channelType = run.channel?.type ?? "";
+        const channelMeta = channelConfig[channelType];
+        const channelName =
+          run.channel?.name ?? channelMeta?.label ?? "Channel";
+        const scheduleTime = run.scheduledAt
+          ? formatDateTime(run.scheduledAt)
+          : formatDateTime(run.createdAt);
 
-          <div className="min-w-0 pr-7">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <p className="truncate text-[17px] font-semibold leading-tight text-slate-900">
-                    {run.name}
-                  </p>
+        return (
+          <article
+            key={run.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenDetail(run)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenDetail(run);
+              }
+            }}
+            className="relative min-w-0 max-w-full flex-shrink-0 cursor-pointer overflow-visible rounded-2xl bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors hover:bg-slate-50"
+          >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-300"
+            >
+              <ChevronRight size={15} />
+            </span>
+
+            <div className="min-w-0 pr-6">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-100">
+                    {channelMeta?.icon ? (
+                      <img
+                        src={channelMeta.icon}
+                        alt={channelMeta.label}
+                        className="h-6 w-6 object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold uppercase text-slate-500">
+                        {channelType.slice(0, 2) || "CH"}
+                      </span>
+                    )}
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {channelName}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-medium text-slate-400">
+                      {run.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0">
                   <BroadcastStatusTag status={run.status} size="sm" />
                 </div>
-                <p className="mt-1 truncate text-sm font-medium text-slate-500">
-                  {run.channel?.name ?? "-"}{" "}
-                  <span className="text-slate-400">({run.channel?.type ?? "?"})</span>
-                </p>
               </div>
-            </div>
 
-            <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 rounded-[22px] bg-white p-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   Schedule
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-700">
-                  {run.scheduledAt
-                    ? formatDateTime(run.scheduledAt)
-                    : formatDateTime(run.createdAt)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Mode
-                </p>
-                <p className="mt-1 text-sm font-medium capitalize text-slate-700">
-                  {run.contentMode}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Audience
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-700">
-                  {run.totalAudience}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Queue
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-700">
-                  {run.queuedCount} queued
-                  {run.failedEnqueue > 0 ? ` / ${run.failedEnqueue} failed` : ""}
-                </p>
+                </span>
+                <span className="min-w-0 truncate text-right text-sm font-semibold text-slate-800">
+                  {scheduleTime}
+                </span>
               </div>
             </div>
-          </div>
-        </article>
-      )}
+          </article>
+        );
+      }}
     />
   );
 }

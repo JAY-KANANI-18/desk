@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ExternalLink, ChevronRight } from "lucide-react";
-import { ChannelHeaderBackButton } from "../components/channels/ChannelHeaderBackButton";
+import { BackButton } from "../components/channels/BackButton";
 import { Button } from "../components/ui/button/Button";
 import { BaseInput } from "../components/ui/inputs/BaseInput";
 import { PageLayout } from "../components/ui/PageLayout";
@@ -79,7 +79,7 @@ export const ChannelCatalogView = () => {
       eyebrow="Channels"
       title="Channel catalog"
       leading={
-        <ChannelHeaderBackButton
+        <BackButton
           ariaLabel="Back to channels"
           onClick={() => navigate("/channels")}
         />

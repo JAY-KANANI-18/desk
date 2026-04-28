@@ -6,12 +6,13 @@ import type { AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
 import { Button } from '../../../components/ui/Button';
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { CenterModal } from '../../../components/ui/Modal';
 import { Tag } from '../../../components/ui/Tag';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
 import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
-import { MobileSheet } from '../../../components/ui/modal';
+import { ConfirmDeleteModal, MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 
 type PromptFormState = {
@@ -33,8 +34,11 @@ export const AIPrompts = () => {
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editPrompt, setEditPrompt] = useState<AIPrompt | null>(null);
+  const [deletePrompt, setDeletePrompt] = useState<AIPrompt | null>(null);
   const [form, setForm] = useState<PromptFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,12 +106,30 @@ export const AIPrompts = () => {
     }
   };
 
-  const handleDelete = async (prompt: AIPrompt) => {
+  const requestDelete = (prompt: AIPrompt) => {
+    setDeletePrompt(prompt);
+    setDeleteError(null);
+  };
+
+  const closeDelete = () => {
+    if (deleting) return;
+    setDeletePrompt(null);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletePrompt || deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
     try {
-      await workspaceApi.deleteAIPrompt(prompt.id);
+      await workspaceApi.deleteAIPrompt(deletePrompt.id);
       await load();
+      setDeletePrompt(null);
     } catch {
-      setError('Failed to delete prompt.');
+      setDeleteError('Failed to delete prompt.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -185,13 +207,14 @@ export const AIPrompts = () => {
             </div>
           </div>
 
-          <Button
-            onClick={openCreate}
-            leftIcon={<Plus size={16} />}
-            fullWidth={isMobile}
-          >
-            Add AI prompt
-          </Button>
+          {!isMobile ? (
+            <Button
+              onClick={openCreate}
+              leftIcon={<Plus size={16} />}
+            >
+              Add AI prompt
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -232,7 +255,7 @@ export const AIPrompts = () => {
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {!prompt.isDefault && (
                     <Button
-                      onClick={() => void handleDelete(prompt)}
+                      onClick={() => requestDelete(prompt)}
                       variant="danger-ghost"
        
                       leftIcon={<Trash2 size={15} />}
@@ -267,6 +290,12 @@ export const AIPrompts = () => {
         )}
       </div>
 
+      <FloatingActionButton
+        label="Add AI prompt"
+        icon={<Plus size={24} />}
+        onClick={openCreate}
+      />
+
       {showEditor && isMobile ? (
         <MobileSheet
           isOpen={showEditor}
@@ -290,6 +319,27 @@ export const AIPrompts = () => {
           {editorContent}
         </CenterModal>
       ) : null}
+
+      <ConfirmDeleteModal
+        open={Boolean(deletePrompt)}
+        entityName={deletePrompt?.name ?? 'this prompt'}
+        entityType="AI prompt"
+        title="Delete AI prompt"
+        body={
+          <div className="space-y-2">
+            <p>
+              This prompt will be removed from the inbox rewrite actions list.
+            </p>
+            {deleteError ? (
+              <p className="font-medium text-red-600">{deleteError}</p>
+            ) : null}
+          </div>
+        }
+        confirmLabel="Delete prompt"
+        isDeleting={deleting}
+        onCancel={closeDelete}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

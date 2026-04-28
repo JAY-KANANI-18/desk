@@ -1,30 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Plus, Search, Smile, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
-import { MobileSheet } from '../../../components/ui/modal';
+import { ConfirmDeleteModal } from '../../../components/ui/modal';
 import { Button } from '../../../components/ui/Button';
 import { DataTable, type DataTableColumn } from '../../../components/ui/DataTable';
 import { ListPagination } from '../../../components/ui/ListPagination';
-import { CenterModal } from '../../../components/ui/Modal';
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { Tag } from '../../../components/ui/Tag';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
-import { TagColorSwatchPicker } from '../../../components/ui/inputs/TagColorSwatchPicker';
-import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
+import {
+  INITIAL_WORKSPACE_TAG_FORM,
+  WorkspaceTagFormModal,
+  type WorkspaceTagFormValue,
+} from '../../../components/ui/tag/WorkspaceTagFormModal';
 import { useMobileHeaderActions } from '../../../components/mobileHeaderActions';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { workspaceApi } from '../../../lib/workspaceApi';
-import { resolveTagBaseColor, TAG_COLOR_OPTIONS } from '../../../lib/tagAppearance';
 import { DataLoader } from '../../Loader';
-import { EmojiPicker } from '../../inbox/EmojiPicker';
 import { SectionError } from '../components/SectionError';
 import type { ConversationTag } from '../types';
-
-const INITIAL_TAG = {
-  name: '',
-  color: 'tag-indigo',
-  emoji: '',
-  description: '',
-};
 
 export const Tags = () => {
   const isMobile = useIsMobile();
@@ -33,12 +27,14 @@ export const Tags = () => {
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [newTag, setNewTag] = useState(INITIAL_TAG);
+  const [newTag, setNewTag] = useState<WorkspaceTagFormValue>(INITIAL_WORKSPACE_TAG_FORM);
+  const [editingTag, setEditingTag] = useState<ConversationTag | null>(null);
+  const [deleteTag, setDeleteTag] = useState<ConversationTag | null>(null);
   const [adding, setAdding] = useState(false);
-  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -48,11 +44,28 @@ export const Tags = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
-  const emojiRef = useRef<HTMLDivElement>(null);
 
   const closeAddTag = useCallback(() => {
     setShowAdd(false);
-    setEmojiOpen(false);
+    setEditingTag(null);
+    setNewTag(INITIAL_WORKSPACE_TAG_FORM);
+  }, []);
+
+  const openCreateTag = useCallback(() => {
+    setEditingTag(null);
+    setNewTag(INITIAL_WORKSPACE_TAG_FORM);
+    setShowAdd(true);
+  }, []);
+
+  const openEditTag = useCallback((tag: ConversationTag) => {
+    setEditingTag(tag);
+    setNewTag({
+      name: tag.name,
+      color: tag.bundle?.color || tag.color || INITIAL_WORKSPACE_TAG_FORM.color,
+      emoji: tag.bundle?.emoji || tag.emoji || '',
+      description: tag.bundle?.description || tag.description || '',
+    });
+    setShowAdd(true);
   }, []);
 
   const load = useCallback(async (nextPage = page, nextSearch = search) => {
@@ -109,36 +122,56 @@ export const Tags = () => {
     return () => window.clearTimeout(timer);
   }, [searchDraft]);
 
-  useEffect(() => {
-    if (!emojiOpen) return;
-
-    const handleOutside = (event: MouseEvent) => {
-      if (!emojiRef.current?.contains(event.target as Node)) {
-        setEmojiOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [emojiOpen]);
-
-  const handleAdd = async () => {
+  const handleSaveTag = async () => {
     if (!newTag.name.trim() || adding) return;
 
     setAdding(true);
     try {
-      await workspaceApi.addTag(newTag);
+      if (editingTag) {
+        await workspaceApi.updateTag(editingTag.id, {
+          ...newTag,
+          name: newTag.name.trim(),
+          description: newTag.description.trim(),
+        });
+      } else {
+        await workspaceApi.addTag({
+          ...newTag,
+          name: newTag.name.trim(),
+          description: newTag.description.trim(),
+        });
+      }
       await load(1, search);
-      setNewTag(INITIAL_TAG);
       closeAddTag();
     } finally {
       setAdding(false);
     }
   };
 
-  const handleDelete = async (id: number | string) => {
-    await workspaceApi.deleteTag(id);
-    await load(page, search);
+  const closeDeleteTag = useCallback(() => {
+    if (deleting) return;
+    setDeleteTag(null);
+    setDeleteError(null);
+  }, [deleting]);
+
+  const requestDeleteTag = useCallback((tag: ConversationTag) => {
+    setDeleteTag(tag);
+    setDeleteError(null);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTag || deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await workspaceApi.deleteTag(deleteTag.id);
+      await load(page, search);
+      setDeleteTag(null);
+    } catch {
+      setDeleteError('Failed to delete tag.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const loadNextMobilePage = useCallback(() => {
@@ -149,36 +182,20 @@ export const Tags = () => {
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: 'tags-search',
-              label: mobileSearchOpen ? 'Close search' : 'Search tags',
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            {
-              id: 'tags-add',
-              label: 'Add tag',
-              icon: <Plus size={18} />,
-              onClick: () => setShowAdd(true),
-            },
-          ],
-          panel: mobileSearchOpen ? (
+          panel: (
             <BaseInput
-              autoFocus
               appearance="toolbar"
               type="search"
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               placeholder="Search tags..."
               leftIcon={<Search size={15} />}
+              aria-label="Search tags"
             />
-          ) : null,
+          ),
         }
       : {},
-    [isMobile, mobileSearchOpen, searchDraft],
+    [isMobile, searchDraft],
   );
 
   if (loading) return <DataLoader type="tags" />;
@@ -217,82 +234,6 @@ export const Tags = () => {
     },
   ];
 
-  const formContent = (
-    <div className="space-y-4 p-4 md:p-0">
-      <Tag
-        label={newTag.name || 'New tag'}
-        emoji={newTag.emoji || 'Tag'}
-        bgColor={newTag.color}
-        maxWidth="100%"
-      />
-
-      <div className="grid grid-cols-[76px_1fr] gap-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Emoji</label>
-          <div className="relative" ref={emojiRef}>
-            <Button
-              onClick={() => setEmojiOpen((prev) => !prev)}
-              variant="secondary"
-              fullWidth
-              preserveChildLayout
-            >
-              <span className="flex w-full items-center justify-between">
-                <span className="text-lg leading-none">{newTag.emoji || 'Tag'}</span>
-                <Smile size={16} className="text-indigo-600" />
-              </span>
-            </Button>
-            {emojiOpen ? (
-              <EmojiPicker
-                mode="tag"
-                accent="indigo"
-                onSelect={(emoji) => {
-                  setNewTag({ ...newTag, emoji });
-                  setEmojiOpen(false);
-                }}
-              />
-            ) : null}
-          </div>
-        </div>
-
-        <BaseInput
-          label="Name"
-          value={newTag.name}
-          onChange={(e) => setNewTag({ ...newTag, name: e.target.value })}
-          placeholder="e.g. Priority"
-        />
-      </div>
-
-      <TagColorSwatchPicker
-        label="Colors"
-        value={newTag.color}
-        options={TAG_COLOR_OPTIONS}
-        onChange={(color) => setNewTag({ ...newTag, color })}
-      />
-
-      <TextareaInput
-        label="Description"
-        value={newTag.description}
-        onChange={(e) => setNewTag({ ...newTag, description: e.target.value })}
-        rows={4}
-      />
-    </div>
-  );
-
-  const formFooter = (
-    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      <Button variant="secondary" onClick={closeAddTag}>
-        Cancel
-      </Button>
-      <Button
-        onClick={handleAdd}
-        disabled={adding || !newTag.name.trim()}
-        loading={adding}
-      >
-        {adding ? 'Adding...' : 'Add tag'}
-      </Button>
-    </div>
-  );
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white">
@@ -303,7 +244,7 @@ export const Tags = () => {
           </div>
           <div className="mt-4">
             <Button
-              onClick={() => setShowAdd(true)}
+              onClick={openCreateTag}
               leftIcon={<Plus size={16} />}
             >
               Add tag
@@ -334,11 +275,17 @@ export const Tags = () => {
             emptyDescription="Try another search or create a tag."
             rowActions={(tag) => [
               {
+                id: 'edit',
+                label: 'Edit',
+                icon: <Pencil size={13} />,
+                onClick: () => openEditTag(tag),
+              },
+              {
                 id: 'delete',
                 label: 'Delete',
                 icon: <Trash2 size={13} />,
                 tone: 'danger',
-                onClick: () => handleDelete(tag.id),
+                onClick: () => requestDeleteTag(tag),
               },
             ]}
             minTableWidth={760}
@@ -362,28 +309,44 @@ export const Tags = () => {
         </div>
       </div>
 
-      {showAdd && isMobile ? (
-        <MobileSheet
-          isOpen={showAdd}
-          onClose={closeAddTag}
-          title={<h3 className="text-base font-semibold text-slate-900">Create Tag</h3>}
-          footer={formFooter}
-        >
-          {formContent}
-        </MobileSheet>
-      ) : null}
+      <FloatingActionButton
+        label="Add tag"
+        icon={<Plus size={24} />}
+        onClick={openCreateTag}
+      />
 
-      {showAdd && !isMobile ? (
-        <CenterModal
-          isOpen={showAdd}
-          onClose={closeAddTag}
-          title="Create Tag"
-          size="sm"
-          footer={formFooter}
-        >
-          {formContent}
-        </CenterModal>
-      ) : null}
+      <WorkspaceTagFormModal
+        open={showAdd}
+        mode={editingTag ? 'edit' : 'create'}
+        value={newTag}
+        saving={adding}
+        onChange={setNewTag}
+        onClose={closeAddTag}
+        onSave={handleSaveTag}
+        savingLabel="Saving..."
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteTag)}
+        entityName={deleteTag?.name ?? 'this tag'}
+        entityType="tag"
+        title="Delete tag"
+        body={
+          <div className="space-y-2">
+            <p>
+              This tag will be removed from workspace tag lists and cannot be
+              restored from here.
+            </p>
+            {deleteError ? (
+              <p className="font-medium text-red-600">{deleteError}</p>
+            ) : null}
+          </div>
+        }
+        confirmLabel="Delete tag"
+        isDeleting={deleting}
+        onCancel={closeDeleteTag}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

@@ -103,6 +103,33 @@ Advanced:
 
 Migration note: replaces raw icon-only `<button>` elements and native `title=` icon hints when paired with `Tooltip`.
 
+## FloatingActionButton
+
+Import path: `src/components/ui/button` or compatibility path `src/components/ui/FloatingActionButton`.
+
+Use it for one primary mobile-only page action on dense list pages.
+
+Do not render it on desktop or use it for secondary toolbar actions.
+
+Props:
+
+- `label: string`; required; accessible name and title.
+- `icon: React.ReactNode`; required; visible icon.
+- `offset?: "default" | "low"`; default `"default"`; vertical mobile offset.
+- Inherits Button props except `children`, `iconOnly`, `leftIcon`, `radius`, and `size`.
+
+Minimal:
+
+```tsx
+<FloatingActionButton
+  label="New contact"
+  icon={<Plus size={24} />}
+  onClick={openCreateContact}
+/>
+```
+
+Migration note: replaces page-local fixed mobile action buttons and keeps them above the mobile bottom nav.
+
 ## DisclosureButton
 
 Import path: `src/components/ui/button`.
@@ -238,6 +265,7 @@ Advanced:
 ```
 
 Migration note: replaces raw text, email, number, date, time, search, tel, and url `<input>` controls except file pickers.
+Search inputs hide the browser-native clear affordance so shared or local clear buttons do not render a second `x`.
 
 ## Input
 
@@ -1031,6 +1059,42 @@ Minimal:
 
 Migration note: replaces page-local composer variable dropdowns in reply, email, comment, note, and template editors.
 
+## MentionSuggestionMenu
+
+Import path: `src/components/ui/select`.
+
+Use it for composer autocomplete menus that insert teammate mentions after an `@` trigger.
+
+Do not use it for assignee filters or selected-user fields; use `UserAssignSelect`, `CompactSelectMenu`, or `BaseSelect` for those.
+
+Props:
+
+- `isOpen: boolean`; required; controls menu visibility.
+- `query?: string`; default `""`; current typed query after `@`.
+- `options: Array<{ id: string; label: string; subtitle?: string; avatarSrc?: string; status?: "online" | "offline" | "away" | "busy"; statusLabel?: string }>`; required; mention options.
+- `highlightedIndex: number`; required; keyboard-highlighted row.
+- `onHighlightChange: (index: number) => void`; required; hover/highlight callback.
+- `onSelect: (option) => void`; required; insertion callback.
+- `title?: string`; default `"Mention teammate"`; menu heading.
+- `showEmptyState?: boolean`; default `false`; shows no-results state when no options exist.
+- `emptyMessage?: string`; default derived from query; empty-state text.
+- `className?: string`; default `""`; menu positioning override.
+
+Minimal:
+
+```tsx
+<MentionSuggestionMenu
+  isOpen={query !== null}
+  query={query ?? ""}
+  options={mentionOptions}
+  highlightedIndex={highlightedIndex}
+  onHighlightChange={setHighlightedIndex}
+  onSelect={insertMention}
+/>
+```
+
+Migration note: replaces page-local composer mention dropdowns in reply, email, comment, and note editors.
+
 ## SelectWithIconLabel
 
 Import path: `src/components/ui/select`.
@@ -1638,6 +1702,59 @@ Advanced:
 
 Migration note: replaces raw fixed overlays, one-off center dialogs, and older shared `Modal` implementations. `Modal` is a compatibility alias for `CenterModal`.
 
+## ResponsiveModal
+
+Import path: `src/components/ui/modal` or compatibility path `src/components/ui/Modal`.
+
+Use it for flows that should render as a centered modal on desktop and a bottom/fullscreen sheet on mobile.
+
+Do not hand-roll separate `CenterModal` and `MobileSheet` branches for new responsive modal flows.
+
+Props:
+
+- Inherits `CenterModal` props except `isOpen`, `onClose`, `title`, and `children`.
+- `isOpen: boolean`; required; modal state.
+- `onClose: () => void`; required; close callback.
+- `title: React.ReactNode`; required; desktop title.
+- `mobileTitle?: React.ReactNode`; default desktop title; mobile sheet title.
+- `mobileFooter?: React.ReactNode`; default desktop `footer`; mobile sheet footer.
+- `mobileHeaderActions?: React.ReactNode`; default `undefined`; mobile sheet header actions.
+- `mobileFullScreen?: boolean`; default `false`; mobile sheet fills viewport.
+- `mobileBorderless?: boolean`; default `false`; mobile sheet border style.
+- `mobileBodyClassName?: string`; default `undefined`; optional wrapper around mobile body.
+- `children: React.ReactNode`; required; body content.
+
+Minimal:
+
+```tsx
+<ResponsiveModal isOpen={open} onClose={close} title="New broadcast">
+  <BroadcastForm />
+</ResponsiveModal>
+```
+
+Advanced:
+
+```tsx
+<ResponsiveModal
+  isOpen={open}
+  onClose={close}
+  title="New broadcast"
+  mobileTitle={<h2 className="text-base font-semibold">New broadcast</h2>}
+  headerIcon={<Users size={20} />}
+  size="md"
+  width={512}
+  bodyPadding="none"
+  mobileFullScreen
+  mobileFooter={<BroadcastActions />}
+  primaryAction={<Button>Send</Button>}
+  secondaryAction={<Button variant="secondary">Cancel</Button>}
+>
+  <BroadcastForm />
+</ResponsiveModal>
+```
+
+Migration note: replaces paired desktop/mobile modal branches while reusing `CenterModal` and `MobileSheet` internally.
+
 ## Modal
 
 Import path: `src/components/ui/Modal`.
@@ -1674,6 +1791,36 @@ Advanced:
 ```
 
 Migration note: compatibility alias for old `Modal` imports; migrate to `CenterModal` during import cleanup.
+
+## ConfirmDeleteModal
+
+Import path: `src/components/ui/modal` or compatibility path `src/components/ui/Modal`.
+
+Use it for destructive delete confirmations that need the standard contact-delete style across desktop and mobile.
+
+Props:
+
+- `open: boolean`; required; controls visibility.
+- `entityName: string`; required; display name for default heading.
+- `entityType: string`; required; entity label for default title and confirm button.
+- `onConfirm: () => Promise<void> | void`; required; confirm callback.
+- `onCancel: () => void`; required; close/cancel callback.
+- `isDeleting?: boolean`; default `false`; disables actions and shows loading on confirm.
+- `title?`, `heading?`, `body?`, `confirmLabel?`; optional copy overrides.
+
+Minimal:
+
+```tsx
+<ConfirmDeleteModal
+  open={deleteOpen}
+  entityName={userName}
+  entityType="organization user"
+  onCancel={closeDelete}
+  onConfirm={deleteUser}
+/>
+```
+
+Migration note: replaces page-local destructive modal clones and direct delete buttons without confirmation.
 
 ## SideModal
 

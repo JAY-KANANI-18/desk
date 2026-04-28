@@ -11,7 +11,7 @@
  * 5. Note mode turns the composer background amber; send builds type:"comment"
  */
 
-import { useState, useRef, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Send, Paperclip, Smile, X,
   LayoutTemplate,
@@ -19,13 +19,18 @@ import {
   Play, File as FileIcon,
   Wand2, Sparkles, AtSign, AlertTriangle, Clock3,
 } from 'lucide-react';
-import { channelConfig, variables } from './data';
+import { variables } from './data';
 import type { MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';
 import { AudioRecorder } from './AudioRecorder';
 import { Template, TemplateModal } from './TemplateModal';
 import { Button } from '../../components/ui/Button';
-import { CompactSelectMenu, VariableSuggestionMenu, type CompactSelectMenuGroup } from '../../components/ui/Select';
+import {
+  ChannelSelectMenu,
+  MentionSuggestionMenu,
+  VariableSuggestionMenu,
+  type MentionSuggestionOption,
+} from '../../components/ui/Select';
 import { TextareaInput } from '../../components/ui/inputs/TextareaInput';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
@@ -41,6 +46,8 @@ import { extractMentionIds } from './utils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useDisclosure } from '../../hooks/useDisclosure';
 import { findMatchingContactChannel, getContactScopedChannels, isSameChannel } from './channelUtils';
+import { workspaceUserLabel } from './contact-sidebar/utils';
+import type { WorkspaceUserLike } from './contact-sidebar/types';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
@@ -48,24 +55,32 @@ type AttachedFile = { file: globalThis.File; type: AttachmentType; url: string; 
 
 const WINDOW_RESTRICTED_CHANNELS = new Set(['whatsapp', 'messenger', 'instagram']);
 const FIRST_MESSAGE_RESTRICTED_CHANNELS = new Set(['messenger', 'instagram']);
-const classDrivenButtonStyle = {
-  padding: undefined,
-  borderRadius: undefined,
-  borderWidth: undefined,
-  color: undefined,
-  boxShadow: undefined,
-  fontSize: undefined,
-} satisfies CSSProperties;
+
+function getMentionStatus(user: WorkspaceUserLike): MentionSuggestionOption['status'] | undefined {
+  switch (user.activityStatus?.toLowerCase()) {
+    case 'online':
+      return 'online';
+    case 'away':
+      return 'away';
+    case 'busy':
+      return 'busy';
+    case 'offline':
+      return 'offline';
+    default:
+      return undefined;
+  }
+}
+
+function getMentionStatusLabel(status: MentionSuggestionOption['status'] | undefined) {
+  if (!status) return undefined;
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function getAttachmentType(file: globalThis.File): AttachmentType {
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'doc';
-}
-
-function getReplyChannelOptionValue(channel: { id?: string | number | null; type?: string | null }) {
-  return `${String(channel?.type ?? 'unknown')}::${String(channel?.id ?? '')}`;
 }
 
 function parseTimestamp(value: string | number | null | undefined): number | null {
@@ -232,38 +247,14 @@ export function ReplyInput({
       availableReplyChannels[0]
     );
   }, [availableReplyChannels, selectedChannel]);
-  const activeComposerChannelValue = activeComposerChannel
-    ? getReplyChannelOptionValue(activeComposerChannel)
-    : undefined;
-  const replyChannelGroups = useMemo<CompactSelectMenuGroup[]>(
-    () => [
-      {
-        label: 'Send via channel',
-        options: availableReplyChannels.map((channel) => ({
-          value: getReplyChannelOptionValue(channel),
-          label: channel.name || 'Unnamed',
-          leading: (
-            <img
-              src={channelConfig[channel.type]?.icon}
-              alt={channel.name || 'Reply channel'}
-              className="h-4 w-4 rounded-sm object-contain"
-            />
-          ),
-          tone: 'neutral' as const,
-          searchText: [channel.name, channel.type].filter(Boolean).join(' '),
-        })),
-      },
-    ],
-    [availableReplyChannels],
-  );
-  const handleReplyChannelChange = useCallback((value: string) => {
-    const nextChannel = availableReplyChannels.find(
-      (channel) => getReplyChannelOptionValue(channel) === value,
-    );
+  const handleReplyChannelChange = useCallback((
+    _value: string,
+    nextChannel: (typeof availableReplyChannels)[number] | null,
+  ) => {
     if (nextChannel) {
       onChannelChange(nextChannel);
     }
-  }, [availableReplyChannels, onChannelChange]);
+  }, [onChannelChange]);
   const validatedContactChannels = hasLoadedSelectedContact
     ? ((selectedContact?.contactChannels as any[] | undefined) ?? [])
     : [];
@@ -322,11 +313,23 @@ export function ReplyInput({
     )
     : [];
   const filteredMentionUsers = mentionQuery !== null
-    ? (workspaceUsers ?? []).filter((user: any) => {
-      const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || '';
+    ? (workspaceUsers ?? []).filter((user) => {
+      const label = workspaceUserLabel(user);
       return label.toLowerCase().includes(mentionQuery.toLowerCase());
     })
     : [];
+  const mentionOptions = filteredMentionUsers.map((user) => {
+    const status = getMentionStatus(user);
+
+    return {
+      id: String(user.id),
+      label: workspaceUserLabel(user),
+      subtitle: user.email ?? undefined,
+      avatarSrc: user.avatarUrl ?? undefined,
+      status,
+      statusLabel: getMentionStatusLabel(status),
+    };
+  });
 
   // click-outside handlers
   useEffect(() => {
@@ -417,7 +420,7 @@ export function ReplyInput({
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
   };
 
-  const insertMention = (user: any) => {
+  const insertMention = (user: WorkspaceUserLike) => {
     if (!textareaRef.current) return;
     const cursorPos = textareaRef.current.selectionStart ?? message.length;
     const textBeforeCursor = message.slice(0, cursorPos);
@@ -425,7 +428,7 @@ export function ReplyInput({
     if (!mentionMatch) return;
 
     const start = cursorPos - mentionMatch[0].length;
-    const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
+    const label = workspaceUserLabel(user);
     const insertion = `@[${user.id}|${label}] `;
     const newText = message.slice(0, start) + insertion + message.slice(cursorPos);
     setMessage(newText);
@@ -566,27 +569,13 @@ export function ReplyInput({
   const actionButtonSize = 'xs';
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
   const channelSelector = !isNote && activeComposerChannel ? (
-    <CompactSelectMenu
-      value={activeComposerChannelValue}
-      groups={replyChannelGroups}
+    <ChannelSelectMenu
+      channels={availableReplyChannels}
+      selectedChannel={activeComposerChannel}
       onChange={handleReplyChannelChange}
-      hasValue
-      size="sm"
-      triggerAppearance="inline"
-      dropdownWidth="sm"
-      dropdownPlacement="top"
-      triggerContent={(
-        <span className="flex min-w-0 items-center gap-1.5 ">
-          <img
-            src={channelConfig[activeComposerChannel.type]?.icon}
-            alt={activeComposerChannel.name || 'Reply channel'}
-            className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
-          />
-          <span className="max-w-[7rem] truncate">
-            {activeComposerChannel.name || 'Unnamed'}
-          </span>
-        </span>
-      )}
+      variant="inline"
+      valueMode="type-id"
+      groupLabel="Send via channel"
     />
   ) : null;
   const assistButton = !isNote && !isReplyComposerLocked ? (
@@ -628,49 +617,22 @@ export function ReplyInput({
 
           {/* Variable dropdown */}
           <div className="relative">
-            {mentionQuery !== null && filteredMentionUsers.length > 0 && (
-              <div ref={mentionDropdownRef} className="absolute bottom-full left-0 mb-1 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
-                  <AtSign size={13} className="text-amber-500" />
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mention a teammate</span>
-                  {mentionQuery !== null && <span className="ml-auto text-xs text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded">@{mentionQuery}</span>}
-                </div>
-                <div className="max-h-52 overflow-y-auto py-1">
-                  {filteredMentionUsers.map((user: any, idx) => {
-                    const label = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email || 'User';
-                    return (
-                      <Button
-                        key={user.id}
-                        type="button"
-                        variant="unstyled"
-                        onMouseDown={(e) => { e.preventDefault(); insertMention(user); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left ${mentionHighlight === idx ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
-                        style={classDrivenButtonStyle}
-                        fullWidth
-                        preserveChildLayout
-                      >
-                        <span className="flex w-full items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-semibold text-amber-700">
-                            {label.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
-                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                          </div>
-                        </span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {mentionQuery !== null && mentionQuery.length > 0 && filteredMentionUsers.length === 0 && (
-              <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
-                <div className="px-4 py-3 text-center">
-                  <p className="text-sm text-gray-400">No teammate matches <span className="font-medium text-gray-600">@{mentionQuery}</span></p>
-                </div>
-              </div>
-            )}
+            <MentionSuggestionMenu
+              ref={mentionDropdownRef}
+              isOpen={mentionQuery !== null}
+              query={mentionQuery ?? ""}
+              title="Mention a teammate"
+              options={mentionOptions}
+              highlightedIndex={mentionHighlight}
+              onHighlightChange={setMentionHighlight}
+              onSelect={(option) => {
+                const user = filteredMentionUsers.find((item) => String(item.id) === option.id);
+                if (user) {
+                  insertMention(user);
+                }
+              }}
+              showEmptyState={Boolean(mentionQuery)}
+            />
             <VariableSuggestionMenu
               ref={variableDropdownRef}
               isOpen={variableQuery !== null}

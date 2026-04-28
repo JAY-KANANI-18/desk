@@ -1,8 +1,15 @@
-// LEGACY - not mounted in current router, pending removal
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, CheckCircle, MessageSquare, ShieldAlert, Mail, RefreshCw, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+// LEGACY - still mounted from WorkspaceRouter for authenticated reset flows.
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, CheckCircle, Lock, ShieldAlert } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import {
+  AuthNotice,
+  AuthPasswordField,
+  AuthPrimaryButton,
+  AuthSecondaryButton,
+  AuthShell,
+} from "./components/AuthShell";
 
 const parseHashParams = (): Record<string, string> => {
   const hash = window.location.hash.slice(1);
@@ -12,239 +19,185 @@ const parseHashParams = (): Record<string, string> => {
 export const ResetPassword = () => {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // ── Check for error params in hash (e.g. expired invite link) ──
   const hashParams = parseHashParams();
-  if (hashParams.error) {
-    const isExpired = hashParams.error_code === 'otp_expired';
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="h-1.5 w-full bg-indigo-400" />
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 bg-amber-50 border border-amber-100">
-                <ShieldAlert className="text-amber-500" size={30} />
-              </div>
-              <h1 className="text-xl font-bold text-gray-900 mb-2">
-                {isExpired ? 'Invitation link expired' : 'Access denied'}
-              </h1>
-              <p className="text-sm text-gray-500 leading-relaxed mb-6">
-                {isExpired ? (
-                  <>
-                    This invitation link is no longer valid — it may have already been used or has expired.{' '}
-                    <span className="text-gray-700 font-medium">Please contact your administrator</span> to request a new invitation.
-                  </>
-                ) : (
-                  <>{hashParams.error_description?.replace(/\+/g, ' ')} Please contact your administrator if you believe this is a mistake.</>
-                )}
-              </p>
-           
-              <div className="flex flex-col gap-2.5">
-               
-                <button
-                  onClick={() => navigate('/auth/login', { replace: true })}
-                  className="w-full border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-medium py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft size={15} />
-                  Back to sign in
-                </button>
-              </div>
-            </div>
-          </div>
-          <p className="text-center text-xs text-gray-400 mt-5">
-            Need help?{' '}
-            <a href="mailto:support@axorainfotech.com" className="underline underline-offset-2 hover:text-gray-600 transition-colors">
-              Contact support
-            </a>
-          </p>
-        </div>
-      </div>
-    );
-  }
-  // ── End error handling ──
-
-  const getPasswordStrength = (pw: string) => {
-    if (!pw) return { label: '', color: '', width: '0%' };
-    if (pw.length < 6) return { label: 'Weak', color: 'bg-red-400', width: '25%' };
-    if (pw.length < 8) return { label: 'Fair', color: 'bg-yellow-400', width: '50%' };
-    if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return { label: 'Strong', color: 'bg-green-500', width: '100%' };
-    return { label: 'Good', color: 'bg-indigo-400', width: '75%' };
+  const getPasswordStrength = (value: string) => {
+    if (!value) return { label: "", color: "", width: "0%" };
+    if (value.length < 6) return { label: "Weak", color: "bg-red-400", width: "25%" };
+    if (value.length < 8) return { label: "Fair", color: "bg-yellow-400", width: "50%" };
+    if (/[A-Z]/.test(value) && /[0-9]/.test(value)) {
+      return { label: "Strong", color: "bg-green-500", width: "100%" };
+    }
+    return { label: "Good", color: "bg-indigo-400", width: "75%" };
   };
 
   const strength = getPasswordStrength(password);
-
   const requirements = [
-    { label: 'At least 6 characters', met: password.length >= 6 },
-    { label: 'Contains a number', met: /[0-9]/.test(password) },
-    // { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: "At least 6 characters", met: password.length >= 6 },
+    { label: "Contains a number", met: /[0-9]/.test(password) },
   ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+
     if (!password || !confirmPassword) {
-      setError('Please fill in all fields.');
+      setError("Please fill in all fields.");
       return;
     }
+
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
+
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return;
     }
+
     setLoading(true);
-    setError('');
+    setError("");
     const result = await resetPassword(password);
     setLoading(false);
+
     if (result.success) {
       setSuccess(true);
-    } else {
-      setError(result.error || 'Failed to reset password. Please try again.');
+      return;
     }
+
+    setError(result.error || "Failed to reset password. Please try again.");
   };
 
+  if (hashParams.error) {
+    const isExpired = hashParams.error_code === "otp_expired";
+
+    return (
+      <AuthShell
+        eyebrow="Access issue"
+        title={isExpired ? "Invitation link expired" : "Access denied"}
+        subtitle={
+          isExpired
+            ? "This invitation link is no longer valid. It may have already been used or expired."
+            : `${hashParams.error_description?.replace(/\+/g, " ") ?? "Please contact your administrator if you believe this is a mistake."}`
+        }
+        backHref="/auth/login"
+        backLabel="Back to sign in"
+        headerAlign="center"
+      >
+        <div className="space-y-4">
+          <AuthNotice tone="warning" className="flex items-start gap-3">
+            <ShieldAlert size={18} className="mt-0.5 shrink-0" />
+            <span>
+              Please contact your administrator to request a new invitation.
+            </span>
+          </AuthNotice>
+
+          <AuthSecondaryButton
+            type="button"
+            onClick={() => navigate("/auth/login", { replace: true })}
+          >
+            Back to sign in
+          </AuthSecondaryButton>
+        </div>
+      </AuthShell>
+    );
+  }
+
   if (success) {
-    navigate('/inbox');
-    // return (
-    //   <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
-    //     <div className="w-full max-w-md">
-    //       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
-    //         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-    //           <CheckCircle className="text-green-600" size={32} />
-    //         </div>
-    //         <h2 className="text-xl font-bold text-gray-900 mb-2">Password reset!</h2>
-    //         <p className="text-gray-500 text-sm mb-6">
-    //           Your password has been successfully reset. You can now sign in with your new password.
-    //         </p>
-    //         <button
-    //           onClick={() => navigate('/auth/login')}
-    //           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
-    //         >
-    //           Back to sign in
-    //         </button>
-    //       </div>
-    //     </div>
-    //   </div>
-    // );
+    navigate("/inbox");
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          {/* <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4 shadow-lg">
-            <MessageSquare className="text-white" size={24} />
-          </div> */}
-          <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
-          <p className="text-gray-500 mt-1 text-sm">Must be different from your previous password</p>
-        </div>
+    <AuthShell
+      eyebrow="Account security"
+      title="Set new password"
+      subtitle="Must be different from your previous password."
+      backHref="/auth/login"
+      backLabel="Back to sign in"
+      headerAlign="center"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <AuthPasswordField
+            label="New password"
+            icon={Lock}
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError("");
+            }}
+            placeholder="Enter new password"
+            autoComplete="new-password"
+          />
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* New Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">New password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {password && (
-                <div className="mt-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all ${strength.color}`} style={{ width: strength.width }} />
-                    </div>
-                    <span className="text-xs text-gray-500 w-12">{strength.label}</span>
-                  </div>
-                  <div className="space-y-1">
-                    {requirements.map((req, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${req.met ? 'bg-green-500' : 'bg-gray-200'}`}>
-                          {req.met && <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                        </div>
-                        <span className={`text-xs ${req.met ? 'text-green-600' : 'text-gray-400'}`}>{req.label}</span>
-                      </div>
-                    ))}
-                  </div>
+          {password ? (
+            <div className="space-y-2 px-1">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className={`h-full rounded-full transition-all ${strength.color}`}
+                    style={{ width: strength.width }}
+                  />
                 </div>
-              )}
-            </div>
+                <span className="w-12 text-xs text-gray-500">{strength.label}</span>
+              </div>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm new password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type={showConfirm ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat new password"
-                  className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
-                    confirmPassword && confirmPassword !== password ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              <div className="grid gap-1">
+                {requirements.map((requirement) => (
+                  <div
+                    key={requirement.label}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <CheckCircle
+                      size={13}
+                      className={
+                        requirement.met ? "text-green-500" : "text-gray-300"
+                      }
+                    />
+                    <span
+                      className={
+                        requirement.met ? "text-green-600" : "text-gray-400"
+                      }
+                    >
+                      {requirement.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 mt-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Resetting...
-                </>
-              ) : 'Reset password'}
-            </button>
-          </form>
+          ) : null}
         </div>
 
-        {/* <div className="text-center mt-6">
-          <Link to="/auth/login" className="text-sm text-gray-500 hover:text-gray-700 font-medium">
-            ← Back to sign in
-          </Link>
-        </div> */}
-      </div>
-    </div>
+        <AuthPasswordField
+          label="Confirm new password"
+          icon={Lock}
+          value={confirmPassword}
+          onChange={(event) => {
+            setConfirmPassword(event.target.value);
+            setError("");
+          }}
+          placeholder="Repeat new password"
+          autoComplete="new-password"
+          error={Boolean(confirmPassword && confirmPassword !== password)}
+        />
+
+        {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
+
+        <AuthPrimaryButton
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          loadingLabel="Resetting..."
+          rightIcon={!loading ? <ArrowRight size={15} /> : undefined}
+        >
+          Reset password
+        </AuthPrimaryButton>
+      </form>
+    </AuthShell>
   );
 };

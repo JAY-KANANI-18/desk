@@ -182,7 +182,7 @@ export function MobileBottomNav() {
       width: indicatorStyle.width,
     }}
   >
-    <div className="mx-auto h-full w-10 rounded-b-full bg-indigo-500 shadow-[0_4px_10px_rgba(79,70,229,0.18)]" />
+    {/* <div className="mx-auto h-full w-10 rounded-b-full bg-indigo-500 shadow-[0_4px_10px_rgba(79,70,229,0.18)]" /> */}
   </div>
 
   {navItems.map((item, index) => {

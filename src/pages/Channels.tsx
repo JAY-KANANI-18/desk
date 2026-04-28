@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Settings,
-  X,
 } from "lucide-react";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
@@ -17,6 +16,7 @@ import { PageLayout } from "../components/ui/PageLayout";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useMobileHeaderActions } from "../components/mobileHeaderActions";
 import { Button } from "../components/ui/button/Button";
+import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 import { BaseInput } from "../components/ui/inputs";
 
 interface ConnectedChannel {
@@ -68,7 +68,6 @@ const ConnectedChannelsView = ({
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const handleManage = (channel: ConnectedChannel) => {
     navigate(`/channels/manage/${channel.type}/${channel.id}`);
@@ -77,25 +76,8 @@ const ConnectedChannelsView = ({
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: "channels-search",
-              label: mobileSearchOpen ? "Close search" : "Search channels",
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(search),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            {
-              id: "channels-add",
-              label: "Add channel",
-              icon: <Plus size={18} />,
-              onClick: onConnectNew,
-            },
-          ],
-          panel: mobileSearchOpen ? (
+          panel: (
             <BaseInput
-              autoFocus
               type="search"
               appearance="toolbar"
               leftIcon={<Search size={15} />}
@@ -104,10 +86,10 @@ const ConnectedChannelsView = ({
               placeholder="Search channels..."
               aria-label="Search channels"
             />
-          ) : null,
+          ),
         }
       : {},
-    [isMobile, mobileSearchOpen, onConnectNew, search],
+    [isMobile, search],
   );
 
   return (
@@ -189,10 +171,11 @@ const ConnectedChannelsView = ({
                 fullWidth
                 contentAlign="start"
                 preserveChildLayout
+                className="relative"
               >
                 <div
-                  className={`relative w-full text-left ${
-                    isMobile ? "space-y-4" : "space-y-5"
+                  className={` w-full text-left ${
+                    isMobile ? "" : "space-y-5"
                   }`}
                 >
                 {isMobile ? (
@@ -208,7 +191,7 @@ const ConnectedChannelsView = ({
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
                     <img
                       src={channelConfig[channel.type]?.icon}
-                      className="h-10 w-10 object-contain"
+                      className={!isMobile ? "h-10 w-10 object-contain" : "h-8 w-8"}
                       onError={(event) => {
                         event.currentTarget.style.display = "none";
                       }}
@@ -361,6 +344,11 @@ export const Channels = () => {
         onPageChange={setPage}
         onConnectNew={() => navigate("/channels/connect")}
         showDesktopChrome={false}
+      />
+      <FloatingActionButton
+        label="Add channel"
+        icon={<Plus size={24} />}
+        onClick={() => navigate("/channels/connect")}
       />
     </PageLayout>
   );

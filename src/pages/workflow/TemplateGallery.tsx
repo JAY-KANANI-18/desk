@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Plus, ArrowRight, Search, Loader2, Zap, X } from 'lucide-react';
+import { Plus, ArrowRight, Search, Loader2, Zap } from 'lucide-react';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates';
 import { WorkflowTemplate } from './workflow.types';
 import * as Icons from 'lucide-react';
@@ -8,10 +8,10 @@ import { useNavigate } from 'react-router-dom';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { PageLayout } from '../../components/ui/PageLayout';
 import { Button } from '../../components/ui/Button';
-import { IconButton } from '../../components/ui/button/IconButton';
+import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { Tag } from '../../components/ui/Tag';
-import { ChannelHeaderBackButton } from '../../components/channels/ChannelHeaderBackButton';
+import { BackButton } from '../../components/channels/BackButton';
 
 
 export function TemplateGallery() {
@@ -20,7 +20,6 @@ export function TemplateGallery() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState<string | null>(null);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const navigate  = useNavigate();
 
   const filtered = TEMPLATES.filter((t) => {
@@ -71,36 +70,19 @@ export function TemplateGallery() {
 
   useMobileHeaderActions(
     {
-      actions: [
-        {
-          id: 'workflow-template-search',
-          label: mobileSearchOpen ? 'Close search' : 'Search templates',
-          icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-          active: mobileSearchOpen,
-          hasIndicator: !mobileSearchOpen && Boolean(search),
-          onClick: () => setMobileSearchOpen((value) => !value),
-        },
-        {
-          id: 'workflow-template-scratch',
-          label: 'Start from scratch',
-          icon: creating === 'scratch' ? <Loader2 size={17} className="animate-spin" /> : <Plus size={18} />,
-          disabled: creating === 'scratch',
-          onClick: () => void handleScratch(),
-        },
-      ],
-      panel: mobileSearchOpen ? (
+      panel: (
         <BaseInput
-          autoFocus={false}
           type="search"
           placeholder="Search templates..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           appearance="toolbar"
           leftIcon={<Search size={15} />}
+          aria-label="Search templates"
         />
-      ) : null,
+      ),
     },
-    [creating, mobileSearchOpen, search],
+    [search],
   );
 
   const handleOpen = (workflowId: string) => {
@@ -147,7 +129,7 @@ export function TemplateGallery() {
       eyebrow="Workflows"
       title="Workflow templates"
       leading={
-        <ChannelHeaderBackButton
+        <BackButton
           onClick={handleBack}
           ariaLabel="Back to workflows"
          
@@ -225,6 +207,16 @@ export function TemplateGallery() {
           )}
         </div>
       </div>
+      <FloatingActionButton
+        label="Start from scratch"
+        icon={
+          creating === 'scratch'
+            ? <Loader2 size={24} className="animate-spin" />
+            : <Plus size={24} />
+        }
+        disabled={creating === 'scratch'}
+        onClick={() => void handleScratch()}
+      />
     </PageLayout>
   );
 }

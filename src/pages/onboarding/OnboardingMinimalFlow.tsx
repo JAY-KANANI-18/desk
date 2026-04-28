@@ -26,6 +26,7 @@ import type {
   OnboardingField,
   OnboardingStepKey,
 } from "./onboarding.types";
+import { BackButton } from "../../components/channels/BackButton";
 
 const DRAFT_STORAGE_KEY = "axodesk-onboarding-draft";
 const PAYLOAD_STORAGE_KEY = "axodesk-onboarding-payload";
@@ -165,7 +166,10 @@ const wait = (ms: number) =>
     window.setTimeout(resolve, ms);
   });
 
-const getSupportText = (stepKey: OnboardingStepKey, hasExistingOrganization: boolean) => {
+const getSupportText = (
+  stepKey: OnboardingStepKey,
+  hasExistingOrganization: boolean,
+) => {
   if (stepKey === "welcome" && hasExistingOrganization) {
     return "Just one quick detail and you'll be inside.";
   }
@@ -183,9 +187,10 @@ export const OnboardingMinimalFlow = () => {
   const steps = hasExistingOrganization
     ? PROFILE_ONLY_STEPS
     : FULL_ONBOARDING_STEPS;
-  const initialDraft = readStorageJson(DRAFT_STORAGE_KEY) as
-    | { data?: Partial<OnboardingData>; skippedFields?: OnboardingField[] }
-    | null;
+  const initialDraft = readStorageJson(DRAFT_STORAGE_KEY) as {
+    data?: Partial<OnboardingData>;
+    skippedFields?: OnboardingField[];
+  } | null;
 
   const suggestedNames = getEmailNameParts(user?.email ?? "");
   const [data, setData] = useState<OnboardingData>({
@@ -202,11 +207,17 @@ export const OnboardingMinimalFlow = () => {
       initialDraft?.data?.workspaceName ??
       getSuggestedWorkspaceName(
         user?.email ?? "",
-        initialDraft?.data?.firstName ?? user?.firstName ?? suggestedNames.firstName,
-        initialDraft?.data?.lastName ?? user?.lastName ?? suggestedNames.lastName,
+        initialDraft?.data?.firstName ??
+          user?.firstName ??
+          suggestedNames.firstName,
+        initialDraft?.data?.lastName ??
+          user?.lastName ??
+          suggestedNames.lastName,
       ),
     firstName:
-      initialDraft?.data?.firstName ?? user?.firstName ?? suggestedNames.firstName,
+      initialDraft?.data?.firstName ??
+      user?.firstName ??
+      suggestedNames.firstName,
     lastName:
       initialDraft?.data?.lastName ?? user?.lastName ?? suggestedNames.lastName,
   });
@@ -229,11 +240,15 @@ export const OnboardingMinimalFlow = () => {
   const loadingSteps = hasExistingOrganization
     ? PROFILE_LOADING_STEPS
     : LOADING_STEPS;
-  const workspaceSlug = slugifyWorkspaceName(data.workspaceName) || "yourworkspace";
+  const workspaceSlug =
+    slugifyWorkspaceName(data.workspaceName) || "yourworkspace";
   const visibleIndustryOptions = INDUSTRY_OPTIONS.filter((option) =>
     option.label.toLowerCase().includes(industryQuery.trim().toLowerCase()),
   );
-  const supportText = getSupportText(currentStepConfig.key, hasExistingOrganization);
+  const supportText = getSupportText(
+    currentStepConfig.key,
+    hasExistingOrganization,
+  );
   const loadingMessage =
     loadingSteps[Math.min(loadingStep, loadingSteps.length - 1)] ??
     "Setting up your workspace";
@@ -274,7 +289,9 @@ export const OnboardingMinimalFlow = () => {
       if (advanceTimeoutRef.current) {
         window.clearTimeout(advanceTimeoutRef.current);
       }
-      loadingTimeoutsRef.current.forEach((timeout) => window.clearTimeout(timeout));
+      loadingTimeoutsRef.current.forEach((timeout) =>
+        window.clearTimeout(timeout),
+      );
     };
   }, []);
 
@@ -304,7 +321,9 @@ export const OnboardingMinimalFlow = () => {
   };
 
   const clearLoadingSequence = () => {
-    loadingTimeoutsRef.current.forEach((timeout) => window.clearTimeout(timeout));
+    loadingTimeoutsRef.current.forEach((timeout) =>
+      window.clearTimeout(timeout),
+    );
     loadingTimeoutsRef.current = [];
   };
 
@@ -323,9 +342,12 @@ export const OnboardingMinimalFlow = () => {
         loadingTimeoutsRef.current.push(timeout);
       }
 
-      const finishTimeout = window.setTimeout(() => {
-        resolve();
-      }, loadingSteps.length * stepDuration + 280);
+      const finishTimeout = window.setTimeout(
+        () => {
+          resolve();
+        },
+        loadingSteps.length * stepDuration + 280,
+      );
 
       loadingTimeoutsRef.current.push(finishTimeout);
     });
@@ -408,8 +430,8 @@ export const OnboardingMinimalFlow = () => {
     const loadingAnimation = playLoadingSequence();
 
     try {
-        const persistOnboarding = (async () => {
-          if (!hasExistingOrganization) {
+      const persistOnboarding = (async () => {
+        if (!hasExistingOrganization) {
           await organizationSetup(
             payload.workspaceName,
             payload.workspaceName,
@@ -495,7 +517,10 @@ export const OnboardingMinimalFlow = () => {
               <Avatar
                 src={user?.avatarUrl ?? undefined}
                 name={
-                  [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+                  [user?.firstName, user?.lastName]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim() ||
                   user?.email ||
                   "AxoDesk user"
                 }
@@ -515,7 +540,9 @@ export const OnboardingMinimalFlow = () => {
             </div>
 
             <div className="rounded-full bg-indigo-50 px-4 py-2 text-xs font-medium text-indigo-700">
-              {hasExistingOrganization ? "You're almost ready" : "Quick setup, then you're in"}
+              {hasExistingOrganization
+                ? "You're almost ready"
+                : "Quick setup, then you're in"}
             </div>
           </div>
         );
@@ -540,15 +567,15 @@ export const OnboardingMinimalFlow = () => {
       case "industry":
         return (
           <div className="space-y-3">
-            
-
             <div className="grid gap-2.5">
               {visibleIndustryOptions.map((option) => (
                 <OnboardingOptionCard
                   key={option.value}
                   option={option}
                   selected={data.industry === option.value}
-                  onSelect={() => handleSingleSelect("industry", option.value, true)}
+                  onSelect={() =>
+                    handleSingleSelect("industry", option.value, true)
+                  }
                   variant="pill"
                   showIcon={false}
                 />
@@ -565,7 +592,9 @@ export const OnboardingMinimalFlow = () => {
                 key={option.value}
                 option={option}
                 selected={data.teamSize === option.value}
-                onSelect={() => handleSingleSelect("teamSize", option.value, true)}
+                onSelect={() =>
+                  handleSingleSelect("teamSize", option.value, true)
+                }
                 showIcon={false}
               />
             ))}
@@ -603,7 +632,6 @@ export const OnboardingMinimalFlow = () => {
                 />
               ))}
             </div>
-        
           </div>
         );
 
@@ -615,7 +643,9 @@ export const OnboardingMinimalFlow = () => {
                 key={option.value}
                 option={option}
                 selected={data.primaryGoal === option.value}
-                onSelect={() => handleSingleSelect("primaryGoal", option.value, true)}
+                onSelect={() =>
+                  handleSingleSelect("primaryGoal", option.value, true)
+                }
                 showDescription
                 showIcon={false}
               />
@@ -631,7 +661,9 @@ export const OnboardingMinimalFlow = () => {
                 key={option.value}
                 option={option}
                 selected={data.painPoint === option.value}
-                onSelect={() => handleSingleSelect("painPoint", option.value, true)}
+                onSelect={() =>
+                  handleSingleSelect("painPoint", option.value, true)
+                }
                 showIcon
                 showDescription={false}
               />
@@ -716,12 +748,21 @@ export const OnboardingMinimalFlow = () => {
               <motion.div
                 className="absolute inset-0 rounded-full border border-indigo-200"
                 animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0.2, 0.55] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.div
                 className="absolute inset-3 rounded-full border border-indigo-300"
                 animate={{ scale: [1, 1.12, 1], opacity: [0.7, 0.3, 0.7] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: 0.12 }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.12,
+                }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
@@ -749,7 +790,9 @@ export const OnboardingMinimalFlow = () => {
                   key={item}
                   className={[
                     "h-2 rounded-full transition-all",
-                    index <= loadingStep ? "w-6 bg-indigo-600" : "w-2 bg-indigo-100",
+                    index <= loadingStep
+                      ? "w-6 bg-indigo-600"
+                      : "w-2 bg-indigo-100",
                   ].join(" ")}
                   animate={{ opacity: index <= loadingStep ? 1 : 0.55 }}
                 />
@@ -793,7 +836,9 @@ export const OnboardingMinimalFlow = () => {
               <h1 className="mx-auto max-w-[18ch] text-2xl font-semibold leading-tight text-gray-950 sm:text-3xl md:text-4xl">
                 {currentStepConfig.title}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-indigo-600 sm:mt-5">{supportText}</p>
+              <p className="mt-3 text-sm leading-6 text-indigo-600 sm:mt-5">
+                {supportText}
+              </p>
             </div>
 
             <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto overscroll-contain py-2 sm:py-3">
@@ -821,15 +866,11 @@ export const OnboardingMinimalFlow = () => {
             <div className="mt-2 shrink-0 border-t border-gray-100 pt-4">
               <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
                 {currentStep > 0 ? (
-                  <Button
-                    type="button"
+                  <BackButton
+                    ariaLabel="Back"
                     onClick={() => goToStep(currentStep - 1)}
-                    variant="secondary"
-                    radius="full"
-                    leftIcon={<ArrowLeft size={16} />}
-                  >
-                    Back
-                  </Button>
+                    size="sm"
+                  />
                 ) : (
                   <div className="h-10 min-w-[102px]" />
                 )}

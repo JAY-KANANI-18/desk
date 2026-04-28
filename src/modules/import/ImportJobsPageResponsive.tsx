@@ -17,7 +17,7 @@ import {
   ImportJobProgressBar,
   ImportJobStatusTag,
 } from "./components/jobPresentation";
-import { ChannelHeaderBackButton } from "../../components/channels/ChannelHeaderBackButton";
+import { BackButton } from "../../components/channels/BackButton";
 
 export default function ImportJobsPageResponsive() {
   const navigate = useNavigate();
@@ -85,14 +85,10 @@ export default function ImportJobsPageResponsive() {
       title="Import jobs"
       subtitle="Monitor background contact imports and open each run for full progress details."
       leading={
-
-             <ChannelHeaderBackButton
+        <BackButton
           onClick={() => navigate("/contacts")}
           ariaLabel="Back to contacts"
-         
-
         />
-      
       }
       actions={renderHeaderActions()}
       className="bg-white"
@@ -101,15 +97,11 @@ export default function ImportJobsPageResponsive() {
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
         {isMobile ? (
           <div className="border-b border-gray-100 bg-white px-4 py-3">
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              leftIcon={<ArrowLeft size={16} />}
+            <BackButton
+              ariaLabel="Back"
               onClick={() => navigate("/contacts")}
-            >
-              Back
-            </Button>
+              size="sm"
+            />
 
             <div className="mt-3">
               <h1 className="text-xl font-semibold text-gray-900">

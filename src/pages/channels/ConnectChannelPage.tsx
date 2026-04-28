@@ -1,27 +1,27 @@
-import { useState, type ComponentType } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, MessageCircle, Video } from 'lucide-react';
-import { Button } from '../../components/ui/button/Button';
-import { ChannelHeaderBackButton } from '../../components/channels/ChannelHeaderBackButton';
-import { IconButton } from '../../components/ui/button/IconButton';
-import { BaseInput } from '../../components/ui/inputs/BaseInput';
-import { PasswordInput } from '../../components/ui/inputs/PasswordInput';
-import { PageLayout } from '../../components/ui/PageLayout';
-import { useChannel } from '../../context/ChannelContext';
-import { useWorkspace } from '../../context/WorkspaceContext';
-import { useIsMobile } from '../../hooks/useIsMobile';
-import { ChannelApi } from '../../lib/channelApi';
+import { useState, type ComponentType } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { AlertCircle, ArrowLeft, MessageCircle, Video } from "lucide-react";
+import { Button } from "../../components/ui/button/Button";
+import { BackButton } from "../../components/channels/BackButton";
+import { IconButton } from "../../components/ui/button/IconButton";
+import { BaseInput } from "../../components/ui/inputs/BaseInput";
+import { PasswordInput } from "../../components/ui/inputs/PasswordInput";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { useChannel } from "../../context/ChannelContext";
+import { useWorkspace } from "../../context/WorkspaceContext";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { ChannelApi } from "../../lib/channelApi";
 import {
   getChannelDefinitionByConnectSlug,
   type ChannelRegistryItem,
-} from './channelRegistry';
-import { FacebookChannel } from '../workspace/channels/FacebookChannel';
-import { GmailChannel } from '../workspace/channels/GmailChannel';
-import { InstagramChannel } from '../workspace/channels/InstagramChannel';
-import { EmailChannel } from '../workspace/channels/EmailChannelV2';
-import type { Channel as WsChannel } from '../workspace/types';
-import { WhatsAppCloudChannel } from '../workspace/channels/WhatsAppCloudChannel';
-import { WebsiteChatChannel } from '../workspace/channels/WebsiteChatChannel';
+} from "./channelRegistry";
+import { FacebookChannel } from "../workspace/channels/FacebookChannel";
+import { GmailChannel } from "../workspace/channels/GmailChannel";
+import { InstagramChannel } from "../workspace/channels/InstagramChannel";
+import { EmailChannel } from "../workspace/channels/EmailChannelV2";
+import type { Channel as WsChannel } from "../workspace/types";
+import { WhatsAppCloudChannel } from "../workspace/channels/WhatsAppCloudChannel";
+import { WebsiteChatChannel } from "../workspace/channels/WebsiteChatChannel";
 
 type SetupProps = {
   connected: WsChannel | null;
@@ -31,11 +31,11 @@ type SetupProps = {
 };
 
 const ExotelCallChannel = ({ onConnect, workspaceId }: SetupProps) => {
-  const [name, setName] = useState('Exotel Calling');
-  const [callerId, setCallerId] = useState('');
-  const [sid, setSid] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [apiToken, setApiToken] = useState('');
+  const [name, setName] = useState("Exotel Calling");
+  const [callerId, setCallerId] = useState("");
+  const [sid, setSid] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiToken, setApiToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ const ExotelCallChannel = ({ onConnect, workspaceId }: SetupProps) => {
       });
       onConnect(channel as any);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to connect Exotel');
+      setError(err?.response?.data?.message ?? "Failed to connect Exotel");
     } finally {
       setLoading(false);
     }
@@ -107,11 +107,11 @@ const ExotelCallChannel = ({ onConnect, workspaceId }: SetupProps) => {
 };
 
 const Msg91SmsChannel = ({ onConnect, workspaceId }: SetupProps) => {
-  const [name, setName] = useState('MSG91 SMS');
-  const [senderId, setSenderId] = useState('');
-  const [authKey, setAuthKey] = useState('');
-  const [route, setRoute] = useState('4');
-  const [dltTemplateId, setDltTemplateId] = useState('');
+  const [name, setName] = useState("MSG91 SMS");
+  const [senderId, setSenderId] = useState("");
+  const [authKey, setAuthKey] = useState("");
+  const [route, setRoute] = useState("4");
+  const [dltTemplateId, setDltTemplateId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,7 +129,7 @@ const Msg91SmsChannel = ({ onConnect, workspaceId }: SetupProps) => {
       });
       onConnect(channel as any);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to connect MSG91');
+      setError(err?.response?.data?.message ?? "Failed to connect MSG91");
     } finally {
       setLoading(false);
     }
@@ -261,11 +261,15 @@ export const ConnectChannelPage = () => {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
             <MessageCircle size={28} className="text-gray-500" />
           </div>
-          <p className="text-base font-semibold text-gray-700">Channel not found</p>
+          <p className="text-base font-semibold text-gray-700">
+            Channel not found
+          </p>
           <p className="mb-5 mt-1 text-sm text-gray-400">
             The channel you&apos;re looking for doesn&apos;t exist.
           </p>
-          <Button onClick={() => navigate('/channels')}>Back to channels</Button>
+          <Button onClick={() => navigate("/channels")}>
+            Back to channels
+          </Button>
         </div>
       </div>
     );
@@ -273,7 +277,7 @@ export const ConnectChannelPage = () => {
 
   const handleConnect = async (_channel: WsChannel) => {
     await refreshChannels();
-    navigate('/channels');
+    navigate("/channels");
   };
 
   const SidebarContent = meta.SidebarContent;
@@ -285,9 +289,9 @@ export const ConnectChannelPage = () => {
       eyebrow="Channels / Catalog"
       title={meta.name}
       leading={
-        <ChannelHeaderBackButton
+        <BackButton
           ariaLabel="Back to channel catalog"
-          onClick={() => navigate('/channels/connect')}
+          onClick={() => navigate("/channels/connect")}
         />
       }
       className="bg-white"
@@ -297,11 +301,10 @@ export const ConnectChannelPage = () => {
         {isMobile ? (
           <div className="border-b border-gray-100 bg-white px-4 py-3">
             <div className="flex items-start gap-3">
-              <IconButton
-                onClick={() => navigate('/channels/connect')}
-                aria-label="Back"
-                icon={<ArrowLeft size={16} />}
-                variant="ghost"
+              <BackButton
+                ariaLabel="Back to contacts"
+                onClick={() => navigate("/channels/connect")}
+                size="sm"
               />
 
               <div className="min-w-0 flex-1">
@@ -330,10 +333,10 @@ export const ConnectChannelPage = () => {
               ) : null}
 
               <Component
-                workspaceId={activeWorkspace?.id ?? ''}
+                workspaceId={activeWorkspace?.id ?? ""}
                 connected={null}
                 onConnect={handleConnect}
-                onDisconnect={() => navigate('/channels')}
+                onDisconnect={() => navigate("/channels")}
               />
             </div>
           </main>

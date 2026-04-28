@@ -4,6 +4,7 @@ import { ArrowLeft, BriefcaseBusiness, Loader2, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { importApi, type ImportJobRecord } from "../../lib/importApi";
 import { JobProgressModal } from "./components/JobProgressModal";
+import { BackButton } from "../../components/channels/BackButton";
 
 export default function ImportJobsPage() {
   const navigate = useNavigate();
@@ -27,14 +28,11 @@ export default function ImportJobsPage() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-      <button
-        type="button"
+      <BackButton
+        ariaLabel="Back"
         onClick={() => navigate("/contacts")}
-        className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+        size="sm"
+      />
 
       <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -46,7 +44,8 @@ export default function ImportJobsPage() {
             Import Process
           </h1>
           <p className="mt-2 text-sm text-gray-500">
-            Monitor contact import jobs, check progress, and download result files when a run finishes.
+            Monitor contact import jobs, check progress, and download result
+            files when a run finishes.
           </p>
         </div>
 
@@ -63,7 +62,11 @@ export default function ImportJobsPage() {
             onClick={() => loadJobs().catch(() => setJobs([]))}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            {loading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <RefreshCw size={15} />
+            )}
             Refresh
           </button>
         </div>
@@ -102,7 +105,8 @@ export default function ImportJobsPage() {
                 <div>
                   <div className="font-medium text-gray-900">{job.type}</div>
                   <div className="mt-1 text-xs text-gray-500">
-                    {job.successCount.toLocaleString()} success • {job.failureCount.toLocaleString()} failed
+                    {job.successCount.toLocaleString()} success •{" "}
+                    {job.failureCount.toLocaleString()} failed
                   </div>
                 </div>
                 <div>
@@ -136,7 +140,10 @@ export default function ImportJobsPage() {
         </div>
       </div>
 
-      <JobProgressModal jobId={activeJobId} onClose={() => setActiveJobId(null)} />
+      <JobProgressModal
+        jobId={activeJobId}
+        onClose={() => setActiveJobId(null)}
+      />
     </div>
   );
 }

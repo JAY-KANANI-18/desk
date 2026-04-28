@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { MoreVertical, Pencil, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
 
-import { MobileSheet } from "../../components/ui/modal";
+import { ConfirmDeleteModal, MobileSheet } from "../../components/ui/modal";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useOrganization } from "../../context/OrganizationContext";
@@ -12,11 +12,13 @@ import { ListPagination } from "../../components/ui/ListPagination";
 import { Avatar } from "../../components/ui/Avatar";
 import { Tag } from "../../components/ui/Tag";
 import { Button } from "../../components/ui/button/Button";
+import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { IconButton } from "../../components/ui/button/IconButton";
 import { BaseInput } from "../../components/ui/inputs";
 import { CenterModal } from "../../components/ui/Modal";
 import { BaseSelect } from "../../components/ui/select/BaseSelect";
 import type { SelectOption } from "../../components/ui/select/shared";
+import { Tooltip } from "../../components/ui/Tooltip";
 
 const orgRoles = [
   { id: "ORG_ADMIN", name: "ORG Admin" },
@@ -61,6 +63,9 @@ type OrganizationUser = {
 const getOrgRoleLabel = (role: string) => {
   return orgRoles.find((item) => item.id === role)?.name || role;
 };
+
+const isOrganizationOwner = (user: Pick<OrganizationUser, "role">) =>
+  user.role === "ORG_OWNER" || user.role === "ORG_ADMIN";
 
 const getWorkspaceRoleLabel = (role: string) => {
   return workspaceRoles.find((item) => item.id === role)?.name || role;
@@ -416,11 +421,15 @@ export const OrgUsersSettings = () => {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<OrganizationUser | null>(null);
+  const [mobileActionsUser, setMobileActionsUser] =
+    useState<OrganizationUser | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] =
+    useState<OrganizationUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -492,10 +501,20 @@ export const OrgUsersSettings = () => {
     await loadUsers(page, search);
   };
 
-  const handleDelete = async (userId: string) => {
-    await organizationApi.deleteUser(userId);
-    await refreshOrganizationsUsers();
-    await loadUsers(page, search);
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteUser || isOrganizationOwner(pendingDeleteUser)) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      await organizationApi.deleteUser(pendingDeleteUser.id);
+      await refreshOrganizationsUsers();
+      await loadUsers(page, search);
+      setPendingDeleteUser(null);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -511,30 +530,8 @@ export const OrgUsersSettings = () => {
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: "organization-users-search",
-              label: mobileSearchOpen
-                ? "Close search"
-                : "Search organization users",
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            {
-              id: "organization-users-invite",
-              label: "Invite user",
-              icon: <Plus size={18} />,
-              onClick: () => {
-                setEditUser(null);
-                setInviteOpen(true);
-              },
-            },
-          ],
-          panel: mobileSearchOpen ? (
+          panel: (
             <BaseInput
-              autoFocus
               type="search"
               appearance="toolbar"
               leftIcon={<Search size={15} />}
@@ -543,10 +540,10 @@ export const OrgUsersSettings = () => {
               placeholder="Search organization users..."
               aria-label="Search organization users"
             />
-          ) : null,
+          ),
         }
       : {},
-    [isMobile, mobileSearchOpen, searchDraft],
+    [isMobile, searchDraft],
   );
 
   return (
@@ -584,6 +581,74 @@ export const OrgUsersSettings = () => {
           {users.length > 0 ? (
             users.map((user) => {
               const normalizedWorkspaceAccess = normalizeWorkspaceAccess(user);
+              const ownerLocked = isOrganizationOwner(user);
+              const userName = getOrganizationUserName(user);
+              const deleteAction = (
+                <Button
+                  variant="danger-ghost"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  disabled={ownerLocked}
+                  onClick={() => setPendingDeleteUser(user)}
+                >
+                  Delete
+                </Button>
+              );
+
+              if (isMobile) {
+                return (
+                  <article
+                    key={user.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <Avatar
+                        src={user.avatarUrl}
+                        name={userName}
+                        size="sm"
+                      />
+
+                      <div className="min-w-0 flex-1 pr-1">
+                        <div className="flex min-w-0 items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[15px] font-semibold leading-tight text-slate-900">
+                              {userName}
+                            </p>
+                            <p className="mt-0.5 truncate text-[13px] text-slate-500">
+                              {user.email}
+                            </p>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <Tag
+                                label={getOrgRoleLabel(user.role)}
+                                bgColor="primary"
+                                size="sm"
+                              />
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                                {normalizedWorkspaceAccess.length || 0} workspace
+                                {normalizedWorkspaceAccess.length !== 1 ? "s" : ""}
+                              </span>
+                              {user.status === "PENDING" ? (
+                                <Tag label="Pending" bgColor="warning" size="sm" />
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            <IconButton
+                              aria-label={`Open actions for ${userName}`}
+                              icon={<MoreVertical size={15} />}
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setMobileActionsUser(user)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              }
 
               return (
                 <div
@@ -668,14 +733,13 @@ export const OrgUsersSettings = () => {
                       Edit
                     </Button>
 
-                    <Button
-                      variant="danger-ghost"
-                      size="sm"
-                      leftIcon={<Trash2 size={14} />}
-                      onClick={() => void handleDelete(user.id)}
-                    >
-                      Delete
-                    </Button>
+                    {ownerLocked ? (
+                      <Tooltip content="Organization owners cannot be removed.">
+                        <span>{deleteAction}</span>
+                      </Tooltip>
+                    ) : (
+                      deleteAction
+                    )}
                   </div>
                 </div>
               );
@@ -702,6 +766,67 @@ export const OrgUsersSettings = () => {
         onPageChange={setPage}
       />
 
+      <FloatingActionButton
+        label="Invite user"
+        icon={<UserRoundPlus size={22} />}
+        onClick={() => {
+          setEditUser(null);
+          setInviteOpen(true);
+        }}
+      />
+
+      {mobileActionsUser ? (
+        <MobileSheet
+          isOpen={Boolean(mobileActionsUser)}
+          onClose={() => setMobileActionsUser(null)}
+          borderless
+          title={
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Organization user
+              </p>
+              <h2 className="mt-1 truncate text-base font-semibold text-slate-900">
+                {getOrganizationUserName(mobileActionsUser)}
+              </h2>
+            </div>
+          }
+        >
+          <div className="p-4">
+            <div className="overflow-hidden rounded-2xl bg-slate-50">
+              <Button
+                variant="ghost"
+                fullWidth
+                contentAlign="start"
+                leftIcon={<Pencil size={15} />}
+                onClick={() => {
+                  setEditUser({
+                    ...mobileActionsUser,
+                    workspaceAccess: normalizeWorkspaceAccess(mobileActionsUser),
+                  });
+                  setMobileActionsUser(null);
+                  setInviteOpen(true);
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="danger-ghost"
+                fullWidth
+                contentAlign="start"
+                leftIcon={<Trash2 size={15} />}
+                disabled={isOrganizationOwner(mobileActionsUser)}
+                onClick={() => {
+                  setPendingDeleteUser(mobileActionsUser);
+                  setMobileActionsUser(null);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </MobileSheet>
+      ) : null}
+
       <InviteEditUserModal
         open={inviteOpen}
         onClose={() => {
@@ -711,6 +836,19 @@ export const OrgUsersSettings = () => {
         onInvite={handleInvite}
         onSave={handleSave}
         editUser={editUser}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(pendingDeleteUser)}
+        onCancel={() => setPendingDeleteUser(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={deleteLoading}
+        entityName={getOrganizationUserName(pendingDeleteUser)}
+        entityType="organization user"
+        title="Delete organization user"
+        heading={`Delete ${getOrganizationUserName(pendingDeleteUser)}?`}
+        body="This removes the user from the organization and all workspace access in this organization."
+        confirmLabel="Delete user"
       />
     </div>
   );

@@ -21,11 +21,12 @@ import {
 
 import { SettingsNavList } from '../../components/settings/SettingsNavList';
 import { SettingsSidebar } from '../../components/settings/SettingsSidebar';
-import { ChannelHeaderBackButton } from '../../components/channels/ChannelHeaderBackButton';
+import { BackButton } from '../../components/channels/BackButton';
 import { Button } from '../../components/ui/button/Button';
 import { DisclosureButton } from '../../components/ui/button/DisclosureButton';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { BaseInput, type BaseInputProps } from '../../components/ui/inputs/BaseInput';
+import { ConfirmDeleteModal } from '../../components/ui/modal';
 import { CopyInput } from '../../components/ui/inputs/CopyInput';
 import { TextareaInput } from '../../components/ui/inputs/TextareaInput';
 import { PageLayout } from '../../components/ui/PageLayout';
@@ -234,15 +235,21 @@ export const DangerZone = ({
   channelId: string;
 }) => {
   const [open, setOpen] = useState(false);
-  const [confirm, setConfirm] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { saving, error, save } = useSave();
 
-  const handleDisconnect = () =>
-    save(async () => {
+  const handleDisconnect = async () => {
+    await save(async () => {
       const result = await ChannelApi.deleteChannel(channelId);
       onDisconnect();
       return result;
     });
+  };
+
+  const closeConfirm = () => {
+    if (saving) return;
+    setConfirmOpen(false);
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-red-200">
@@ -270,35 +277,37 @@ export const DangerZone = ({
               ) : null}
             </div>
 
-            {!confirm ? (
-              <Button
-                onClick={() => setConfirm(true)}
-                variant="danger"
-              >
-                Disconnect
-              </Button>
-            ) : (
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                <Button
-                  onClick={() => setConfirm(false)}
-                  variant="secondary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => void handleDisconnect()}
-                  variant="danger"
-                  loading={saving}
-                  loadingMode="inline"
-                  loadingLabel="Confirm"
-                >
-                  Confirm
-                </Button>
-              </div>
-            )}
+            <Button
+              onClick={() => setConfirmOpen(true)}
+              variant="danger"
+              disabled={saving}
+            >
+              Disconnect
+            </Button>
           </div>
         </div>
       ) : null}
+
+      <ConfirmDeleteModal
+        open={confirmOpen}
+        entityName={`${channelLabel} channel`}
+        entityType="channel"
+        title="Disconnect channel"
+        heading={`Disconnect ${channelLabel} channel?`}
+        body={
+          <div className="space-y-2">
+            <p>
+              The channel will stop syncing messages and automations that rely
+              on it may no longer run.
+            </p>
+            {error ? <p className="font-medium text-red-600">{error}</p> : null}
+          </div>
+        }
+        confirmLabel="Disconnect channel"
+        isDeleting={saving}
+        onCancel={closeConfirm}
+        onConfirm={handleDisconnect}
+      />
     </div>
   );
 };
@@ -902,7 +911,7 @@ export const ManageChannelPage = () => {
       eyebrow={`Channels / ${meta.label}`}
       title={desktopTitle}
       leading={
-        <ChannelHeaderBackButton
+        <BackButton
           ariaLabel="Back to channels"
           onClick={() => navigate('/channels')}
         />

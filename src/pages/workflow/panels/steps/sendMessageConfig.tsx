@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
-import { Field, Section, Select, ToggleRow } from "../PanelShell";
+import { Field, Section, ToggleRow } from "../PanelShell";
 import { Upload, X } from "lucide-react";
 import { useWorkflow } from "../../WorkflowContext";
 import { useChannel } from "../../../../context/ChannelContext";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
+import { ChannelSelectMenu } from "../../../../components/ui/Select";
 import { useDisclosure } from "../../../../hooks/useDisclosure";
 
 
@@ -36,20 +37,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
 
   const [uploading, setUploading] = useState(false);
   const { uploadFile } = useWorkflow();
-    const [channels, setChannels] = useState<any[]>([]);
-
-  const {channels:ch} = useChannel()
-
-  useEffect(() => {
-      setChannels([
-        { value: "", label: "Last Interacted Channel" },
-        ...ch.map((c) => ({
-          value: c.id,
-          label: `${c.name} (${c.type})`,
-        })),
-      ]);
-   
-  }, [ch]);
+  const { channels } = useChannel();
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,10 +82,20 @@ export function SendMessageConfig({ step, onChange }: SP) {
     <>
       <Section title="Channel">
         <Field label="Send on" required>
-          <Select
-            value={data.channel}
-            onChange={(v) => u({ channel: v })}
-            options={channels}
+          <ChannelSelectMenu
+            channels={channels}
+            value={data.channel || "last_interacted"}
+            onChange={(channel) => u({ channel })}
+            variant="panel"
+            groupLabel="Channels"
+            specialOptions={[
+              {
+                value: "last_interacted",
+                label: "Last Interacted Channel",
+                alwaysVisible: true,
+              },
+            ]}
+            searchable
           />
         </Field>
       </Section>

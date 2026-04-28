@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Building2,
@@ -9,7 +9,6 @@ import {
   Loader2,
   Mail,
   Phone,
-  Smile,
   Trash2,
   Users,
   Workflow,
@@ -22,11 +21,9 @@ import {
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
-import { TAG_COLOR_OPTIONS } from '../../lib/tagAppearance';
 import type { LifecycleStage } from '../workspace/types';
-import { EmojiPicker } from './EmojiPicker';
 import { ContactSidebarDesktopShell } from './contact-sidebar/DesktopShell';
-import { FieldRow, SelectRow } from './contact-sidebar/EditableRows';
+import { FieldRow } from './contact-sidebar/EditableRows';
 import { MergeModal } from './contact-sidebar/MergeModal';
 import type {
   SidebarContact,
@@ -38,20 +35,18 @@ import {
   CHANNEL_META,
   conflictFromReasons,
   contactName,
-  resolveAssigneeLabel,
   resolveLifecycleLabel,
-  workspaceUserLabel,
 } from './contact-sidebar/utils';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { CenterModal } from '../../components/ui/Modal';
-import { Tag } from '../../components/ui/Tag';
-import { Textarea } from '../../components/ui/Textarea';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { IconButton } from '../../components/ui/button/IconButton';
-import { TagColorSwatchPicker } from '../../components/ui/inputs';
-import { WorkspaceTagManager } from '../../components/ui/select';
+import {
+  AssigneeSelectMenu,
+  LifecycleSelectMenu,
+  WorkspaceTagManager,
+  type WorkspaceTagSelectOption,
+} from '../../components/ui/select';
 
 export interface ContactSidebarHybridProps {
   selectedConversation?: SidebarConversation | null;
@@ -71,6 +66,45 @@ export interface ContactSidebarHybridProps {
   desktopTitle?: string;
   onDesktopClose?: () => void;
   desktopContainerClassName?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readOptionalString(value: unknown): string | null | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function workspaceTagFromOptionData(data: unknown): WorkspaceTag | null {
+  if (!isRecord(data)) return null;
+
+  const rawId = data.id;
+  const rawName = data.name;
+  if (
+    (typeof rawId !== 'string' && typeof rawId !== 'number') ||
+    typeof rawName !== 'string'
+  ) {
+    return null;
+  }
+
+  const rawBundle = data.bundle;
+  const bundle = isRecord(rawBundle)
+    ? {
+        color: readOptionalString(rawBundle.color),
+        emoji: readOptionalString(rawBundle.emoji),
+        description: readOptionalString(rawBundle.description),
+      }
+    : undefined;
+
+  return {
+    id: String(rawId),
+    name: rawName,
+    color: readOptionalString(data.color),
+    emoji: readOptionalString(data.emoji),
+    description: readOptionalString(data.description),
+    bundle,
+  };
 }
 
 export function ContactSidebarHybrid({
@@ -106,13 +140,8 @@ export function ContactSidebarHybrid({
   const [flashSaved, setFlashSaved] = useState(false);
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
   const [tagBusyName, setTagBusyName] = useState<string | null>(null);
-  const [showCreateTagModal, setShowCreateTagModal] = useState(false);
-  const [newTag, setNewTag] = useState({ name: '', color: 'tag-indigo', emoji: '\u{1F600}', description: '' });
-  const [creatingTag, setCreatingTag] = useState(false);
   const [identifierCopied, setIdentifierCopied] = useState(false);
   const [loadedLifecycleStages, setLoadedLifecycleStages] = useState<LifecycleStage[]>(lifecycleStages ?? []);
-  const tagEmojiRef = useRef<HTMLDivElement>(null);
-  const [tagEmojiOpen, setTagEmojiOpen] = useState(false);
 
   const contact = currentContact ?? contactDetails;
   const resolvedWorkspaceUsers = workspaceUsers ?? workspaceUsersFromContext;
@@ -185,6 +214,7 @@ export function ContactSidebarHybrid({
       color: tag.bundle?.color || tag.color || 'tag-indigo',
       emoji: tag.bundle?.emoji || tag.emoji || '\u{1F3F7}\uFE0F',
       description: tag.bundle?.description || tag.description,
+      data: tag,
       busy: tagBusyName === tag.name,
     }));
     const existingValues = new Set(options.map((option) => option.value));
@@ -200,6 +230,7 @@ export function ContactSidebarHybrid({
         label: tag.name,
         color: tag.color || 'tag-indigo',
         emoji: tag.emoji || '\u{1F3F7}\uFE0F',
+        data: tagMetaByValue[value] ?? null,
         busy: tagBusyName === tag.name || tagBusyName === tag.id,
       });
     });
@@ -207,27 +238,10 @@ export function ContactSidebarHybrid({
     return options;
   }, [tagBusyName, visibleContactTags, workspaceTags]);
   const lifecycleValue = contact?.lifecycleId != null ? String(contact.lifecycleId) : '';
-  const lifecycleOptions = useMemo(
-    () => [
-      { value: '', label: 'No lifecycle' },
-      ...resolvedLifecycleStages.map((stage) => ({
-        value: String(stage.id),
-        label: [stage.emoji, stage.name].filter(Boolean).join(' '),
-      })),
-    ],
-    [resolvedLifecycleStages],
-  );
+  const lifecycleFallbackLabel = lifecycleValue
+    ? resolveLifecycleLabel(contact, resolvedLifecycleStages)
+    : undefined;
   const assigneeValue = contact?.assigneeId ? String(contact.assigneeId) : '';
-  const assigneeOptions = useMemo(
-    () => [
-      { value: '', label: 'Unassigned' },
-      ...(resolvedWorkspaceUsers ?? []).map((user) => ({
-        value: String(user.id),
-        label: workspaceUserLabel(user),
-      })),
-    ],
-    [resolvedWorkspaceUsers],
-  );
 
   useEffect(() => {
     setCurrentContact(contactDetails);
@@ -300,19 +314,6 @@ export function ContactSidebarHybrid({
     setActiveField(null);
     setActivePreview(null);
   }, [contact?.id, selectedConversation?.id]);
-
-  useEffect(() => {
-    if (!tagEmojiOpen) return;
-
-    const handleOutside = (event: MouseEvent) => {
-      if (!tagEmojiRef.current?.contains(event.target as Node)) {
-        setTagEmojiOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [tagEmojiOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -419,9 +420,11 @@ export function ContactSidebarHybrid({
     }
   };
 
-  const detachTag = async (tagName: string) => {
+  const detachTag = async (tagName: string, fallbackTag?: WorkspaceTag | null) => {
     if (!contact?.id) return;
-    const match = workspaceTags.find((tag) => tag.name === tagName || String(tag.id) === String(tagName));
+    const match =
+      fallbackTag ??
+      workspaceTags.find((tag) => tag.name === tagName || String(tag.id) === String(tagName));
     if (!match) return;
 
     setTagBusyName(match.name);
@@ -434,58 +437,25 @@ export function ContactSidebarHybrid({
     }
   };
 
-  const handleCreateTag = async () => {
-    const nextName = newTag.name.trim();
-    if (!nextName || !contact?.id) return;
-
-    setCreatingTag(true);
-    try {
-      const created = await workspaceApi.addTag({
-        name: nextName,
-        color: newTag.color,
-        emoji: newTag.emoji,
-        description: newTag.description,
-      });
-      setWorkspaceTags((prev) => [created, ...prev]);
-      await contactsApi.addTagToContact(contact.id, created.id);
-      await refreshSidebarContact(contact.id);
-      setNewTag({ name: '', color: 'tag-indigo', emoji: '\u{1F600}', description: '' });
-      setShowCreateTagModal(false);
-      setTagEmojiOpen(false);
-      flash();
-    } finally {
-      setCreatingTag(false);
-    }
-  };
-
   const toggleContactTag = async (
-    option: { value: string; label: string },
+    option: WorkspaceTagSelectOption,
     nextSelected: boolean,
   ) => {
+    const optionTag = workspaceTagFromOptionData(option.data);
+
     if (nextSelected) {
-      const match = workspaceTags.find(
-        (tag) => String(tag.id) === option.value || tag.name === option.label,
-      );
+      const match =
+        optionTag ??
+        workspaceTags.find(
+          (tag) => String(tag.id) === option.value || tag.name === option.label,
+        );
       if (match) {
         await attachTag(match);
       }
       return;
     }
 
-    await detachTag(option.value);
-  };
-
-  const openCreateTagModal = (initialName = '') => {
-    const normalizedName = initialName.trim().toLowerCase();
-    const matchingTag =
-      workspaceTags.find((tag) => tag.name.trim().toLowerCase() === normalizedName) ?? null;
-    setNewTag({
-      name: initialName.trim(),
-      color: matchingTag?.bundle?.color || matchingTag?.color || 'tag-indigo',
-      emoji: matchingTag?.bundle?.emoji || matchingTag?.emoji || '\u{1F600}',
-      description: matchingTag?.bundle?.description || matchingTag?.description || '',
-    });
-    setShowCreateTagModal(true);
+    await detachTag(option.value, optionTag);
   };
 
   const openMergeModal = async () => {
@@ -788,26 +758,43 @@ export function ContactSidebarHybrid({
           <div className="mx-4 border-t border-[#f0f2f8]" />
 
           <div className="px-4 py-3 space-y-3.5">
-            <SelectRow
-              {...fieldProps}
-              fieldKey="lifecycle"
-              label="Lifecycle"
-              icon={<Workflow size={10} />}
-              value={lifecycleValue}
-              placeholder={resolveLifecycleLabel(contact, resolvedLifecycleStages)}
-              options={lifecycleOptions}
-              onSave={persistLifecycle}
-            />
-            <SelectRow
-              {...fieldProps}
-              fieldKey="assignee"
-              label="Assignee"
-              icon={<Users size={10} />}
-              value={assigneeValue}
-              placeholder={resolveAssigneeLabel(contact, resolvedWorkspaceUsers)}
-              options={assigneeOptions}
-              onSave={persistAssignee}
-            />
+            <div className={`transition-opacity ${activeField !== null ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[#c8cdd8]"><Workflow size={10} /></span>
+                <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#b0b8c8]">Lifecycle</span>
+              </div>
+              <LifecycleSelectMenu
+                value={lifecycleValue}
+                stages={resolvedLifecycleStages}
+                onChange={(stageId) => {
+                  void persistLifecycle(stageId ?? '');
+                }}
+                variant="sidebar"
+                noneLabel="No lifecycle"
+                fallbackLabel={lifecycleFallbackLabel}
+                dropdownPlacement="top"
+                dropdownAlign="end"
+                dropdownWidth="sm"
+              />
+            </div>
+            <div className={`transition-opacity ${activeField !== null ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[#c8cdd8]"><Users size={10} /></span>
+                <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#b0b8c8]">Assignee</span>
+              </div>
+              <AssigneeSelectMenu
+                value={assigneeValue}
+                users={resolvedWorkspaceUsers ?? []}
+                onChange={(userId) => {
+                  void persistAssignee(userId ?? '');
+                }}
+                variant="sidebar"
+                dropdownPlacement="top"
+                dropdownAlign="end"
+                dropdownWidth="sm"
+                searchable
+              />
+            </div>
           </div>
 
           <div className="mx-4 border-t border-[#f0f2f8]" />
@@ -826,7 +813,8 @@ export function ContactSidebarHybrid({
           searchPlaceholder="Search and select tags"
           emptyMessage="No matching workspace tags."
           emptyActionLabel={(query) => `Create "${query}" tag`}
-          onEmptyAction={openCreateTagModal}
+          allowCreate
+          createActionLabel="Add tag"
           selectedDisplay="below"
           selectedAppearance="tag"
           optionAppearance="tag"
@@ -879,91 +867,6 @@ export function ContactSidebarHybrid({
         />
       ) : null}
 
-      {showCreateTagModal ? (
-        <CenterModal
-          isOpen
-          onClose={() => setShowCreateTagModal(false)}
-          title="Add tag"
-          size="sm"
-          width={480}
-          closeOnOverlayClick={false}
-          bodyPadding="lg"
-          secondaryAction={
-            <Button
-              onClick={() => setShowCreateTagModal(false)}
-              variant="secondary"
-            >
-              Cancel
-            </Button>
-          }
-          primaryAction={
-            <Button
-              onClick={handleCreateTag}
-              disabled={creatingTag || !newTag.name.trim()}
-              loading={creatingTag}
-              loadingMode="inline"
-            >
-              Add tag
-            </Button>
-          }
-        >
-          <div className="space-y-4">
-            <Tag
-              label={newTag.name || 'New tag'}
-              emoji={newTag.emoji || '\u{1F3F7}\uFE0F'}
-              bgColor={newTag.color}
-              size="sm"
-            />
-            <div className="grid grid-cols-[76px_1fr] gap-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Emoji</label>
-                <div className="relative" ref={tagEmojiRef}>
-                  <Button
-                    type="button"
-                    onClick={() => setTagEmojiOpen((prev) => !prev)}
-                    variant="secondary"
-                    size="sm"
-                    fullWidth
-                    contentAlign="start"
-                    radius="lg"
-                    rightIcon={<Smile size={16} className="text-indigo-600" />}
-                  >
-                    <span className="text-2xl leading-none">{newTag.emoji}</span>
-                  </Button>
-                  {tagEmojiOpen ? (
-                    <EmojiPicker
-                      mode="tag"
-                      accent="indigo"
-                      onSelect={(emoji) => {
-                        setNewTag((prev) => ({ ...prev, emoji }));
-                        setTagEmojiOpen(false);
-                      }}
-                    />
-                  ) : null}
-                </div>
-              </div>
-              <Input
-                value={newTag.name}
-                onChange={(event) => setNewTag((prev) => ({ ...prev, name: event.target.value }))}
-                label="Name"
-                placeholder="e.g. Priority"
-              />
-            </div>
-            <TagColorSwatchPicker
-              label="Colors"
-              value={newTag.color}
-              options={TAG_COLOR_OPTIONS}
-              onChange={(color) => setNewTag((prev) => ({ ...prev, color }))}
-            />
-            <Textarea
-              value={newTag.description}
-              onChange={(event) => setNewTag((prev) => ({ ...prev, description: event.target.value }))}
-              label="Description"
-              rows={4}
-            />
-          </div>
-        </CenterModal>
-      ) : null}
     </>
   );
 

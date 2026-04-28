@@ -1,4 +1,4 @@
-import { Workspace } from "../context/WorkspaceContext";
+import type { Workspace } from "../context/WorkspaceContext";
 import { api } from "../lib/api";
 import { StepConfig, TriggerConfig, WorkflowSettings } from "../pages/workflow/workflow.types";
 
@@ -6,6 +6,15 @@ import { StepConfig, TriggerConfig, WorkflowSettings } from "../pages/workflow/w
    Types
 ========================================================= */
 
+export interface WorkspaceTagInput {
+  name: string;
+  color?: string;
+  emoji?: string;
+  description?: string;
+}
+
+type WorkspaceCreatePayload = Pick<Workspace, "name" | "organizationId">;
+type WorkspaceUpdatePayload = Partial<Workspace> & { logoUrl?: string };
 
 
 /* =========================================================
@@ -21,10 +30,10 @@ export const workspaceApi = {
 
   me: () => api.get("/workspaces/me"),
 
-  create: (workspace: Workspace) =>
+  create: (workspace: WorkspaceCreatePayload) =>
     api.post("/workspaces", workspace),
 
-  update: (id: string, workspace: Workspace) =>
+  update: (id: string, workspace: WorkspaceUpdatePayload) =>
     api.put(`/workspaces/${id}`, workspace),
 
   delete: (id: string) =>
@@ -251,8 +260,11 @@ export const workspaceApi = {
     return api.get(`/workspaces/tags${query ? `?${query}` : ''}`);
   },
 
-  addTag: (tag: any) =>
+  addTag: (tag: WorkspaceTagInput) =>
     api.post(`/workspaces/tags`, tag),
+
+  updateTag: (tagId: number | string, tag: Partial<WorkspaceTagInput>) =>
+    api.patch(`/workspaces/tags/${tagId}`, tag),
 
   deleteTag: (tagId: number | string) =>
     api.delete(`/workspaces/tags/${tagId}`),

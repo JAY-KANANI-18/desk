@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  MoreVertical,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  UserRoundPlus,
+} from "lucide-react";
 
-import { MobileSheet } from "../../../components/ui/modal";
+import { ConfirmDeleteModal, MobileSheet } from "../../../components/ui/modal";
 import { useWorkspace } from "../../../context/WorkspaceContext";
 import { organizationApi } from "../../../lib/organizationApi";
 import {
@@ -15,6 +22,8 @@ import { useMobileHeaderActions } from "../../../components/mobileHeaderActions"
 import { Avatar } from "../../../components/ui/Avatar";
 import { Tag } from "../../../components/ui/Tag";
 import { Button } from "../../../components/ui/button/Button";
+import { IconButton } from "../../../components/ui/button/IconButton";
+import { FloatingActionButton } from "../../../components/ui/FloatingActionButton";
 import { BaseInput } from "../../../components/ui/inputs";
 import { CenterModal } from "../../../components/ui/Modal";
 import { BaseSelect } from "../../../components/ui/select/BaseSelect";
@@ -410,10 +419,12 @@ export const WorkspaceUsers = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<WorkspaceUser | null>(null);
+  const [deleteUser, setDeleteUser] = useState<WorkspaceUser | null>(null);
+  const [mobileActionsUser, setMobileActionsUser] =
+    useState<WorkspaceUser | null>(null);
   const [users, setUsers] = useState<WorkspaceUser[]>([]);
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -424,6 +435,8 @@ export const WorkspaceUsers = () => {
     hasPrevPage: false,
   });
   const [loading, setLoading] = useState(true);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -488,38 +501,39 @@ export const WorkspaceUsers = () => {
     await loadUsers(page, search);
   };
 
-  const handleDelete = async (userId: string) => {
-    await organizationApi.deleteUser(userId);
-    await refreshWorkspaceUsers();
-    await loadUsers(page, search);
+  const requestDeleteUser = (user: WorkspaceUser) => {
+    setDeleteUser(user);
+    setDeleteError(null);
+  };
+
+  const closeDeleteUser = () => {
+    if (deletingUserId) return;
+    setDeleteUser(null);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteUser || deletingUserId) return;
+
+    setDeletingUserId(deleteUser.id);
+    setDeleteError(null);
+    try {
+      await organizationApi.deleteUser(deleteUser.id);
+      await refreshWorkspaceUsers();
+      await loadUsers(page, search);
+      setDeleteUser(null);
+    } catch {
+      setDeleteError("Failed to delete user.");
+    } finally {
+      setDeletingUserId(null);
+    }
   };
 
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: "workspace-users-search",
-              label: mobileSearchOpen ? "Close search" : "Search workspace users",
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(searchDraft),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            ...(canWs("ws:settings:manage")
-              ? [
-                  {
-                    id: "workspace-users-invite",
-                    label: "Invite user",
-                    icon: <Plus size={18} />,
-                    onClick: () => setInviteOpen(true),
-                  },
-                ]
-              : []),
-          ],
-          panel: mobileSearchOpen ? (
+          panel: (
             <BaseInput
-              autoFocus
               type="search"
               appearance="toolbar"
               leftIcon={<Search size={15} />}
@@ -528,10 +542,10 @@ export const WorkspaceUsers = () => {
               placeholder="Search members..."
               aria-label="Search members"
             />
-          ) : null,
+          ),
         }
       : {},
-    [canWs, isMobile, mobileSearchOpen, searchDraft],
+    [isMobile, searchDraft],
   );
 
   return (
@@ -565,71 +579,104 @@ export const WorkspaceUsers = () => {
             <p className="font-medium text-gray-600">Loading users...</p>
           </div>
         ) : users.length > 0 ? (
-          users.map((user) => (
-            <div
-              key={user.id}
-              className={`rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50 ${
-                isMobile
-                  ? "space-y-4"
-                  : "flex items-center justify-between gap-4"
-              }`}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <Avatar
-                  src={user.avatarUrl}
-                  name={getWorkspaceUserName(user)}
-                  size="md"
-                />
+          users.map((user) => {
+            const userName = getWorkspaceUserName(user);
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="truncate text-sm font-medium text-gray-900">
-                      {getWorkspaceUserName(user)}
+            if (isMobile) {
+              return (
+                <article
+                  key={user.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Avatar src={user.avatarUrl} name={userName} size="sm" />
+
+                    <div className="min-w-0 flex-1 pr-1">
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[15px] font-semibold leading-tight text-slate-900">
+                            {userName}
+                          </p>
+                          <p className="mt-0.5 truncate text-[13px] text-slate-500">
+                            {user.email}
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                              {getWorkspaceRoleLabel(user.role)}
+                            </span>
+                            {user.status === "PENDING" ? (
+                              <Tag label="Pending" bgColor="warning" size="sm" />
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <IconButton
+                          aria-label={`Open actions for ${userName}`}
+                          icon={<MoreVertical size={15} />}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setMobileActionsUser(user)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            }
+
+            return (
+              <div
+                key={user.id}
+                className="flex items-center justify-between gap-4 rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar src={user.avatarUrl} name={userName} size="md" />
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {userName}
+                      </p>
+
+                      {user.status === "PENDING" ? (
+                        <Tag label="Pending" bgColor="warning" size="sm" />
+                      ) : null}
+                    </div>
+
+                    <p className="mt-0.5 truncate text-xs text-gray-500">
+                      {user.email}
                     </p>
 
-                    {user.status === "PENDING" ? (
-                      <Tag label="Pending" bgColor="warning" size="sm" />
-                    ) : null}
+                    <p className="mt-1 text-xs text-gray-500">
+                      {getWorkspaceRoleLabel(user.role)}
+                    </p>
                   </div>
+                </div>
 
-                  <p className="mt-0.5 truncate text-xs text-gray-500">
-                    {user.email}
-                  </p>
+                <div className="flex shrink-0 items-center gap-4">
+                  <Button
+                    onClick={() => {
+                      setEditUser(user);
+                      setEditOpen(true);
+                    }}
+                    variant="ghost"
+                    leftIcon={<Pencil size={14} />}
+                  >
+                    Edit
+                  </Button>
 
-                  <p className="mt-1 text-xs text-gray-500">
-                    {getWorkspaceRoleLabel(user.role)}
-                  </p>
+                  <Button
+                    onClick={() => requestDeleteUser(user)}
+                    variant="danger-ghost"
+                    leftIcon={<Trash2 size={14} />}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </div>
-
-              <div
-                className={`flex shrink-0 ${
-                  isMobile
-                    ? "gap-4 border-t border-slate-100 pt-3"
-                    : "items-center gap-4"
-                }`}
-              >
-                <Button
-                  onClick={() => {
-                    setEditUser(user);
-                    setEditOpen(true);
-                  }}
-                  variant="ghost"
-                  leftIcon={<Pencil size={14} />}
-                >
-                  Edit
-                </Button>
-
-                <Button
-                  onClick={() => void handleDelete(user.id)}
-                  variant="danger-ghost"
-                  leftIcon={<Trash2 size={14} />}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
             <p className="font-medium text-gray-600">No users found</p>
@@ -649,6 +696,62 @@ export const WorkspaceUsers = () => {
         onPageChange={setPage}
       />
 
+      {canWs("ws:settings:manage") ? (
+        <FloatingActionButton
+          label="Invite user"
+          icon={<UserRoundPlus size={22} />}
+          onClick={() => setInviteOpen(true)}
+        />
+      ) : null}
+
+      {mobileActionsUser ? (
+        <MobileSheet
+          isOpen={Boolean(mobileActionsUser)}
+          onClose={() => setMobileActionsUser(null)}
+          borderless
+          title={
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Workspace user
+              </p>
+              <h2 className="mt-1 truncate text-base font-semibold text-slate-900">
+                {getWorkspaceUserName(mobileActionsUser)}
+              </h2>
+            </div>
+          }
+        >
+          <div className="p-4">
+            <div className="overflow-hidden rounded-2xl bg-slate-50">
+              <Button
+                variant="ghost"
+                fullWidth
+                contentAlign="start"
+                leftIcon={<Pencil size={15} />}
+                onClick={() => {
+                  setEditUser(mobileActionsUser);
+                  setEditOpen(true);
+                  setMobileActionsUser(null);
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="danger-ghost"
+                fullWidth
+                contentAlign="start"
+                leftIcon={<Trash2 size={15} />}
+                onClick={() => {
+                  requestDeleteUser(mobileActionsUser);
+                  setMobileActionsUser(null);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </MobileSheet>
+      ) : null}
+
       <InviteUserModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
@@ -663,6 +766,28 @@ export const WorkspaceUsers = () => {
         }}
         editUser={editUser}
         onSave={handleSave}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteUser)}
+        entityName={getWorkspaceUserName(deleteUser)}
+        entityType="workspace user"
+        title="Delete workspace user"
+        body={
+          <div className="space-y-2">
+            <p>
+              This removes the user from the organization and its workspace
+              access.
+            </p>
+            {deleteError ? (
+              <p className="font-medium text-red-600">{deleteError}</p>
+            ) : null}
+          </div>
+        }
+        confirmLabel="Delete user"
+        isDeleting={deletingUserId === deleteUser?.id}
+        onCancel={closeDeleteUser}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

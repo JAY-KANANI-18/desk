@@ -14,6 +14,7 @@ import {
   type MobileHeaderAction,
   type MobileHeaderRegistration,
 } from "./mobileHeaderActions";
+import { BackButton } from "./channels/BackButton";
 
 type MobileHeaderConfig = {
   eyebrow: string;
@@ -82,14 +83,13 @@ function MobileRouteHeader({
   return (
     <div className="flex flex-shrink-0 items-center gap-3 bg-white px-4 py-3 md:hidden">
       {backTo ? (
-        <IconButton
-          aria-label="Back"
-          icon={<ArrowLeft size={18} />}
-          
-          variant="ghost"
+
+         <BackButton
+          ariaLabel="Back"
           onClick={() => onBack(backTo)}
-          type="button"
+          size="sm"
         />
+        
       ) : null}
 
       <div className="min-w-0 flex-1">

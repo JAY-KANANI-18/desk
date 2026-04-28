@@ -1,6 +1,8 @@
 import { CheckCircle2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile";
 import { cx } from "../inputs/shared";
+import { MobileSheet } from "../modal";
 import {
   SelectDropdown,
   SelectEmptyState,
@@ -56,6 +58,10 @@ export interface CompactSelectMenuProps {
   searchPlaceholder?: string;
   emptyMessage?: string;
   triggerClassName?: string;
+  hideIndicator?: boolean;
+  mobileSheet?: boolean;
+  mobileSheetTitle?: ReactNode;
+  mobileSheetSubtitle?: ReactNode;
 }
 
 function getDescriptionToneClass(
@@ -114,9 +120,15 @@ export function CompactSelectMenu({
   searchPlaceholder = "Search...",
   emptyMessage = "No options available.",
   triggerClassName,
+  hideIndicator = false,
+  mobileSheet = false,
+  mobileSheetTitle,
+  mobileSheetSubtitle,
 }: CompactSelectMenuProps) {
   const generatedId = useId();
   const fieldId = id ?? `compact-select-menu-${generatedId}`;
+  const isMobile = useIsMobile();
+  const shouldUseMobileSheet = mobileSheet && isMobile;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -176,6 +188,7 @@ export function CompactSelectMenu({
   const controller = useSelectController({
     options: filteredOptions,
     disabled,
+    outsideDismiss: !shouldUseMobileSheet,
     onSelect: (option) => {
       onChange(option.value);
     },
@@ -214,6 +227,76 @@ export function CompactSelectMenu({
   }, [controller.isOpen, controller.setHighlightedIndex, filteredOptions, value]);
 
   const resolvedHasValue = hasValue ?? Boolean(selectedOption);
+  const optionRows =
+    filteredOptions.length === 0 ? (
+      <SelectEmptyState message={emptyMessage} />
+    ) : (
+      filteredGroups.map((group, groupIndex) => (
+        <div key={group.label ?? `group-${groupIndex}`}>
+          {group.label ? (
+            <div className="px-[var(--spacing-md)] pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-gray-400)]">
+              {group.label}
+            </div>
+          ) : null}
+
+          {group.options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <SelectOptionRow
+                key={option.value}
+                id={getSelectOptionId(controller.listId, option.index)}
+                selected={isSelected}
+                highlighted={controller.highlightedIndex === option.index}
+                onSelect={() => controller.selectByIndex(option.index)}
+                onMouseEnter={() => controller.setHighlightedIndex(option.index)}
+                tone={option.tone}
+                surface="inset"
+                trailing={
+                  isSelected ? (
+                    <CheckCircle2
+                      size={16}
+                      className={cx(
+                        "mt-0.5 shrink-0",
+                        getSelectedIndicatorClass(option.tone),
+                      )}
+                    />
+                  ) : undefined
+                }
+              >
+                <div className="flex min-w-0 items-center gap-[var(--spacing-sm)]">
+                  {option.leading ? (
+                    <span className="shrink-0">{option.leading}</span>
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className={cx(
+                        "truncate text-sm font-medium",
+                        isSelected
+                          ? getSelectedLabelClass(option.tone)
+                          : "text-[var(--color-gray-800)]",
+                      )}
+                    >
+                      {option.label}
+                    </div>
+                    {option.description ? (
+                      <div
+                        className={cx(
+                          "mt-[2px] truncate text-xs",
+                          getDescriptionToneClass(option.descriptionTone),
+                        )}
+                      >
+                        {option.description}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </SelectOptionRow>
+            );
+          })}
+        </div>
+      ))
+    );
 
   return (
     <div ref={controller.containerRef} className="relative">
@@ -225,6 +308,7 @@ export function CompactSelectMenu({
         disabled={disabled}
         size={size}
         hasValue={resolvedHasValue}
+        hideIndicator={hideIndicator}
         fullWidth={fullWidth}
         appearance={triggerAppearance}
         className={triggerClassName}
@@ -238,94 +322,70 @@ export function CompactSelectMenu({
         )}
       </SelectTrigger>
 
-      <SelectDropdown
-        isOpen={controller.isOpen}
-        placement={dropdownPlacement}
-        align={dropdownAlign}
-        width={dropdownWidth}
-      >
-        {searchable ? (
-          <SelectSearchInput
-            inputRef={searchInputRef}
-            value={searchTerm}
-            onChange={setSearchTerm}
-            onKeyDown={controller.handleListKeyDown}
-            placeholder={searchPlaceholder}
-          />
-        ) : null}
+      {!shouldUseMobileSheet ? (
+        <SelectDropdown
+          isOpen={controller.isOpen}
+          placement={dropdownPlacement}
+          align={dropdownAlign}
+          width={dropdownWidth}
+        >
+          {searchable ? (
+            <SelectSearchInput
+              inputRef={searchInputRef}
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onKeyDown={controller.handleListKeyDown}
+              placeholder={searchPlaceholder}
+            />
+          ) : null}
 
-        <SelectList id={controller.listId} onKeyDown={controller.handleListKeyDown}>
-          {filteredOptions.length === 0 ? (
-            <SelectEmptyState message={emptyMessage} />
-          ) : (
-            filteredGroups.map((group, groupIndex) => (
-              <div key={group.label ?? `group-${groupIndex}`}>
-                {group.label ? (
-                  <div className="px-[var(--spacing-md)] pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-gray-400)]">
-                    {group.label}
-                  </div>
-                ) : null}
-
-                {group.options.map((option) => {
-                  const isSelected = option.value === value;
-
-                  return (
-                    <SelectOptionRow
-                      key={option.value}
-                      id={getSelectOptionId(controller.listId, option.index)}
-                      selected={isSelected}
-                      highlighted={controller.highlightedIndex === option.index}
-                      onSelect={() => controller.selectByIndex(option.index)}
-                      onMouseEnter={() => controller.setHighlightedIndex(option.index)}
-                      tone={option.tone}
-                      surface="inset"
-                      trailing={
-                        isSelected ? (
-                          <CheckCircle2
-                            size={16}
-                            className={cx(
-                              "mt-0.5 shrink-0",
-                              getSelectedIndicatorClass(option.tone),
-                            )}
-                          />
-                        ) : undefined
-                      }
-                    >
-                      <div className="flex min-w-0 items-center gap-[var(--spacing-sm)]">
-                        {option.leading ? (
-                          <span className="shrink-0">{option.leading}</span>
-                        ) : null}
-                        <div className="min-w-0 flex-1">
-                          <div
-                            className={cx(
-                              "truncate text-sm font-medium",
-                              isSelected
-                                ? getSelectedLabelClass(option.tone)
-                                : "text-[var(--color-gray-800)]",
-                            )}
-                          >
-                            {option.label}
-                          </div>
-                          {option.description ? (
-                            <div
-                              className={cx(
-                                "mt-[2px] truncate text-xs",
-                                getDescriptionToneClass(option.descriptionTone),
-                              )}
-                            >
-                              {option.description}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </SelectOptionRow>
-                  );
-                })}
+          <SelectList id={controller.listId} onKeyDown={controller.handleListKeyDown}>
+            {optionRows}
+          </SelectList>
+        </SelectDropdown>
+      ) : (
+        <MobileSheet
+          isOpen={controller.isOpen}
+          onClose={() => controller.close(false)}
+          title={
+            <div>
+              <p className="truncate text-base font-semibold text-gray-900">
+                {mobileSheetTitle ?? placeholder}
+              </p>
+              {mobileSheetSubtitle ? (
+                <p className="mt-0.5 truncate text-xs text-gray-500">
+                  {mobileSheetSubtitle}
+                </p>
+              ) : null}
+            </div>
+          }
+        >
+          <div className="p-4">
+            {searchable ? (
+              <div className="mb-4 overflow-hidden rounded-2xl border border-gray-100">
+                <SelectSearchInput
+                  inputRef={searchInputRef}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  onKeyDown={controller.handleListKeyDown}
+                  placeholder={searchPlaceholder}
+                />
               </div>
-            ))
-          )}
-        </SelectList>
-      </SelectDropdown>
+            ) : null}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 p-1.5">
+              <div
+                id={controller.listId}
+                role="listbox"
+                tabIndex={-1}
+                onKeyDown={controller.handleListKeyDown}
+                className="py-[var(--spacing-xs)]"
+              >
+                {optionRows}
+              </div>
+            </div>
+          </div>
+        </MobileSheet>
+      )}
     </div>
   );
 }

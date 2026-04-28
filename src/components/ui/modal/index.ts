@@ -1,5 +1,9 @@
 export { CenterModal } from "./CenterModal";
 export type { CenterModalProps } from "./CenterModal";
+export { ConfirmDeleteModal } from "./ConfirmDeleteModal";
+export type { ConfirmDeleteModalProps } from "./ConfirmDeleteModal";
+export { ResponsiveModal } from "./ResponsiveModal";
+export type { ResponsiveModalProps } from "./ResponsiveModal";
 export { SideModal } from "./SideModal";
 export type { SideModalProps } from "./SideModal";
 export { MobileSheet } from "./MobileSheet";

@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { Check, Code2, Copy, MessageSquare, Palette } from 'lucide-react';
+import { Check, Code2, Copy, ExternalLink, MessageSquare, Palette } from 'lucide-react';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { ColorInput } from '../../../components/ui/inputs/ColorInput';
 import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
 import { ChannelApi } from '../../../lib/channelApi';
 import { ConnectedChannel, DangerZone, SaveButton, useSave } from '../../channels/ManageChannelPage';
+import {
+  buildWebsiteChatEmbedCode,
+  getWebsiteChatAppearance,
+} from './websiteChatEmbed';
 
 function useCopy(text: string) {
   const [copied, setCopied] = useState(false);
@@ -24,22 +28,80 @@ export const WebsiteChatConfiguration = ({
   onDisconnect,
 }: { channel: ConnectedChannel; onDisconnect: () => void }) => {
   const { saving, saved, error, save } = useSave();
-  const cfg = channel?.config ?? {};
+  const appearance = getWebsiteChatAppearance(channel);
 
   const [welcomeMessage, setWelcomeMessage] = useState(
-    cfg.welcomeMessage ?? 'Hi there! How can we help you today?',
+    appearance.welcomeMessage ?? 'Hi there! How can we help you today?',
   );
   const [awayMessage, setAwayMessage] = useState(
-    cfg.awayMessage ?? "We're away right now but will reply soon.",
+    channel.config?.awayMessage ?? "We're away right now but will reply soon.",
   );
-  const [primaryColor, setPrimaryColor] = useState(cfg.primaryColor ?? '#2563eb');
-  const [operatorName, setOperatorName] = useState(cfg.operatorName ?? '');
+  const [primaryColor, setPrimaryColor] = useState(
+    appearance.primaryColor ?? '#2563eb',
+  );
+  const [agentName, setAgentName] = useState(
+    appearance.agentName ?? appearance.operatorName ?? '',
+  );
   const [position, setPosition] = useState<'bottom-right' | 'bottom-left'>(
-    cfg.position ?? 'bottom-right',
+    channel.config?.position ?? 'bottom-right',
   );
 
-  const scriptTag = `<script src="${window.location.origin}/widget.js" data-channel-id="${channel.id}" defer></script>`;
+  const scriptTag = buildWebsiteChatEmbedCode(channel, {
+    agentName: agentName || 'Support',
+    primaryColor,
+    welcomeMessage,
+  });
   const { copied, copy } = useCopy(scriptTag);
+
+  const openTestWindow = () => {
+    const testPage = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Website Chat Test</title>
+   
+  </head>
+  <body>
+    <main>
+      <section>
+        <h1>Website Chat Test Page</h1>
+        <p>Use the launcher in the corner to verify the widget script, styling, and channel connection.</p>
+      </section>
+    </main>
+    ${scriptTag}
+  </body>
+</html>`;
+    const testUrl = URL.createObjectURL(
+      new Blob([testPage], { type: 'text/html' }),
+    );
+
+    const popupWidth = 440;
+    const popupHeight = 720;
+    const left = Math.max(
+      0,
+      window.screenX + (window.outerWidth - popupWidth) / 2,
+    );
+    const top = Math.max(
+      0,
+      window.screenY + (window.outerHeight - popupHeight) / 2,
+    );
+
+    window.open(
+      testUrl,
+      'website-chat-test',
+      [
+        'popup=yes',
+        `width=${popupWidth}`,
+        `height=${popupHeight}`,
+        `left=${Math.round(left)}`,
+        `top=${Math.round(top)}`,
+        'resizable=yes',
+        'scrollbars=yes',
+      ].join(','),
+    );
+    window.setTimeout(() => URL.revokeObjectURL(testUrl), 30000);
+  };
 
   return (
     <div className="space-y-6">
@@ -60,19 +122,30 @@ export const WebsiteChatConfiguration = ({
             <code className="flex-1 break-all font-mono text-xs leading-relaxed text-emerald-300">
               {scriptTag}
             </code>
-            <Button
-              onClick={copy}
-              size="sm"
-              variant="secondary"
-              className={
-                copied
-                  ? 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-600'
-                  : 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }
-              leftIcon={copied ? <Check size={12} /> : <Copy size={12} />}
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
+            <div className="flex shrink-0 flex-col gap-2 sm:w-28">
+              <Button
+                onClick={openTestWindow}
+                size="sm"
+                variant="secondary"
+                className="border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600"
+                leftIcon={<ExternalLink size={12} />}
+              >
+                Test
+              </Button>
+              <Button
+                onClick={copy}
+                size="sm"
+                variant="secondary"
+                className={
+                  copied
+                    ? 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-600'
+                    : 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }
+                leftIcon={copied ? <Check size={12} /> : <Copy size={12} />}
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -123,9 +196,9 @@ export const WebsiteChatConfiguration = ({
         </p>
         <div className="space-y-4">
           <BaseInput
-            label="Operator Display Name"
-            value={operatorName}
-            onChange={(event) => setOperatorName(event.target.value)}
+            label="Agent Display Name"
+            value={agentName}
+            onChange={(event) => setAgentName(event.target.value)}
             placeholder="Support Team"
             hint="Shown in the chat widget header"
           />
@@ -157,7 +230,7 @@ export const WebsiteChatConfiguration = ({
               welcomeMessage,
               awayMessage,
               primaryColor,
-              operatorName,
+              agentName,
               position,
             }),
           )

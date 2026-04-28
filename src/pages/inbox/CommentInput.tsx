@@ -6,10 +6,9 @@ import {
   Paperclip,
   Smile,
 } from "lucide-react";
-import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
-import { VariableSuggestionMenu } from "../../components/ui/Select";
+import { MentionSuggestionMenu, VariableSuggestionMenu } from "../../components/ui/Select";
 import { Tag } from "../../components/ui/Tag";
 import { TextareaInput } from "../../components/ui/inputs/TextareaInput";
 import { teamMembers, variables } from "./data";
@@ -72,6 +71,13 @@ export function CommentInput({ conversationId, onSendMessage }: CommentInputProp
             variable.label.toLowerCase().includes(variableQuery.toLowerCase()),
         )
       : [];
+
+  const mentionOptions = filteredMentionMembers.map((member) => ({
+    id: member.id,
+    label: member.name,
+    status: member.online ? "online" as const : "offline" as const,
+    statusLabel: member.online ? "Online" : "Offline",
+  }));
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -301,67 +307,24 @@ export function CommentInput({ conversationId, onSendMessage }: CommentInputProp
       </div>
 
       <div className="relative rounded-xl border border-amber-300 bg-white shadow-sm focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400">
-        {mentionQuery !== null && filteredMentionMembers.length > 0 ? (
-          <div
-            ref={mentionDropdownRef}
-            className="absolute bottom-full left-0 z-50 mb-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
-          >
-            <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
-              <AtSign size={13} className="text-amber-500" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Mention an agent</span>
-              {mentionQuery ? (
-                <Tag label={`@${mentionQuery}`} size="sm" bgColor="warning" />
-              ) : null}
-            </div>
-            <div className="max-h-52 overflow-y-auto py-1">
-              {filteredMentionMembers.map((member, index) => (
-                <Button
-                  key={member.id}
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    insertMention(member);
-                  }}
-                  variant="unstyled"
-                  fullWidth
-                  contentAlign="start"
-                  preserveChildLayout
-                  className={`text-left ${mentionHighlight === index ? "bg-amber-50" : "hover:bg-gray-50"}`}
-                >
-                  <span className="flex w-full items-center gap-3 px-3 py-2.5">
-                    <Avatar
-                      name={member.name}
-                      size="md"
-                      showStatus
-                      statusColor={member.online ? "var(--color-success)" : "var(--color-gray-300)"}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-gray-800">{member.name}</span>
-                      <span className={`text-xs ${member.online ? "text-green-600" : "text-gray-400"}`}>
-                        {member.online ? "Online" : "Offline"}
-                      </span>
-                    </span>
-                    {mentionHighlight === index ? (
-                      <span className="flex-shrink-0 text-xs font-medium text-amber-500">Enter</span>
-                    ) : null}
-                  </span>
-                </Button>
-              ))}
-            </div>
-            <div className="border-t border-gray-100 bg-gray-50 px-3 py-1.5">
-              <p className="text-[10px] text-gray-400">Arrow keys navigate - Enter selects - Esc dismisses</p>
-            </div>
-          </div>
-        ) : null}
-
-        {mentionQuery !== null && mentionQuery.length > 0 && filteredMentionMembers.length === 0 ? (
-          <div className="absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
-            <div className="px-4 py-3 text-center">
-              <p className="text-sm text-gray-400">
-                No agents match <span className="font-medium text-gray-600">@{mentionQuery}</span>
-              </p>
-            </div>
-          </div>
-        ) : null}
+        <MentionSuggestionMenu
+          ref={mentionDropdownRef}
+          isOpen={mentionQuery !== null}
+          query={mentionQuery ?? ""}
+          title="Mention an agent"
+          options={mentionOptions}
+          highlightedIndex={mentionHighlight}
+          onHighlightChange={setMentionHighlight}
+          onSelect={(option) => {
+            const member = filteredMentionMembers.find((item) => item.id === option.id);
+            if (member) {
+              insertMention(member);
+            }
+          }}
+          showEmptyState={Boolean(mentionQuery)}
+          emptyMessage={`No agents match @${mentionQuery ?? ""}`}
+          className="mb-2 w-72"
+        />
 
         <VariableSuggestionMenu
           ref={variableDropdownRef}

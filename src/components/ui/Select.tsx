@@ -85,8 +85,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 Select.displayName = "Select";
 
 export {
+  AssigneeSelectMenu,
   BaseSelect,
+  ChannelSelectMenu,
   CompactSelectMenu,
+  LifecycleSelectMenu,
+  MentionSuggestionMenu,
   MultiSelect,
   SearchableSelect,
   SelectWithIconLabel,
@@ -97,11 +101,25 @@ export {
   WorkspaceTagSelect,
 } from "./select/index";
 export type {
+  AssigneeSelectMenuProps,
+  AssigneeSelectMenuVariant,
+  AssigneeSelectUser,
   BaseSelectProps,
+  ChannelSelectMenuChannel,
+  ChannelSelectMenuProps,
+  ChannelSelectMenuSpecialOption,
+  ChannelSelectMenuVariant,
+  ChannelSelectValueMode,
   CompactSelectMenuDescriptionTone,
   CompactSelectMenuGroup,
   CompactSelectMenuOption,
   CompactSelectMenuProps,
+  LifecycleSelectMenuProps,
+  LifecycleSelectMenuVariant,
+  LifecycleSelectStage,
+  MentionSuggestionMenuProps,
+  MentionSuggestionOption,
+  MentionSuggestionStatus,
   MultiSelectProps,
   SearchableSelectProps,
   SelectOption,
@@ -119,7 +137,7 @@ export type {
   VariableSuggestionOption,
   WorkspaceTagManagerLabelAppearance,
   WorkspaceTagManagerProps,
-  WorkspaceTagSelectOption,
+    WorkspaceTagSelectOption,
   WorkspaceTagSelectProps,
   WorkspaceTagSelectRenderTriggerProps,
 } from "./select/index";

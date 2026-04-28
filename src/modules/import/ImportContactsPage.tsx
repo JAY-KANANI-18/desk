@@ -12,7 +12,7 @@ import { ReviewStep } from "./components/ReviewStep";
 import { UploadStep } from "./components/UploadStep";
 import { useImportWizard } from "./hooks/useImportWizard";
 import { IconButton } from "../../components/ui/button/IconButton";
-import { ChannelHeaderBackButton } from "../../components/channels/ChannelHeaderBackButton";
+import { BackButton } from "../../components/channels/BackButton";
 
 type TagOption = {
   id: string;
@@ -103,7 +103,7 @@ export default function ImportContactsPage() {
       title="Import contacts"
       // subtitle="Upload once, map carefully, review the outcome, then start a background import job."
       leading={
-        <ChannelHeaderBackButton
+        <BackButton
           ariaLabel="Back to contacts"
           onClick={() => navigate("/contacts")}
         />
@@ -115,16 +115,11 @@ export default function ImportContactsPage() {
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
         {isMobile ? (
           <div className="border-b border-gray-100 bg-white px-4 py-3">
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              leftIcon={<ArrowLeft size={16} />}
+            <BackButton
+              ariaLabel="Back"
               onClick={() => navigate("/contacts")}
-            >
-              Back
-            </Button>
-
+              size="sm"
+            />
             <div className="mt-3">
               <h1 className="text-xl font-semibold text-gray-900">
                 Import contacts

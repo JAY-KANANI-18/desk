@@ -18,6 +18,7 @@ import {
   findActiveSettingsMatch,
   type SettingsModuleConfig,
 } from "./navigation";
+import { BackButton } from "../channels/BackButton";
 
 interface SettingsLayoutProps {
   config: SettingsModuleConfig;
@@ -99,14 +100,7 @@ export const SettingsLayout = ({
           <div className="sticky top-0 z-10 bg-white md:hidden">
             <div className="flex items-center gap-3 px-4 py-3">
               {!isSelectionScreen && (
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  icon={<ArrowLeft size={18} />}
-                  aria-label="Back"
-                  onClick={handleMobileBack}
-                />
+                <BackButton ariaLabel="Back" onClick={handleMobileBack} size="sm"/>
               )}
 
               <div className="min-w-0 flex-1">
@@ -123,9 +117,7 @@ export const SettingsLayout = ({
               />
             </div>
             {mobileHeaderRegistration.panel ? (
-              <div className="px-4 pb-3">
-                {mobileHeaderRegistration.panel}
-              </div>
+              <div className="px-4 pb-3">{mobileHeaderRegistration.panel}</div>
             ) : null}
           </div>
 

@@ -2,6 +2,7 @@
 // ─── 3. Assign To ─────────────────────────────────────────────────────────────
 
 import { useWorkspace } from "../../../../context/WorkspaceContext";
+import { AssigneeSelectMenu } from "../../../../components/ui/select";
 import { SP, AssignToData } from "../../workflow.types";
 import { Field, Select, ToggleRow, TextInput, DurationInput, Section } from "../PanelShell";
 
@@ -11,7 +12,6 @@ export function AssignToConfig({ step, onChange }: SP) {
   const showLogic = data.action === 'user_in_team' || data.action === 'user_in_workspace';
 
   const {workspaceUsers} = useWorkspace();
-  const usersOptions = workspaceUsers?.map(u => ({ value: u.id, label: u.firstName + ' ' + u?.lastName  })) ?? [];
   return (
     <>
       <Section title="Assignment">
@@ -21,7 +21,18 @@ export function AssignToConfig({ step, onChange }: SP) {
             // { value: 'user_in_team', label: 'A User in a Team' }, { value: 'user_in_workspace', label: 'A User in the Workspace' }, 
             { value: 'unassign', label: 'Unassign Contact' }]} />
         </Field>
-        {data.action === 'specific_user' && <Field label="User" required><Select value={data.userId ?? ''} onChange={(v) => u({ userId: v })} placeholder="Select user..." options={usersOptions} /></Field>}
+        {data.action === 'specific_user' && (
+          <Field label="User" required>
+            <AssigneeSelectMenu
+              value={data.userId ?? null}
+              users={workspaceUsers ?? []}
+              onChange={(userId) => u({ userId: userId ?? undefined })}
+              allowUnassigned={false}
+              searchable
+              placeholder="Select user..."
+            />
+          </Field>
+        )}
         {/* {data.action === 'user_in_team'  && <Field label="Team" required><Select value={data.teamId ?? ''} onChange={(v) => u({ teamId: v })} placeholder="Select team..." options={MOCK_TEAMS} /></Field>} */}
         {showLogic && (
           <Field label="Logic" required>

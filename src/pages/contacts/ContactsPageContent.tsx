@@ -1,5 +1,7 @@
 import type { ContactsPageContentProps } from "./types";
+import { Plus } from "lucide-react";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { CONTACT_SIDEBAR_WIDTH } from "../inbox/contact-sidebar/DesktopShell";
 import { ContactsHeader } from "./components/ContactsHeader";
 import { ContactsTable } from "./components/ContactsTable";
@@ -178,6 +180,12 @@ export function ContactsPageContent({
       />
 
       {isMobile ? editContactModal : null}
+
+      <FloatingActionButton
+        label="New contact"
+        icon={<Plus size={24} />}
+        onClick={() => setShowNewContact(true)}
+      />
 
       {showActionsMenu && <div className="fixed inset-0 z-10" onClick={() => setShowActionsMenu(false)} />}
     </div>

@@ -541,7 +541,7 @@ export function DataTable<T, SortField extends string = string>({
             <div
               ref={mobileScrollRef}
               onWheelCapture={handleMobileWheelCapture}
-              className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden  p-3 pb-24"
+              className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden  p-3 pb-24"
               style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             >
               {rows.map((row) => {

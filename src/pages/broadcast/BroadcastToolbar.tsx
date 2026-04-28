@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Calendar, ListFilter, Plus, RefreshCw, Search, Table, X } from "lucide-react";
+import { Calendar, List, ListFilter, Plus, RefreshCw, Search, Table } from "lucide-react";
 import { Button } from "../../components/ui/Button";
+import { IconButton } from "../../components/ui/button/IconButton";
 import { BaseInput } from "../../components/ui/inputs/BaseInput";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -37,51 +37,47 @@ export function BroadcastToolbar({
   desktopMode = "standalone",
 }: BroadcastToolbarProps) {
   const isMobile = useIsMobile();
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   useMobileHeaderActions(
     isMobile
       ? {
-          actions: [
-            {
-              id: "broadcast-search",
-              label: mobileSearchOpen ? "Close search" : "Search broadcasts",
-              icon: mobileSearchOpen ? <X size={17} /> : <Search size={17} />,
-              active: mobileSearchOpen,
-              hasIndicator: !mobileSearchOpen && Boolean(searchQuery),
-              onClick: () => setMobileSearchOpen((value) => !value),
-            },
-            {
-              id: "broadcast-filters",
-              label: "Broadcast filters",
-              icon: <ListFilter size={17} />,
-              hasIndicator: selectedStatus !== "All",
-              onClick: onOpenFilters,
-            },
-            {
-              id: "broadcast-new",
-              label: "New broadcast",
-              icon: <Plus size={18} />,
-              onClick: onNewBroadcast,
-            },
-          ],
-          panel: mobileSearchOpen ? (
-            <BaseInput
-              autoFocus
-              appearance="toolbar"
-              leftIcon={<Search size={15} />}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search broadcasts"
-              type="text"
-              value={searchQuery}
-            />
-          ) : null,
+          panel: (
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <BaseInput
+                  appearance="toolbar"
+                  leftIcon={<Search size={15} />}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder="Search broadcasts"
+                  type="search"
+                  value={searchQuery}
+                  aria-label="Search broadcasts"
+                />
+              </div>
+              <IconButton
+                aria-label="Broadcast filters"
+                icon={
+                  <>
+                    {selectedStatus !== "All" ? (
+                      <span
+                        aria-hidden="true"
+                        className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white"
+                      />
+                    ) : null}
+                    <ListFilter size={17} />
+                  </>
+                }
+                onClick={onOpenFilters}
+                radius="full"
+                type="button"
+                variant={selectedStatus !== "All" ? "soft-primary" : "ghost"}
+              />
+            </div>
+          ),
         }
       : {},
     [
       isMobile,
-      mobileSearchOpen,
-      onNewBroadcast,
       onOpenFilters,
       onSearchChange,
       searchQuery,
@@ -123,12 +119,12 @@ export function BroadcastToolbar({
           <div className="flex flex-shrink-0 items-center rounded-xl bg-slate-100 p-0.5">
             <Button
               type="button"
-                            leftIcon={<Table size={14} />}
+                            leftIcon={<List size={14} />}
 
               variant={viewMode === "table" ? "secondary" : "ghost"}
               onClick={() => onViewModeChange("table")}
             >
-              Table
+              
             </Button>
             <Button
               type="button"
@@ -137,7 +133,7 @@ export function BroadcastToolbar({
               leftIcon={<Calendar size={14} />}
               onClick={() => onViewModeChange("calendar")}
             >
-              Cal
+              
             </Button>
           </div>
         </div>
@@ -211,7 +207,7 @@ export function BroadcastToolbar({
               leftIcon={<Calendar size={14} />}
               onClick={() => onViewModeChange("calendar")}
             >
-              Cal
+              Calendar
             </Button>
           </div>
         </div>

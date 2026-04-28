@@ -21,6 +21,7 @@ import { ColorInput } from "../../../components/ui/inputs/ColorInput";
 import { CopyInput } from "../../../components/ui/inputs/CopyInput";
 import { TagInput } from "../../../components/ui/inputs/TagInput";
 import { Tag } from "../../../components/ui/tag/Tag";
+import { buildWebsiteChatEmbedCode } from "./websiteChatEmbed";
 
 const CHAT_ICONS = [
   () => (
@@ -69,8 +70,16 @@ interface CreatedWebsiteChannel extends Channel {
   embedCode?: string;
   config?: {
     widgetToken?: string;
+    appearance?: {
+      agentName?: string;
+      primaryColor?: string;
+      welcomeMessage?: string;
+    };
   };
 }
+
+const DEFAULT_AGENT_NAME = "Support";
+const DEFAULT_WELCOME_MESSAGE = "Hi! How can we help?";
 
 export const WebsiteChatChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6">
@@ -158,13 +167,20 @@ export const WebsiteChatChannel = ({
     try {
       const response = await ChannelApi.createWebchatChannel(workspaceId, {
         name: "Website Chat",
-        welcomeMessage: "Hi! How can we help?",
+        agentName: DEFAULT_AGENT_NAME,
+        welcomeMessage: DEFAULT_WELCOME_MESSAGE,
         primaryColor: themeColor,
         allowedOrigins: websites,
       });
 
       setCreatedChannel(response);
-      setEmbedCode(response.embedCode ?? "");
+      setEmbedCode(
+        buildWebsiteChatEmbedCode(response, {
+          agentName: DEFAULT_AGENT_NAME,
+          primaryColor: themeColor,
+          welcomeMessage: DEFAULT_WELCOME_MESSAGE,
+        }),
+      );
       setStep(2);
     } catch (caughtError: any) {
       setError(
@@ -371,10 +387,10 @@ export const WebsiteChatChannel = ({
             </Button>
           </div>
 
-          {createdChannel?.config?.widgetToken ? (
+          {createdChannel?.identifier || createdChannel?.config?.widgetToken ? (
             <CopyInput
               label="Widget token"
-              value={createdChannel.config.widgetToken}
+              value={createdChannel.identifier || createdChannel.config?.widgetToken || ""}
             />
           ) : null}
 
