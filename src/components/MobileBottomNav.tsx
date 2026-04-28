@@ -278,7 +278,7 @@ export function MobileBottomNav() {
                         : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    <item.icon size={18} className="flex-shrink-0" />
+                    <item.icon size={22} className="flex-shrink-0" />
 
                     <div className="min-w-0 text-left">
                       <p className="truncate text-sm font-semibold">
@@ -313,7 +313,7 @@ export function MobileBottomNav() {
                         : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    <link.icon size={18} className="flex-shrink-0" />
+                    <link.icon size={22} className="flex-shrink-0" />
 
                     <div className="min-w-0 text-left">
                       <p className="truncate text-sm font-semibold">
