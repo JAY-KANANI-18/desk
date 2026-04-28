@@ -56,9 +56,9 @@ export const EmailChannelSidebar = () => (
       </div>
     </div>
 
-    <div className="h-px bg-gray-100" />
+    <div className="h-px bg-gray-100 hidden md:block" />
 
-    <div>
+    <div className='hidden md:block'>
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
         Features
       </p>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   AlertCircle,
+  ArrowRight,
   BarChart3,
   Check,
   ExternalLink,
@@ -100,8 +101,8 @@ export const WebsiteChatChannelSidebar = () => (
         </p>
       </div>
     </div>
-    <div className="h-px bg-gray-100" />
-    <div>
+    <div className="h-px bg-gray-100 hidden md:block" />
+    <div className='hidden md:block'>
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
         Features
       </p>
@@ -331,14 +332,14 @@ export const WebsiteChatChannel = ({
                 Token generated securely on our servers
               </p>
               <Button
-                leftIcon={<MessageSquare size={12} />}
+                // rightIcon={<ArrowRight size={12} />}
                 loading={connecting}
                 loadingMode="inline"
                 loadingLabel="Creating..."
                 disabled={websites.length === 0}
                 onClick={() => void handleNext()}
               >
-                Next
+                Create
               </Button>
             </div>
           </div>

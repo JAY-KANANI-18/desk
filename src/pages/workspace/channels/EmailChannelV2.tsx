@@ -70,9 +70,9 @@ export const EmailChannelSidebar = () => (
       </div>
     </div>
 
-    <div className="h-px bg-gray-100" />
+    <div className="h-px bg-gray-100 hidden md:block" />
 
-    <div>
+    <div className='hidden md:block'>
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
         Features
       </p>
@@ -326,7 +326,7 @@ export const EmailChannel = ({
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="space-y-6 p-6">
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               Forwarding Inbox
             </p>
@@ -345,7 +345,7 @@ export const EmailChannel = ({
                 }
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <BaseInput

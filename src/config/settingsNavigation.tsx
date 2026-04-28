@@ -7,7 +7,7 @@ import {
   GitBranch,
   MessageSquareText,
   RadioTower,
-  RadioTower,
+  
   RefreshCw,
   Settings,
   Sparkles,
