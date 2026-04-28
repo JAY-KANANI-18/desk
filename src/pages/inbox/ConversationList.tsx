@@ -467,7 +467,7 @@ export function ConversationList({
               preserveChildLayout
               size="md"
               radius="lg"
-              className="mb-2 text-left shadow-sm transition-shadow"
+              className="mb-1 text-left shadow-sm transition-shadow"
             >
               {isSelected ? (
                 <span
@@ -480,7 +480,7 @@ export function ConversationList({
                   <AvatarWithBadge
                     src={contact?.avatarUrl}
                     name={contactName}
-                    size="base"
+                    size="md"
                     alt={contactName}
                     fallbackTone="neutral"
                     badgeType={getChannelBadgeType(channelType)}
@@ -496,8 +496,9 @@ export function ConversationList({
                       as="span"
                       text={contactName}
                       maxLines={1}
-                      className={`min-w-0 max-w-full flex-1 text-sm ${
-                        isUnread ? "font-bold text-gray-900" : "font-medium text-gray-800"
+                  
+                      className={`min-w-0 max-w-full flex-1 text-lg  ${
+                        isUnread ? " text-gray-900" : " text-gray-700"
                       }`}
                     />
                     <span className="flex flex-shrink-0 items-center gap-1.5">
@@ -539,7 +540,7 @@ export function ConversationList({
                       />
                     ) : null}
 
-                    {contactAssignee ? (
+                    {/* {contactAssignee ? (
                       <Avatar
                         src={contactAssignee.avatarUrl}
                         name={assigneeName}
@@ -548,7 +549,7 @@ export function ConversationList({
                       />
                     ) : (
                       <UserCircle2 size={16} className="h-5 w-5 rounded-full text-gray-400" />
-                    )}
+                    )} */}
                   </span>
                 </span>
               </span>

@@ -5,7 +5,7 @@ import { Tag } from "../ui/Tag";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
 
 const navLinkClassName = (isActive: boolean, depth: number) =>
-  `group flex min-h-[56px] w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
+  `group flex  w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
     depth > 0 ? "pl-11 md:pl-10" : ""
   } ${
     isActive
@@ -72,7 +72,7 @@ export const SettingsNavList = ({
           </p>
         </div>
 
-        <div className="space-y-1 rounded-[22px] bg-slate-50/70 p-1.5 md:space-y-0.5 md:rounded-none md:bg-transparent md:p-0">
+        <div className="space-y-1 rounded-[22px]  p-1.5 md:space-y-0.5 md:rounded-none md:bg-transparent md:p-0">
           {section.items.map((item) => (
             <SidebarItem
               depth={0}
@@ -161,8 +161,8 @@ const SidebarItem = ({
               <Tag label={item.badge} bgColor="primary" size="sm" />
             )}
             <ChevronRight
-              className={isActive ? "text-slate-500" : "text-slate-300"}
-              size={16}
+              className={isActive ? "text-slate-600" : "text-slate-900"}
+              size={18}
             />
           </div>
         </>

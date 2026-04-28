@@ -430,7 +430,7 @@ export function ContactsTable({
                 <Avatar
                   src={contact.avatarUrl ?? undefined}
                   name={getContactName(contact)}
-                  size="sm"
+                  size="base"
                 />
 
                 <div className="min-w-0 flex-1">
@@ -438,7 +438,7 @@ export function ContactsTable({
                     <p className="truncate text-[16px] font-semibold leading-tight text-slate-900">
                       {getContactName(contact)}
                     </p>
-                    <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                    <div className={`mt-1 flex min-w-0 flex-wrap items-center gap-2 ${ lifecycle.label ?  "text-slate-400" : "text-gray-300"}`}>
                       <span className="text-xs"
                        
                       > {lifecycle.label}</span>

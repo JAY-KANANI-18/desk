@@ -104,7 +104,7 @@ export const SettingsLayout = ({
               )}
 
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-900">
                   {config.title}
                 </p>
                 <h1 className="truncate text-base font-semibold text-slate-900">
