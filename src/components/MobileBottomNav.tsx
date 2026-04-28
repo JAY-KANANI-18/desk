@@ -173,8 +173,8 @@ export function MobileBottomNav() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white pt-1 md:hidden">
-    <nav className="relative z-50 mx-auto flex w-full max-w-xl items-stretch rounded-t-[28px] border border-b-0 bg-white px-2 pb-2 pt-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white  md:hidden">
+    <nav className="relative z-50 mx-auto flex w-full max-w-xl items-stretch rounded-t-[28px] border border-b-0 bg-white px-2 pb-3 pt-1 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
   <div
     className="pointer-events-none absolute top-0 z-0 h-1.5 transition-all duration-300 ease-out"
     style={{
@@ -204,7 +204,7 @@ export function MobileBottomNav() {
 
     const content = (
       <div className="flex h-[64px] flex-col items-center justify-center gap-1.5">
-        <item.icon size={22} className={iconClassName} />
+        <item.icon size={24} className={iconClassName} />
         <span className={labelClassName}>
           {item.label}
         </span>
