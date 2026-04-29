@@ -5,6 +5,7 @@ import {
   Building2,
   CircleUserRound,
   GitBranch,
+  Link,
   MessageSquareText,
   RadioTower,
   
@@ -65,7 +66,7 @@ export const workspaceSettingsConfig: SettingsModuleConfig = {
         {
           id: "workspace-integrations",
           label: "Integrations",
-          icon: <RadioTower size={22} />,
+          icon: <Link size={22} />,
           permission: { ws: "ws:channels:manage" },
           to: "/workspace/settings/integrations",
         },

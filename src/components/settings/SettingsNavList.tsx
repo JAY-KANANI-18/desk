@@ -72,7 +72,7 @@ export const SettingsNavList = ({
           </p>
         </div>
 
-        <div className="space-y-1 rounded-[22px]  p-1.5 md:space-y-0.5 md:rounded-none md:bg-transparent md:p-0">
+        <div className="space-y-1 rounded-[22px]  md:space-y-0.5 md:rounded-none md:bg-transparent md:p-0">
           {section.items.map((item) => (
             <SidebarItem
               depth={0}
