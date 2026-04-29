@@ -1,4 +1,4 @@
-import { MessageCircle, Mail, Globe, Instagram, Facebook } from "lucide-react";
+import { CHANNEL_DISPLAY_CONFIG } from "../../config/channelMetadata";
 import type { Conversation, CallLog, ChannelConfig } from "./types";
 
 export const conversations: Conversation[] = [
@@ -195,53 +195,7 @@ export const conversations: Conversation[] = [
   },
 ];
 
-export const channelConfig: Record<string, ChannelConfig> = {
-  whatsapp: {
-    icon: "https://cdn.simpleicons.org/whatsapp",
-    bg: "bg-green-500",
-    label: "WhatsApp",
-  },
-  instagram: {
-    icon: "https://cdn.simpleicons.org/instagram",
-    bg: "bg-pink-500",
-    label: "Instagram",
-  },
-  messenger: {
-    icon: "https://cdn.simpleicons.org/messenger",
-    bg: "bg-blue-600",
-    label: "Messenger",
-  },
-  gmail: {
-    icon: "https://cdn.simpleicons.org/gmail",
-    bg: "bg-red-500",
-    label: "Gmail",
-  },
-  email: {
-    icon: "https://cdn.simpleicons.org/maildotru",
-    bg: "bg-blue-500",
-    label: "Email",
-  },
-  webchat: {
-    icon: "https://cdn.simpleicons.org/googlechat",
-    bg: "bg-purple-500",
-    label: "Website Chat",
-  },
-  sms: {
-    icon: "https://cdn.simpleicons.org/androidmessages",
-    bg: "bg-emerald-600",
-    label: "SMS",
-  },
-  exotel_call: {
-    icon: "https://cdn.simpleicons.org/ringcentral",
-    bg: "bg-cyan-600",
-    label: "Voice Call",
-  },
-  meta_ads: {
-    icon: "https://cdn.simpleicons.org/meta",
-    bg: "bg-blue-700",
-    label: "Meta Ads",
-  },
-};
+export const channelConfig: Record<string, ChannelConfig> = CHANNEL_DISPLAY_CONFIG;
 
 export const teamMembers = [
   { id: "u1", name: "Alice Johnson", initials: "AJ", online: true },

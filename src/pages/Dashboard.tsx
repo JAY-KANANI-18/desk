@@ -24,11 +24,11 @@ import { IconButton } from "../components/ui/button/IconButton";
 import {
   Avatar,
   AvatarWithBadge,
-  type AvatarBadgeType,
 } from "../components/ui/Avatar";
 import { CompactSelectMenu, type CompactSelectMenuGroup } from "../components/ui/Select";
 import { CountBadge } from "../components/ui/CountBadge";
 import { TruncatedText } from "../components/ui/TruncatedText";
+import { getAvatarBadgeTypeForChannel } from "../config/channelMetadata";
 import { workspaceApi } from "../lib/workspaceApi";
 import {
   CHANNEL_CONNECT_SLUGS,
@@ -148,31 +148,6 @@ const MEMBER_STATUS_GROUPS: CompactSelectMenuGroup[] = [
   },
 ];
 
-const CHANNEL_BADGE_TYPE_BY_SLUG: Record<string, AvatarBadgeType> = {
-  whatsapp: "whatsapp",
-  whatsapp_cloud: "whatsapp",
-  instagram: "instagram",
-  messenger: "messenger",
-  facebook: "facebook",
-  email: "email",
-  gmail: "gmail",
-  website_chat: "webchat",
-  webchat: "webchat",
-  sms: "sms",
-  msg91_sms: "sms",
-  exotel_call: "web",
-  meta_ads: "facebook",
-};
-
-const CHANNEL_SLUG_ALIASES: Record<string, string> = {
-  webchat: "website_chat",
-  website: "website_chat",
-  website_chat: "website_chat",
-  whatsapp: "whatsapp_cloud",
-  whatsapp_cloud: "whatsapp_cloud",
-  sms: "msg91_sms",
-};
-
 // ── Small components ───────────────────────────────────────────────────────────
 
 function timeAgo(date?: string): string {
@@ -215,7 +190,7 @@ function getUserName(user?: { firstName?: string; lastName?: string; email?: str
 function getChannelSlug(channelType?: string | null) {
   const normalized = channelType?.toLowerCase().trim() ?? "";
 
-  return CHANNEL_SLUG_ALIASES[normalized] ?? CHANNEL_CONNECT_SLUGS[normalized] ?? normalized;
+  return CHANNEL_CONNECT_SLUGS[normalized] ?? normalized;
 }
 
 function getDashboardChannel(channelType?: string | null) {
@@ -225,7 +200,7 @@ function getDashboardChannel(channelType?: string | null) {
   return {
     label: definition?.name ?? channelType ?? "Channel",
     icon: definition?.icon,
-    badgeType: CHANNEL_BADGE_TYPE_BY_SLUG[slug] ?? "webchat",
+    badgeType: getAvatarBadgeTypeForChannel(slug),
   };
 }
 

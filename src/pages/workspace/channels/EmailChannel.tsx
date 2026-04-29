@@ -14,6 +14,7 @@ import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { PasswordInput } from "../../../components/ui/inputs/PasswordInput";
 import { BaseSelect } from "../../../components/ui/select/BaseSelect";
 import type { SelectOption } from "../../../components/ui/select/shared";
+import { getChannelIconUrl } from "../../../config/channelMetadata";
 
 interface Props {
   connected: Channel | null;
@@ -43,7 +44,7 @@ export const EmailChannelSidebar = () => (
     <div className="flex items-center gap-2.5">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
         <img
-          src="https://cdn.simpleicons.org/maildotru"
+          src={getChannelIconUrl("email")}
           className="h-10 w-10"
           alt="Email"
         />

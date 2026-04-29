@@ -1,4 +1,5 @@
 import type { AvatarBadgeType } from "../../components/ui/Avatar";
+import { getAvatarBadgeTypeForChannel } from "../../config/channelMetadata";
 
 export type ChannelLike = {
   id?: string | number | null;
@@ -10,20 +11,6 @@ export type ContactChannelLike = {
   channelType?: string | null;
   identifier?: string | null;
   messageWindowExpiry?: string | number | null;
-};
-
-const CHANNEL_BADGE_TYPES: Record<string, AvatarBadgeType> = {
-  whatsapp: "whatsapp",
-  instagram: "instagram",
-  facebook: "facebook",
-  messenger: "messenger",
-  telegram: "telegram",
-  email: "email",
-  gmail: "gmail",
-  sms: "sms",
-  web: "web",
-  webchat: "webchat",
-  website_chat: "webchat",
 };
 
 function normalizeValue(value: string | number | null | undefined) {
@@ -95,5 +82,5 @@ export function getContactScopedChannels<T extends ChannelLike>(
 }
 
 export function getChannelBadgeType(channelType?: string | null): AvatarBadgeType {
-  return CHANNEL_BADGE_TYPES[channelType ?? ""] ?? "web";
+  return getAvatarBadgeTypeForChannel(channelType);
 }

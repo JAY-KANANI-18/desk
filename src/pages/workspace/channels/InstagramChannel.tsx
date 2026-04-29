@@ -10,6 +10,7 @@ import {
 import type { Channel } from "../types";
 import { ChannelConnectActionButton } from "../../../components/channels/ChannelConnectActionButton";
 import { Button } from "../../../components/ui/button/Button";
+import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
 
 interface Props {
@@ -45,7 +46,7 @@ export const InstagramChannelSidebar = () => (
     <div className="flex items-center gap-2.5">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
         <img
-          src="https://cdn.simpleicons.org/instagram"
+          src={getChannelIconUrl("instagram")}
           className="h-10 w-10"
           alt="Instagram"
         />
@@ -160,7 +161,7 @@ export const InstagramOAuthPopup = ({
       fullWidth
       leftIcon={
         <img
-          src="https://cdn.simpleicons.org/instagram/ffffff"
+          src={getChannelIconUrl("instagram", "ffffff")}
           className="h-3 w-3"
           alt=""
         />

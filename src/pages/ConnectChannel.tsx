@@ -50,11 +50,9 @@ export const ChannelCatalogView = () => {
           <Button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-                            variant="tab"
-                selected={selectedCategory === category.id}
-
-                      radius="none"
-          
+            variant="tab"
+            selected={selectedCategory === category.id}
+            radius="none"
           >
             {category.name}
           </Button>
@@ -103,7 +101,7 @@ export const ChannelCatalogView = () => {
             <>
               <p className="mb-4 text-xs text-gray-400">
                 {filteredChannels.length} channel
-                {filteredChannels.length !== 1 ? "s" : ""}
+                {filteredChannels.length !== 1 ? "s" : ""} available to connect
               </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredChannels.map((channel) => {
@@ -117,35 +115,48 @@ export const ChannelCatalogView = () => {
                       fullWidth
                       contentAlign="start"
                       preserveChildLayout
+                      aria-label={`Connect ${channel.name}`}
                     >
-                      <div className="relative flex min-h-[184px] w-full flex-col text-left">
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-slate-300 md:hidden"
-                        >
-                          <ChevronRight size={16} />
-                        </span>
-
+                      <div className="relative text-wrap flex w-full flex-col gap-3 text-left md:min-h-[184px] md:gap-0">
                         {channel.badge ? (
-                          <span className="absolute right-0 top-0">
+                          <span className="hidden md:absolute md:right-0 md:top-0 md:block">
                             <Tag label={channel.badge} size="sm" bgColor="primary" />
                           </span>
                         ) : null}
 
-                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl">
-                          <img
-                            src={channel.icon}
-                            className="h-10 w-10 object-contain"
-                          />
+                        <div className="flex items-start gap-3 md:flex-1 md:flex-col md:gap-0">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl md:mb-3">
+                            <img
+                              src={channel.icon}
+                              className="h-10 w-10 object-contain"
+                            />
+                          </div>
+
+                          <div className="min-w-0 flex-1 md:flex md:w-full md:flex-col">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2 md:block">
+                              <h3 className="min-w-0 text-sm font-semibold leading-5 text-gray-900 md:mb-1 md:pr-12">
+                                {channel.name}
+                              </h3>
+                              {channel.badge ? (
+                                <span className="flex-shrink-0 md:hidden">
+                                  <Tag label={channel.badge} size="sm" bgColor="primary" />
+                                </span>
+                              ) : null}
+                            </div>
+
+                            <p className="mt-1 text-xs leading-5 text-gray-500 md:line-clamp-3 md:flex-1">
+                              {channel.description}
+                            </p>
+                          </div>
                         </div>
 
-                        <h3 className="mb-1 pr-12 text-sm font-semibold text-gray-900">
-                          {channel.name}
-                        </h3>
-
-                        <p className="line-clamp-3 flex-1 text-xs text-gray-500">
-                          {channel.description}
-                        </p>
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none flex items-center justify-end gap-1.5 border-t border-gray-100 pt-3 text-xs font-medium text-indigo-600 md:hidden"
+                        >
+                          Connect channel
+                          <ChevronRight size={15} />
+                        </span>
 
                         <span className="mt-5 hidden items-center justify-end gap-1.5 text-xs font-medium text-indigo-600 md:flex">
                           Connect

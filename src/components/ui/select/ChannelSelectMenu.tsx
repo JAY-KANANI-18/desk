@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { CHANNEL_SELECT_META } from "../../../config/channelMetadata";
 import { FieldShell } from "../inputs/shared";
 import {
   CompactSelectMenu,
@@ -59,45 +60,6 @@ export interface ChannelSelectMenuProps<TChannel extends ChannelSelectMenuChanne
   fullWidth?: boolean;
   triggerClassName?: string;
 }
-
-const CHANNEL_SELECT_META: Record<string, { icon: string; label: string }> = {
-  whatsapp: {
-    icon: "https://cdn.simpleicons.org/whatsapp",
-    label: "WhatsApp",
-  },
-  instagram: {
-    icon: "https://cdn.simpleicons.org/instagram",
-    label: "Instagram",
-  },
-  messenger: {
-    icon: "https://cdn.simpleicons.org/messenger",
-    label: "Messenger",
-  },
-  gmail: {
-    icon: "https://cdn.simpleicons.org/gmail",
-    label: "Gmail",
-  },
-  email: {
-    icon: "https://cdn.simpleicons.org/maildotru",
-    label: "Email",
-  },
-  webchat: {
-    icon: "https://cdn.simpleicons.org/googlechat",
-    label: "Website Chat",
-  },
-  sms: {
-    icon: "https://cdn.simpleicons.org/androidmessages",
-    label: "SMS",
-  },
-  exotel_call: {
-    icon: "https://cdn.simpleicons.org/ringcentral",
-    label: "Voice Call",
-  },
-  meta_ads: {
-    icon: "https://cdn.simpleicons.org/meta",
-    label: "Meta Ads",
-  },
-};
 
 export function getChannelSelectValue(
   channel: ChannelSelectMenuChannel,

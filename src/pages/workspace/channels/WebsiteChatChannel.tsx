@@ -22,6 +22,7 @@ import { ColorInput } from "../../../components/ui/inputs/ColorInput";
 import { CopyInput } from "../../../components/ui/inputs/CopyInput";
 import { TagInput } from "../../../components/ui/inputs/TagInput";
 import { Tag } from "../../../components/ui/tag/Tag";
+import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { buildWebsiteChatEmbedCode } from "./websiteChatEmbed";
 
 const CHAT_ICONS = [
@@ -87,7 +88,7 @@ export const WebsiteChatChannelSidebar = () => (
     <div className="flex items-center gap-2.5">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
         <img
-          src="https://cdn.simpleicons.org/googlechat"
+          src={getChannelIconUrl("webchat")}
           className="h-10 w-10"
           alt="Website Chat"
         />

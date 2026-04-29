@@ -1,16 +1,9 @@
+import { CONTACT_CHANNEL_META } from '../../../config/channelMetadata';
 import type { LifecycleStage } from '../../workspace/types';
 import type { SidebarContact, WorkspaceUserLike } from './types';
 
-export const CHANNEL_META: Record<string, { icon: string; label: string }> = {
-  whatsapp: { icon: 'https://cdn.simpleicons.org/whatsapp', label: 'WhatsApp' },
-  email: { icon: 'https://cdn.simpleicons.org/maildotru', label: 'Email' },
-  webchat: { icon: 'https://cdn.simpleicons.org/googlechat', label: 'Web Chat' },
-  instagram: { icon: 'https://cdn.simpleicons.org/instagram', label: 'Instagram' },
-  twitter: { icon: 'https://cdn.simpleicons.org/x', label: 'X' },
-  messenger: { icon: 'https://cdn.simpleicons.org/messenger', label: 'Messenger' },
-  facebook: { icon: 'https://cdn.simpleicons.org/meta', label: 'Facebook' },
-  gmail: { icon: 'https://cdn.simpleicons.org/gmail', label: 'Gmail' },
-};
+export const CHANNEL_META: Record<string, { icon: string; label: string }> =
+  CONTACT_CHANNEL_META;
 
 export function contactName(contact?: Partial<SidebarContact> | null) {
   return [contact?.firstName, contact?.lastName].filter(Boolean).join(' ') || 'Unnamed';

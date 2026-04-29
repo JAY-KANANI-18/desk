@@ -656,8 +656,8 @@ export function ContactSidebarHybrid({
           <div className="flex items-center gap-1.5">
             {channels.map((channel) => {
               const meta = CHANNEL_META[channel.channelType] ?? {
-                icon: 'https://cdn.simpleicons.org/googlechat',
-                label: channel.channelType || 'Channel',
+                ...CHANNEL_META.webchat,
+                label: channel.channelType || CHANNEL_META.webchat.label,
               };
               const channelKey = String(
                 channel.id ??

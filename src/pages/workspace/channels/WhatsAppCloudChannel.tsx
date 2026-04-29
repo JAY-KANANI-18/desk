@@ -22,6 +22,7 @@ import { Button } from "../../../components/ui/button/Button";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { PasswordInput } from "../../../components/ui/inputs/PasswordInput";
 import { Tag } from "../../../components/ui/tag/Tag";
+import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
 
 interface Props {
@@ -109,7 +110,7 @@ export const WhatsAppSidebarInfo = ({ channel }: { channel: Channel }) => (
   <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
     <div className="mb-2 flex items-center gap-2">
       <img
-        src="https://cdn.simpleicons.org/whatsapp/25D366"
+        src={getChannelIconUrl("whatsapp", "25D366")}
         className="h-10 w-10"
         alt="WhatsApp"
       />
@@ -150,11 +151,11 @@ export const WhatsAppSidebarInfo = ({ channel }: { channel: Channel }) => (
 );
 
 export const WhatsAppChannelSidebar = () => (
-  <div className="flex h-full flex-col gap-6 p-6">
-    <div className="flex items-center gap-2.5">
+  <div className="flex h-full flex-col gap-6 p-6  ">
+    <div className="flex items-center gap-2.5 ">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
         <img
-          src="https://cdn.simpleicons.org/whatsapp"
+          src={getChannelIconUrl("whatsapp")}
           className="h-10 w-10"
           alt="WhatsApp"
         />
@@ -359,20 +360,10 @@ export const WhatsAppCloudChannel = ({
                     {error}
                   </div>
                 ) : null}
-
-                <div className="border-t border-gray-100 pt-[var(--spacing-md)]">
-                  <div className="flex flex-col gap-[var(--spacing-md)] rounded-xl border border-gray-100 bg-gray-50/70 p-[var(--spacing-md)] sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">Connect with Meta</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
-                        Keeps your existing popup callback flow unchanged for WhatsApp
-                        Cloud API onboarding.
-                      </p>
-                    </div>
                     <ChannelConnectActionButton
                       leftIcon={
                         <img
-                          src="https://cdn.simpleicons.org/whatsapp/ffffff"
+                          src={getChannelIconUrl("whatsapp", "ffffff")}
                           className="h-3 w-3"
                           alt=""
                         />
@@ -387,8 +378,8 @@ export const WhatsAppCloudChannel = ({
                     >
                       Connect with Meta
                     </ChannelConnectActionButton>
-                  </div>
-                </div>
+
+               
 
                 <p className="text-center text-[10px] text-gray-400">
                   A popup will open to Meta&apos;s secure authorization page.

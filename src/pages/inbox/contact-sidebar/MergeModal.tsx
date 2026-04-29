@@ -116,8 +116,8 @@ export function MergeModal({
     return {
       ...channel,
       meta: CHANNEL_META[channel.channelType] ?? {
-        icon: 'https://cdn.simpleicons.org/googlechat',
-        label: channel.channelType || 'Channel',
+        ...CHANNEL_META.webchat,
+        label: channel.channelType || CHANNEL_META.webchat.label,
       },
     };
   };

@@ -23,7 +23,8 @@ export const OnboardingOptionCard = ({
   const Icon = option.icon;
   const isPill = variant === "pill";
   const [iconFailed, setIconFailed] = useState(false);
-
+  console.log({ option, selected,showIcon,url:option.iconUrl || option.emoji || Icon, });
+  
   const leading =
     showIcon && (option.iconUrl || option.emoji || Icon) ? (
       option.iconUrl && !iconFailed ? (
@@ -35,10 +36,13 @@ export const OnboardingOptionCard = ({
         />
       ) : option.emoji ? (
         <span className="text-base">{option.emoji}</span>
-      ) : Icon ? (
-        <Icon size={16} className={selected ? "text-indigo-700" : undefined} />
-      ) : null
-    ) : undefined;
+      ) 
+      // : Icon ? (
+      //   <Icon size={16} className={selected ? "text-indigo-700" : undefined} />
+      // ) 
+      : null
+    ) 
+    : undefined;
 
   return (
     <motion.div

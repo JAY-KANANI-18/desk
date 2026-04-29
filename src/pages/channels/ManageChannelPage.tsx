@@ -33,6 +33,11 @@ import { PageLayout } from '../../components/ui/PageLayout';
 import { Tag } from '../../components/ui/tag/Tag';
 import { Tooltip } from '../../components/ui/tooltip/Tooltip';
 import { useChannel } from '../../context/ChannelContext';
+import {
+  CHANNEL_TYPE_LABEL_TO_KEY,
+  MANAGE_CHANNEL_CONFIG,
+  type ManageChannelNavIconKey,
+} from '../../config/channelMetadata';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { ChannelApi } from '../../lib/channelApi';
 import { InstagramConfiguration } from '../workspace/channels/InstagramConfig';
@@ -312,6 +317,14 @@ export const DangerZone = ({
   );
 };
 
+const MANAGE_NAV_ICON_BY_KEY: Record<ManageChannelNavIconKey, ReactNode> = {
+  settings: <Settings size={14} />,
+  fileText: <FileText size={14} />,
+  messageCircle: <MessageCircle size={14} />,
+  menu: <Menu size={14} />,
+  wrench: <Wrench size={14} />,
+};
+
 export const CHANNEL_META: Record<
   string,
   {
@@ -321,156 +334,21 @@ export const CHANNEL_META: Record<
     navItems: { id: string; label: string; icon: ReactNode; badge?: string }[];
     additionalResources: { label: string; href: string }[];
   }
-> = {
-  whatsapp: {
-    label: 'WhatsApp Cloud API',
-    icon: 'https://cdn.simpleicons.org/whatsapp',
-    color: 'bg-green-500',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'templates', label: 'Templates', icon: <FileText size={14} /> },
-    ],
-    additionalResources: [
-      {
-        label: 'WhatsApp Cloud API docs',
-        href: 'https://developers.facebook.com/docs/whatsapp',
-      },
-      {
-        label: 'Template guidelines',
-        href: 'https://developers.facebook.com/docs/whatsapp/message-templates',
-      },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  messenger: {
-    label: 'Facebook Messenger',
-    icon: 'https://cdn.simpleicons.org/messenger',
-    color: 'bg-indigo-600',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'templates', label: 'Templates', icon: <FileText size={14} /> },
-      {
-        id: 'private_replies',
-        label: 'Private Replies',
-        icon: <MessageCircle size={14} />,
-      },
-      { id: 'chat_menu', label: 'Chat Menu', icon: <Menu size={14} /> },
-    ],
-    additionalResources: [
-      {
-        label: 'Messenger Platform docs',
-        href: 'https://developers.facebook.com/docs/messenger-platform',
-      },
-      { label: 'About Private Replies', href: '#' },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  instagram: {
-    label: 'Instagram',
-    icon: 'https://cdn.simpleicons.org/instagram',
-    color: 'bg-gradient-to-br from-purple-500 to-pink-500',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      {
-        id: 'icebreakers',
-        label: 'Ice-Breakers',
-        icon: <MessageCircle size={14} />,
-        badge: 'New',
-      },
-      {
-        id: 'private_replies',
-        label: 'Private Replies',
-        icon: <MessageCircle size={14} />,
-      },
-      {
-        id: 'story_replies',
-        label: 'Story Replies',
-        icon: <MessageCircle size={14} />,
-      },
-    ],
-    additionalResources: [
-      {
-        label: 'Instagram Messaging API docs',
-        href: 'https://developers.facebook.com/docs/instagram-api/guides/business-messaging',
-      },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  email: {
-    label: 'Email (SMTP/IMAP)',
-    icon: 'https://cdn.simpleicons.org/maildotru',
-    color: 'bg-indigo-500',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'troubleshoot', label: 'Troubleshoot', icon: <Wrench size={14} /> },
-    ],
-    additionalResources: [
-      { label: 'Email channel setup guide', href: '#' },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  gmail: {
-    label: 'Gmail',
-    icon: 'https://cdn.simpleicons.org/gmail',
-    color: 'bg-red-500',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'troubleshoot', label: 'Troubleshoot', icon: <Wrench size={14} /> },
-    ],
-    additionalResources: [
-      { label: 'Gmail channel setup guide', href: '#' },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  webchat: {
-    label: 'Website Chat',
-    icon: 'https://cdn.simpleicons.org/googlechat',
-    color: 'bg-indigo-800',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'troubleshoot', label: 'Troubleshoot', icon: <Wrench size={14} /> },
-    ],
-    additionalResources: [
-      { label: 'Install on WordPress', href: '#' },
-      { label: 'Install on Shopify', href: '#' },
-      { label: 'Install on Wix', href: '#' },
-    ],
-  },
-  sms: {
-    label: 'MSG91 SMS',
-    icon: 'https://cdn.simpleicons.org/androidmessages',
-    color: 'bg-emerald-600',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'troubleshoot', label: 'Troubleshoot', icon: <Wrench size={14} /> },
-    ],
-    additionalResources: [{ label: 'MSG91 Docs', href: 'https://msg91.com/help' }],
-  },
-  exotel_call: {
-    label: 'Exotel Calling',
-    icon: 'https://cdn.simpleicons.org/ringcentral',
-    color: 'bg-cyan-600',
-    navItems: [
-      { id: 'configuration', label: 'Configuration', icon: <Settings size={14} /> },
-      { id: 'troubleshoot', label: 'Troubleshoot', icon: <Wrench size={14} /> },
-    ],
-    additionalResources: [
-      { label: 'Exotel Docs', href: 'https://developer.exotel.com/' },
-    ],
-  },
-};
+> = Object.fromEntries(
+  Object.entries(MANAGE_CHANNEL_CONFIG).map(([key, meta]) => [
+    key,
+    {
+      ...meta,
+      navItems: meta.navItems.map((item) => ({
+        ...item,
+        icon: MANAGE_NAV_ICON_BY_KEY[item.icon],
+      })),
+    },
+  ]),
+);
 
-export const CHANNEL_TYPE_TO_SLUG: Record<string, string> = {
-  'WhatsApp Cloud API': 'whatsapp',
-  'Facebook Messenger': 'messenger',
-  Instagram: 'instagram',
-  Email: 'email',
-  'Email (SMTP/IMAP)': 'email',
-  Gmail: 'gmail',
-  'Website Chat': 'webchat',
-  'MSG91 SMS': 'sms',
-  'Exotel Calling': 'exotel_call',
-};
+export const CHANNEL_TYPE_TO_SLUG: Record<string, string> =
+  CHANNEL_TYPE_LABEL_TO_KEY;
 
 const ProfileSection = ({ channel }: { channel: ConnectedChannel }) => {
   const { saving, saved, error, save } = useSave();

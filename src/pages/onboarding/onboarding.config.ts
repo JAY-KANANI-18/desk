@@ -19,6 +19,10 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
+import {
+  ONBOARDING_CHANNEL_DEFINITIONS,
+  type OnboardingChannelIconKey,
+} from "../../config/channelMetadata";
 import type {
   OnboardingOption,
   OnboardingStepDefinition,
@@ -144,43 +148,22 @@ export const MONTHLY_CONVERSATION_OPTIONS: OnboardingOption[] = [
   },
 ];
 
-export const CHANNEL_OPTIONS: OnboardingOption[] = [
-  {
-    value: "whatsapp",
-    label: "WhatsApp",
-    description: "Handle the conversations your customers expect first.",
-    icon: MessageCircleMore,
-    iconUrl: "https://cdn.simpleicons.org/whatsapp/25D366",
-  },
-  {
-    value: "instagram",
-    label: "Instagram",
-    description: "Capture DMs, stories, and social leads in one place.",
-    icon: Instagram,
-    iconUrl: "https://cdn.simpleicons.org/instagram/E4405F",
-  },
-  {
-    value: "email",
-    label: "Email",
-    description: "Keep slower, higher-context threads alongside chat.",
-    icon: Mail,
-    iconUrl: "https://cdn.simpleicons.org/gmail/EA4335",
-  },
-  {
-    value: "website-chat",
-    label: "Website Chat",
-    description: "Convert visitors the moment they land on your site.",
-    icon: Globe,
-    iconUrl: "https://cdn.simpleicons.org/livechat/FF5100",
-  },
-  {
-    value: "facebook",
-    label: "Facebook",
-    description: "Support your page audience without tab-switching.",
-    icon: Facebook,
-    iconUrl: "https://cdn.simpleicons.org/facebook/1877F2",
-  },
-];
+const CHANNEL_OPTION_ICON_BY_KEY = {
+  messageCircleMore: MessageCircleMore,
+  instagram: Instagram,
+  mail: Mail,
+  globe: Globe,
+  facebook: Facebook,
+} satisfies Record<OnboardingChannelIconKey, OnboardingOption["icon"]>;
+
+export const CHANNEL_OPTIONS: OnboardingOption[] =
+  ONBOARDING_CHANNEL_DEFINITIONS.map((option) => ({
+    value: option.value,
+    label: option.label,
+    description: option.description,
+    icon: CHANNEL_OPTION_ICON_BY_KEY[option.iconKey],
+    iconUrl: option.iconUrl,
+  }));
 
 export const PRIMARY_GOAL_OPTIONS: OnboardingOption[] = [
   {

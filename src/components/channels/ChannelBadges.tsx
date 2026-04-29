@@ -1,71 +1,13 @@
 import type { CSSProperties, MouseEvent } from "react";
 import { Link } from "react-router-dom";
+import {
+  CHANNEL_BADGE_KEYS,
+  getChannelBadgeMetadata,
+  type ChannelBadgeMetadata,
+} from "../../config/channelMetadata";
 import { Tooltip } from "../ui/tooltip";
 
-export type ChannelBadgeKey =
-  | "whatsapp"
-  | "instagram"
-  | "messenger"
-  | "gmail"
-  | "webchat";
-
-export interface ChannelBadgeMeta {
-  icon: string;
-  label: string;
-  glow: string;
-  shadow: string;
-  connectSlug: string;
-}
-
-export const CHANNEL_BADGE_META: Record<ChannelBadgeKey, ChannelBadgeMeta> = {
-  whatsapp: {
-    icon: "https://cdn.simpleicons.org/whatsapp/25D366",
-    label: "WhatsApp",
-    glow: "from-[#25d366] to-[#128c7e]",
-    shadow: "rgba(37,211,102,0.45)",
-    connectSlug: "whatsapp_cloud",
-  },
-  instagram: {
-    icon: "https://cdn.simpleicons.org/instagram/E1306C",
-    label: "Instagram",
-    glow: "from-[#f09433] via-[#dc2743] to-[#bc1888]",
-    shadow: "rgba(220,39,67,0.45)",
-    connectSlug: "instagram",
-  },
-  messenger: {
-    icon: "https://cdn.simpleicons.org/messenger/0084FF",
-    label: "Messenger",
-    glow: "from-[#0084ff] to-[#00b2ff]",
-    shadow: "rgba(0,132,255,0.45)",
-    connectSlug: "messenger",
-  },
-  gmail: {
-    icon: "https://cdn.simpleicons.org/gmail/EA4335",
-    label: "Email",
-    glow: "from-[#EA4335] to-[#FBBC05]",
-    shadow: "rgba(234,67,53,0.45)",
-    connectSlug: "gmail",
-  },
-  webchat: {
-    icon: "https://cdn.simpleicons.org/googlechat/00BCD4",
-    label: "Website Chat",
-    glow: "from-[#00bcd4] to-[#0097a7]",
-    shadow: "rgba(0,188,212,0.45)",
-    connectSlug: "website_chat",
-  },
-};
-
-export const CHANNEL_BADGE_KEYS = Object.keys(
-  CHANNEL_BADGE_META,
-) as ChannelBadgeKey[];
-
-const CHANNEL_BADGE_ALIASES: Record<string, ChannelBadgeKey> = {
-  "whatsapp-cloud": "whatsapp",
-  whatsapp_cloud: "whatsapp",
-  facebook: "messenger",
-  website_chat: "webchat",
-  website_chat_widget: "webchat",
-};
+export type ChannelBadgeMeta = ChannelBadgeMetadata;
 
 type ChannelBadgeSize = "sm" | "md";
 
@@ -84,10 +26,7 @@ const CHANNEL_BADGE_SIZE_CLASSES: Record<
 };
 
 export function getChannelBadgeMeta(channelKey: string) {
-  const normalizedKey =
-    CHANNEL_BADGE_ALIASES[channelKey] ?? (channelKey as ChannelBadgeKey);
-
-  return CHANNEL_BADGE_META[normalizedKey] ?? null;
+  return getChannelBadgeMetadata(channelKey);
 }
 
 export function getChannelConnectPath(channelKey: string) {

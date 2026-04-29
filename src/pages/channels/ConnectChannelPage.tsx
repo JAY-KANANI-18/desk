@@ -282,7 +282,7 @@ export const ConnectChannelPage = () => {
 
   const SidebarContent = meta.SidebarContent;
   const renderSidebarPanel = () =>
-    SidebarContent ? <SidebarContent /> : <GenericSidebar meta={meta} />;
+    SidebarContent ? <SidebarContent  /> : <GenericSidebar meta={meta} />;
 
   return (
     <PageLayout
@@ -326,11 +326,7 @@ export const ConnectChannelPage = () => {
 
           <main className="min-w-0 flex-1 overflow-y-auto bg-gray-50">
             <div className="w-full max-w-6xl px-[var(--spacing-md)] pb-24 pt-[var(--spacing-md)] md:mx-0 md:px-[var(--spacing-lg)] md:pb-[var(--spacing-lg)] md:pt-[var(--spacing-lg)]">
-              {isMobile ? (
-                <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  {renderSidebarPanel()}
-                </div>
-              ) : null}
+              {isMobile && null}
 
               <Component
                 workspaceId={activeWorkspace?.id ?? ""}

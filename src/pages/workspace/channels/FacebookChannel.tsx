@@ -9,6 +9,7 @@ import {
 import { ChannelConnectActionButton } from '../../../components/channels/ChannelConnectActionButton';
 import { Button } from '../../../components/ui/button/Button';
 import { Tag } from '../../../components/ui/tag/Tag';
+import { getChannelIconUrl } from '../../../config/channelMetadata';
 import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
 import type { Channel } from '../types';
 
@@ -44,7 +45,7 @@ export const FacebookChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6">
     <div className="flex items-center gap-2.5">
       <img
-        src="https://cdn.simpleicons.org/messenger"
+        src={getChannelIconUrl('messenger')}
         className="h-10 w-10"
         alt="messenger"
       />
@@ -172,7 +173,7 @@ export const MessengerOAuthPopup = ({
       leftIcon={
         !loading ? (
           <img
-            src="https://cdn.simpleicons.org/facebook/ffffff"
+            src={getChannelIconUrl('facebook', 'ffffff')}
             className="h-3 w-3"
             alt=""
           />

@@ -14,6 +14,7 @@ import {
 import { Button } from "../components/ui/Button";
 import { PageLayout } from "../components/ui/PageLayout";
 import { Tag } from "../components/ui/Tag";
+import { GET_STARTED_CHANNELS } from "../config/channelMetadata";
 
 interface GetStartedSteps {
   connectChannel: boolean;
@@ -42,28 +43,7 @@ const STEPS: Step[] = [
     description: (
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          {[
-            {
-              label: "WhatsApp",
-              src: "https://cdn.simpleicons.org/whatsapp",
-            },
-            {
-              label: "Instagram",
-              src: "https://cdn.simpleicons.org/instagram",
-            },
-            {
-              label: "Messenger",
-              src: "https://cdn.simpleicons.org/messenger",
-            },
-            {
-              label: "Telegram",
-              src: "https://cdn.simpleicons.org/googlechat",
-            },
-            {
-              label: "Email",
-              src: "https://cdn.simpleicons.org/maildotru",
-            },
-          ].map((channel) => (
+          {GET_STARTED_CHANNELS.map((channel) => (
             <span
               key={channel.label}
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600"

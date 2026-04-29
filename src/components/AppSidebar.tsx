@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { BookCheck, Settings } from "lucide-react";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
@@ -22,16 +22,23 @@ export const AppSidebar = ({
   const { dismissed, isComplete } = useGetStarted();
   const { flags } = useFeatureFlags();
   const settingsLinks = useSettingsLinks();
+  const location = useLocation();
 
   const isMobileDrawer = variant === "mobile";
   const isExpanded = isMobileDrawer;
   const showOnboarding = !dismissed && !isComplete;
   const compactItemClass =
     "flex h-[3.35rem] w-[3.6rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] text-center transition-all";
-  const desktopIconButtonClass = `${compactItemClass} text-slate-500 hover:bg-slate-100 hover:text-slate-900`;
+  const inactiveNavClass = "text-slate-500 hover:bg-slate-100 hover:text-slate-900";
   const activeNavClass = isExpanded
     ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.6rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
     : "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500";
+  const isSettingsRouteActive = settingsLinks.some(
+    (link) =>
+      location.pathname === link.path ||
+      location.pathname.startsWith(`${link.path}/`),
+  );
+  const isSettingsActive = settingsMenu.isOpen || isSettingsRouteActive;
 
   const handleNavClick = () => {
     onNavigate?.();
@@ -57,9 +64,9 @@ export const AppSidebar = ({
               ? "flex w-full items-center justify-start gap-1 px-3 py-3"
               : `${compactItemClass}`
           } ${
-            isActive
+            isActive && !isSettingsActive
               ? activeNavClass 
-              : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              : inactiveNavClass
           }`
         }
       >
@@ -121,24 +128,22 @@ export const AppSidebar = ({
 
           {!isExpanded && (
             <div className="relative flex w-full justify-center">
-              <Button
+              <button
                 type="button"
-                variant="unstyled"
+                aria-expanded={settingsMenu.isOpen}
+                aria-haspopup="menu"
                 onClick={settingsMenu.toggle}
-                className={`${desktopIconButtonClass} ${
-                  settingsMenu.isOpen
-                    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
-                    : ""
+                className={`group cursor-pointer border-0 bg-transparent p-0 ${compactItemClass} ${
+                  isSettingsActive ? activeNavClass : inactiveNavClass
                 }`}
-                preserveChildLayout
               >
                 <span className="flex h-full w-full flex-col items-center justify-center gap-1.5">
                   <Settings size={22} />
-                  <span className="line-clamp-2 text-[9.5px]  leading-tight">
+                  <span className="line-clamp-2 text-[10px] font-semibold leading-tight">
                     Settings
                   </span>
                 </span>
-              </Button>
+              </button>
 
               {settingsMenu.isOpen && (
                 <>
