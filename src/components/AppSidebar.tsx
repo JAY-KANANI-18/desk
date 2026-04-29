@@ -159,7 +159,7 @@ export const AppSidebar = ({
                       >
                         <link.icon size={20} className="flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
+                          <p className="truncate text-sm font-normal">
                             {link.title}
                           </p>
                           <p className="truncate text-xs text-slate-400">
@@ -196,7 +196,7 @@ export const AppSidebar = ({
                 >
                   <link.icon size={18} className="flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
+                    <p className="truncate text-sm font-normal">
                       {link.title}
                     </p>
                     <p className="truncate text-xs text-slate-400">

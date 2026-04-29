@@ -9,8 +9,8 @@ const navLinkClassName = (isActive: boolean, depth: number) =>
     depth > 0 ? "pl-11 md:pl-10" : ""
   } ${
     isActive
-      ? "bg-slate-100 text-slate-900"
-      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+      ? "bg-slate-100 text-slate-900 "
+      : "text-slate-900 md:text-slate-700 hover:bg-slate-50 hover:text-slate-900 "
   }`;
 
 export const handleSettingsListKeyNavigation = (
@@ -100,7 +100,7 @@ const SidebarItem = ({
     return (
       <div className="space-y-1 md:space-y-0.5">
         <div
-          className={`px-4 py-3 text-[15px] font-medium text-slate-800 md:px-3 md:py-2 md:text-sm ${
+          className={`px-4 py-3 text-[15px] font-medium text-slate-900 md:px-3 md:py-2 md:text-sm ${
             depth > 0 ? "pl-11 md:pl-10" : ""
           }`}
         >
@@ -146,14 +146,14 @@ const SidebarItem = ({
             {item.icon && (
               <span
                 className={`flex h-6 w-6 items-center justify-center md:h-5 md:w-5 ${
-                  isActive ? "text-slate-900" : "text-slate-500"
+                  isActive ? "text-slate-900  " : "text-slate-600"
                 }`}
               >
                 {item.icon}
               </span>
             )}
 
-            <p className="truncate font-medium">{item.label}</p>
+            <p className={`truncate ${ isActive ? "font-black" : "font-normal"}`}>{item.label}</p>
           </div>
 
           <div className="ml-3 flex items-center gap-2">
