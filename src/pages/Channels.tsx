@@ -172,16 +172,9 @@ const ConnectedChannelsView = ({
                 <div
                   className={` w-full text-left ${isMobile ? "" : "space-y-5"}`}
                 >
-                  {isMobile ? (
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300"
-                    >
-                      <ChevronRight size={16} />
-                    </span>
-                  ) : null}
+                
 
-                  <div className="flex items-start gap-3">
+                  <div className="flex  gap-3 items-center">
                     <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gray-50 md:border md:border-gray-100">
                       <img
                         src={channelConfig[channel.type]?.icon}
@@ -203,6 +196,14 @@ const ConnectedChannelsView = ({
                         {channel.identifier}
                       </p>
                     </div>
+                      {isMobile ? (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none  inset-y-0 flex items-center text-slate-300"
+                    >
+                      <ChevronRight size={16} />
+                    </span>
+                  ) : null}
                   </div>
 
                   <div
