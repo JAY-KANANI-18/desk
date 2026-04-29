@@ -27,6 +27,7 @@ import { InboxAddChannelPrompt } from "./InboxAddChannelPrompt";
 import { getActiveCategoryLabel } from "./MobileCategoryDrawer";
 import { getChannelBadgeType } from "./channelUtils";
 import { channelConfig } from "./data";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 function ConvSkeleton() {
   return (
@@ -121,6 +122,9 @@ export function ConversationList({
   const filterRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
+
+    const isMobile = useIsMobile();
+  
 
   useEffect(() => {
     clearTimeout(searchDebounce.current);
@@ -480,7 +484,7 @@ export function ConversationList({
                   <AvatarWithBadge
                     src={contact?.avatarUrl}
                     name={contactName}
-                    size="md"
+                    size={isMobile ? "md" : "base"}
                     alt={contactName}
                     fallbackTone="neutral"
                     badgeType={getChannelBadgeType(channelType)}
@@ -492,12 +496,12 @@ export function ConversationList({
 
                 <span className="min-w-0 flex-1 overflow-hidden">
                   <span className="mb-0.5 flex min-w-0 items-center justify-between gap-2">
-                    <TruncatedText
+              <TruncatedText
                       as="span"
                       text={contactName}
                       maxLines={1}
                   
-                      className={`min-w-0 max-w-full flex-1 text-lg  ${
+                      className={`min-w-0 max-w-full flex-1 text-lg md:text-base ${
                         isUnread ? " text-gray-900" : " text-gray-700"
                       }`}
                     />
@@ -525,7 +529,7 @@ export function ConversationList({
                       text={lastMessage?.text ?? conversation.subject ?? "..."}
                       maxLines={1}
                       className={`min-w-0 max-w-full flex-1 truncate text-xs ${
-                        isUnread ? "font-medium text-gray-800" : "text-gray-500"
+                        isUnread ? "font-medium text-gray-800" : "text-gray-400"
                       }`}
                     />
                   </span>

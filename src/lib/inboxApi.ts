@@ -259,6 +259,23 @@ export interface AiTextResult {
    INBOX API
 ══════════════════════════════════════════════════════════════════ */
 
+export type PresignedUploadType =
+  | "message-attachment"
+  | "user-avatar"
+  | "static-avatar";
+
+export interface PresignedUploadRequest {
+  type: PresignedUploadType;
+  fileName: string;
+  contentType: string;
+  entityId: string;
+}
+
+export interface PresignedUploadResponse {
+  uploadUrl: string;
+  fileUrl: string;
+}
+
 export const inboxApi = {
   /* ─── Conversations ─────────────────────────────────────────── */
 
@@ -483,14 +500,26 @@ export const inboxApi = {
    * Returns { uploadUrl, fileUrl } for direct R2 upload.
    */
   getPresignedUploadUrl(
-    opts: {
-      type: "message-attachment" | "user-avatar";
-      fileName: string;
-      contentType: string;
-      entityId: string;
-    },
-    workspaceId?: string,
-  ): Promise<{ uploadUrl: string; fileUrl: string }> {
+    opts: PresignedUploadRequest,
+  ): Promise<PresignedUploadResponse> {
     return api.post(`/files/presign`, opts);
   },
 };
+
+export async function uploadPresignedFile(
+  opts: PresignedUploadRequest,
+  file: Blob,
+): Promise<string> {
+  const { uploadUrl, fileUrl } = await inboxApi.getPresignedUploadUrl(opts);
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": opts.contentType },
+    body: file,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to upload file");
+  }
+
+  return fileUrl;
+}

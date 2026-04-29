@@ -313,7 +313,7 @@ export function getButtonStyle({
   if (variant === "list-row") {
     style.minHeight = undefined;
     style.padding = iconOnly ? undefined : "0.75rem 1rem";
-    style.borderRadius = "0";
+    style.borderRadius = radiusByVariant[radius];
     style.borderWidth = "0 0 1px 0";
     style.borderStyle = "solid";
     style.borderColor = "var(--color-gray-100)";

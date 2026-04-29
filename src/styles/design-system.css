@@ -102,7 +102,7 @@ body {
 }
 
 /* Typography Classes */
-.text-xs { font-size: var(--font-size-xs); }
+/* .text-xs { font-size: var(--font-size-xs); }
 .text-sm { font-size: var(--font-size-sm); }
 .text-base { font-size: var(--font-size-base); }
 .text-lg { font-size: var(--font-size-lg); }
@@ -114,7 +114,7 @@ body {
 .font-normal { font-weight: var(--font-weight-normal); }
 .font-medium { font-weight: var(--font-weight-medium); }
 .font-semibold { font-weight: var(--font-weight-semibold); }
-.font-bold { font-weight: var(--font-weight-bold); }
+.font-bold { font-weight: var(--font-weight-bold); } */
 
 /* Responsive Typography */
 @media (max-width: 768px) {

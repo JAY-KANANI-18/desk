@@ -50,6 +50,7 @@ import { AIPrompts } from "../pages/workspace/sections/AIPrompts";
 import MetaAdsCallback from "../pages/MetaAdsCallback";
 import OnboardingPage from "../pages/GetStartedChecklist";
 import { WorkspaceNotFound } from "../pages/WorkspaceNotFound";
+import { StaticAvatarGenerator } from "../pages/StaticAvatarGenerator";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useAuth } from "../context/AuthContext";
 import { AiAgentsFeatureRoute } from "../modules/ai-agents/components/AiAgentsFeatureRoute";
@@ -388,6 +389,7 @@ export const WorkspaceRouter = () => {
         />
 
         <Route path="sitemap" element={<AppSitemap />} />
+        {/* <Route path="static-avatar" element={<StaticAvatarGenerator />} /> */}
         {/* <Route path="*" element={<WorkspaceNotFound />} /> */}
       </Route>
             <Route path="*" element={<Navigate to="/inbox" replace />} />
