@@ -436,25 +436,72 @@ body {
 } */
 
 /* Scrollbar Styles */
+/* ✅ Global scrollbar - applies everywhere EXCEPT conv-list-scroll */
 ::-webkit-scrollbar {
-  width: 8px;
-  /* width: 0px; */
+  width: 4px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--color-gray-100);
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--color-gray-300);
   border-radius: var(--radius-full);
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-gray-400);
 }
 
+/* Base - always hidden */
+.conv-list-scroll,
+.conv-list-scroll--visible {
+  overflow-y: overlay;
+}
+
+.conv-list-scroll::-webkit-scrollbar,
+.conv-list-scroll--visible::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conv-list-scroll::-webkit-scrollbar-track,
+.conv-list-scroll--visible::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Hidden state */
+.conv-list-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Visible state - controlled by React */
+.conv-list-scroll--visible::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 99px;
+}
+
+.msg-area-scroll,
+.msg-area-scroll--visible {
+  overflow-y: overlay;
+}
+
+.msg-area-scroll::-webkit-scrollbar,
+.msg-area-scroll--visible::-webkit-scrollbar {
+  width: 4px;
+}
+
+.msg-area-scroll::-webkit-scrollbar-track,
+.msg-area-scroll--visible::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.msg-area-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.msg-area-scroll--visible::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 99px;
+}
 /* ── Call window animations ─────────────────────────────────────────────── */
 
 @keyframes callRingOuter {

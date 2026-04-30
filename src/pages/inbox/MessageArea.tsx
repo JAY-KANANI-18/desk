@@ -82,6 +82,11 @@ export function MessageArea({
   const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(true);
+// Add these near your other state declarations
+const [isListHovered, setIsListHovered] = useState(false);
+const [isScrolling, setIsScrolling] = useState(false);
+const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
+
 
   const { channels } = useChannel();
   const { workspaceUsers, activeWorkspace } = useWorkspace();
@@ -403,34 +408,43 @@ export function MessageArea({
     return () => window.cancelAnimationFrame(rafId);
   }, [targetMessageId, totalLen, tryScrollToTarget]);
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el || isRestoringScrollRef.current) return;
+const handleScroll = useCallback(() => {
+  // existing logic stays exactly the same...
+  const el = scrollRef.current;
+  if (!el || isRestoringScrollRef.current) return;
 
-    if (el.scrollTop <= 160 && !loadingOlderTimeline && hasMoreOlderTimeline) {
-      prevScrollHeightRef.current = el.scrollHeight;
-      prevScrollTopRef.current = el.scrollTop;
-      isRestoringScrollRef.current = true;
-      pendingPrependRestoreRef.current = true;
-      loadOlderTimeline().catch(() => {
-        pendingPrependRestoreRef.current = false;
-        isRestoringScrollRef.current = false;
-      });
-      return;
-    }
+  if (el.scrollTop <= 160 && !loadingOlderTimeline && hasMoreOlderTimeline) {
+    prevScrollHeightRef.current = el.scrollHeight;
+    prevScrollTopRef.current = el.scrollTop;
+    isRestoringScrollRef.current = true;
+    pendingPrependRestoreRef.current = true;
+    loadOlderTimeline().catch(() => {
+      pendingPrependRestoreRef.current = false;
+      isRestoringScrollRef.current = false;
+    });
+    return;
+  }
 
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceFromBottom <= 160 && !loadingNewerTimeline && hasMoreNewerTimeline) {
-      loadNewerTimeline().catch(() => {});
-    }
-  }, [
-    hasMoreNewerTimeline,
-    hasMoreOlderTimeline,
-    loadNewerTimeline,
-    loadOlderTimeline,
-    loadingNewerTimeline,
-    loadingOlderTimeline,
-  ]);
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  if (distanceFromBottom <= 160 && !loadingNewerTimeline && hasMoreNewerTimeline) {
+    loadNewerTimeline().catch(() => {});
+  }
+
+  // 👇 Add this
+  setIsScrolling(true);
+  clearTimeout(scrollTimer.current);
+  scrollTimer.current = setTimeout(() => setIsScrolling(false), 1000);
+}, [
+  hasMoreNewerTimeline,
+  hasMoreOlderTimeline,
+  loadNewerTimeline,
+  loadOlderTimeline,
+  loadingNewerTimeline,
+  loadingOlderTimeline,
+]);
+useEffect(() => {
+  return () => clearTimeout(scrollTimer.current);
+}, []);
 
   type DateGroup = { dateKey: string; items: RenderItem[] };
 
@@ -500,11 +514,17 @@ export function MessageArea({
       )}
 
       <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="relative flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-4 sm:py-6"
-        style={{ scrollBehavior: "auto", overflowAnchor: "none" }}
-      >
+  ref={scrollRef}
+  onScroll={handleScroll}
+  onMouseEnter={() => setIsListHovered(true)}
+  onMouseLeave={() => setIsListHovered(false)}
+  className={`relative flex-1 overflow-x-hidden px-3 py-4 sm:px-4 sm:py-6 ${
+    isListHovered || isScrolling ? "msg-area-scroll--visible" : "msg-area-scroll"
+  }`}
+  style={{ scrollBehavior: "auto", overflowAnchor: "none" }}
+>
+
+  
         {msgSearchOpen && (
           <div
             ref={searchBarRef}

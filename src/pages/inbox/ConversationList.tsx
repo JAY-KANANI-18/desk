@@ -124,8 +124,27 @@ export function ConversationList({
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
 
     const isMobile = useIsMobile();
-  
+  const [isHovered, setIsHovered] = useState(false);
+const [isScrolling, setIsScrolling] = useState(false);
+const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
 
+const handleScroll = useCallback(() => {
+  // existing scroll pagination logic...
+  if (!listRef.current || convLoading || !hasMoreConvs) return;
+  const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+  if (scrollTop + clientHeight >= scrollHeight - 80) {
+    loadMoreConversations();
+  }
+
+  // show scrollbar while scrolling, hide 1s after stop
+  setIsScrolling(true);
+  clearTimeout(scrollTimer.current);
+  scrollTimer.current = setTimeout(() => setIsScrolling(false), 1000);
+}, [convLoading, hasMoreConvs, loadMoreConversations]);
+
+useEffect(() => {
+  return () => clearTimeout(scrollTimer.current);
+}, []);
   useEffect(() => {
     clearTimeout(searchDebounce.current);
     searchDebounce.current = setTimeout(() => {
@@ -145,13 +164,13 @@ export function ConversationList({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!listRef.current || convLoading || !hasMoreConvs) return;
-    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 80) {
-      loadMoreConversations();
-    }
-  }, [convLoading, hasMoreConvs, loadMoreConversations]);
+  // const handleScroll = useCallback(() => {
+  //   if (!listRef.current || convLoading || !hasMoreConvs) return;
+  //   const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+  //   if (scrollTop + clientHeight >= scrollHeight - 80) {
+  //     loadMoreConversations();
+  //   }
+  // }, [convLoading, hasMoreConvs, loadMoreConversations]);
 
   useEffect(() => {
     if (filters.lifecycleId == null || lifecycles.length > 0) return;
@@ -415,11 +434,15 @@ export function ConversationList({
         </div>
       ) : null} */}
 
-      <div
-        ref={listRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto bg-[var(--color-gray-50)] px-2 py-2 pr-0"
-      >
+    <div
+  ref={listRef}
+  onScroll={handleScroll}
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+  className={`flex-1 bg-[var(--color-gray-50)] px-2 py-2 ${
+    isHovered || isScrolling ? "conv-list-scroll--visible" : "conv-list-scroll"
+  }`}
+>
         {(convLoading || showChannelsLoadingState) && convList.length === 0 ? (
           <>
             <ConvSkeleton />
@@ -476,7 +499,7 @@ export function ConversationList({
               {isSelected ? (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-2 right-0 w-1 rounded-l-full bg-[var(--color-primary)]"
+                  className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-[var(--color-primary)]"
                 />
               ) : null}
               <span className="flex min-w-0 flex-1 items-start gap-3 pr-2">
@@ -495,18 +518,20 @@ export function ConversationList({
                 </span>
 
                 <span className="min-w-0 flex-1 overflow-hidden">
-                  <span className="mb-0.5 flex min-w-0 items-center justify-between gap-2">
-              <TruncatedText
-                      as="span"
-                      text={contactName}
-                      maxLines={1}
-                  
-                      className={`min-w-0 max-w-full flex-1 text-lg md:text-base ${
-                        isUnread ? " text-gray-900" : " text-gray-700"
-                      }`}
-                    />
+                  <span className="mb-0.5 flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1">
+                      <TruncatedText
+                        as="span"
+                        text={contactName}
+                        maxLines={1}
+                        maxLength={15}
+                        className={`block min-w-0 w-full text-lg  md:text-base text-gray-900  ${
+                          isUnread ? "font-medium  " : "font-normal"
+                        }`}
+                      />
+                    </span>
                     <span className="flex flex-shrink-0 items-center gap-1.5">
-                      <span className={`text-xs ${isUnread ? "font-semibold text-indigo-600" : "text-gray-400"}`}>
+                      <span className={`text-xs ${isUnread ? "font-semibold text-indigo-600" :  "text-gray-400"}`}>
                         {conversation.lastMessageAt
                           ? new Date(conversation.lastMessageAt).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -514,7 +539,6 @@ export function ConversationList({
                             })
                           : ""}
                       </span>
-                      <UnreadBadge count={conversation.unreadCount} />
                     </span>
                   </span>
 
@@ -524,14 +548,28 @@ export function ConversationList({
                     ) : (
                       <ArrowUpRight size={11} className="flex-shrink-0 text-indigo-500" />
                     )}
-                    <TruncatedText
-                      as="span"
-                      text={lastMessage?.text ?? conversation.subject ?? "..."}
-                      maxLines={1}
-                      className={`min-w-0 max-w-full flex-1 truncate text-xs ${
-                        isUnread ? "font-medium text-gray-800" : "text-gray-400"
-                      }`}
-                    />
+                    <span className="min-w-0 flex-1">
+                      <TruncatedText
+                        as="span"
+                        text={lastMessage?.text ?? conversation.subject ?? "..."}
+                        maxLines={1}
+                        className={`block min-w-0 w-full truncate text-sm ${
+                          isUnread ? "font-medium text-gray-800" : "font-normal text-gray-500"
+                        }`}
+                      />
+                    </span>
+                                          <UnreadBadge count={conversation.unreadCount} />
+
+                     {contactAssignee ? (
+                      <Avatar
+                        src={contactAssignee.avatarUrl}
+                        name={assigneeName}
+                        alt={assigneeName}
+                        size="2xs"
+                      />
+                    ) : (
+                      <UserCircle2 size={16} className="h-5 w-5 rounded-full text-gray-400" />
+                    )}
                   </span>
 
                   <span className="flex flex-wrap items-center justify-end gap-1.5">
