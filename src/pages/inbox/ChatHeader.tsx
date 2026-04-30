@@ -195,7 +195,7 @@ export function ChatHeader({
       .join(" ")
       .trim() || "Contact";
   const mobileContactName =
-    contactName.length > 7 ? `${contactName.slice(0, 7)}...` : contactName;
+    contactName.length > 20 ? `${contactName.slice(0, 7)}...` : contactName;
   const fallbackLifecycleName =
     selectedConversation?.contact?.lifecycleStage?.trim() || "";
   const mobileLifecycleLabel = currentLifecycle
