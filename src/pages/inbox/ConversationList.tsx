@@ -525,9 +525,11 @@ useEffect(() => {
                         text={contactName}
                         maxLines={1}
                         maxLength={15}
-                        className={`block min-w-0 w-full text-lg  md:text-base text-gray-900  ${
-                          isUnread ? "font-medium  " : "font-normal"
-                        }`}
+                        className={`block min-w-0 w-full text-lg  md:text-base text-gray-900 font-medium  md:font-normal ${
+                          isUnread ? "font-medium md:font-medium" : "font-medium md:font-normal" 
+                          
+                        }
+                        `}
                       />
                     </span>
                     <span className="flex flex-shrink-0 items-center gap-1.5">
