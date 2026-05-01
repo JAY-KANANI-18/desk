@@ -15,10 +15,10 @@ export const GmailConfiguration = ({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-        <div className="flex flex-col gap-2 border-b border-slate-100 bg-white px-5 py-3.5 sm:flex-row sm:items-center">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 sm:flex-row sm:items-center">
           <span
-            className={`h-2.5 w-2.5 rounded-full shadow ${connected ? 'bg-green-400 shadow-green-200' : 'bg-gray-300'}`}
+            className={`h-2 w-2 rounded-full ${connected ? 'bg-green-400' : 'bg-gray-300'}`}
           />
           <span className="text-sm font-semibold text-slate-800">
             Gmail Configuration
@@ -28,7 +28,7 @@ export const GmailConfiguration = ({
             <span className="break-all">{email || '-'}</span>
           </div>
         </div>
-        <div className="px-5 py-4">
+        <div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               Connected Account
@@ -40,20 +40,21 @@ export const GmailConfiguration = ({
         </div>
       </div>
 
-      <div className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4">
+      <div className="space-y-2 border-l border-indigo-300 pl-3">
         <div className="flex items-center gap-2">
           <CheckCircle size={15} className="shrink-0 text-indigo-600" />
-          <p className="text-sm font-medium text-indigo-900">
+          <p className="text-sm font-medium text-slate-800">
             Connected via Google OAuth
           </p>
         </div>
-        <p className="text-xs text-indigo-700 sm:pl-6">
+        <p className="text-sm text-slate-500 sm:pl-6">
           Gmail channels use OAuth 2.0. To reconnect or change the account, use
           the action below to re-authenticate with Google.
         </p>
         <div className="pt-1 sm:pl-6">
           <Button
             variant="secondary"
+            size="sm"
             leftIcon={<RefreshCw size={14} />}
             onClick={() => window.location.assign(reconnectUrl)}
           >

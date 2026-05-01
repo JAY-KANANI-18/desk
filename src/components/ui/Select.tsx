@@ -87,6 +87,7 @@ Select.displayName = "Select";
 export {
   AssigneeSelectMenu,
   BaseSelect,
+  ButtonSelectMenu,
   ChannelSelectMenu,
   CompactSelectMenu,
   LifecycleSelectMenu,
@@ -105,6 +106,7 @@ export type {
   AssigneeSelectMenuVariant,
   AssigneeSelectUser,
   BaseSelectProps,
+  ButtonSelectMenuProps,
   ChannelSelectMenuChannel,
   ChannelSelectMenuProps,
   ChannelSelectMenuSpecialOption,

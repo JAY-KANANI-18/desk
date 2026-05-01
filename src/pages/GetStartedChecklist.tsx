@@ -15,6 +15,7 @@ import { Button } from "../components/ui/Button";
 import { PageLayout } from "../components/ui/PageLayout";
 import { Tag } from "../components/ui/Tag";
 import { GET_STARTED_CHANNELS } from "../config/channelMetadata";
+import { ChannelBadgeStack } from "../components/channels/ChannelBadges";
 
 interface GetStartedSteps {
   connectChannel: boolean;
@@ -43,18 +44,11 @@ const STEPS: Step[] = [
     description: (
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          {GET_STARTED_CHANNELS.map((channel) => (
-            <span
-              key={channel.label}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600"
-            >
-              <img
-                src={channel.src}
-                alt={channel.label}
-                className="h-8 w-8 object-contain"
-              />
-            </span>
-          ))}
+            <ChannelBadgeStack
+                  size="md"
+                  className={ "mt-3" }
+                />
+        
         </div>
 
         <p className="text-sm leading-7 text-[var(--color-text,#475569)]">

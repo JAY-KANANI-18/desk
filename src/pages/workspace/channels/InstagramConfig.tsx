@@ -69,20 +69,20 @@ export const InstagramConfiguration = ({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-        <div className="flex items-center gap-2.5 border-b border-slate-100 bg-white px-5 py-3.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-pink-400 shadow shadow-pink-200" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+          <span className="h-2 w-2 rounded-full bg-pink-400" />
           <span className="text-sm font-semibold text-slate-800">
             Configuration
           </span>
         </div>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 px-5 py-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               User ID
             </span>
             <span className="text-sm font-mono text-slate-700">
-              {igUserId || '—'}
+              {igUserId || '-'}
             </span>
           </div>
           <div className="flex flex-col gap-0.5">
@@ -90,19 +90,14 @@ export const InstagramConfiguration = ({
               Handle
             </span>
             <span className="text-sm font-medium text-slate-700">
-              @{channel?.config?.userName ?? '—'}
+              @{channel?.config?.userName ?? '-'}
             </span>
           </div>
         </div>
       </div>
 
       <div>
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">
-          Connection Settings
-        </h2>
-        <p className="mb-4 text-xs text-slate-400">
-          Update your Instagram Page credentials.
-        </p>
+      
         <div className="space-y-4">
           <Field
             label="Channel Name"
@@ -128,3 +123,4 @@ export const InstagramConfiguration = ({
     </div>
   );
 };
+

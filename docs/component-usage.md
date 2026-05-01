@@ -983,7 +983,7 @@ Props:
 - `size?: SelectSize`; default `"sm"`; trigger size.
 - `hasValue?: boolean`; default derived from selected option; controls placeholder/active styling.
 - `fullWidth?: boolean`; default `false`; stretches trigger.
-- `triggerAppearance?: "field" | "pill" | "inline" | "toolbar"`; default `"pill"`; trigger style.
+- `triggerAppearance?: "field" | "pill" | "inline" | "toolbar" | "button"`; default `"pill"`; trigger style.
 - `dropdownWidth?: "trigger" | "sm" | "md" | "lg"`; default `"trigger"`; menu width.
 - `dropdownAlign?: "start" | "end"`; default `"start"`; menu alignment.
 - `dropdownPlacement?: "top" | "bottom"`; default `"bottom"`; menu placement.
@@ -1023,6 +1023,26 @@ Advanced:
 ```
 
 Migration note: replaces custom selected-value dropdowns, AI prompt selectors, variable selectors, and channel/availability pickers when they are true selections.
+
+## ButtonSelectMenu
+
+Import path: `src/components/ui/select`.
+
+Use it when a shared `Button`-style trigger should open the compact select menu, such as an Add action that needs the user to choose the item type.
+
+It accepts the same grouped options and dropdown/search/mobile-sheet props as `CompactSelectMenu`, plus `label`, `leftIcon`, `variant`, `size`, `radius`, and `selected` for the button trigger.
+
+```tsx
+<ButtonSelectMenu
+  value=""
+  groups={[{ options: itemTypeOptions }]}
+  onChange={addItem}
+  label="Add item"
+  leftIcon={<Plus size={14} />}
+  variant="dashed"
+  dropdownWidth="md"
+/>
+```
 
 ## VariableSuggestionMenu
 

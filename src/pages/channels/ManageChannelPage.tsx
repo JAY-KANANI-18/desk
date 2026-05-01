@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
   Check,
-  ChevronDown,
   Copy,
   FileText,
   Info,
@@ -17,47 +16,50 @@ import {
   Settings,
   ShoppingBag,
   Wrench,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { SettingsNavList } from '../../components/settings/SettingsNavList';
-import { SettingsSidebar } from '../../components/settings/SettingsSidebar';
-import { BackButton } from '../../components/channels/BackButton';
-import { Button } from '../../components/ui/button/Button';
-import { DisclosureButton } from '../../components/ui/button/DisclosureButton';
-import { IconButton } from '../../components/ui/button/IconButton';
-import { BaseInput, type BaseInputProps } from '../../components/ui/inputs/BaseInput';
-import { ConfirmDeleteModal } from '../../components/ui/modal';
-import { CopyInput } from '../../components/ui/inputs/CopyInput';
-import { TextareaInput } from '../../components/ui/inputs/TextareaInput';
-import { PageLayout } from '../../components/ui/PageLayout';
-import { Tag } from '../../components/ui/tag/Tag';
-import { Tooltip } from '../../components/ui/tooltip/Tooltip';
-import { useChannel } from '../../context/ChannelContext';
+import { SettingsNavList } from "../../components/settings/SettingsNavList";
+import { SettingsSidebar } from "../../components/settings/SettingsSidebar";
+import { BackButton } from "../../components/channels/BackButton";
+import { Button } from "../../components/ui/button/Button";
+import { DisclosureButton } from "../../components/ui/button/DisclosureButton";
+import { IconButton } from "../../components/ui/button/IconButton";
+import {
+  BaseInput,
+  type BaseInputProps,
+} from "../../components/ui/inputs/BaseInput";
+import { ConfirmDeleteModal } from "../../components/ui/modal";
+import { CopyInput } from "../../components/ui/inputs/CopyInput";
+import { TextareaInput } from "../../components/ui/inputs/TextareaInput";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { Tag } from "../../components/ui/tag/Tag";
+import { Tooltip } from "../../components/ui/tooltip/Tooltip";
+import { useChannel } from "../../context/ChannelContext";
 import {
   CHANNEL_TYPE_LABEL_TO_KEY,
   MANAGE_CHANNEL_CONFIG,
   type ManageChannelNavIconKey,
-} from '../../config/channelMetadata';
-import { useIsMobile } from '../../hooks/useIsMobile';
-import { ChannelApi } from '../../lib/channelApi';
-import { InstagramConfiguration } from '../workspace/channels/InstagramConfig';
-import { InstagramIceBreakersSection } from '../workspace/channels/InstagramIceBreakers';
-import { EmailConfiguration } from '../workspace/channels/EmailConfigV2';
-import { GmailConfiguration } from '../workspace/channels/GmailConfig';
-import { MessengerChatMenuSection } from '../workspace/channels/MessengerChatMenu';
-import { MessengerConfiguration } from '../workspace/channels/MessengerConfig';
-import { MessengerTemplatesSection } from '../workspace/channels/MessengerTemplates';
-import { MetaAutomationSection } from '../workspace/channels/MetaAutomationSection';
-import { WhatsAppConfiguration } from '../workspace/channels/WhatsAppCloudConfig';
-import { WhatsAppTemplatesSection } from '../workspace/channels/WhatsAppTemplates';
-import { WebsiteChatConfiguration } from '../workspace/channels/WebsiteChatConfig';
+} from "../../config/channelMetadata";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { ChannelApi } from "../../lib/channelApi";
+import { InstagramConfiguration } from "../workspace/channels/InstagramConfig";
+import { InstagramIceBreakersSection } from "../workspace/channels/InstagramIceBreakers";
+import { EmailConfiguration } from "../workspace/channels/EmailConfigV2";
+import { GmailConfiguration } from "../workspace/channels/GmailConfig";
+import { MessengerChatMenuSection } from "../workspace/channels/MessengerChatMenu";
+import { MessengerConfiguration } from "../workspace/channels/MessengerConfig";
+import { MessengerTemplatesSection } from "../workspace/channels/MessengerTemplates";
+import { MetaAutomationSection } from "../workspace/channels/MetaAutomationSection";
+import { WhatsAppConfiguration } from "../workspace/channels/WhatsAppCloudConfig";
+import { WhatsAppTemplatesSection } from "../workspace/channels/WhatsAppTemplates";
+import { WebsiteChatConfiguration } from "../workspace/channels/WebsiteChatConfig";
 
 export interface ConnectedChannel {
   id: number | string;
   name: string;
   type: string;
   identifier: string;
-  status: 'Connected' | 'Error' | 'Disconnected';
+  status: "Connected" | "Error" | "Disconnected";
   icon?: string;
   color?: string;
   msgs?: number;
@@ -78,13 +80,13 @@ export function useSave() {
     try {
       const result = await fn();
       if (result?.success === false) {
-        setError(result.error ?? 'Something went wrong');
+        setError(result.error ?? "Something went wrong");
         return;
       }
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2500);
     } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong');
+      setError(err?.message ?? "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -98,7 +100,7 @@ export const SaveButton = ({
   saved,
   error,
   onClick,
-  label = 'Save Changes',
+  label = "Save Changes",
   disabled = false,
 }: {
   saving: boolean;
@@ -108,17 +110,18 @@ export const SaveButton = ({
   label?: string;
   disabled?: boolean;
 }) => (
-  <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+  <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
     <Button
       onClick={onClick}
       disabled={disabled}
       loading={saving}
       loadingMode="inline"
       loadingLabel="Saving..."
-      variant={saved && !saving ? 'success' : 'primary'}
+      variant={saved && !saving ? "success" : "primary"}
+      size="sm"
       leftIcon={saved && !saving ? <Check size={15} /> : undefined}
     >
-      {saved && !saving ? 'Saved!' : label}
+      {saved && !saving ? "Saved!" : label}
     </Button>
     {error ? (
       <span className="flex items-center gap-1.5 text-xs font-medium text-red-600">
@@ -136,7 +139,7 @@ export const SaveButton = ({
 
 export const CopyButton = ({
   value,
-  className = '',
+  className = "",
 }: {
   value: string;
   className?: string;
@@ -151,11 +154,11 @@ export const CopyButton = ({
         window.setTimeout(() => setCopied(false), 1800);
       }}
       className={className}
-      aria-label={copied ? 'Copied' : 'Copy value'}
+      aria-label={copied ? "Copied" : "Copy value"}
       variant="ghost"
       icon={
         copied ? (
-          <Check size={14} style={{ color: 'var(--color-success)' }} />
+          <Check size={14} style={{ color: "var(--color-success)" }} />
         ) : (
           <Copy size={14} />
         )
@@ -201,7 +204,7 @@ export const EditableField = ({
   onChange,
   hint,
   placeholder,
-  type = 'text',
+  type = "text",
 }: {
   label: string;
   value: string;
@@ -222,7 +225,7 @@ export const EditableField = ({
       ) : null}
     </div>
     <BaseInput
-      type={type as BaseInputProps['type']}
+      type={type as BaseInputProps["type"]}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
@@ -257,41 +260,41 @@ export const DangerZone = ({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-red-200">
-      <DisclosureButton
+    <div className="overflow-hidden rounded-xl border ">
+      {/* <DisclosureButton
         onClick={() => setOpen((current) => !current)}
         tone="danger"
         open={open}
         leadingIcon={<AlertTriangle size={16} />}
       >
         Danger Zone
-      </DisclosureButton>
+      </DisclosureButton> */}
 
-      {open ? (
-        <div className="border-t border-red-100 bg-white px-5 py-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                Disconnect this channel
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500">
-                Permanently disconnects this {channelLabel} channel.
-              </p>
-              {error ? (
-                <p className="mt-1 text-xs text-red-500">{error}</p>
-              ) : null}
-            </div>
-
-            <Button
-              onClick={() => setConfirmOpen(true)}
-              variant="danger"
-              disabled={saving}
-            >
-              Disconnect
-            </Button>
+      {/* {open ? ( */}
+      <div className=" bg-white px-5 py-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">
+              Disconnect this channel
+            </p>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Permanently disconnects this {channelLabel} channel.
+            </p>
+            {error ? (
+              <p className="mt-1 text-xs text-red-500">{error}</p>
+            ) : null}
           </div>
+
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            variant="danger"
+            disabled={saving}
+          >
+            Disconnect
+          </Button>
         </div>
-      ) : null}
+      </div>
+      {/* ) : null} */}
 
       <ConfirmDeleteModal
         open={confirmOpen}
@@ -353,15 +356,17 @@ export const CHANNEL_TYPE_TO_SLUG: Record<string, string> =
 const ProfileSection = ({ channel }: { channel: ConnectedChannel }) => {
   const { saving, saved, error, save } = useSave();
   const [about, setAbout] = useState(
-    channel?.config?.about ?? 'We provide excellent customer support 24/7.',
+    channel?.config?.about ?? "We provide excellent customer support 24/7.",
   );
-  const [website, setWebsite] = useState(channel?.config?.website ?? '');
-  const [email, setEmail] = useState(channel?.config?.email ?? '');
+  const [website, setWebsite] = useState(channel?.config?.website ?? "");
+  const [email, setEmail] = useState(channel?.config?.email ?? "");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-[var(--spacing-lg)]">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Business Profile</h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          Business Profile
+        </h2>
         <p className="mt-0.5 text-sm text-gray-500">
           Update your WhatsApp Business profile information.
         </p>
@@ -396,7 +401,7 @@ const ProfileSection = ({ channel }: { channel: ConnectedChannel }) => {
         onClick={() =>
           save(() =>
             ChannelApi.updateWhatsAppChannel(String(channel.id), {
-              accessToken: channel.config?.accessToken ?? '',
+              accessToken: channel.config?.accessToken ?? "",
             }),
           )
         }
@@ -409,14 +414,14 @@ const ProfileSection = ({ channel }: { channel: ConnectedChannel }) => {
 const TroubleshootSection = ({ channel }: { channel: ConnectedChannel }) => {
   const [running, setRunning] = useState(false);
   const [results] = useState([
-    { label: 'Webhook Status', value: 'Active', ok: true },
-    { label: 'API Connection', value: 'Connected', ok: true },
-    { label: 'Phone Number Verified', value: 'Yes', ok: true },
-    { label: 'Business Account Status', value: 'Active', ok: true },
+    { label: "Webhook Status", value: "Active", ok: true },
+    { label: "API Connection", value: "Connected", ok: true },
+    { label: "Phone Number Verified", value: "Yes", ok: true },
+    { label: "Business Account Status", value: "Active", ok: true },
     {
-      label: 'Message Delivery',
-      value: channel.status === 'Connected' ? 'Normal' : 'Degraded',
-      ok: channel.status === 'Connected',
+      label: "Message Delivery",
+      value: channel.status === "Connected" ? "Normal" : "Degraded",
+      ok: channel.status === "Connected",
     },
   ]);
 
@@ -427,48 +432,52 @@ const TroubleshootSection = ({ channel }: { channel: ConnectedChannel }) => {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Troubleshoot</h2>
-        <p className="mt-0.5 text-sm text-gray-500">
-          Diagnose and resolve connection issues.
-        </p>
+    <div className="space-y-[var(--spacing-lg)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">
+            Troubleshoot
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Diagnose and resolve connection issues.
+          </p>
+        </div>
+        <Button
+          onClick={() => void runDiagnostics()}
+          variant="secondary"
+          size="sm"
+          leftIcon={!running ? <RefreshCw size={14} /> : undefined}
+          loading={running}
+          loadingMode="inline"
+          loadingLabel="Running..."
+        >
+          Run diagnostics
+        </Button>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="divide-y divide-gray-100 border-y border-gray-100">
         {results.map((item) => (
           <div
             key={item.label}
-            className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3"
+            className="flex items-center justify-between gap-4 py-3"
           >
             <span className="text-sm text-gray-700">{item.label}</span>
             <Tag
               label={item.value}
               size="sm"
-              bgColor={item.ok ? 'success' : 'error'}
+              bgColor={item.ok ? "success" : "error"}
             />
           </div>
         ))}
       </div>
-
-      <Button
-        onClick={() => void runDiagnostics()}
-        variant="secondary"
-        leftIcon={!running ? <RefreshCw size={14} /> : undefined}
-        loading={running}
-        loadingMode="inline"
-        loadingLabel="Running..."
-      >
-        Run diagnostics
-      </Button>
     </div>
   );
 };
 
 const CatalogSection = () => (
-  <div className="space-y-5">
+  <div className="space-y-[var(--spacing-lg)]">
     <div>
-      <h2 className="text-lg font-semibold text-gray-900">
+      <h2 className="text-base font-semibold text-gray-900">
         Meta Product Catalog
       </h2>
       <p className="mt-0.5 text-sm text-gray-500">
@@ -476,66 +485,68 @@ const CatalogSection = () => (
       </p>
     </div>
 
-    <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-8 text-center">
-      <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100">
-        <ShoppingBag size={24} className="text-indigo-600" />
-      </div>
-      <p className="mb-1 text-sm font-semibold text-indigo-900">
+    <div className="border-y border-gray-100 py-6">
+      <ShoppingBag size={20} className="mb-3 text-gray-400" />
+      <p className="mb-1 text-sm font-semibold text-gray-900">
         No catalog connected
       </p>
-      <p className="mb-4 text-xs text-indigo-700">
+      <p className="mb-4 max-w-xl text-sm text-gray-500">
         Connect your Meta product catalog to enable product messages and
         interactive shopping experiences.
       </p>
-      <Button>Connect Catalog</Button>
+      <Button size="sm">Connect Catalog</Button>
     </div>
   </div>
 );
 
 const PrivateRepliesSection = () => {
-  const [trackMode, setTrackMode] = useState<'all' | 'specific'>('specific');
+  const [trackMode, setTrackMode] = useState<"all" | "specific">("specific");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-[var(--spacing-lg)]">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Private Replies</h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          Private Replies
+        </h2>
         <p className="mt-0.5 text-sm text-gray-500">
           Automatically send a private message when someone comments on your
           posts.
         </p>
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="flex items-start gap-2.5 border-l border-amber-300 pl-3">
         <Info size={15} className="mt-0.5 shrink-0 text-amber-600" />
-        <p className="text-xs text-amber-800">
+        <p className="text-sm text-gray-600">
           Private replies use the 24-hour messaging window. The contact must
           comment before you can reply.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {(['all', 'specific'] as const).map((mode) => (
+      <div className="flex flex-wrap gap-2">
+        {(["all", "specific"] as const).map((mode) => (
           <Button
             key={mode}
             type="button"
-            variant={trackMode === mode ? 'primary' : 'secondary'}
-            fullWidth
+            size="sm"
+            variant={trackMode === mode ? "primary" : "secondary"}
             contentAlign="start"
             onClick={() => setTrackMode(mode)}
           >
-            {mode === 'all'
-              ? 'All posts, reels, and live stories'
-              : 'Specific posts and reels only'}
+            {mode === "all"
+              ? "All posts, reels, and live stories"
+              : "Specific posts and reels only"}
           </Button>
         ))}
       </div>
 
-      {trackMode === 'specific' ? (
+      {trackMode === "specific" ? (
         <div className="space-y-3">
-          <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center text-sm text-gray-400">
+          <div className="border-y border-dashed border-gray-200 py-6 text-sm text-gray-400">
             No posts added yet
           </div>
-          <Button leftIcon={<Plus size={15} />}>Add post</Button>
+          <Button size="sm" leftIcon={<Plus size={15} />}>
+            Add post
+          </Button>
         </div>
       ) : null}
     </div>
@@ -553,47 +564,65 @@ const SectionContent = ({
   channel: ConnectedChannel;
   onDisconnect: () => void;
 }) => {
-  if (sectionId === 'profile') return <ProfileSection channel={channel} />;
-  if (sectionId === 'troubleshoot') return <TroubleshootSection channel={channel} />;
-  if (sectionId === 'catalog') return <CatalogSection />;
-  if (sectionId === 'private_replies') {
+  if (sectionId === "profile") return <ProfileSection channel={channel} />;
+  if (sectionId === "troubleshoot")
+    return <TroubleshootSection channel={channel} />;
+  if (sectionId === "catalog") return <CatalogSection />;
+  if (sectionId === "private_replies") {
     return <MetaAutomationSection channel={channel} mode="private_replies" />;
   }
-  if (sectionId === 'story_replies') {
+  if (sectionId === "story_replies") {
     return <MetaAutomationSection channel={channel} mode="story_replies" />;
   }
 
-  if (sectionId === 'templates') {
-    return channelType === 'messenger' ? (
+  if (sectionId === "templates") {
+    return channelType === "messenger" ? (
       <MessengerTemplatesSection channel={channel} />
     ) : (
       <WhatsAppTemplatesSection channel={channel} />
     );
   }
 
-  if (sectionId === 'icebreakers') {
+  if (sectionId === "icebreakers") {
     return <InstagramIceBreakersSection channel={channel} />;
   }
 
-  if (sectionId === 'chat_menu') {
+  if (sectionId === "chat_menu") {
     return <MessengerChatMenuSection channel={channel} />;
   }
 
   switch (channelType) {
-    case 'whatsapp':
-      return <WhatsAppConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    case 'instagram':
-      return <InstagramConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    case 'messenger':
-      return <MessengerConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    case 'email':
-      return <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    case 'gmail':
-      return <GmailConfiguration channel={channel} onDisconnect={onDisconnect} />;
-    case 'webchat':
-      return <WebsiteChatConfiguration channel={channel} onDisconnect={onDisconnect} />;
+    case "whatsapp":
+      return (
+        <WhatsAppConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
+    case "instagram":
+      return (
+        <InstagramConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
+    case "messenger":
+      return (
+        <MessengerConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
+    case "email":
+      return (
+        <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
+    case "gmail":
+      return (
+        <GmailConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
+    case "webchat":
+      return (
+        <WebsiteChatConfiguration
+          channel={channel}
+          onDisconnect={onDisconnect}
+        />
+      );
     default:
-      return <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />;
+      return (
+        <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />
+      );
   }
 };
 
@@ -608,11 +637,12 @@ export const ManageChannelPage = () => {
   const { channels, loading, refreshing, refreshChannels } = useChannel();
   const channel = channels.find((item) => String(item.id) === channelId);
   const meta = channelType ? CHANNEL_META[channelType] : null;
-  const defaultSection = meta?.navItems[0]?.id ?? 'configuration';
+  const defaultSection = meta?.navItems[0]?.id ?? "configuration";
   const hasValidSection = Boolean(
     sectionId && meta?.navItems.some((item) => item.id === sectionId),
   );
   const activeSection = hasValidSection ? sectionId! : defaultSection;
+  const [channelIdentifierCopied, setChannelIdentifierCopied] = useState(false);
 
   const navSections = useMemo(() => {
     if (!meta || !channelType || !channelId) {
@@ -621,8 +651,8 @@ export const ManageChannelPage = () => {
 
     return [
       {
-        id: 'channel-manage',
-        label: 'Manage',
+        id: "channel-manage",
+        label: "Manage",
         items: meta.navItems.map((item) => ({
           id: item.id,
           label: item.label,
@@ -649,17 +679,23 @@ export const ManageChannelPage = () => {
 
     if (!sectionId) {
       if (!isMobile) {
-        navigate(`/channels/manage/${channelType}/${channelId}/${defaultSection}`, {
-          replace: true,
-        });
+        navigate(
+          `/channels/manage/${channelType}/${channelId}/${defaultSection}`,
+          {
+            replace: true,
+          },
+        );
       }
       return;
     }
 
     if (!hasValidSection) {
-      navigate(`/channels/manage/${channelType}/${channelId}/${defaultSection}`, {
-        replace: true,
-      });
+      navigate(
+        `/channels/manage/${channelType}/${channelId}/${defaultSection}`,
+        {
+          replace: true,
+        },
+      );
     }
   }, [
     channel,
@@ -675,9 +711,13 @@ export const ManageChannelPage = () => {
     sectionId,
   ]);
 
+  useEffect(() => {
+    setChannelIdentifierCopied(false);
+  }, [channelId]);
+
   if (loading || refreshing) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-50 px-4">
+      <div className="flex h-full items-center justify-center bg-white px-4">
         <div className="flex flex-col items-center gap-3 text-gray-400">
           <Loader size={28} className="animate-spin" />
           <span className="text-sm">Loading channel...</span>
@@ -688,17 +728,19 @@ export const ManageChannelPage = () => {
 
   if (!meta || !channelType || !channel) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-50 px-4">
+      <div className="flex h-full items-center justify-center bg-white px-4">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-3xl">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 text-xs font-semibold text-gray-400">
             RadioTower
           </div>
-          <p className="text-lg font-semibold text-gray-700">Channel not found</p>
+          <p className="text-lg font-semibold text-gray-700">
+            Channel not found
+          </p>
           <p className="mt-1 text-sm text-gray-400">
             This channel may have been disconnected.
           </p>
           <div className="mt-4">
-            <Button onClick={() => navigate('/channels')}>
+            <Button onClick={() => navigate("/channels")}>
               Back to channels
             </Button>
           </div>
@@ -713,40 +755,59 @@ export const ManageChannelPage = () => {
       return;
     }
 
-    navigate('/channels');
+    navigate("/channels");
   };
 
   const desktopTitle = channel.name || meta.label;
+  const channelIdentifier = String(channelId ?? channel.id ?? "");
 
   const renderSidebarHeader = () => (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50">
-          <img
-            alt={meta.label}
-            className="h-10 w-10 object-contain"
-            onError={(event) => {
-              (event.target as HTMLImageElement).style.display = 'none';
-            }}
-            src={meta.icon}
-          />
-        </div>
+      
 
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">
-            {channel.name || meta.label}
+      <div className="">
+     
+        <div className="mt-1 flex items-center gap-1.5">
+          <p className="min-w-0 truncate font-mono text-xs text-slate-600 px-4">
+            ID: {channelIdentifier}
           </p>
-          <p className="truncate text-xs text-slate-400">{meta.label}</p>
+          {channelIdentifier ? (
+            <Tooltip
+              content={channelIdentifierCopied ? "Copied" : "Copy channel ID"}
+            >
+              <span className="inline-flex shrink-0">
+                <IconButton
+                  type="button"
+                  aria-label={
+                    channelIdentifierCopied ? "Copied" : "Copy channel ID"
+                  }
+                  icon={
+                    channelIdentifierCopied ? (
+                      <Check
+                        size={11}
+                        style={{ color: "var(--color-success)" }}
+                      />
+                    ) : (
+                      <Copy size={11} />
+                    )
+                  }
+                  size="xs"
+                  variant="ghost"
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(channelIdentifier)
+                      .catch(() => undefined);
+                    setChannelIdentifierCopied(true);
+                    window.setTimeout(
+                      () => setChannelIdentifierCopied(false),
+                      1500,
+                    );
+                  }}
+                />
+              </span>
+            </Tooltip>
+          ) : null}
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Channel ID
-        </p>
-        <p className="mt-1 truncate font-mono text-xs text-slate-600">
-          {channelId ?? channel.id}
-        </p>
       </div>
     </div>
   );
@@ -786,31 +847,49 @@ export const ManageChannelPage = () => {
 
   return (
     <PageLayout
-      eyebrow={`Channels / ${meta.label}`}
+      eyebrow={`Connected Channels /`}
       title={desktopTitle}
       leading={
-        <BackButton
-          ariaLabel="Back to channels"
-          onClick={() => navigate('/channels')}
-        />
+        <div className="flex items-center gap-3 mr-1">
+          <BackButton
+            ariaLabel="Back to channels"
+            onClick={() => navigate("/channels")}
+          />
+          <img
+            alt={meta.label}
+            className="h-10 w-10 object-contain"
+            onError={(event) => {
+              (event.target as HTMLImageElement).style.display = "none";
+            }}
+            src={meta.icon}
+          />
+        </div>
       }
       className="bg-white"
-      contentClassName="min-h-0 flex-1 overflow-hidden bg-slate-50 px-0 py-0"
+      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
     >
-      <div className="mobile-borderless flex h-full min-h-0 flex-col bg-slate-50">
+      <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
         {isMobile ? (
           <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <IconButton
                 aria-label="Back"
                 icon={<ArrowLeft size={18} />}
                 onClick={handleBack}
                 variant="ghost"
               />
+              <img
+        alt={meta.label}
+        className="h-8 w-8 object-contain"
+        onError={(event) => {
+          (event.target as HTMLImageElement).style.display = 'none';
+        }}
+        src={meta.icon}
+      />
 
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  {`Channels / ${meta.label}`}
+                  {`Connected Channels `}
                 </p>
                 <h1 className="truncate text-base font-semibold text-slate-900">
                   {channel.name || meta.label}
@@ -821,7 +900,7 @@ export const ManageChannelPage = () => {
         ) : null}
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-          <div className="hidden border-r border-slate-200 md:block md:flex-shrink-0">
+          <div className="hidden md:block md:flex-shrink-0">
             <SettingsSidebar
               footerContent={renderSidebarFooter()}
               headerContent={renderSidebarHeader()}
@@ -833,18 +912,14 @@ export const ManageChannelPage = () => {
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
             <div className="flex min-h-full w-full max-w-6xl flex-col px-[var(--spacing-md)] pb-24 pt-[var(--spacing-md)] md:mx-0 md:px-[var(--spacing-lg)] md:pb-[var(--spacing-lg)] md:pt-[var(--spacing-lg)]">
               {isMobile && !sectionId ? (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    {renderSidebarHeader()}
-                  </div>
+                <div className="">
+                  <div className="py-4">{renderSidebarHeader()}</div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+                  <div className="py-2">
                     <SettingsNavList sections={navSections} />
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    {renderSidebarFooter()}
-                  </div>
+                  <div className="py-4">{renderSidebarFooter()}</div>
                 </div>
               ) : (
                 <SectionContent
@@ -853,7 +928,7 @@ export const ManageChannelPage = () => {
                   channel={channel}
                   onDisconnect={() => {
                     void refreshChannels();
-                    navigate('/channels');
+                    navigate("/channels");
                   }}
                 />
               )}

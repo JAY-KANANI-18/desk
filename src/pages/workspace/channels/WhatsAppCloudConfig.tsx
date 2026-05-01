@@ -2,6 +2,7 @@ import { useState, type ElementType } from 'react';
 import { Building2, Check, Copy, Hash, Key, Phone, Webhook } from 'lucide-react';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { TruncatedText } from '../../../components/ui/truncated-text';
 import { ChannelApi } from '../../../lib/channelApi';
 import { ConnectedChannel, DangerZone, SaveButton, useSave } from '../../channels/ManageChannelPage';
 
@@ -60,12 +61,11 @@ function InfoPill({
         {label}
       </span>
       <div className="flex items-center gap-1.5">
-        <span
-          className={`max-w-full truncate text-sm text-slate-700 sm:max-w-[180px] ${mono ? 'font-mono' : 'font-medium'}`}
-          title={resolvedValue}
-        >
-          {resolvedValue}
-        </span>
+        <TruncatedText
+          text={resolvedValue}
+          maxLines={1}
+          className={`max-w-full text-sm text-slate-700 sm:max-w-[180px] ${mono ? 'font-mono' : 'font-medium'}`}
+        />
         {copyable && resolvedValue !== '-' ? (
           <CopyIconButton text={resolvedValue} label={label} />
         ) : null}
@@ -117,14 +117,14 @@ export const WhatsAppConfiguration = ({
 
   return (
     <div className="space-y-[var(--spacing-lg)]">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-        <div className="flex flex-col gap-2 border-b border-slate-100 bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-[var(--spacing-md)]">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-[var(--spacing-md)] sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow shadow-emerald-200" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
             <span className="text-sm font-semibold text-slate-800">Configuration</span>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-x-[var(--spacing-lg)] gap-y-[var(--spacing-md)] px-[var(--spacing-lg)] py-[var(--spacing-md)] sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-[var(--spacing-lg)] gap-y-[var(--spacing-md)] sm:grid-cols-2 xl:grid-cols-3">
           <InfoPill
             icon={Phone}
             label="Phone Number"
@@ -149,41 +149,11 @@ export const WhatsAppConfiguration = ({
           <InfoPill icon={Building2} label="WABA ID" value={wabaId} copyable mono />
           <InfoPill icon={Building2} label="WABA Name" value={channel?.config?.wabaName} />
         </div>
-        <div className="flex flex-col gap-[var(--spacing-md)] border-t border-slate-100 bg-slate-50 px-[var(--spacing-lg)] py-[var(--spacing-md)] sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-              <Webhook size={10} />
-              Callback URL
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="truncate font-mono text-xs text-slate-500">
-                {callbackUrl}
-              </span>
-              <CopyIconButton text={callbackUrl} label="Callback URL" />
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-              <Key size={10} />
-              Verify Token
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="truncate font-mono text-xs text-slate-500">
-                {verifyToken}
-              </span>
-              <CopyIconButton text={verifyToken} label="Verify Token" />
-            </div>
-          </div>
-        </div>
+       
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-[var(--spacing-lg)] shadow-sm">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">
-          Connection Settings
-        </h2>
-        <p className="mb-4 text-xs text-slate-400">
-          Update your WhatsApp credentials when they change.
-        </p>
+      <div>
+       
         <div className="space-y-4">
           <BaseInput
             label="Channel Name"

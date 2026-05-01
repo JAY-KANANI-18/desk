@@ -286,13 +286,24 @@ export const ConnectChannelPage = () => {
 
   return (
     <PageLayout
-      eyebrow="Channels / Catalog"
+      eyebrow="Channels / Connect"
       title={meta.name}
       leading={
+        <div className="flex items-center gap-3">
         <BackButton
           ariaLabel="Back to channel catalog"
           onClick={() => navigate("/channels/connect")}
         />
+
+         <img
+            alt={meta.name}
+            className="h-10 w-10 object-contain"
+            onError={(event) => {
+              (event.target as HTMLImageElement).style.display = "none";
+            }}
+            src={meta.icon}
+          />
+        </div>
       }
       className="bg-white"
       contentClassName="min-h-0 flex-1 overflow-hidden bg-slate-50 px-0 py-0"
@@ -306,10 +317,18 @@ export const ConnectChannelPage = () => {
                 onClick={() => navigate("/channels/connect")}
                 size="sm"
               />
+              <img
+            alt={meta.name}
+            className="h-10 w-10 object-contain"
+            onError={(event) => {
+              (event.target as HTMLImageElement).style.display = "none";
+            }}
+            src={meta.icon}
+          />
 
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
-                  Channels / Catalog
+                  Channels / Connect
                 </p>
                 <h1 className="truncate text-base font-semibold text-gray-900">
                   {meta.name}
@@ -324,8 +343,8 @@ export const ConnectChannelPage = () => {
             {renderSidebarPanel()}
           </aside>
 
-          <main className="min-w-0 flex-1 overflow-y-auto bg-gray-50">
-            <div className="w-full max-w-6xl px-[var(--spacing-md)] pb-24 pt-[var(--spacing-md)] md:mx-0 md:px-[var(--spacing-lg)] md:pb-[var(--spacing-lg)] md:pt-[var(--spacing-lg)]">
+          <main className="min-w-0 flex-1 overflow-y-auto ">
+            <div className="w-full px-[var(--spacing-md)] pb-24 pt-[var(--spacing-md)] md:mx-0 md:px-[var(--spacing-lg)] md:pb-[var(--spacing-lg)] md:pt-[var(--spacing-lg)]">
               {isMobile && null}
 
               <Component

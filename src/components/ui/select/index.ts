@@ -11,6 +11,8 @@ export type {
   CompactSelectMenuOption,
   CompactSelectMenuProps,
 } from "./CompactSelectMenu";
+export { ButtonSelectMenu } from "./ButtonSelectMenu";
+export type { ButtonSelectMenuProps } from "./ButtonSelectMenu";
 export { AssigneeSelectMenu } from "./AssigneeSelectMenu";
 export type {
   AssigneeSelectMenuProps,

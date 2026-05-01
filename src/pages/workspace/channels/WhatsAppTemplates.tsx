@@ -12,6 +12,7 @@ import { CenterModal } from '../../../components/ui/modal/CenterModal';
 import { BaseSelect } from '../../../components/ui/select/BaseSelect';
 import type { SelectOption } from '../../../components/ui/select/shared';
 import { Tag } from '../../../components/ui/tag/Tag';
+import { TruncatedText } from '../../../components/ui/truncated-text';
 import { ChannelApi, type WaTemplate } from '../../../lib/channelApi';
 import { useSocket } from '../../../socket/socket-provider';
 import { ConnectedChannel } from '../../channels/ManageChannelPage';
@@ -156,7 +157,7 @@ const PreviewModal = ({
         ) : null}
 
         {preview ? (
-          <div className="space-y-2 rounded-xl bg-gray-50 p-4">
+          <div className="space-y-2 border-y border-gray-100 py-4">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
               Preview
             </p>
@@ -187,7 +188,7 @@ const PreviewModal = ({
         ) : null}
 
         {error ? (
-          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+          <div className="flex items-center gap-2 border-l border-red-300 pl-3 text-xs text-red-600">
             <AlertCircle size={13} />
             {error}
           </div>
@@ -317,9 +318,11 @@ export const WhatsAppTemplatesSection = ({
       mobile: 'primary',
       className: 'max-w-[220px]',
       cell: (template) => (
-        <span className="block truncate font-mono text-xs text-gray-800" title={template.name}>
-          {template.name}
-        </span>
+        <TruncatedText
+          text={template.name}
+          maxLines={1}
+          className="block font-mono text-xs text-gray-800"
+        />
       ),
     },
     {
@@ -389,7 +392,7 @@ export const WhatsAppTemplatesSection = ({
     <div className="flex h-full min-h-0 flex-col gap-5">
       <div className="flex flex-shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Message Templates</h2>
+          <h2 className="text-base font-semibold text-gray-900">Message Templates</h2>
           <p className="mt-0.5 text-sm text-gray-500">
             Approved WhatsApp message templates for your WABA account.
           </p>
@@ -404,6 +407,7 @@ export const WhatsAppTemplatesSection = ({
           <Button
             onClick={() => void handleSync()}
             variant="secondary"
+            size="sm"
             leftIcon={!syncing ? <RefreshCw size={13} /> : undefined}
             loading={syncing}
             loadingMode="inline"
@@ -440,13 +444,13 @@ export const WhatsAppTemplatesSection = ({
       </div>
 
       {error ? (
-        <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+        <div className="flex flex-shrink-0 items-center gap-2 border-l border-red-300 pl-3 text-xs text-red-600">
           <AlertCircle size={14} />
           {error}
         </div>
       ) : null}
 
-      <div className="min-h-[320px] min-w-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="min-h-[320px] min-w-0 flex-1 overflow-hidden border-y border-gray-100">
         <DataTable
           className="h-full"
           rows={sortedTemplates}

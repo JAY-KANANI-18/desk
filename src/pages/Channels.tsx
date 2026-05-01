@@ -328,7 +328,7 @@ export const Channels = () => {
 
   return (
     <PageLayout
-      title="Channels"
+      title="Connected Channels"
       toolbar={desktopToolbar}
       className="bg-white"
       contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"

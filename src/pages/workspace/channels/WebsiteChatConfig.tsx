@@ -105,29 +105,28 @@ export const WebsiteChatConfiguration = ({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm">
-        <div className="flex items-center gap-2.5 border-b border-slate-100 bg-white px-5 py-3.5">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
           <Code2 size={15} className="text-indigo-500" />
           <span className="text-sm font-semibold text-slate-800">
             Embed Script
           </span>
         </div>
-        <div className="px-5 py-4">
-          <p className="mb-3 text-xs text-slate-500">
+        <div>
+          <p className="mb-3 text-sm text-slate-500">
             Add this script to the{' '}
             <code className="rounded bg-slate-100 px-1 text-xs">&lt;head&gt;</code>{' '}
             of every page where you want the chat widget to appear.
           </p>
-          <div className="flex flex-col gap-3 rounded-xl bg-slate-900 p-4 sm:flex-row sm:items-start">
-            <code className="flex-1 break-all font-mono text-xs leading-relaxed text-emerald-300">
+          <div className="flex flex-col gap-3 border-y border-slate-100 py-3 sm:flex-row sm:items-start">
+            <code className="min-w-0 flex-1 break-all font-mono text-xs leading-relaxed text-slate-600">
               {scriptTag}
             </code>
-            <div className="flex shrink-0 flex-col gap-2 sm:w-28">
+            <div className="flex shrink-0 gap-2">
               <Button
                 onClick={openTestWindow}
                 size="sm"
                 variant="secondary"
-                className="border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600"
                 leftIcon={<ExternalLink size={12} />}
               >
                 Test
@@ -135,12 +134,7 @@ export const WebsiteChatConfiguration = ({
               <Button
                 onClick={copy}
                 size="sm"
-                variant="secondary"
-                className={
-                  copied
-                    ? 'border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-600'
-                    : 'border-slate-600 bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }
+                variant={copied ? 'success' : 'secondary'}
                 leftIcon={copied ? <Check size={12} /> : <Copy size={12} />}
               >
                 {copied ? 'Copied' : 'Copy'}
@@ -174,7 +168,7 @@ export const WebsiteChatConfiguration = ({
                 <Button
                   key={pos}
                   type="button"
-           
+                  size="sm"
                   variant={position === pos ? 'primary' : 'secondary'}
                   onClick={() => setPosition(pos)}
                 >

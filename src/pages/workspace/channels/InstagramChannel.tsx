@@ -12,6 +12,11 @@ import { ChannelConnectActionButton } from "../../../components/channels/Channel
 import { Button } from "../../../components/ui/button/Button";
 import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
+import {
+  ChannelConnectPrerequisites,
+  useChannelConnectPrerequisites,
+  type ChannelConnectPrerequisite,
+} from "./ChannelConnectPrerequisites";
 
 interface Props {
   connected: Channel | null;
@@ -41,23 +46,27 @@ const SETUP_STEPS = [
   },
 ];
 
+const INSTAGRAM_PREREQUISITES: ChannelConnectPrerequisite[] = [
+  {
+    id: "professional-account",
+    label: "Instagram account is Professional.",
+    description: "Business or Creator accounts are supported.",
+  },
+  {
+    id: "linked-facebook-page",
+    label: "Instagram is linked to a Facebook Page.",
+    description: "Use a Page you manage with admin or full access.",
+  },
+  // {
+  //   id: "facebook-login",
+  //   label: "I can log in to the Facebook account that manages the Page.",
+  //   description: "Meta will ask for this during authorization.",
+  // },
+];
+
 export const InstagramChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6">
-    <div className="flex items-center gap-2.5">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-        <img
-          src={getChannelIconUrl("instagram")}
-          className="h-10 w-10"
-          alt="Instagram"
-        />
-      </div>
-      <div>
-        <p className="leading-none text-xs font-semibold text-gray-900">
-          Instagram
-        </p>
-        <p className="mt-0.5 text-[10px] text-gray-400">Meta Business Platform</p>
-      </div>
-    </div>
+  
     <div className="h-px bg-gray-100 hidden md:block" />
     <div className='hidden md:block'>
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -140,12 +149,14 @@ interface InstagramOAuthPopupProps {
   workspaceId: string;
   onSuccess: (channel: Channel) => void;
   onError: (msg: string) => void;
+  disabled?: boolean;
 }
 
 export const InstagramOAuthPopup = ({
   workspaceId,
   onSuccess,
   onError,
+  disabled = false,
 }: InstagramOAuthPopupProps) => {
   const { loading, startAuth } = useChannelOAuth({
     provider: "instagram",
@@ -169,6 +180,7 @@ export const InstagramOAuthPopup = ({
       loading={loading}
       loadingMode="inline"
       loadingLabel={stepLabel}
+      disabled={disabled || loading}
       onClick={() => {
         void startAuth();
       }}
@@ -185,6 +197,11 @@ export const InstagramChannel = ({
   workspaceId,
 }: Props) => {
   const [error, setError] = useState<string | null>(null);
+  const {
+    allChecked: prerequisitesReady,
+    checkedIds,
+    togglePrerequisite,
+  } = useChannelConnectPrerequisites(INSTAGRAM_PREREQUISITES);
 
   if (connected) {
     return (
@@ -240,26 +257,11 @@ export const InstagramChannel = ({
         <div className="flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white">
           <div className="p-6">
             <div className="space-y-5">
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-indigo-700">
-                  How it works
-                </p>
-                <div className="space-y-1">
-                  {[
-                    "An Instagram login popup will open",
-                    "Log in and authorize the permissions",
-                    "We detect your Business account automatically",
-                    "Channel is connected and ready to use",
-                  ].map((step, index) => (
-                    <div key={step} className="flex items-center gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-indigo-200 text-[9px] font-bold text-indigo-700">
-                        {index + 1}
-                      </span>
-                      <span className="text-[11px] text-indigo-700">{step}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ChannelConnectPrerequisites
+                items={INSTAGRAM_PREREQUISITES}
+                checkedIds={checkedIds}
+                onToggle={togglePrerequisite}
+              />
 
               {error ? (
                 <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2.5 text-[12px] text-red-500">
@@ -273,9 +275,12 @@ export const InstagramChannel = ({
                   workspaceId={workspaceId}
                   onSuccess={onConnect}
                   onError={setError}
+                  disabled={!prerequisitesReady}
                 />
                 <p className="mt-2 text-center text-[10px] text-gray-400">
-                  A popup will open to Instagram&apos;s secure authorization page.
+                  {prerequisitesReady
+                    ? "A popup will open to Instagram's secure authorization page."
+                    : "Check each item above to enable connection."}
                 </p>
               </div>
             </div>

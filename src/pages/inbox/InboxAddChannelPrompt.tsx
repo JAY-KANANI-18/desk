@@ -5,13 +5,13 @@ import { useAuthorization } from "../../context/AuthorizationContext";
 import { Button } from "../../components/ui/Button";
 
 interface InboxAddChannelPromptProps {
-  message: string;
+  message?: string;
   compact?: boolean;
   title?: string;
 }
 
 export function InboxAddChannelPrompt({
-  message,
+  message = '',
   compact = false,
   title = "No channels connected yet",
 }: InboxAddChannelPromptProps) {

@@ -1,5 +1,13 @@
 import { CheckCircle2 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { cx } from "../inputs/shared";
 import { MobileSheet } from "../modal";
@@ -58,6 +66,7 @@ export interface CompactSelectMenuProps {
   searchPlaceholder?: string;
   emptyMessage?: string;
   triggerClassName?: string;
+  triggerStyle?: CSSProperties;
   hideIndicator?: boolean;
   mobileSheet?: boolean;
   mobileSheetTitle?: ReactNode;
@@ -120,6 +129,7 @@ export function CompactSelectMenu({
   searchPlaceholder = "Search...",
   emptyMessage = "No options available.",
   triggerClassName,
+  triggerStyle,
   hideIndicator = false,
   mobileSheet = false,
   mobileSheetTitle,
@@ -312,6 +322,7 @@ export function CompactSelectMenu({
         fullWidth={fullWidth}
         appearance={triggerAppearance}
         className={triggerClassName}
+        style={triggerStyle}
         onClick={controller.toggle}
         onKeyDown={controller.handleTriggerKeyDown}
       >

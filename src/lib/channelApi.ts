@@ -82,6 +82,7 @@ export interface PrivateRepliesConfig {
     scope: 'all' | 'selected';
     selectedPostIds: string[];
     message: string;
+    postMessages: PrivateReplyPostMessage[];
     updatedAt?: string | null;
 }
 
@@ -107,6 +108,13 @@ export interface AutomationTarget {
     permalink?: string | null;
     thumbnailUrl?: string | null;
     createdAt?: string | null;
+}
+
+export interface PrivateReplyPostMessage {
+    postId: string;
+    message: string;
+    target?: AutomationTarget | null;
+    updatedAt?: string | null;
 }
 
 const buildQuery = (params?: Record<string, string | undefined>) => {

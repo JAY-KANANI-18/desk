@@ -24,6 +24,11 @@ import { PasswordInput } from "../../../components/ui/inputs/PasswordInput";
 import { Tag } from "../../../components/ui/tag/Tag";
 import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
+import {
+  ChannelConnectPrerequisites,
+  useChannelConnectPrerequisites,
+  type ChannelConnectPrerequisite,
+} from "./ChannelConnectPrerequisites";
 
 interface Props {
   connected: Channel | null;
@@ -106,6 +111,34 @@ const SETUP_STEPS = [
   },
 ];
 
+const WHATSAPP_PREREQUISITES: ChannelConnectPrerequisite[] = [
+  {
+    id: "meta-business",
+    label: "Meta Business Account is ready.",
+    description: "A verified business account is best for production use.",
+  },
+  {
+    id: "whatsapp-profile",
+    label: "WhatsApp Business profile is ready.",
+    description: "This is the business profile you want to manage here.",
+  },
+  // {
+  //   id: "phone-number",
+  //   label: "Phone number can receive SMS or calls.",
+  //   description: "It should not be linked to any existing WhatsApp profile.",
+  // },
+  // {
+  //   id: "business-details",
+  //   label: "Business name, address, and display name are ready.",
+  //   description: "The display name should match your real business name.",
+  // },
+  // {
+  //   id: "migration-two-factor",
+  //   label: "2FA is disabled if I am migrating an existing number.",
+  //   description: "Only needed when moving a current WhatsApp profile.",
+  // },
+];
+
 export const WhatsAppSidebarInfo = ({ channel }: { channel: Channel }) => (
   <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
     <div className="mb-2 flex items-center gap-2">
@@ -152,21 +185,7 @@ export const WhatsAppSidebarInfo = ({ channel }: { channel: Channel }) => (
 
 export const WhatsAppChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6  ">
-    <div className="flex items-center gap-2.5 ">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-        <img
-          src={getChannelIconUrl("whatsapp")}
-          className="h-10 w-10"
-          alt="WhatsApp"
-        />
-      </div>
-      <div>
-        <p className="leading-none text-xs font-semibold text-gray-900">
-          WhatsApp Cloud
-        </p>
-        <p className="mt-0.5 text-[10px] text-gray-400">Meta Business Platform</p>
-      </div>
-    </div>
+   
     <div className="h-px bg-gray-100 hidden md:block" />
     <div className='hidden md:block'>
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -224,6 +243,11 @@ export const WhatsAppCloudChannel = ({
   });
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    allChecked: prerequisitesReady,
+    checkedIds,
+    togglePrerequisite,
+  } = useChannelConnectPrerequisites(WHATSAPP_PREREQUISITES);
 
   const { loading: oauthLoading, startAuth } = useChannelOAuth({
     provider: "whatsapp",
@@ -329,30 +353,11 @@ export const WhatsAppCloudChannel = ({
           <div className="p-[var(--spacing-lg)]">
             {tab === "meta" ? (
               <div className="space-y-[var(--spacing-lg)]">
-                <div className="grid gap-[var(--spacing-md)] lg:grid-cols-[minmax(0,0.9fr)_minmax(20rem,1.1fr)] lg:items-start">
-             
-
-                  <div className="rounded-xl border border-blue-100 bg-blue-50 p-[var(--spacing-md)]">
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-indigo-700">
-                      How it works
-                    </p>
-                    <div className="space-y-1">
-                      {[
-                        "A Meta login popup will open",
-                        "Select your Facebook Business account",
-                        "We detect your WABA & phone numbers",
-                        "Channel is connected automatically",
-                      ].map((step, index) => (
-                        <div key={step} className="flex items-center gap-[var(--spacing-sm)]">
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-indigo-200 text-[9px] font-bold text-indigo-700">
-                            {index + 1}
-                          </span>
-                          <span className="text-[11px] text-indigo-700">{step}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <ChannelConnectPrerequisites
+                  items={WHATSAPP_PREREQUISITES}
+                  checkedIds={checkedIds}
+                  onToggle={togglePrerequisite}
+                />
 
                 {error ? (
                   <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2.5 text-[12px] text-red-500">
@@ -372,6 +377,7 @@ export const WhatsAppCloudChannel = ({
                       loading={oauthLoading}
                       loadingMode="inline"
                       loadingLabel={oauthStepLabel}
+                      disabled={!prerequisitesReady || oauthLoading}
                       onClick={() => {
                         void startAuth();
                       }}
@@ -382,7 +388,9 @@ export const WhatsAppCloudChannel = ({
                
 
                 <p className="text-center text-[10px] text-gray-400">
-                  A popup will open to Meta&apos;s secure authorization page.
+                  {prerequisitesReady
+                    ? "A popup will open to Meta's secure authorization page."
+                    : "Check each item above to enable connection."}
                 </p>
               </div>
             ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   ArrowDown,
@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "../../../components/ui/button/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
+import { CountBadge } from "../../../components/ui/CountBadge";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { ButtonSelectMenu } from "../../../components/ui/select/ButtonSelectMenu";
+import type { CompactSelectMenuGroup } from "../../../components/ui/select/CompactSelectMenu";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { ChannelApi, MessengerMenuState } from "../../../lib/channelApi";
 import { useSocket } from "../../../socket/socket-provider";
@@ -26,6 +29,7 @@ import {
 
 type MenuItemType = "payload" | "url" | "quick_reply";
 type ActiveTab = "menu" | "get_started";
+const MENU_ITEM_HIGHLIGHT_MS = 2600;
 
 interface MenuItem {
   _id: string;
@@ -43,24 +47,46 @@ function uid() {
 const ITEM_TYPE_OPTS: Array<{
   value: MenuItemType;
   label: string;
+  description: string;
   icon: ReactNode;
 }> = [
   {
     value: "payload",
     label: "Trigger payload",
+    description: "Send a postback payload to automation.",
     icon: <MessageSquare size={12} />,
   },
   {
     value: "quick_reply",
     label: "Send message",
+    description: "Send a configured Messenger reply.",
     icon: <MessageCircle size={12} />,
   },
   {
     value: "url",
     label: "Open URL",
+    description: "Open a web link from Messenger.",
     icon: <Globe size={12} />,
   },
 ];
+
+const ITEM_TYPE_GROUPS: CompactSelectMenuGroup[] = [
+  {
+    options: ITEM_TYPE_OPTS.map((option) => ({
+      value: option.value,
+      label: option.label,
+      description: option.description,
+      leading: option.icon,
+    })),
+  },
+];
+
+function getItemTypeOption(actionType: MenuItemType) {
+  return (
+    ITEM_TYPE_OPTS.find((option) => option.value === actionType) ??
+    ITEM_TYPE_OPTS[0]
+  );
+}
 
 const tabOptions: Array<{ id: ActiveTab; label: string }> = [
   { id: "menu", label: "Persistent Menu" },
@@ -69,6 +95,9 @@ const tabOptions: Array<{ id: ActiveTab; label: string }> = [
 
 const MenuItemRow = ({
   item,
+  position,
+  highlighted,
+  cardRef,
   onUpdate,
   onRemove,
   onMoveUp,
@@ -77,6 +106,9 @@ const MenuItemRow = ({
   disableMoveDown,
 }: {
   item: MenuItem;
+  position: number;
+  highlighted: boolean;
+  cardRef: (node: HTMLDivElement | null) => void;
   onUpdate: (updates: Partial<MenuItem>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -104,50 +136,73 @@ const MenuItemRow = ({
       : item.actionType === "url"
         ? "https://yoursite.com/support"
         : "Hi there, how can we help?";
+  const selectedType = getItemTypeOption(item.actionType);
 
   return (
-    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {ITEM_TYPE_OPTS.map((option) => (
-            <Button
-              key={option.value}
-              type="button"
-              variant={
-                item.actionType === option.value ? "primary" : "secondary"
-              }
-              leftIcon={option.icon}
-              onClick={() => onUpdate({ actionType: option.value })}
-            >
-              {option.label}
-            </Button>
-          ))}
+    <div
+      ref={cardRef}
+      className={`scroll-mt-24 rounded-lg border p-4 transition-colors duration-700 ${
+        highlighted
+          ? "border-indigo-300 bg-indigo-50/60 ring-2 ring-indigo-100"
+          : "border-gray-200 bg-white"
+      }`}
+    >
+      <div className="flex flex-col gap-3 border-b border-gray-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Button {position}
+          </p>
+          <p className="mt-1 text-sm font-medium text-gray-900">
+            {item.title.trim() || "Untitled menu button"}
+          </p>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {selectedType.description}
+          </p>
         </div>
-        <div className="flex items-center gap-1">
-          <IconButton
-            icon={<ArrowUp size={13} />}
-            aria-label="Move menu item up"
-            variant="ghost"
-            disabled={disableMoveUp}
-            onClick={onMoveUp}
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+          <ButtonSelectMenu
+            value={item.actionType}
+            groups={ITEM_TYPE_GROUPS}
+            onChange={(value) =>
+              onUpdate({ actionType: value as MenuItemType })
+            }
+            label={selectedType.label}
+            leftIcon={selectedType.icon}
+            variant="secondary"
+            dropdownWidth="md"
+            mobileSheet
+            mobileSheetTitle="Button action"
+            mobileSheetSubtitle="Choose what this Messenger button should do"
           />
-          <IconButton
-            icon={<ArrowDown size={13} />}
-            aria-label="Move menu item down"
-            variant="ghost"
-            disabled={disableMoveDown}
-            onClick={onMoveDown}
-          />
-          <IconButton
-            icon={<Trash2 size={13} />}
-            aria-label="Remove menu item"
-            variant="ghost"
-            onClick={onRemove}
-          />
+          <div className="flex items-center gap-1">
+            <IconButton
+              icon={<ArrowUp size={13} />}
+              aria-label="Move menu item up"
+              variant="ghost"
+              size="sm"
+              disabled={disableMoveUp}
+              onClick={onMoveUp}
+            />
+            <IconButton
+              icon={<ArrowDown size={13} />}
+              aria-label="Move menu item down"
+              variant="ghost"
+              size="sm"
+              disabled={disableMoveDown}
+              onClick={onMoveDown}
+            />
+            <IconButton
+              icon={<Trash2 size={13} />}
+              aria-label="Remove menu item"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 pt-3 sm:grid-cols-2">
         <BaseInput
           label="Button Title"
           value={item.title}
@@ -192,6 +247,10 @@ export const MessengerChatMenuSection = ({
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("menu");
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(
+    null,
+  );
+  const menuItemRefs = useRef(new Map<string, HTMLDivElement>());
 
   const load = async () => {
     setLoading(true);
@@ -274,19 +333,42 @@ export const MessengerChatMenuSection = ({
     }
   };
 
-  const addItem = () => {
+  useEffect(() => {
+    if (!highlightedItemId) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      menuItemRefs.current.get(highlightedItemId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedItemId((current) =>
+        current === highlightedItemId ? null : current,
+      );
+    }, MENU_ITEM_HIGHLIGHT_MS);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [highlightedItemId, menuItems.length]);
+
+  const addItem = (actionType: MenuItemType) => {
     if (menuItems.length >= 5) return;
+    const itemId = uid();
     setMenuItems((current) => [
       ...current,
       {
-        _id: uid(),
-        actionType: "payload",
+        _id: itemId,
+        actionType,
         title: "",
         payload: "",
         url: "",
         replyText: "",
       },
     ]);
+    setHighlightedItemId(itemId);
     setDirty(true);
   };
 
@@ -298,6 +380,7 @@ export const MessengerChatMenuSection = ({
   };
 
   const removeItem = (id: string) => {
+    setHighlightedItemId((current) => (current === id ? null : current));
     setMenuItems((current) => current.filter((item) => item._id !== id));
     setDirty(true);
   };
@@ -355,9 +438,9 @@ export const MessengerChatMenuSection = ({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Chat Menu</h2>
+          <h2 className="text-base font-semibold text-gray-900">Chat Menu</h2>
           <p className="mt-0.5 text-sm text-gray-500">
             Persistent menu and Get Started button for Messenger.
           </p>
@@ -402,7 +485,7 @@ export const MessengerChatMenuSection = ({
       </div>
 
       {loadErr ? (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+        <div className="flex items-center gap-2 border-l border-red-300 pl-3 text-xs text-red-600">
           <AlertCircle size={14} />
           {loadErr}
         </div>
@@ -422,15 +505,15 @@ export const MessengerChatMenuSection = ({
         </div>
       ) : activeTab === "menu" ? (
         <div className="space-y-3">
-          <div className="flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+          <div className="flex items-start gap-2.5 border-l border-indigo-300 pl-3">
             <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
-            <p className="text-xs text-indigo-800">
+            <p className="text-sm text-gray-600">
               The persistent menu appears as a hamburger icon in Messenger. Add
               up to 5 buttons and decide whether typing is allowed.
             </p>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+          <div className="border-y border-gray-100 py-3">
             <ToggleSwitch
               checked={composerInputDisabled}
               onChange={(checked) => {
@@ -444,42 +527,71 @@ export const MessengerChatMenuSection = ({
             </p>
           </div>
 
-          {menuItems.map((item, index) => (
-            <MenuItemRow
-              key={item._id}
-              item={item}
-              disableMoveDown={index === menuItems.length - 1}
-              disableMoveUp={index === 0}
-              onMoveDown={() => moveItem(item._id, 1)}
-              onMoveUp={() => moveItem(item._id, -1)}
-              onUpdate={(updates) => updateItem(item._id, updates)}
-              onRemove={() => removeItem(item._id)}
-            />
-          ))}
+          {menuItems.length > 0 ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Menu button cards
+                  </p>
+                  <CountBadge count={menuItems.length} tone="neutral" size="sm" />
+                </div>
+                <span className="text-xs text-gray-400">
+                  Up to 5 buttons
+                </span>
+              </div>
+
+              {menuItems.map((item, index) => (
+                <MenuItemRow
+                  key={item._id}
+                  item={item}
+                  position={index + 1}
+                  highlighted={highlightedItemId === item._id}
+                  cardRef={(node) => {
+                    if (node) {
+                      menuItemRefs.current.set(item._id, node);
+                    } else {
+                      menuItemRefs.current.delete(item._id);
+                    }
+                  }}
+                  disableMoveDown={index === menuItems.length - 1}
+                  disableMoveUp={index === 0}
+                  onMoveDown={() => moveItem(item._id, 1)}
+                  onMoveUp={() => moveItem(item._id, -1)}
+                  onUpdate={(updates) => updateItem(item._id, updates)}
+                  onRemove={() => removeItem(item._id)}
+                />
+              ))}
+            </div>
+          ) : null}
 
           {menuItems.length < 5 ? (
-            <Button
-              variant="secondary"
-              fullWidth
+            <ButtonSelectMenu
+              value=""
+              groups={ITEM_TYPE_GROUPS}
+              onChange={(value) => addItem(value as MenuItemType)}
+              label={`Add button (${menuItems.length}/5)`}
               leftIcon={<Plus size={15} />}
-              onClick={addItem}
-              className="border-dashed"
-            >
-              Add button ({menuItems.length}/5)
-            </Button>
+              variant="dashed"
+              size="sm"
+              dropdownWidth="md"
+              mobileSheet
+              mobileSheetTitle="Add menu button"
+              mobileSheetSubtitle="Choose what this Messenger button should do"
+            />
           ) : null}
 
           {menuItems.length === 0 ? (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="border-y border-dashed border-gray-200 py-6 text-sm text-gray-400">
               No menu items yet. Add your first button above.
             </p>
           ) : null}
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+          <div className="flex items-start gap-2.5 border-l border-indigo-300 pl-3">
             <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
-            <p className="text-xs text-indigo-800">
+            <p className="text-sm text-gray-600">
               The Get Started button appears the first time someone opens a
               conversation with your page. The payload is sent to your webhook.
             </p>
@@ -498,7 +610,7 @@ export const MessengerChatMenuSection = ({
       )}
 
       {dirty ? (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <div className="flex items-center gap-2 border-l border-amber-300 pl-3 text-xs text-amber-700">
           <Info size={13} />
           Unsaved changes
         </div>

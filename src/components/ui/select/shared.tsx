@@ -3,6 +3,7 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
   type RefObject,
@@ -17,7 +18,12 @@ import {
 } from "../inputs/shared";
 
 export type SelectSize = InputSize;
-export type SelectTriggerAppearance = "field" | "pill" | "inline" | "toolbar";
+export type SelectTriggerAppearance =
+  | "field"
+  | "pill"
+  | "inline"
+  | "toolbar"
+  | "button";
 export type SelectOptionTone = "primary" | "warning" | "neutral";
 export type SelectOptionSurface = "flush" | "inset";
 
@@ -401,6 +407,7 @@ export function SelectTrigger({
   fullWidth = false,
   error,
   className,
+  style,
   onClick,
   onKeyDown,
   children,
@@ -419,19 +426,39 @@ export function SelectTrigger({
   appearance?: SelectTriggerAppearance;
   error?: string;
   className?: string;
+  style?: CSSProperties;
   onClick: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   const isFieldAppearance = appearance === "field";
   const indicatorSize =
-    appearance === "inline" ? 13 : appearance === "pill" || appearance === "toolbar" ? 14 : 16;
+    appearance === "inline"
+      ? 13
+      : appearance === "pill" ||
+          appearance === "toolbar" ||
+          appearance === "button"
+        ? 14
+        : 16;
   const triggerStyle = isFieldAppearance
     ? getInputControlStyle({
         hasError: Boolean(error),
         paddingRight: hasClearAction ? "calc(var(--spacing-2xl) * 2)" : undefined,
       })
     : undefined;
+  const resolvedStyle =
+    triggerStyle || style
+      ? {
+          ...triggerStyle,
+          ...style,
+          ...(triggerStyle
+            ? {
+                display: "flex",
+                alignItems: "center",
+              }
+            : {}),
+        }
+      : undefined;
 
   return (
     <button
@@ -469,6 +496,12 @@ export function SelectTrigger({
             !disabled && !isOpen && "hover:bg-[var(--color-gray-100)]",
             className,
           ),
+        appearance === "button" &&
+          cx(
+            "btn focus-visible relative isolate overflow-hidden text-left",
+            fullWidth && "w-full",
+            className,
+          ),
         appearance === "inline" &&
           cx(
             "inline-flex min-h-0 items-center justify-between gap-[6px] rounded-full px-0 py-0 text-left text-sm font-medium transition-colors",
@@ -484,15 +517,7 @@ export function SelectTrigger({
         disabled && "cursor-not-allowed",
         disabled && !isFieldAppearance && "opacity-60",
       )}
-      style={
-        triggerStyle
-          ? {
-              ...triggerStyle,
-              display: "flex",
-              alignItems: "center",
-            }
-          : undefined
-      }
+      style={resolvedStyle}
     >
       <span className="flex min-w-0 flex-1 items-center">
         {children}
