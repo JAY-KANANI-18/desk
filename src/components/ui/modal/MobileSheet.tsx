@@ -23,6 +23,7 @@ import { useHistoryBack } from "../../../hooks/useHistoryBack";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MOBILE_SHEET_ANIMATION_MS = 420;
+const MOBILE_SHEET_PAGE_RETURN_MS = 620;
 const MOBILE_SHEET_OVERLAY_Z_INDEX = 120;
 const MOBILE_SHEET_PANEL_Z_INDEX = 130;
 const MOBILE_SHEET_LAYER_STEP = 20;
@@ -50,57 +51,176 @@ const classDrivenIconButtonStyle = {
   minWidth: undefined,
 } satisfies CSSProperties;
 
-const renderedSheetStack: string[] = [];
-const renderedSheetSubscribers = new Set<() => void>();
+const mountedSheetStack: string[] = [];
+const presentedSheetStack: string[] = [];
+const sheetLayerSubscribers = new Set<() => void>();
+let pageReturnTimeout: ReturnType<typeof setTimeout> | null = null;
 
-function notifyRenderedSheetSubscribers() {
-  renderedSheetSubscribers.forEach((listener) => listener());
+function getPageReturnDuration() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return 0;
+  }
+
+  return MOBILE_SHEET_PAGE_RETURN_MS;
 }
 
-function registerRenderedSheet(id: string) {
-  if (!renderedSheetStack.includes(id)) {
-    renderedSheetStack.push(id);
-    notifyRenderedSheetSubscribers();
+function clearPageReturnTimeout() {
+  if (!pageReturnTimeout) return;
+
+  clearTimeout(pageReturnTimeout);
+  pageReturnTimeout = null;
+}
+
+function resetPageDepth() {
+  if (typeof document === "undefined") return;
+
+  clearPageReturnTimeout();
+  document.body.classList.remove(
+    "mobile-sheet-presenting",
+    "mobile-sheet-returning",
+  );
+  document.body.style.removeProperty("--mobile-sheet-page-duration");
+  document.body.style.removeProperty("--mobile-sheet-page-easing");
+  document.body.style.removeProperty("--mobile-sheet-page-scale");
+  document.body.style.removeProperty("--mobile-sheet-page-offset");
+  document.body.style.removeProperty("--mobile-sheet-page-radius");
+}
+
+function removeStackEntry(stack: string[], id: string) {
+  const index = stack.indexOf(id);
+  if (index === -1) return;
+
+  stack.splice(index, 1);
+}
+
+function registerStackEntry(stack: string[], id: string) {
+  if (!stack.includes(id)) {
+    stack.push(id);
+    notifySheetLayerSubscribers();
   }
 
   return () => {
-    const index = renderedSheetStack.indexOf(id);
-    if (index === -1) return;
-
-    renderedSheetStack.splice(index, 1);
-    notifyRenderedSheetSubscribers();
+    removeStackEntry(stack, id);
+    notifySheetLayerSubscribers();
   };
 }
 
-function useMobileSheetLayer(active: boolean) {
+function syncPageDepth() {
+  if (typeof document === "undefined") return;
+
+  const depth = Math.min(presentedSheetStack.length, 3);
+
+  if (depth === 0 && mountedSheetStack.length === 0) {
+    if (!document.body.classList.contains("mobile-sheet-returning")) {
+      resetPageDepth();
+    }
+    return;
+  }
+
+  if (depth === 0) {
+    if (!document.body.classList.contains("mobile-sheet-returning")) {
+      const returnDuration = getPageReturnDuration();
+      document.body.classList.remove("mobile-sheet-presenting");
+      document.body.classList.add("mobile-sheet-returning");
+      document.body.style.setProperty(
+        "--mobile-sheet-page-duration",
+        `${returnDuration}ms`,
+      );
+      document.body.style.setProperty(
+        "--mobile-sheet-page-easing",
+        "cubic-bezier(0.2, 0, 0, 1)",
+      );
+
+      pageReturnTimeout = setTimeout(resetPageDepth, returnDuration);
+    }
+    return;
+  }
+
+  clearPageReturnTimeout();
+  document.body.classList.add("mobile-sheet-presenting");
+  document.body.classList.remove("mobile-sheet-returning");
+  document.body.style.setProperty(
+    "--mobile-sheet-page-duration",
+    `${MOBILE_SHEET_ANIMATION_MS}ms`,
+  );
+  document.body.style.setProperty(
+    "--mobile-sheet-page-easing",
+    "cubic-bezier(0.22, 1, 0.36, 1)",
+  );
+  document.body.style.setProperty(
+    "--mobile-sheet-page-scale",
+    String(1 - depth * 0.02),
+  );
+  document.body.style.setProperty(
+    "--mobile-sheet-page-offset",
+    `${depth * 5}px`,
+  );
+  document.body.style.setProperty(
+    "--mobile-sheet-page-radius",
+    `${Math.min(24, 14 + depth * 3)}px`,
+  );
+}
+
+function notifySheetLayerSubscribers() {
+  syncPageDepth();
+  sheetLayerSubscribers.forEach((listener) => listener());
+}
+
+function useMobileSheetLayer({
+  mounted,
+  presented,
+}: {
+  mounted: boolean;
+  presented: boolean;
+}) {
   const id = useId();
   const [, setVersion] = useState(0);
 
   useLayoutEffect(() => {
     const listener = () => setVersion((version) => version + 1);
-    renderedSheetSubscribers.add(listener);
+    sheetLayerSubscribers.add(listener);
 
     return () => {
-      renderedSheetSubscribers.delete(listener);
+      sheetLayerSubscribers.delete(listener);
     };
   }, []);
 
   useLayoutEffect(() => {
-    if (!active) return undefined;
-    return registerRenderedSheet(id);
-  }, [active, id]);
+    if (!mounted) return undefined;
+    return registerStackEntry(mountedSheetStack, id);
+  }, [mounted, id]);
 
-  const stackIndex = renderedSheetStack.indexOf(id);
-  const layer = active
-    ? stackIndex === -1
-      ? renderedSheetStack.length
-      : stackIndex
+  useLayoutEffect(() => {
+    if (!presented) return undefined;
+    return registerStackEntry(presentedSheetStack, id);
+  }, [presented, id]);
+
+  const mountedIndex = mountedSheetStack.indexOf(id);
+  const presentedIndex = presentedSheetStack.indexOf(id);
+  const layer = mounted
+    ? mountedIndex === -1
+      ? mountedSheetStack.length
+      : mountedIndex
     : 0;
-  const isTop = active
-    ? stackIndex === -1 || stackIndex === renderedSheetStack.length - 1
+  const isTop = presented
+    ? presentedIndex === -1 ||
+      presentedIndex === presentedSheetStack.length - 1
     : false;
+  const depth = presented
+    ? Math.max(
+        0,
+        presentedSheetStack.length -
+          1 -
+          (presentedIndex === -1
+            ? presentedSheetStack.length
+            : presentedIndex),
+      )
+    : 0;
 
-  return { layer, isTop };
+  return { depth, layer, isTop };
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -163,11 +283,17 @@ export function MobileSheet({
 
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
-  const { layer, isTop } = useMobileSheetLayer(isRendered);
+  const { depth, layer, isTop } = useMobileSheetLayer({
+    mounted: isRendered,
+    presented: isOpen,
+  });
   const overlayZIndex =
     MOBILE_SHEET_OVERLAY_Z_INDEX + layer * MOBILE_SHEET_LAYER_STEP;
   const panelZIndex =
     MOBILE_SHEET_PANEL_Z_INDEX + layer * MOBILE_SHEET_LAYER_STEP;
+  const depthScale = Math.max(0.94, 1 - depth * 0.025);
+  const depthOffset = depth * -6;
+  const depthOpacity = Math.max(0.94, 1 - depth * 0.025);
 
   // ── Refs ──────────────────────────────────────────────────────────────────
 
@@ -396,6 +522,7 @@ export function MobileSheet({
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             style={{
+              pointerEvents: isTop ? "auto" : "none",
               zIndex: overlayZIndex,
               transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
             }}
@@ -427,11 +554,22 @@ export function MobileSheet({
             ${isVisible ? "translate-y-0" : "translate-y-full"}
           `}
           style={{
+            pointerEvents: isTop ? "auto" : "none",
             zIndex: panelZIndex,
             transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
           }}
         >
           <div
+            className="mx-auto w-full"
+            style={{
+              opacity: depthOpacity,
+              pointerEvents: isTop ? "auto" : "none",
+              transform: `translate3d(0, ${depthOffset}px, 0) scale(${depthScale})`,
+              transformOrigin: "top center",
+              transition: `transform ${MOBILE_SHEET_ANIMATION_MS}ms cubic-bezier(0.22,1,0.36,1), opacity ${MOBILE_SHEET_ANIMATION_MS}ms ease-out`,
+            }}
+          >
+            <div
             ref={sheetRef}
             role="dialog"
             aria-hidden={!isTop}
@@ -538,6 +676,7 @@ export function MobileSheet({
                 {footer}
               </div>
             ) : null}
+            </div>
           </div>
           {/* ↑ inner drag div */}
         </div>
