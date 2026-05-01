@@ -32,7 +32,7 @@ const MOBILE_SHEET_LAYER_STEP = 20;
 const VELOCITY_CLOSE_THRESHOLD = 500;
 
 /** fraction of sheet height dragged down → force close */
-const DISTANCE_CLOSE_RATIO = 0.4;
+const DISTANCE_CLOSE_RATIO = 0.3;
 
 /** spring-like snap-back timing */
 const SNAP_BACK_DURATION_MS = 320;
