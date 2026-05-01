@@ -366,7 +366,13 @@ export function WorkspaceTagSelect({
       ))
     );
 
-  const menuContent = (
+  const renderMenuContent = ({
+    listScrollable = true,
+    listClassName,
+  }: {
+    listScrollable?: boolean;
+    listClassName?: string;
+  } = {}) => (
     <>
       <SelectMenuHeader
         title={menuTitle}
@@ -382,7 +388,12 @@ export function WorkspaceTagSelect({
         placeholder={searchPlaceholder}
       />
 
-      <SelectList id={controller.listId} onKeyDown={controller.handleListKeyDown}>
+      <SelectList
+        id={controller.listId}
+        onKeyDown={controller.handleListKeyDown}
+        scrollable={listScrollable}
+        className={listClassName}
+      >
         {optionRows}
       </SelectList>
     </>
@@ -400,7 +411,7 @@ export function WorkspaceTagSelect({
           align={dropdownAlign}
           width={dropdownWidth}
         >
-          {menuContent}
+          {renderMenuContent()}
         </SelectDropdown>
       ) : (
         <MobileSheet
@@ -419,10 +430,10 @@ export function WorkspaceTagSelect({
             </div>
           }
         >
-          <div className="p-4">
-            <div className="overflow-hidden rounded-2xl border border-gray-100">
-              {menuContent}
-            </div>
+          <div className="min-h-full">
+            {renderMenuContent({
+              listScrollable: false,
+            })}
           </div>
         </MobileSheet>
       )}

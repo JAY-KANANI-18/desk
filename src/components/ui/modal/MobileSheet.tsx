@@ -292,7 +292,7 @@ export function MobileSheet({
   const panelZIndex =
     MOBILE_SHEET_PANEL_Z_INDEX + layer * MOBILE_SHEET_LAYER_STEP;
   const depthScale = Math.max(0.94, 1 - depth * 0.025);
-  const depthOffset = depth * -6;
+  const depthOffset = depth * -20;
   const depthOpacity = Math.max(0.94, 1 - depth * 0.025);
 
   // ── Refs ──────────────────────────────────────────────────────────────────

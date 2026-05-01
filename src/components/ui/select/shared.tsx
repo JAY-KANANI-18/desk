@@ -597,10 +597,14 @@ export function SelectDropdown({
 export function SelectList({
   id,
   onKeyDown,
+  scrollable = true,
+  className,
   children,
 }: {
   id: string;
   onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  scrollable?: boolean;
+  className?: string;
   children: ReactNode;
 }) {
   return (
@@ -609,7 +613,11 @@ export function SelectList({
       role="listbox"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="max-h-64 overflow-y-auto py-[var(--spacing-xs)]"
+      className={cx(
+        scrollable ? "max-h-64 overflow-y-auto" : "overflow-visible",
+        "py-[var(--spacing-xs)]",
+        className,
+      )}
     >
       {children}
     </div>
