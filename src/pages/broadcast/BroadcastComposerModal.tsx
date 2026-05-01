@@ -65,8 +65,6 @@ export function BroadcastComposerModal({
   onClose,
   onSend,
 }: BroadcastComposerModalProps) {
-  if (!open) return null;
-
   const templateOptions = [
     { value: "", label: "Select template" },
     ...waTemplates.map((template) => ({

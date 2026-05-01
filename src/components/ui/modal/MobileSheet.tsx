@@ -40,6 +40,12 @@ const SNAP_BACK_DURATION_MS = 320;
 /** close animation duration */
 const CLOSE_DURATION_MS = 220;
 
+type MobileSheetMotionState = "closed" | "opening" | "open" | "closing";
+
+type MobileSheetMotionStyle = CSSProperties & {
+  "--mobile-sheet-animation-duration"?: string;
+};
+
 const classDrivenIconButtonStyle = {
   padding: undefined,
   borderRadius: undefined,
@@ -65,6 +71,17 @@ function getPageReturnDuration() {
   }
 
   return MOBILE_SHEET_PAGE_RETURN_MS;
+}
+
+function getMobileSheetAnimationDuration() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return 0;
+  }
+
+  return MOBILE_SHEET_ANIMATION_MS;
 }
 
 function clearPageReturnTimeout() {
@@ -281,8 +298,12 @@ export function MobileSheet({
   const canUseDom =
     typeof document !== "undefined" && typeof window !== "undefined";
 
-  const [isRendered, setIsRendered] = useState(isOpen);
-  const [isVisible, setIsVisible] = useState(false);
+  const [motionState, setMotionState] = useState<MobileSheetMotionState>(
+    () => (isOpen ? "opening" : "closed"),
+  );
+  const motionStateRef = useRef<MobileSheetMotionState>(motionState);
+  const isRendered = motionState !== "closed";
+  const isVisible = motionState === "opening" || motionState === "open";
   const { depth, layer, isTop } = useMobileSheetLayer({
     mounted: isRendered,
     presented: isOpen,
@@ -311,6 +332,12 @@ export function MobileSheet({
   /** Whether we're in the "programmatic snap/close" transition */
   const isAnimatingRef = useRef(false);
 
+  /** Current sheet lifecycle animation timer */
+  const motionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Drag dismiss already performs its own physical exit before onClose */
+  const completedDragCloseRef = useRef(false);
+
   // ── Utilities ─────────────────────────────────────────────────────────────
 
   /** Apply translateY directly to the DOM node — zero React re-renders */
@@ -335,6 +362,21 @@ export function MobileSheet({
   );
 
   const getSheetHeight = () => sheetRef.current?.offsetHeight ?? 0;
+
+  const clearMotionTimeout = useCallback(() => {
+    if (!motionTimeoutRef.current) return;
+
+    clearTimeout(motionTimeoutRef.current);
+    motionTimeoutRef.current = null;
+  }, []);
+
+  const setSheetMotionState = useCallback(
+    (nextState: MobileSheetMotionState) => {
+      motionStateRef.current = nextState;
+      setMotionState(nextState);
+    },
+    [],
+  );
 
   // ── Drag handlers ─────────────────────────────────────────────────────────
 
@@ -445,6 +487,7 @@ export function MobileSheet({
 
         setTimeout(() => {
           isAnimatingRef.current = false;
+          completedDragCloseRef.current = true;
           // No applyTranslate(0) here — inner stays at sheetHeight while
           // the outer exit transition covers it. Reset is in the isOpen useEffect.
           onClose();
@@ -490,30 +533,67 @@ export function MobileSheet({
   useFocusTrap(isOpen && isRendered && isTop, sheetRef);
 
   useEffect(() => {
-    if (!canUseDom) return;
+    if (!canUseDom) return undefined;
 
-    let frame = 0;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+    clearMotionTimeout();
+
+    const duration = getMobileSheetAnimationDuration();
 
     if (isOpen) {
-      setIsRendered(true);
+      completedDragCloseRef.current = false;
+      applyTranslate(0);
+      applyBackdropOpacity(0);
+      setSheetMotionState("opening");
+
+      if (duration === 0) {
+        setSheetMotionState("open");
+        return undefined;
+      }
+
+      motionTimeoutRef.current = setTimeout(() => {
+        motionTimeoutRef.current = null;
+        setSheetMotionState("open");
+      }, duration);
+
+      return clearMotionTimeout;
       // Reset inner drag transform to 0 here — the outer wrapper is still
       // at translate-y-full (invisible), so this reset is not visible to the user.
       // This is the ONLY place we reset. We deliberately do NOT reset in onDragEnd
       // because the outer exit transition needs its full 420ms to complete —
       // resetting the inner to 0 early causes the re-appear glitch.
-      applyTranslate(0);
-      frame = window.requestAnimationFrame(() => setIsVisible(true));
-    } else {
-      setIsVisible(false);
-      timeout = setTimeout(() => setIsRendered(false), MOBILE_SHEET_ANIMATION_MS);
     }
 
-    return () => {
-      window.cancelAnimationFrame(frame);
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [canUseDom, isOpen, applyTranslate]);
+    if (motionStateRef.current === "closed") {
+      return undefined;
+    }
+
+    if (completedDragCloseRef.current) {
+      completedDragCloseRef.current = false;
+      setSheetMotionState("closed");
+      return undefined;
+    }
+
+    setSheetMotionState("closing");
+
+    if (duration === 0) {
+      setSheetMotionState("closed");
+      return undefined;
+    }
+
+    motionTimeoutRef.current = setTimeout(() => {
+      motionTimeoutRef.current = null;
+      setSheetMotionState("closed");
+    }, duration);
+
+    return clearMotionTimeout;
+  }, [
+    applyBackdropOpacity,
+    applyTranslate,
+    canUseDom,
+    clearMotionTimeout,
+    isOpen,
+    setSheetMotionState,
+  ]);
 
   if (!canUseDom) return null;
 
@@ -526,14 +606,16 @@ export function MobileSheet({
         {showOverlay ? (
           <div
             id={backdropId}
-            className={`fixed inset-0 bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
+            data-motion={motionState}
+            className={`mobile-sheet-backdrop fixed inset-0 bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             style={{
               pointerEvents: isTop ? "auto" : "none",
               zIndex: overlayZIndex,
               transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
-            }}
+              "--mobile-sheet-animation-duration": `${MOBILE_SHEET_ANIMATION_MS}ms`,
+            } satisfies MobileSheetMotionStyle}
             onMouseDown={(event) => {
               if (
                 isTop &&
@@ -555,7 +637,9 @@ export function MobileSheet({
           an in-progress drag translate.
         */}
         <div
+          data-motion={motionState}
           className={`
+            mobile-sheet-panel
             fixed inset-x-0 bottom-0 md:hidden
             transition-transform ease-[cubic-bezier(0.22,1,0.36,1)]
             ${fullScreen ? "top-0" : ""}
@@ -565,7 +649,8 @@ export function MobileSheet({
             pointerEvents: isTop ? "auto" : "none",
             zIndex: panelZIndex,
             transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
-          }}
+            "--mobile-sheet-animation-duration": `${MOBILE_SHEET_ANIMATION_MS}ms`,
+          } satisfies MobileSheetMotionStyle}
         >
           <div
             className="mx-auto w-full"

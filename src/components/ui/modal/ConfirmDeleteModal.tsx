@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { Button } from "../button/Button";
 import { CenterModal } from "./CenterModal";
@@ -31,15 +31,39 @@ export function ConfirmDeleteModal({
   confirmLabel,
 }: ConfirmDeleteModalProps) {
   const isMobile = useIsMobile();
+  const [contentSnapshot, setContentSnapshot] = useState({
+    entityName,
+    entityType,
+    title,
+    heading,
+    body,
+    confirmLabel,
+  });
 
-  if (!open) {
-    return null;
-  }
+  useEffect(() => {
+    if (!open) return;
 
-  const resolvedTitle = title ?? `Delete ${entityType}`;
-  const resolvedHeading = heading ?? `Delete ${entityName}?`;
-  const resolvedBody = body ?? "This action cannot be undone once confirmed.";
-  const resolvedConfirmLabel = confirmLabel ?? `Delete ${entityType}`;
+    setContentSnapshot({
+      entityName,
+      entityType,
+      title,
+      heading,
+      body,
+      confirmLabel,
+    });
+  }, [body, confirmLabel, entityName, entityType, heading, open, title]);
+
+  const modalContent = open
+    ? { entityName, entityType, title, heading, body, confirmLabel }
+    : contentSnapshot;
+  const resolvedTitle =
+    modalContent.title ?? `Delete ${modalContent.entityType}`;
+  const resolvedHeading =
+    modalContent.heading ?? `Delete ${modalContent.entityName}?`;
+  const resolvedBody =
+    modalContent.body ?? "This action cannot be undone once confirmed.";
+  const resolvedConfirmLabel =
+    modalContent.confirmLabel ?? `Delete ${modalContent.entityType}`;
   const confirmAction = () => {
     void onConfirm();
   };

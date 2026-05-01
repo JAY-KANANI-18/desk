@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { MobileSheet } from "../../../components/ui/modal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { ContactSidebarHybrid } from "../../inbox/ContactSidebarHybrid";
@@ -33,8 +33,17 @@ export function EditContactModal({
   desktopContainerClassName,
 }: EditContactModalProps) {
   const isMobile = useIsMobile();
+  const [displayContact, setDisplayContact] = useState<Contact | null>(contact);
 
-  if (!contact) {
+  useEffect(() => {
+    if (contact) {
+      setDisplayContact(contact);
+    }
+  }, [contact]);
+
+  const activeContact = contact ?? displayContact;
+
+  if (!activeContact) {
     return null;
   }
 
@@ -50,7 +59,7 @@ export function EditContactModal({
   );
 
   const sharedProps = {
-    contactDetails: contact,
+    contactDetails: activeContact,
     workspaceUsers,
     lifecycleStages: stages,
     onDelete,
@@ -70,7 +79,7 @@ export function EditContactModal({
   if (isMobile) {
     return (
       <MobileSheet
-        isOpen
+        isOpen={Boolean(contact)}
         onClose={onClose}
         borderless
         title={mobileTitle ?? title}

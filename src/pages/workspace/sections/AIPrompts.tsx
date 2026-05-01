@@ -74,8 +74,6 @@ export const AIPrompts = () => {
 
   const closeEditor = () => {
     setShowEditor(false);
-    setEditPrompt(null);
-    setForm(EMPTY_FORM);
   };
 
   const handleSave = async () => {
@@ -296,7 +294,7 @@ export const AIPrompts = () => {
         onClick={openCreate}
       />
 
-      {showEditor && isMobile ? (
+      {isMobile ? (
         <MobileSheet
           isOpen={showEditor}
           onClose={closeEditor}
@@ -307,7 +305,7 @@ export const AIPrompts = () => {
         </MobileSheet>
       ) : null}
 
-      {showEditor && !isMobile ? (
+      {!isMobile ? (
         <CenterModal
           isOpen={showEditor}
           onClose={closeEditor}

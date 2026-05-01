@@ -1,12 +1,9 @@
 import { type ReactNode, useEffect, useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthorization } from "../../context/AuthorizationContext";
 import { useAuth } from "../../context/AuthContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { PageLayout } from "../ui/PageLayout";
-import { IconButton } from "../ui/button/IconButton";
 import {
   MobileHeaderActionButtons,
   useMobileHeaderActionState,
@@ -132,18 +129,9 @@ export const SettingsLayout = ({
                   !activeMatch ? "" : ""
                 } ${contentClassName}`}
               >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={location.pathname}
-                    className="flex min-h-full min-w-0 flex-1 flex-col"
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: isSelectionScreen ? 28 : -28 }}
-                    initial={{ opacity: 0, x: isSelectionScreen ? -28 : 28 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                  >
+             
                     {children}
-                  </motion.div>
-                </AnimatePresence>
+                
               </div>
             ) : (
               <PageLayout

@@ -104,8 +104,6 @@ const InviteUserModal = ({
     }
   }, [open]);
 
-  if (!open) return null;
-
   const handleInvite = async () => {
     if (!email.trim()) return;
 
@@ -245,9 +243,13 @@ const EditWorkspaceUserModal = ({
   const [loading, setLoading] = useState(false);
   const [restrictions, setRestrictions] =
     useState<WorkspaceRestrictions>(defaultRestrictions);
+  const [displayUser, setDisplayUser] = useState<WorkspaceUser | null>(
+    editUser,
+  );
 
   useEffect(() => {
     if (editUser && open) {
+      setDisplayUser(editUser);
       setRole(editUser.role || "WS_AGENT");
       setRestrictions({
         restrictContactVisibility:
@@ -262,13 +264,15 @@ const EditWorkspaceUserModal = ({
     }
   }, [editUser, open]);
 
-  if (!open || !editUser) return null;
+  const activeEditUser = editUser ?? displayUser;
+
+  if (!activeEditUser) return null;
 
   const handleUpdate = async () => {
     try {
       setLoading(true);
       await onSave({
-        userId: editUser.id,
+        userId: activeEditUser.id,
         role,
         restrictions,
       });
@@ -284,16 +288,16 @@ const EditWorkspaceUserModal = ({
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Avatar
-          src={editUser.avatarUrl}
-          name={getWorkspaceUserName(editUser)}
+          src={activeEditUser.avatarUrl}
+          name={getWorkspaceUserName(activeEditUser)}
           size="lg"
         />
 
         <div className="min-w-0">
           <p className="truncate text-base font-semibold text-gray-900">
-            {getWorkspaceUserName(editUser)}
+            {getWorkspaceUserName(activeEditUser)}
           </p>
-          <p className="truncate text-sm text-gray-500">{editUser.email}</p>
+          <p className="truncate text-sm text-gray-500">{activeEditUser.email}</p>
         </div>
       </div>
 
@@ -306,7 +310,7 @@ const EditWorkspaceUserModal = ({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <BaseInput
           label="Email Address"
-          value={editUser.email || ""}
+          value={activeEditUser.email || ""}
           disabled
         />
 
@@ -422,6 +426,8 @@ export const WorkspaceUsers = () => {
   const [deleteUser, setDeleteUser] = useState<WorkspaceUser | null>(null);
   const [mobileActionsUser, setMobileActionsUser] =
     useState<WorkspaceUser | null>(null);
+  const [displayMobileActionsUser, setDisplayMobileActionsUser] =
+    useState<WorkspaceUser | null>(null);
   const [users, setUsers] = useState<WorkspaceUser[]>([]);
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
@@ -446,6 +452,12 @@ export const WorkspaceUsers = () => {
 
     return () => window.clearTimeout(timer);
   }, [searchDraft]);
+
+  useEffect(() => {
+    if (mobileActionsUser) {
+      setDisplayMobileActionsUser(mobileActionsUser);
+    }
+  }, [mobileActionsUser]);
 
   const loadUsers = async (nextPage = page, nextSearch = search) => {
     setLoading(true);
@@ -547,6 +559,9 @@ export const WorkspaceUsers = () => {
       : {},
     [isMobile, searchDraft],
   );
+
+  const mobileActionsDisplayUser =
+    mobileActionsUser ?? displayMobileActionsUser;
 
   return (
     <div>
@@ -704,7 +719,7 @@ export const WorkspaceUsers = () => {
         />
       ) : null}
 
-      {mobileActionsUser ? (
+      {mobileActionsDisplayUser ? (
         <MobileSheet
           isOpen={Boolean(mobileActionsUser)}
           onClose={() => setMobileActionsUser(null)}
@@ -715,7 +730,7 @@ export const WorkspaceUsers = () => {
                 Workspace user
               </p>
               <h2 className="mt-1 truncate text-base font-semibold text-slate-900">
-                {getWorkspaceUserName(mobileActionsUser)}
+                {getWorkspaceUserName(mobileActionsDisplayUser)}
               </h2>
             </div>
           }
@@ -728,7 +743,7 @@ export const WorkspaceUsers = () => {
                 contentAlign="start"
                 leftIcon={<Pencil size={15} />}
                 onClick={() => {
-                  setEditUser(mobileActionsUser);
+                  setEditUser(mobileActionsDisplayUser);
                   setEditOpen(true);
                   setMobileActionsUser(null);
                 }}
@@ -741,7 +756,7 @@ export const WorkspaceUsers = () => {
                 contentAlign="start"
                 leftIcon={<Trash2 size={15} />}
                 onClick={() => {
-                  requestDeleteUser(mobileActionsUser);
+                  requestDeleteUser(mobileActionsDisplayUser);
                   setMobileActionsUser(null);
                 }}
               >

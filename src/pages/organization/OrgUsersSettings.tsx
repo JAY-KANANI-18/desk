@@ -148,9 +148,12 @@ const InviteEditUserModal = ({
     { workspaceId: "", role: "WS_AGENT" },
   ]);
   const [loading, setLoading] = useState(false);
+  const [displayEditUser, setDisplayEditUser] =
+    useState<OrganizationUser | null>(editUser);
 
   useEffect(() => {
     if (open && editUser) {
+      setDisplayEditUser(editUser);
       setEmail(editUser.email || "");
       setOrgRole(editUser.role || "ORG_MEMBER");
 
@@ -167,7 +170,7 @@ const InviteEditUserModal = ({
     }
   }, [editUser, open]);
 
-  if (!open) return null;
+  const activeEditUser = editUser ?? displayEditUser;
 
   const addWorkspace = () => {
     setWorkspaceAccess((current) => [
@@ -206,7 +209,7 @@ const InviteEditUserModal = ({
     try {
       setLoading(true);
 
-      if (editUser) {
+      if (activeEditUser) {
         await onSave({
           email,
           orgRole,
@@ -222,7 +225,7 @@ const InviteEditUserModal = ({
 
       onClose();
     } catch (error) {
-      console.error(editUser ? "Update failed:" : "Invite failed:", error);
+      console.error(activeEditUser ? "Update failed:" : "Invite failed:", error);
     } finally {
       setLoading(false);
     }
@@ -230,25 +233,25 @@ const InviteEditUserModal = ({
 
   const content = (
     <div className="space-y-6">
-      {editUser ? (
+      {activeEditUser ? (
         <div className="flex items-center gap-4">
           <Avatar
-            src={editUser.avatarUrl}
-            name={getOrganizationUserName(editUser)}
+            src={activeEditUser.avatarUrl}
+            name={getOrganizationUserName(activeEditUser)}
             size="lg"
           />
 
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-gray-900">
-              {getOrganizationUserName(editUser)}
+              {getOrganizationUserName(activeEditUser)}
             </p>
-            <p className="truncate text-sm text-gray-500">{editUser.email}</p>
+            <p className="truncate text-sm text-gray-500">{activeEditUser.email}</p>
           </div>
         </div>
       ) : null}
 
       <p className="text-[15px] leading-7 text-gray-600">
-        {editUser
+        {activeEditUser
           ? "Update this user's organization role and workspace access."
           : "Invite a user to your organization and assign their workspace access."}
       </p>
@@ -256,7 +259,7 @@ const InviteEditUserModal = ({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <BaseInput
           label="Email Address"
-          disabled={Boolean(editUser)}
+          disabled={Boolean(activeEditUser)}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="Enter user email"
@@ -343,12 +346,12 @@ const InviteEditUserModal = ({
   const primaryAction = (
     <Button
       onClick={handleSubmit}
-      disabled={!editUser && !email.trim()}
+      disabled={!activeEditUser && !email.trim()}
       loading={loading}
       loadingMode="inline"
-      loadingLabel={editUser ? "Saving..." : "Inviting..."}
+      loadingLabel={activeEditUser ? "Saving..." : "Inviting..."}
     >
-      {editUser ? "Save" : "Invite"}
+      {activeEditUser ? "Save" : "Invite"}
     </Button>
   );
 
@@ -363,7 +366,7 @@ const InviteEditUserModal = ({
               Organization Users
             </p>
             <h2 className="mt-1 text-base font-semibold text-slate-900">
-              {editUser ? "Edit User" : "Invite User"}
+              {activeEditUser ? "Edit User" : "Invite User"}
             </h2>
           </div>
         }
@@ -378,13 +381,13 @@ const InviteEditUserModal = ({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!editUser && !email.trim()}
+              disabled={!activeEditUser && !email.trim()}
               loading={loading}
               loadingMode="inline"
-              loadingLabel={editUser ? "Saving..." : "Inviting..."}
+              loadingLabel={activeEditUser ? "Saving..." : "Inviting..."}
               fullWidth
             >
-              {editUser ? "Save" : "Invite"}
+              {activeEditUser ? "Save" : "Invite"}
             </Button>
           </div>
         }
@@ -398,7 +401,7 @@ const InviteEditUserModal = ({
     <CenterModal
       isOpen={open}
       onClose={onClose}
-      title={editUser ? "Edit User" : "Invite User"}
+      title={activeEditUser ? "Edit User" : "Invite User"}
       size="xl"
       width={880}
       secondaryAction={secondaryAction}
@@ -422,6 +425,8 @@ export const OrgUsersSettings = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<OrganizationUser | null>(null);
   const [mobileActionsUser, setMobileActionsUser] =
+    useState<OrganizationUser | null>(null);
+  const [displayMobileActionsUser, setDisplayMobileActionsUser] =
     useState<OrganizationUser | null>(null);
   const [pendingDeleteUser, setPendingDeleteUser] =
     useState<OrganizationUser | null>(null);
@@ -454,6 +459,12 @@ export const OrgUsersSettings = () => {
 
     return () => window.clearTimeout(timer);
   }, [searchDraft]);
+
+  useEffect(() => {
+    if (mobileActionsUser) {
+      setDisplayMobileActionsUser(mobileActionsUser);
+    }
+  }, [mobileActionsUser]);
 
   const loadUsers = async (nextPage = page, nextSearch = search) => {
     if (!activeOrganization) return;
@@ -545,6 +556,9 @@ export const OrgUsersSettings = () => {
       : {},
     [isMobile, searchDraft],
   );
+
+  const mobileActionsDisplayUser =
+    mobileActionsUser ?? displayMobileActionsUser;
 
   return (
     <div>
@@ -775,7 +789,7 @@ export const OrgUsersSettings = () => {
         }}
       />
 
-      {mobileActionsUser ? (
+      {mobileActionsDisplayUser ? (
         <MobileSheet
           isOpen={Boolean(mobileActionsUser)}
           onClose={() => setMobileActionsUser(null)}
@@ -786,7 +800,7 @@ export const OrgUsersSettings = () => {
                 Organization user
               </p>
               <h2 className="mt-1 truncate text-base font-semibold text-slate-900">
-                {getOrganizationUserName(mobileActionsUser)}
+                {getOrganizationUserName(mobileActionsDisplayUser)}
               </h2>
             </div>
           }
@@ -800,8 +814,8 @@ export const OrgUsersSettings = () => {
                 leftIcon={<Pencil size={15} />}
                 onClick={() => {
                   setEditUser({
-                    ...mobileActionsUser,
-                    workspaceAccess: normalizeWorkspaceAccess(mobileActionsUser),
+                    ...mobileActionsDisplayUser,
+                    workspaceAccess: normalizeWorkspaceAccess(mobileActionsDisplayUser),
                   });
                   setMobileActionsUser(null);
                   setInviteOpen(true);
@@ -814,9 +828,9 @@ export const OrgUsersSettings = () => {
                 fullWidth
                 contentAlign="start"
                 leftIcon={<Trash2 size={15} />}
-                disabled={isOrganizationOwner(mobileActionsUser)}
+                disabled={isOrganizationOwner(mobileActionsDisplayUser)}
                 onClick={() => {
-                  setPendingDeleteUser(mobileActionsUser);
+                  setPendingDeleteUser(mobileActionsDisplayUser);
                   setMobileActionsUser(null);
                 }}
               >

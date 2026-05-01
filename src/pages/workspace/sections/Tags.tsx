@@ -47,8 +47,6 @@ export const Tags = () => {
 
   const closeAddTag = useCallback(() => {
     setShowAdd(false);
-    setEditingTag(null);
-    setNewTag(INITIAL_WORKSPACE_TAG_FORM);
   }, []);
 
   const openCreateTag = useCallback(() => {

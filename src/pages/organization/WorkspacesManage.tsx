@@ -31,12 +31,12 @@ export const WorkspaceModal = ({
   const [name, setName] = useState("");
 
   useEffect(() => {
-    setName(initialName || "");
+    if (open) {
+      setName(initialName || "");
+    }
   }, [initialName, open]);
 
   const trimmedName = name.trim();
-
-  if (!open) return null;
 
   if (isMobile) {
     return (

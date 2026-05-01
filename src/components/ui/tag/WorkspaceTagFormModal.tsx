@@ -81,8 +81,6 @@ export function WorkspaceTagFormModal({
     }
   }, [open]);
 
-  if (!open) return null;
-
   const update = (patch: Partial<WorkspaceTagFormValue>) => {
     onChange({ ...value, ...patch });
   };

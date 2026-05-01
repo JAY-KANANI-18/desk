@@ -41,10 +41,6 @@ export function ResponsiveModal({
 }: ResponsiveModalProps) {
   const isMobile = useIsMobile();
 
-  if (!isOpen) {
-    return null;
-  }
-
   if (isMobile) {
     return (
       <MobileSheet
