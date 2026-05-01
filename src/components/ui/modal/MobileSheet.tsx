@@ -29,10 +29,10 @@ const MOBILE_SHEET_PANEL_Z_INDEX = 130;
 const MOBILE_SHEET_LAYER_STEP = 20;
 
 /** px/s — faster than this on release → force close */
-const VELOCITY_CLOSE_THRESHOLD = 300;
+const VELOCITY_CLOSE_THRESHOLD = 500;
 
 /** fraction of sheet height dragged down → force close */
-const DISTANCE_CLOSE_RATIO = 0.3;
+const DISTANCE_CLOSE_RATIO = 0.4;
 
 /** spring-like snap-back timing */
 const SNAP_BACK_DURATION_MS = 320;
