@@ -344,8 +344,6 @@ export function MobileSheet({
    */
   const onDragStart = useCallback(
     (e: ReactPointerEvent, source: "handle" | "content") => {
-      if (!isTop) return;
-
       // Content drag only allowed when scrolled to top
       if (source === "content" && (scrollRef.current?.scrollTop ?? 0) > 0) {
         return;
@@ -366,13 +364,11 @@ export function MobileSheet({
 
       applyTranslate(0);
     },
-    [applyTranslate, isTop]
+    [applyTranslate]
   );
 
   const onDragMove = useCallback(
     (e: ReactPointerEvent) => {
-      if (!isTop) return;
-
       const d = drag.current;
       if (!d.isDragging) return;
 
@@ -405,13 +401,11 @@ export function MobileSheet({
       const ratio = resistedDelta / (getSheetHeight() || 500);
       applyBackdropOpacity(ratio);
     },
-    [applyTranslate, applyBackdropOpacity, isTop]
+    [applyTranslate, applyBackdropOpacity]
   );
 
   const onDragEnd = useCallback(
     (_e: ReactPointerEvent) => {
-      if (!isTop) return;
-
       const d = drag.current;
       if (!d.isDragging) return;
 
@@ -463,14 +457,12 @@ export function MobileSheet({
         }, SNAP_BACK_DURATION_MS);
       }
     },
-    [applyTranslate, applyBackdropOpacity, isTop, onClose]
+    [applyTranslate, applyBackdropOpacity, onClose]
   );
 
   // Prevent content from dragging the sheet when user is scrolled down
   const onContentPointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (!isTop) return;
-
       const scrollTop = scrollRef.current?.scrollTop ?? 0;
       if (scrollTop > 0) {
         // Stop the event from reaching the sheet's drag handler
@@ -479,7 +471,7 @@ export function MobileSheet({
       }
       onDragStart(e, "content");
     },
-    [isTop, onDragStart]
+    [onDragStart]
   );
 
   // ── Open/close render lifecycle ───────────────────────────────────────────
@@ -584,11 +576,7 @@ export function MobileSheet({
             aria-modal={isTop}
             aria-labelledby={titleId}
             tabIndex={-1}
-            onKeyDown={(event) => {
-              if (isTop) {
-                handleDialogKeyDown(event, onClose);
-              }
-            }}
+            onKeyDown={(event) => handleDialogKeyDown(event, onClose)}
             onPointerMove={onDragMove}
             onPointerUp={onDragEnd}
             onPointerCancel={onDragEnd}
