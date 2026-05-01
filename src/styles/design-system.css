@@ -116,7 +116,7 @@ body {
 
   body.mobile-sheet-presenting,
   body.mobile-sheet-returning {
-    background: #020617;
+    /* background: #020617; */
   }
 
   body.mobile-sheet-presenting #app {
