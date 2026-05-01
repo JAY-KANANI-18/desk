@@ -1,10 +1,12 @@
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "../button/IconButton";
@@ -16,7 +18,21 @@ import {
   useFocusTrap,
 } from "./shared";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const MOBILE_SHEET_ANIMATION_MS = 420;
+
+/** px/s — faster than this on release → force close */
+const VELOCITY_CLOSE_THRESHOLD = 500;
+
+/** fraction of sheet height dragged down → force close */
+const DISTANCE_CLOSE_RATIO = 0.4;
+
+/** spring-like snap-back timing */
+const SNAP_BACK_DURATION_MS = 320;
+
+/** close animation duration */
+const CLOSE_DURATION_MS = 220;
 
 const classDrivenIconButtonStyle = {
   padding: undefined,
@@ -28,6 +44,8 @@ const classDrivenIconButtonStyle = {
   width: undefined,
   minWidth: undefined,
 } satisfies CSSProperties;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MobileSheetProps {
   isOpen: boolean;
@@ -44,6 +62,30 @@ export interface MobileSheetProps {
   showCloseButton?: boolean;
 }
 
+// ─── Drag State ───────────────────────────────────────────────────────────────
+
+interface DragState {
+  isDragging: boolean;
+  startY: number;
+  currentY: number;
+  lastY: number;
+  lastTime: number;
+  velocity: number; // px/s
+  source: "handle" | "content" | null;
+}
+
+const initialDragState = (): DragState => ({
+  isDragging: false,
+  startY: 0,
+  currentY: 0,
+  lastY: 0,
+  lastTime: 0,
+  velocity: 0,
+  source: null,
+});
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function MobileSheet({
   isOpen,
   title,
@@ -58,11 +100,191 @@ export function MobileSheet({
   lockBodyScroll = true,
   showCloseButton = true,
 }: MobileSheetProps) {
-  const canUseDom = typeof document !== "undefined" && typeof window !== "undefined";
+  const canUseDom =
+    typeof document !== "undefined" && typeof window !== "undefined";
+
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
+
+  // ── Refs ──────────────────────────────────────────────────────────────────
+
   const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+
+  /** Raw drag state — stored in a ref to avoid re-renders on every pointer move */
+  const drag = useRef<DragState>(initialDragState());
+
+  /** Current translate Y applied inline (avoids setState during drag) */
+  const translateYRef = useRef(0);
+
+  /** Whether we're in the "programmatic snap/close" transition */
+  const isAnimatingRef = useRef(false);
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+
+  /** Apply translateY directly to the DOM node — zero React re-renders */
+  const applyTranslate = useCallback((y: number, transition?: string) => {
+    const el = sheetRef.current;
+    if (!el) return;
+    translateYRef.current = y;
+    el.style.transform = `translateY(${y}px)`;
+    el.style.transition = transition ?? "none";
+  }, []);
+
+  /** Sync backdrop opacity directly — also zero re-renders */
+  const applyBackdropOpacity = useCallback(
+    (ratio: number) => {
+      // ratio: 0 = fully open (100% opacity), 1 = fully closed (0% opacity)
+      const backdropEl = document.getElementById("mobile-sheet-backdrop");
+      if (backdropEl) {
+        backdropEl.style.opacity = String(Math.max(0, 1 - ratio));
+      }
+    },
+    []
+  );
+
+  const getSheetHeight = () => sheetRef.current?.offsetHeight ?? 0;
+
+  // ── Drag handlers ─────────────────────────────────────────────────────────
+
+  /**
+   * Shared pointer-down logic.
+   * `source` tells us whether it came from the handle or content area.
+   */
+  const onDragStart = useCallback(
+    (e: ReactPointerEvent, source: "handle" | "content") => {
+      // Content drag only allowed when scrolled to top
+      if (source === "content" && (scrollRef.current?.scrollTop ?? 0) > 0) {
+        return;
+      }
+      if (isAnimatingRef.current) return;
+
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+      drag.current = {
+        isDragging: true,
+        startY: e.clientY,
+        currentY: e.clientY,
+        lastY: e.clientY,
+        lastTime: performance.now(),
+        velocity: 0,
+        source,
+      };
+
+      applyTranslate(0);
+    },
+    [applyTranslate]
+  );
+
+  const onDragMove = useCallback(
+    (e: ReactPointerEvent) => {
+      const d = drag.current;
+      if (!d.isDragging) return;
+
+      const now = performance.now();
+      const dt = now - d.lastTime;
+      const dy = e.clientY - d.lastY;
+
+      // Compute instantaneous velocity (px/s)
+      if (dt > 0) {
+        d.velocity = (dy / dt) * 1000;
+      }
+      d.lastY = e.clientY;
+      d.lastTime = now;
+      d.currentY = e.clientY;
+
+      const rawDelta = e.clientY - d.startY;
+
+      // Clamp: no dragging above the open position
+      const clampedDelta = Math.max(0, rawDelta);
+
+      // Subtle resistance for large drags (feels physical)
+      const resistedDelta =
+        clampedDelta > 80
+          ? 80 + (clampedDelta - 80) * 0.55
+          : clampedDelta;
+
+      applyTranslate(resistedDelta);
+
+      // Sync backdrop
+      const ratio = resistedDelta / (getSheetHeight() || 500);
+      applyBackdropOpacity(ratio);
+    },
+    [applyTranslate, applyBackdropOpacity]
+  );
+
+  const onDragEnd = useCallback(
+    (_e: ReactPointerEvent) => {
+      const d = drag.current;
+      if (!d.isDragging) return;
+
+      drag.current = { ...initialDragState() };
+
+      const sheetHeight = getSheetHeight();
+      const draggedDistance = translateYRef.current;
+      const velocity = d.velocity;
+
+      const shouldClose =
+        velocity > VELOCITY_CLOSE_THRESHOLD ||
+        draggedDistance > sheetHeight * DISTANCE_CLOSE_RATIO;
+
+      if (shouldClose) {
+        // Phase 1 (0 → CLOSE_DURATION_MS):
+        //   Inner sheet animates down to sheetHeight px.
+        // Phase 2 (CLOSE_DURATION_MS → MOBILE_SHEET_ANIMATION_MS):
+        //   onClose() fires → parent sets isOpen=false → outer gets translate-y-full.
+        //   Inner MUST stay at translateY(sheetHeight) — hidden behind the outer.
+        //   Resetting to 0 here causes the glitch in kept-mounted usage (MobileContactSheet):
+        //   the outer exit runs for 420ms but the inner snaps to 0 = briefly visible.
+        //
+        // Fix: never reset inner transform on close. Let it stay at sheetHeight.
+        // The isOpen useEffect resets it to 0 silently when the sheet reopens.
+        isAnimatingRef.current = true;
+        applyTranslate(
+          sheetHeight,
+          `transform ${CLOSE_DURATION_MS}ms cubic-bezier(0.4,0,1,1)`
+        );
+        applyBackdropOpacity(1);
+
+        setTimeout(() => {
+          isAnimatingRef.current = false;
+          // No applyTranslate(0) here — inner stays at sheetHeight while
+          // the outer exit transition covers it. Reset is in the isOpen useEffect.
+          onClose();
+        }, CLOSE_DURATION_MS);
+      } else {
+        // Snap back to open
+        isAnimatingRef.current = true;
+        applyTranslate(
+          0,
+          `transform ${SNAP_BACK_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)`
+        );
+        applyBackdropOpacity(0);
+
+        setTimeout(() => {
+          isAnimatingRef.current = false;
+        }, SNAP_BACK_DURATION_MS);
+      }
+    },
+    [applyTranslate, applyBackdropOpacity, onClose]
+  );
+
+  // Prevent content from dragging the sheet when user is scrolled down
+  const onContentPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      const scrollTop = scrollRef.current?.scrollTop ?? 0;
+      if (scrollTop > 0) {
+        // Stop the event from reaching the sheet's drag handler
+        e.stopPropagation();
+        return;
+      }
+      onDragStart(e, "content");
+    },
+    [onDragStart]
+  );
+
+  // ── Open/close render lifecycle ───────────────────────────────────────────
 
   useBodyScrollLock(lockBodyScroll && isRendered);
   useEscapeToClose(isOpen && isRendered, onClose);
@@ -76,31 +298,35 @@ export function MobileSheet({
 
     if (isOpen) {
       setIsRendered(true);
-      frame = window.requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
+      // Reset inner drag transform to 0 here — the outer wrapper is still
+      // at translate-y-full (invisible), so this reset is not visible to the user.
+      // This is the ONLY place we reset. We deliberately do NOT reset in onDragEnd
+      // because the outer exit transition needs its full 420ms to complete —
+      // resetting the inner to 0 early causes the re-appear glitch.
+      applyTranslate(0);
+      frame = window.requestAnimationFrame(() => setIsVisible(true));
     } else {
       setIsVisible(false);
-      timeout = setTimeout(() => {
-        setIsRendered(false);
-      }, MOBILE_SHEET_ANIMATION_MS);
+      timeout = setTimeout(() => setIsRendered(false), MOBILE_SHEET_ANIMATION_MS);
     }
 
     return () => {
       window.cancelAnimationFrame(frame);
       if (timeout) clearTimeout(timeout);
     };
-  }, [canUseDom, isOpen]);
+  }, [canUseDom, isOpen, applyTranslate]);
 
-  if (!canUseDom) {
-    return null;
-  }
+  if (!canUseDom) return null;
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <ModalPortal isMounted={isRendered}>
       <>
+        {/* ── Backdrop ── */}
         {showOverlay ? (
           <div
+            id="mobile-sheet-backdrop"
             className={`fixed inset-0 z-[120] bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
@@ -112,10 +338,23 @@ export function MobileSheet({
             }}
           />
         ) : null}
+
+        {/* ── Sheet container ── */}
+        {/*
+          TWO-LAYER APPROACH — fixes the "full-height flash" glitch:
+          • Outer div owns the CSS entry/exit animation (translate-y-0 / translate-y-full)
+          • Inner div (sheetRef) owns the imperative drag transform via inline style
+          They never write to the same element, so React re-renders can't clobber
+          an in-progress drag translate.
+        */}
         <div
-          className={`fixed inset-x-0 bottom-0 z-[130] md:hidden ${
-            fullScreen ? "top-0" : ""
-          }`}
+          className={`
+            fixed inset-x-0 bottom-0 z-[130] md:hidden
+            transition-transform ease-[cubic-bezier(0.22,1,0.36,1)]
+            ${fullScreen ? "top-0" : ""}
+            ${isVisible ? "translate-y-0" : "translate-y-full"}
+          `}
+          style={{ transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms` }}
         >
           <div
             ref={sheetRef}
@@ -124,29 +363,54 @@ export function MobileSheet({
             aria-labelledby={titleId}
             tabIndex={-1}
             onKeyDown={(event) => handleDialogKeyDown(event, onClose)}
-            className={`flex flex-col overflow-hidden bg-white transition-transform ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none ${
-              isVisible ? "translate-y-0" : "translate-y-12"
-            } ${
-              fullScreen
-                ? "h-[100dvh] max-h-[100dvh]"
-                : `max-h-[88vh] min-h-[42vh] rounded-t-[28px] shadow-[0_-18px_50px_rgba(15,23,42,0.18)] ${
-                    borderless ? "" : "border border-slate-200"
-                  }`
-            }`}
-            style={{ transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms` }}
-          >
-            <div
-              className={`px-4 ${borderless ? "" : "border-b border-slate-100"} ${
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+            className={`
+              flex flex-col overflow-hidden bg-white
+              focus:outline-none
+              ${
                 fullScreen
-                  ? "pb-3 pt-[max(1rem,env(safe-area-inset-top))]"
-                  : "pb-3 pt-4"
-              }`}
+                  ? "h-[100dvh] max-h-[100dvh]"
+                  : `max-h-[88vh] min-h-[42vh] rounded-t-[28px]
+                     shadow-[0_-18px_50px_rgba(15,23,42,0.18)]
+                     ${borderless ? "" : "border border-slate-200"}`
+              }
+            `}
+            style={{
+              // No transition here — this element is drag-only.
+              // applyTranslate() writes transform + transition imperatively.
+              willChange: "transform",
+              touchAction: "none",
+            }}
+          >
+            {/* ── Drag handle strip (always draggable) ── */}
+            <div
+              className={`
+                flex-shrink-0 cursor-grab px-4 active:cursor-grabbing
+                ${borderless ? "" : "border-b border-slate-100"}
+                ${
+                  fullScreen
+                    ? "pb-3 pt-[max(1rem,env(safe-area-inset-top))]"
+                    : "pb-3 pt-4"
+                }
+              `}
+              style={{
+                // Handle zone: always accepts touch-drag
+                touchAction: "none",
+              }}
+              onPointerDown={(e) => onDragStart(e, "handle")}
             >
+              {/* Visual pill */}
               <div className="mb-3 flex justify-center">
-                <div className="h-1.5 w-14 rounded-full bg-slate-200" />
+                <div className="h-1.5 w-14 rounded-full bg-slate-200 transition-colors active:bg-slate-300" />
               </div>
+
+              {/* Title row */}
               <div className="flex items-center justify-between gap-3">
-                <div id={titleId} className="min-w-0 flex-1">{title}</div>
+                <div id={titleId} className="min-w-0 flex-1">
+                  {title}
+                </div>
                 {headerActions || showCloseButton ? (
                   <div className="flex items-center gap-2">
                     {headerActions}
@@ -155,9 +419,12 @@ export function MobileSheet({
                         type="button"
                         icon={<X size={16} />}
                         onClick={onClose}
-                        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl text-slate-500 transition-colors hover:bg-slate-100 ${
-                          borderless ? "" : "border border-slate-200"
-                        }`}
+                        className={`
+                          inline-flex h-10 w-10 items-center justify-center
+                          rounded-2xl text-slate-500 transition-colors
+                          hover:bg-slate-100
+                          ${borderless ? "" : "border border-slate-200"}
+                        `}
                         style={classDrivenIconButtonStyle}
                         variant="unstyled"
                         aria-label="Close panel"
@@ -167,20 +434,38 @@ export function MobileSheet({
                 ) : null}
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+
+            {/* ── Scrollable content (conditional drag) ── */}
+            <div
+              ref={scrollRef}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+              style={{
+                // Allow vertical scroll but let our pointer handlers manage drag
+                touchAction: "pan-y",
+                // Prevent page-level bounce on overscroll
+                overscrollBehavior: "contain",
+              }}
+              onPointerDown={onContentPointerDown}
+            >
               {children}
             </div>
+
+            {/* ── Footer ── */}
             {footer ? (
               <div
-                className={`px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
-                  borderless ? "" : "border-t border-slate-100"
-                }`}
+                className={`
+                  flex-shrink-0 px-4 py-3
+                  pb-[max(0.75rem,env(safe-area-inset-bottom))]
+                  ${borderless ? "" : "border-t border-slate-100"}
+                `}
               >
                 {footer}
               </div>
             ) : null}
           </div>
+          {/* ↑ inner drag div */}
         </div>
+        {/* ↑ outer animation wrapper */}
       </>
     </ModalPortal>
   );
