@@ -17,6 +17,7 @@ import {
   useEscapeToClose,
   useFocusTrap,
 } from "./shared";
+import { useHistoryBack } from "../../../hooks/useHistoryBack";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -285,6 +286,7 @@ export function MobileSheet({
   );
 
   // ── Open/close render lifecycle ───────────────────────────────────────────
++   useHistoryBack(isOpen, onClose);
 
   useBodyScrollLock(lockBodyScroll && isRendered);
   useEscapeToClose(isOpen && isRendered, onClose);
