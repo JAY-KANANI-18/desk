@@ -249,7 +249,6 @@ interface DragState {
   lastY: number;
   lastTime: number;
   velocity: number; // px/s
-  startScrollTop: number;
   source: "handle" | "content" | null;
 }
 
@@ -260,7 +259,6 @@ const initialDragState = (): DragState => ({
   lastY: 0,
   lastTime: 0,
   velocity: 0,
-  startScrollTop: 0,
   source: null,
 });
 
@@ -285,7 +283,6 @@ export function MobileSheet({
 
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
-  const [contentAtTop, setContentAtTop] = useState(true);
   const { depth, layer, isTop } = useMobileSheetLayer({
     mounted: isRendered,
     presented: isOpen,
@@ -339,13 +336,6 @@ export function MobileSheet({
 
   const getSheetHeight = () => sheetRef.current?.offsetHeight ?? 0;
 
-  const syncContentAtTop = useCallback(() => {
-    const nextAtTop = (scrollRef.current?.scrollTop ?? 0) <= 0;
-    setContentAtTop((current) =>
-      current === nextAtTop ? current : nextAtTop,
-    );
-  }, []);
-
   // ── Drag handlers ─────────────────────────────────────────────────────────
 
   /**
@@ -357,8 +347,7 @@ export function MobileSheet({
       if (!isTop) return;
 
       // Content drag only allowed when scrolled to top
-      const startScrollTop = scrollRef.current?.scrollTop ?? 0;
-      if (source === "content" && startScrollTop > 0) {
+      if (source === "content" && (scrollRef.current?.scrollTop ?? 0) > 0) {
         return;
       }
       if (isAnimatingRef.current) return;
@@ -372,7 +361,6 @@ export function MobileSheet({
         lastY: e.clientY,
         lastTime: performance.now(),
         velocity: 0,
-        startScrollTop,
         source,
       };
 
@@ -402,19 +390,6 @@ export function MobileSheet({
 
       const rawDelta = e.clientY - d.startY;
 
-      if (d.source === "content") {
-        const nextScrollTop = Math.max(0, d.startScrollTop - rawDelta);
-
-        if (nextScrollTop > 0) {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTop = nextScrollTop;
-          }
-          applyTranslate(0);
-          applyBackdropOpacity(0);
-          return;
-        }
-      }
-
       // Clamp: no dragging above the open position
       const clampedDelta = Math.max(0, rawDelta);
 
@@ -433,8 +408,8 @@ export function MobileSheet({
     [applyTranslate, applyBackdropOpacity, isTop]
   );
 
-  const finishDrag = useCallback(
-    (forceSnapBack = false) => {
+  const onDragEnd = useCallback(
+    (_e: ReactPointerEvent) => {
       if (!isTop) return;
 
       const d = drag.current;
@@ -445,16 +420,10 @@ export function MobileSheet({
       const sheetHeight = getSheetHeight();
       const draggedDistance = translateYRef.current;
       const velocity = d.velocity;
-      const minFlingDistance =
-        d.source === "content"
-          ? Math.min(120, sheetHeight * 0.18)
-          : Math.min(56, sheetHeight * 0.12);
 
       const shouldClose =
-        !forceSnapBack &&
-        (draggedDistance > sheetHeight * DISTANCE_CLOSE_RATIO ||
-          (velocity > VELOCITY_CLOSE_THRESHOLD &&
-            draggedDistance > minFlingDistance));
+        velocity > VELOCITY_CLOSE_THRESHOLD ||
+        draggedDistance > sheetHeight * DISTANCE_CLOSE_RATIO;
 
       if (shouldClose) {
         // Phase 1 (0 → CLOSE_DURATION_MS):
@@ -497,27 +466,12 @@ export function MobileSheet({
     [applyTranslate, applyBackdropOpacity, isTop, onClose]
   );
 
-  const onDragEnd = useCallback(
-    (_e: ReactPointerEvent) => {
-      finishDrag(false);
-    },
-    [finishDrag],
-  );
-
-  const onDragCancel = useCallback(
-    (_e: ReactPointerEvent) => {
-      finishDrag(true);
-    },
-    [finishDrag],
-  );
-
   // Prevent content from dragging the sheet when user is scrolled down
   const onContentPointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       if (!isTop) return;
 
       const scrollTop = scrollRef.current?.scrollTop ?? 0;
-      setContentAtTop(scrollTop <= 0);
       if (scrollTop > 0) {
         // Stop the event from reaching the sheet's drag handler
         e.stopPropagation();
@@ -543,7 +497,6 @@ export function MobileSheet({
 
     if (isOpen) {
       setIsRendered(true);
-      syncContentAtTop();
       // Reset inner drag transform to 0 here — the outer wrapper is still
       // at translate-y-full (invisible), so this reset is not visible to the user.
       // This is the ONLY place we reset. We deliberately do NOT reset in onDragEnd
@@ -560,7 +513,7 @@ export function MobileSheet({
       window.cancelAnimationFrame(frame);
       if (timeout) clearTimeout(timeout);
     };
-  }, [canUseDom, isOpen, applyTranslate, syncContentAtTop]);
+  }, [canUseDom, isOpen, applyTranslate]);
 
   if (!canUseDom) return null;
 
@@ -638,7 +591,7 @@ export function MobileSheet({
             }}
             onPointerMove={onDragMove}
             onPointerUp={onDragEnd}
-            onPointerCancel={onDragCancel}
+            onPointerCancel={onDragEnd}
             className={`
               flex flex-col overflow-hidden bg-white
               focus:outline-none
@@ -713,12 +666,12 @@ export function MobileSheet({
               ref={scrollRef}
               className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
               style={{
-                touchAction: contentAtTop ? "none" : "pan-y",
+                // Allow vertical scroll but let our pointer handlers manage drag
+                touchAction: "pan-y",
                 // Prevent page-level bounce on overscroll
                 overscrollBehavior: "contain",
               }}
               onPointerDown={onContentPointerDown}
-              onScroll={syncContentAtTop}
             >
               {children}
             </div>
