@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 
 type StackEntry = {
   id: string;
   entryKey: string;
+  isOpenRef: MutableRefObject<boolean>;
   closeFromHistory: () => void;
 };
 
@@ -11,11 +12,19 @@ type SheetHistoryEntry = {
   entryKey?: string;
 };
 
+type PendingHistoryCleanup = {
+  id: string;
+  entryKey?: string;
+  timeout: ReturnType<typeof setTimeout>;
+};
+
 const SHEET_HASH_PREFIX = "sheet-";
 
 const stack: StackEntry[] = [];
 let listenerRegistered = false;
 let entrySequence = 0;
+let pendingHistoryCleanup: PendingHistoryCleanup | null = null;
+let internalHistoryPopTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -85,20 +94,12 @@ function hasStackEntry(id: string) {
   return stack.some((entry) => entry.id === id);
 }
 
-function replaceCurrentHistoryWithSheet(entry: StackEntry) {
-  const entryKey = createEntryKey(entry.id);
-  entry.entryKey = entryKey;
+function findStackEntry(id: string) {
+  return stack.find((entry) => entry.id === id);
+}
 
-  window.history.replaceState(
-    {
-      ...getHistoryStateWithoutSheet(),
-      mobileSheet: true,
-      sheetId: entry.id,
-      sheetEntryKey: entryKey,
-    },
-    "",
-    getSheetUrl(entry.id),
-  );
+function hasPresentedStackEntry(id: string) {
+  return Boolean(findStackEntry(id)?.isOpenRef.current);
 }
 
 function replaceCurrentHistoryWithoutSheet() {
@@ -111,6 +112,90 @@ function cleanupUnknownSheetHistory(current: SheetHistoryEntry) {
   }
 }
 
+function entryMatches(
+  current: SheetHistoryEntry,
+  expected: Pick<SheetHistoryEntry, "id" | "entryKey">,
+) {
+  return (
+    Boolean(expected.id) &&
+    current.id === expected.id &&
+    (!expected.entryKey || current.entryKey === expected.entryKey)
+  );
+}
+
+function clearPendingHistoryCleanup() {
+  if (!pendingHistoryCleanup) return;
+
+  clearTimeout(pendingHistoryCleanup.timeout);
+  pendingHistoryCleanup = null;
+}
+
+function armInternalHistoryPop() {
+  if (internalHistoryPopTimeout) {
+    clearTimeout(internalHistoryPopTimeout);
+  }
+
+  internalHistoryPopTimeout = setTimeout(() => {
+    internalHistoryPopTimeout = null;
+  }, 1000);
+}
+
+function consumeInternalHistoryPop() {
+  if (!internalHistoryPopTimeout) return false;
+
+  clearTimeout(internalHistoryPopTimeout);
+  internalHistoryPopTimeout = null;
+  return true;
+}
+
+function consumePendingHistoryCleanup(current: SheetHistoryEntry) {
+  if (!pendingHistoryCleanup) return false;
+
+  const matches = entryMatches(current, pendingHistoryCleanup);
+  if (matches) {
+    clearPendingHistoryCleanup();
+  }
+
+  return matches;
+}
+
+function scheduleHistoryEntryPop(entry: SheetHistoryEntry) {
+  if (!entry.id) return;
+
+  clearPendingHistoryCleanup();
+  pendingHistoryCleanup = {
+    id: entry.id,
+    entryKey: entry.entryKey,
+    timeout: setTimeout(() => {
+      const pending = pendingHistoryCleanup;
+      pendingHistoryCleanup = null;
+
+      if (!pending) return;
+
+      const current = readCurrentSheetEntry();
+      if (entryMatches(current, pending)) {
+        armInternalHistoryPop();
+        window.history.back();
+        return;
+      }
+
+      cleanupUnknownSheetHistory(current);
+    }, 0),
+  };
+}
+
+function cleanupClosedSheetHistory(id: string, closedFromHistory: boolean) {
+  if (closedFromHistory || typeof window === "undefined") return;
+
+  const current = readCurrentSheetEntry();
+  if (current.id === id) {
+    scheduleHistoryEntryPop(current);
+    return;
+  }
+
+  cleanupUnknownSheetHistory(current);
+}
+
 function registerGlobalListener() {
   if (listenerRegistered || typeof window === "undefined") return;
   listenerRegistered = true;
@@ -118,6 +203,11 @@ function registerGlobalListener() {
   window.addEventListener("popstate", () => {
     const topEntry = stack[stack.length - 1];
     const current = readCurrentSheetEntry();
+
+    if (consumeInternalHistoryPop()) {
+      cleanupUnknownSheetHistory(current);
+      return;
+    }
 
     if (!topEntry) {
       cleanupUnknownSheetHistory(current);
@@ -137,9 +227,12 @@ function registerGlobalListener() {
 
 export function useHistoryBack(isOpen: boolean, onClose: () => void) {
   const onCloseRef = useRef(onClose);
+  const isOpenRef = useRef(isOpen);
   const idRef = useRef(createSheetId());
   const pushedRef = useRef(false);
   const closedFromHistoryRef = useRef(false);
+
+  isOpenRef.current = isOpen;
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -157,26 +250,33 @@ export function useHistoryBack(isOpen: boolean, onClose: () => void) {
 
       const id = idRef.current;
       const entryKey = createEntryKey(id);
+      const current = readCurrentSheetEntry();
+      const shouldReplaceCurrentEntry =
+        consumePendingHistoryCleanup(current) ||
+        Boolean(current.id && !hasPresentedStackEntry(current.id));
 
       stack.push({
         id,
         entryKey,
+        isOpenRef,
         closeFromHistory: () => {
           closedFromHistoryRef.current = true;
           onCloseRef.current();
         },
       });
 
-      window.history.pushState(
-        {
-          ...getHistoryStateWithoutSheet(),
-          mobileSheet: true,
-          sheetId: id,
-          sheetEntryKey: entryKey,
-        },
-        "",
-        getSheetUrl(id),
-      );
+      const nextState = {
+        ...getHistoryStateWithoutSheet(),
+        mobileSheet: true,
+        sheetId: id,
+        sheetEntryKey: entryKey,
+      };
+
+      if (shouldReplaceCurrentEntry) {
+        window.history.replaceState(nextState, "", getSheetUrl(id));
+      } else {
+        window.history.pushState(nextState, "", getSheetUrl(id));
+      }
 
       pushedRef.current = true;
       return;
@@ -190,28 +290,20 @@ export function useHistoryBack(isOpen: boolean, onClose: () => void) {
     pushedRef.current = false;
     removeStackEntry(id);
 
-    if (closedFromHistory) return;
-
-    const current = readCurrentSheetEntry();
-    if (current.id === id) {
-      const nextTopEntry = stack[stack.length - 1];
-      if (nextTopEntry) {
-        replaceCurrentHistoryWithSheet(nextTopEntry);
-      } else {
-        replaceCurrentHistoryWithoutSheet();
-      }
-      return;
-    }
-
-    cleanupUnknownSheetHistory(current);
+    cleanupClosedSheetHistory(id, closedFromHistory);
   }, [isOpen]);
 
   useEffect(() => {
     return () => {
       if (!pushedRef.current) return;
 
+      const id = idRef.current;
+      const closedFromHistory = closedFromHistoryRef.current;
+      closedFromHistoryRef.current = false;
       pushedRef.current = false;
-      removeStackEntry(idRef.current);
+      removeStackEntry(id);
+
+      cleanupClosedSheetHistory(id, closedFromHistory);
     };
   }, []);
 }
