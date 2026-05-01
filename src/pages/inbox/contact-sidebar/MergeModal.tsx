@@ -218,7 +218,6 @@ export function MergeModal({
     >
       <div
         className="flex max-h-[90vh] flex-col"
-        style={{ fontFamily: "'DM Sans', -apple-system, sans-serif" }}
       >
         <div className="overflow-y-auto flex-1 px-6 py-5 bg-[#fafafa]">
           <div className="grid grid-cols-2 gap-4">

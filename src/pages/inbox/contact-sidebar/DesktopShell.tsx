@@ -50,7 +50,6 @@ export function ContactSidebarDesktopShell({
         style={{
           borderColor: '#edf0f8',
           width: CONTACT_SIDEBAR_WIDTH,
-          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
         {onClose ? (

@@ -23,7 +23,7 @@ import { workspaceApi } from '../../lib/workspaceApi';
 import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
 import type { LifecycleStage } from '../workspace/types';
 import { ContactSidebarDesktopShell } from './contact-sidebar/DesktopShell';
-import { FieldRow } from './contact-sidebar/EditableRows';
+import { ContactNameRow, FieldRow } from './contact-sidebar/EditableRows';
 import { MergeModal } from './contact-sidebar/MergeModal';
 import type {
   SidebarContact,
@@ -515,6 +515,7 @@ export function ContactSidebarHybrid({
     onActivate: setActiveField,
     onDeactivate: () => setActiveField(null),
   };
+  const isEditingName = activeField === 'name';
 
   const desktopHeaderContent =
     desktopEyebrow || desktopTitle ? (
@@ -551,49 +552,73 @@ export function ContactSidebarHybrid({
           </div>
         ) : null}
 
-        <div className="flex items-center gap-3 pr-10">
-          <div className="flex-shrink-0">
-            <Avatar
-              src={contact?.avatarUrl ?? undefined}
-              name={contactName(contact)}
-              size="base"
-              fallbackTone="neutral"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold leading-tight text-[#1c2030]">
-              {contactName(contact)}
-            </p>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <p className="truncate text-[11px] text-[#4b5563]">
-                ID: {contactIdentifier}
-              </p>
-              {contactIdentifier ? (
-                <Tooltip content={identifierCopied ? 'Copied' : 'Copy contact ID'}>
-                  <span className="inline-flex shrink-0">
-                    <IconButton
-                      type="button"
-                      aria-label={identifierCopied ? 'Copied' : 'Copy contact ID'}
-                      icon={
-                        identifierCopied ? (
-                          <Check size={11} className="text-emerald-500" />
-                        ) : (
-                          <Copy size={11} />
-                        )
-                      }
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => {
-                        navigator.clipboard.writeText(contactIdentifier).catch(() => undefined);
-                        setIdentifierCopied(true);
-                        setTimeout(() => setIdentifierCopied(false), 1500);
-                      }}
-                    />
-                  </span>
-                </Tooltip>
-              ) : null}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <Avatar
+                src={contact?.avatarUrl ?? undefined}
+                name={contactName(contact)}
+                size="base"
+                fallbackTone="neutral"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              {isEditingName ? (
+                <p className="truncate text-[15px] font-semibold leading-tight text-[#1c2030]">
+                  {contactName(contact)}
+                </p>
+              ) : (
+                <ContactNameRow
+                  {...fieldProps}
+                  fieldKey="name"
+                  firstName={contact?.firstName ?? ''}
+                  lastName={contact?.lastName ?? ''}
+                  displayName={contactName(contact)}
+                  onSave={(value) => persist(value)}
+                />
+              )}
+              <div className="group/row mt-0.5 flex items-center gap-1.5">
+                <p className="truncate text-[11px] text-[#4b5563]">
+                  ID: {contactIdentifier}
+                </p>
+                {contactIdentifier ? (
+                  <Tooltip content={identifierCopied ? 'Copied' : 'Copy contact ID'}>
+                    <span className="inline-flex shrink-0 opacity-60 transition-opacity md:pointer-events-none md:opacity-0 md:group-hover/row:pointer-events-auto md:group-hover/row:opacity-70 md:group-focus-within/row:pointer-events-auto md:group-focus-within/row:opacity-100">
+                      <IconButton
+                        type="button"
+                        aria-label={identifierCopied ? 'Copied' : 'Copy contact ID'}
+                        icon={
+                          identifierCopied ? (
+                            <Check size={11} className="text-emerald-500" />
+                          ) : (
+                            <Copy size={11} />
+                          )
+                        }
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(contactIdentifier).catch(() => undefined);
+                          setIdentifierCopied(true);
+                          setTimeout(() => setIdentifierCopied(false), 1500);
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
+                ) : null}
+              </div>
             </div>
           </div>
+
+          {isEditingName ? (
+            <ContactNameRow
+              {...fieldProps}
+              fieldKey="name"
+              firstName={contact?.firstName ?? ''}
+              lastName={contact?.lastName ?? ''}
+              displayName={contactName(contact)}
+              onSave={(value) => persist(value)}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -695,35 +720,16 @@ export function ContactSidebarHybrid({
         </div>
       ) : null}
 
-      <div className="px-4 pt-1 pb-3 space-y-3.5">
-        <FieldRow
-          {...fieldProps}
-          fieldKey="firstName"
-          label="First Name"
-          value={contact?.firstName ?? ''}
-          placeholder="First name"
-          onSave={(value) => persist({ firstName: value })}
-        />
-        <FieldRow
-          {...fieldProps}
-          fieldKey="lastName"
-          label="Last Name"
-          value={contact?.lastName ?? ''}
-          placeholder="Last name"
-          onSave={(value) => persist({ lastName: value })}
-        />
-      </div>
+      <div className="mx-4 border-t border-[#eef1f6]" />
 
-      <div className="mx-4 border-t border-[#f0f2f8]" />
-
-      <div className="px-4 py-3 space-y-3.5">
+      <div className="px-4 py-3.5 space-y-4">
         <FieldRow
           {...fieldProps}
           fieldKey="email"
           label="Email"
           icon={<Mail size={10} />}
           value={contact?.email ?? ''}
-          placeholder="email@example.com"
+          placeholder="Add email address"
           type="email"
           copyable
           warn={!!selectedSuggestion && conflictField === 'email'}
@@ -735,7 +741,7 @@ export function ContactSidebarHybrid({
           label="Phone"
           icon={<Phone size={10} />}
           value={contact?.phone ?? ''}
-          placeholder="+1 234 567 8900"
+          placeholder="Add phone number"
           type="tel"
           copyable
           warn={!!selectedSuggestion && conflictField === 'phone'}
@@ -747,7 +753,7 @@ export function ContactSidebarHybrid({
           label="Company"
           icon={<Building2 size={10} />}
           value={contact?.company ?? ''}
-          placeholder="Company name"
+          placeholder="Add company"
           copyable
           onSave={(value) => persist({ company: value })}
         />
@@ -757,11 +763,11 @@ export function ContactSidebarHybrid({
         <>
           <div className="mx-4 border-t border-[#f0f2f8]" />
 
-          <div className="px-4 py-3 space-y-3.5">
-            <div className={`transition-opacity ${activeField !== null ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'}`}>
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[#c8cdd8]"><Workflow size={10} /></span>
-                <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#b0b8c8]">Lifecycle</span>
+          <div className="px-4 py-3.5 space-y-4">
+            <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[#8b95a5]"><Workflow size={10} /></span>
+                <span className="text-[10px] font-semibold uppercase text-[#5f6b7a]">Lifecycle</span>
               </div>
               <LifecycleSelectMenu
                 value={lifecycleValue}
@@ -770,17 +776,17 @@ export function ContactSidebarHybrid({
                   void persistLifecycle(stageId ?? '');
                 }}
                 variant="sidebar"
-                noneLabel="No lifecycle"
+                noneLabel="No Stage"
                 fallbackLabel={lifecycleFallbackLabel}
                 dropdownPlacement="top"
                 dropdownAlign="end"
                 dropdownWidth="sm"
               />
             </div>
-            <div className={`transition-opacity ${activeField !== null ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'}`}>
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[#c8cdd8]"><Users size={10} /></span>
-                <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#b0b8c8]">Assignee</span>
+            <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[#8b95a5]"><Users size={10} /></span>
+                <span className="text-[10px] font-semibold uppercase text-[#5f6b7a]">Assignee</span>
               </div>
               <AssigneeSelectMenu
                 value={assigneeValue}
@@ -875,7 +881,6 @@ export function ContactSidebarHybrid({
       <>
         <div
           className="flex min-h-0 flex-1 flex-col bg-white"
-          style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}
         >
           {sidebarBody}
         </div>

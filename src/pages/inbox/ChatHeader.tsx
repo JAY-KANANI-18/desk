@@ -333,9 +333,16 @@ export function ChatHeader({
           <div className="min-w-0 max-w-[calc(100%-9rem)] flex-1 md:max-w-none">
             {onOpenContactDetails ? (
               <div className="flex min-w-0 max-w-full flex-col items-start text-left md:hidden">
+                <button
+                  type="button"
+                  onClick={onOpenContactDetails}
+                  className="block min-w-0 max-w-full rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+                  aria-label="Open contact details"
+                >
                 <span className="block min-w-0 max-w-full whitespace-nowrap text-[14px] font-semibold leading-tight text-gray-900">
                   {mobileContactName}
                 </span>
+                </button>
               </div>
             ) : null}
 
