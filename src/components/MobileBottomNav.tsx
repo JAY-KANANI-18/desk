@@ -7,25 +7,17 @@ import {
   useState,
 } from "react";
 import { NavLink, matchPath, useLocation } from "react-router-dom";
-import { APP_NAV_ITEMS } from "./appNavigation";
+import {
+  APP_NAV_ITEMS,
+  PRIMARY_MOBILE_PATH_ORDER,
+  PRIMARY_MOBILE_PATHS,
+} from "./appNavigation";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useFeatureFlags } from "../context/FeatureFlagsContext";
-import { useDisclosure } from "../hooks/useDisclosure";
 import { useSettingsLinks } from "./settingsLinks";
-import { Button } from "./ui/Button";
-import { MobileSheet } from "./ui/modal";
 
-type TabElement = HTMLAnchorElement | HTMLButtonElement | null;
-
-const PRIMARY_MOBILE_PATH_ORDER = [
-  // "/dashboard",
-  "/contacts",
-  "/inbox",
-  "/channels",
-];
-
-const PRIMARY_MOBILE_PATHS = new Set(PRIMARY_MOBILE_PATH_ORDER);
+type TabElement = HTMLAnchorElement | null;
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -33,7 +25,6 @@ export function MobileBottomNav() {
   const { dismissed, isComplete } = useGetStarted();
   const { flags } = useFeatureFlags();
   const settingsLinks = useSettingsLinks();
-  const moreMenu = useDisclosure();
 
   const tabRefs = useRef<TabElement[]>([]);
   const [indicatorStyle, setIndicatorStyle] = useState({
@@ -119,6 +110,7 @@ export function MobileBottomNav() {
         label: "More",
         path: "/more",
         activePaths: [
+          "/more",
           ...moreNavItems.map((item) => item.path),
           "/workspace/settings",
           "/organization",
@@ -131,9 +123,10 @@ export function MobileBottomNav() {
   );
 
   const isMoreRouteActive =
+    location.pathname === "/more" ||
     isSettingsRouteActive ||
     moreNavItems.some((item) => isPathActive([item.path]));
-  const isMoreTabActive = isMoreRouteActive || moreMenu.isOpen;
+  const isMoreTabActive = isMoreRouteActive;
   const shouldHideForGetStarted =
     location.pathname.startsWith("/get-started") && !showGetStartedTab;
 
@@ -156,7 +149,7 @@ export function MobileBottomNav() {
 
   useLayoutEffect(() => {
     updateIndicator();
-  }, [activeIndex, location.pathname, moreMenu.isOpen, navItems.length]);
+  }, [activeIndex, location.pathname, navItems.length]);
 
   useEffect(() => {
     const handleResize = () => updateIndicator();
@@ -186,9 +179,7 @@ export function MobileBottomNav() {
   </div>
 
   {navItems.map((item, index) => {
-    const isActive = moreMenu.isOpen
-      ? "isMore" in item && item.isMore
-      : "isMore" in item && item.isMore
+    const isActive = "isMore" in item && item.isMore
         ? isMoreTabActive
         : isPathActive(
             "activePaths" in item ? item.activePaths : [item.path],
@@ -211,25 +202,6 @@ export function MobileBottomNav() {
       </div>
     );
 
-    if ("isMore" in item && item.isMore) {
-      return (
-        <Button
-          key="mobile-more"
-          ref={(el) => {
-            tabRefs.current[index] = el;
-          }}
-          type="button"
-          aria-label="More"
-          onClick={moreMenu.toggle}
-          className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
-          preserveChildLayout
-          variant="unstyled"
-        >
-          {content}
-        </Button>
-      );
-    }
-
     return (
       <NavLink
         key={`${item.label}-${item.path}`}
@@ -238,7 +210,6 @@ export function MobileBottomNav() {
         }}
         to={item.path}
         aria-label={item.label}
-        onClick={moreMenu.close}
         className="relative z-10 flex min-w-0 flex-1 items-center justify-center rounded-t-[20px] px-2"
       >
         {content}
@@ -246,90 +217,6 @@ export function MobileBottomNav() {
     );
   })}
 </nav>
-
-      <MobileSheet
-        isOpen={moreMenu.isOpen}
-        title={
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Navigation
-            </p>
-            <h2 className="mt-1 text-base font-semibold text-slate-900">
-              More
-            </h2>
-          </div>
-        }
-        onClose={moreMenu.close}
-      >
-        <div className="space-y-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {moreNavItems.length > 0 ? (
-            <div className="space-y-1">
-              {moreNavItems.map((item) => {
-                const isActive = isPathActive([item.path]);
-
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={moreMenu.close}
-                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200 ${
-                      isActive
-                        ? "scale-[1.01] bg-slate-100 text-slate-900"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    <item.icon size={22} className={`flex-shrink-0  ${isActive ? "text-slate-900" : "text-slate-500"}`} />
-
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-sm font-semibold">
-                        {item.label}
-                      </p>
-                    </div>
-                  </NavLink>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {settingsLinks.length > 0 ? (
-            <div className="space-y-1">
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Settings
-              </p>
-
-              {settingsLinks.map((link) => {
-                const isActive =
-                  location.pathname === link.path ||
-                  location.pathname.startsWith(`${link.path}/`);
-
-                return (
-                  <NavLink
-                    key={link.path}
-                    to={link.path}
-                    onClick={moreMenu.close}
-                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-200 ${
-                      isActive
-                        ? "scale-[1.01] bg-slate-100 text-slate-900"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    <link.icon size={22} className={`flex-shrink-0  ${isActive ? "text-slate-900" : "text-slate-500"}`} />
-
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-sm font-semibold">
-                        {link.title}
-                      </p>
-                      <p className="truncate text-xs text-slate-400">
-                        {link.subtitle}
-                      </p>
-                    </div>
-                  </NavLink>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-      </MobileSheet>
     </div>
   );
 }

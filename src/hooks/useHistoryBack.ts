@@ -10,8 +10,7 @@ import { useEffect, useRef } from "react";
 export function useHistoryBack(isOpen: boolean, onClose: () => void) {
   const pushed = useRef(false);
   const onCloseRef = useRef(onClose);
-  
-  // Keep ref fresh without making it a dependency
+
   useEffect(() => {
     onCloseRef.current = onClose;
   });
@@ -21,9 +20,11 @@ export function useHistoryBack(isOpen: boolean, onClose: () => void) {
       window.history.pushState({ mobileSheet: true }, "");
       pushed.current = true;
 
-      const handlePopState = () => {
+      const handlePopState = (e: PopStateEvent) => {
+        // Only handle if it's our dummy state being popped
+        if (!e.state?.mobileSheet) return;
         pushed.current = false;
-        onCloseRef.current(); // use ref, not the dep
+        onCloseRef.current();
       };
 
       window.addEventListener("popstate", handlePopState);
@@ -31,8 +32,13 @@ export function useHistoryBack(isOpen: boolean, onClose: () => void) {
     } else {
       if (pushed.current) {
         pushed.current = false;
-        window.history.back();
+        // Check if a navigation just happened
+        // If location changed, our dummy entry is already gone — skip back()
+        const isDummyStillOnTop = window.history.state?.mobileSheet === true;
+        if (isDummyStillOnTop) {
+          window.history.back();
+        }
       }
     }
-  }, [isOpen]); // only isOpen as dep now, onClose stability irrelevant
+  }, [isOpen]);
 }

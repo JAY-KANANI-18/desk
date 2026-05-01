@@ -44,11 +44,13 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
     path: "/workflows",
     eyebrow: "Automation",
     title: "Workflows",
+    backTo: "/more",
   },
   {
     path: "/broadcast",
     eyebrow: "Messaging",
     title: "Broadcast",
+    backTo: "/more",
   },
   {
     path: "/contacts",
@@ -59,6 +61,13 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
     path: "/dashboard",
     eyebrow: "Overview",
     title: "Dashboard",
+    backTo: "/more",
+  },
+  {
+    path: "/ai-agents",
+    eyebrow: "Automation",
+    title: "AI Agents",
+    backTo: "/more",
   },
 ];
 

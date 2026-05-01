@@ -22,6 +22,7 @@ import ImportContactsPage from "../modules/import/ImportContactsPage";
 import ImportJobsPage from "../modules/import/ImportJobsPageResponsive";
 import { Dashboard } from "../pages/Dashboard";
 import { InboxLayout, InboxPage } from "../pages/Inbox";
+import { MorePage } from "../pages/MorePage";
 import { Organization } from "../pages/Organization";
 import { BillingUsage } from "../pages/organization/BillingUsage";
 import { GeneralOrgInfo } from "../pages/organization/GeneralOrgInfo";
@@ -85,6 +86,7 @@ export const WorkspaceRouter = () => {
         />
         <Route index element={<Navigate to="/inbox" replace />} />
         <Route path="/meta/ads/callback" element={<MetaAdsCallback />} />
+        <Route path="more" element={<MorePage />} />
 
         {/* Agents and above */}
         <Route

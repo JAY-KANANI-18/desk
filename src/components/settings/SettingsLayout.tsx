@@ -86,7 +86,7 @@ export const SettingsLayout = ({
       return;
     }
 
-    navigate(-1);
+    navigate("/more");
   };
 
   return (
@@ -99,7 +99,7 @@ export const SettingsLayout = ({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="sticky top-0 z-10 bg-white md:hidden">
             <div className="flex items-center gap-3 px-4 py-3">
-              {!isSelectionScreen && (
+              {(!isSelectionScreen || isMobile) && (
                 <BackButton ariaLabel="Back" onClick={handleMobileBack} size="sm"/>
               )}
 
@@ -129,7 +129,7 @@ export const SettingsLayout = ({
             {isMobile ? (
               <div
                 className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 pb-24 pt-2 md:px-6 md:pb-8 md:pt-8 lg:px-8 ${
-                  !activeMatch ? "pt-8" : ""
+                  !activeMatch ? "" : ""
                 } ${contentClassName}`}
               >
                 <AnimatePresence mode="wait" initial={false}>

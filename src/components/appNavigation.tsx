@@ -20,6 +20,15 @@ export type AppNavItem = {
   feature?: "aiAgents";
 };
 
+export const PRIMARY_MOBILE_PATH_ORDER = [
+  // "/dashboard",
+  "/contacts",
+  "/inbox",
+  "/channels",
+];
+
+export const PRIMARY_MOBILE_PATHS = new Set(PRIMARY_MOBILE_PATH_ORDER);
+
 export const APP_NAV_ITEMS: AppNavItem[] = [
   {
     icon: LayoutDashboard,
