@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -22,6 +23,9 @@ import { useHistoryBack } from "../../../hooks/useHistoryBack";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MOBILE_SHEET_ANIMATION_MS = 420;
+const MOBILE_SHEET_OVERLAY_Z_INDEX = 120;
+const MOBILE_SHEET_PANEL_Z_INDEX = 130;
+const MOBILE_SHEET_LAYER_STEP = 20;
 
 /** px/s — faster than this on release → force close */
 const VELOCITY_CLOSE_THRESHOLD = 500;
@@ -45,6 +49,59 @@ const classDrivenIconButtonStyle = {
   width: undefined,
   minWidth: undefined,
 } satisfies CSSProperties;
+
+const renderedSheetStack: string[] = [];
+const renderedSheetSubscribers = new Set<() => void>();
+
+function notifyRenderedSheetSubscribers() {
+  renderedSheetSubscribers.forEach((listener) => listener());
+}
+
+function registerRenderedSheet(id: string) {
+  if (!renderedSheetStack.includes(id)) {
+    renderedSheetStack.push(id);
+    notifyRenderedSheetSubscribers();
+  }
+
+  return () => {
+    const index = renderedSheetStack.indexOf(id);
+    if (index === -1) return;
+
+    renderedSheetStack.splice(index, 1);
+    notifyRenderedSheetSubscribers();
+  };
+}
+
+function useMobileSheetLayer(active: boolean) {
+  const id = useId();
+  const [, setVersion] = useState(0);
+
+  useLayoutEffect(() => {
+    const listener = () => setVersion((version) => version + 1);
+    renderedSheetSubscribers.add(listener);
+
+    return () => {
+      renderedSheetSubscribers.delete(listener);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!active) return undefined;
+    return registerRenderedSheet(id);
+  }, [active, id]);
+
+  const stackIndex = renderedSheetStack.indexOf(id);
+  const layer = active
+    ? stackIndex === -1
+      ? renderedSheetStack.length
+      : stackIndex
+    : 0;
+  const isTop = active
+    ? stackIndex === -1 || stackIndex === renderedSheetStack.length - 1
+    : false;
+
+  return { layer, isTop };
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,12 +163,18 @@ export function MobileSheet({
 
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
+  const { layer, isTop } = useMobileSheetLayer(isRendered);
+  const overlayZIndex =
+    MOBILE_SHEET_OVERLAY_Z_INDEX + layer * MOBILE_SHEET_LAYER_STEP;
+  const panelZIndex =
+    MOBILE_SHEET_PANEL_Z_INDEX + layer * MOBILE_SHEET_LAYER_STEP;
 
   // ── Refs ──────────────────────────────────────────────────────────────────
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const backdropId = useId();
 
   /** Raw drag state — stored in a ref to avoid re-renders on every pointer move */
   const drag = useRef<DragState>(initialDragState());
@@ -137,12 +200,12 @@ export function MobileSheet({
   const applyBackdropOpacity = useCallback(
     (ratio: number) => {
       // ratio: 0 = fully open (100% opacity), 1 = fully closed (0% opacity)
-      const backdropEl = document.getElementById("mobile-sheet-backdrop");
+      const backdropEl = document.getElementById(backdropId);
       if (backdropEl) {
         backdropEl.style.opacity = String(Math.max(0, 1 - ratio));
       }
     },
-    []
+    [backdropId]
   );
 
   const getSheetHeight = () => sheetRef.current?.offsetHeight ?? 0;
@@ -286,11 +349,11 @@ export function MobileSheet({
   );
 
   // ── Open/close render lifecycle ───────────────────────────────────────────
-+   useHistoryBack(isOpen, onClose);
+  useHistoryBack(isOpen, onClose);
 
   useBodyScrollLock(lockBodyScroll && isRendered);
-  useEscapeToClose(isOpen && isRendered, onClose);
-  useFocusTrap(isOpen && isRendered, sheetRef);
+  useEscapeToClose(isOpen && isRendered && isTop, onClose);
+  useFocusTrap(isOpen && isRendered && isTop, sheetRef);
 
   useEffect(() => {
     if (!canUseDom) return;
@@ -328,13 +391,20 @@ export function MobileSheet({
         {/* ── Backdrop ── */}
         {showOverlay ? (
           <div
-            id="mobile-sheet-backdrop"
-            className={`fixed inset-0 z-[120] bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
+            id={backdropId}
+            className={`fixed inset-0 bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
-            style={{ transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms` }}
+            style={{
+              zIndex: overlayZIndex,
+              transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
+            }}
             onMouseDown={(event) => {
-              if (event.target === event.currentTarget && closeOnOverlayClick) {
+              if (
+                isTop &&
+                event.target === event.currentTarget &&
+                closeOnOverlayClick
+              ) {
                 onClose();
               }
             }}
@@ -351,17 +421,21 @@ export function MobileSheet({
         */}
         <div
           className={`
-            fixed inset-x-0 bottom-0 z-[130] md:hidden
+            fixed inset-x-0 bottom-0 md:hidden
             transition-transform ease-[cubic-bezier(0.22,1,0.36,1)]
             ${fullScreen ? "top-0" : ""}
             ${isVisible ? "translate-y-0" : "translate-y-full"}
           `}
-          style={{ transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms` }}
+          style={{
+            zIndex: panelZIndex,
+            transitionDuration: `${MOBILE_SHEET_ANIMATION_MS}ms`,
+          }}
         >
           <div
             ref={sheetRef}
             role="dialog"
-            aria-modal="true"
+            aria-hidden={!isTop}
+            aria-modal={isTop}
             aria-labelledby={titleId}
             tabIndex={-1}
             onKeyDown={(event) => handleDialogKeyDown(event, onClose)}

@@ -9,6 +9,8 @@ import {
   type RefObject,
 } from "react";
 import { Loader2 } from "lucide-react";
+import { useIsMobile } from "../../../hooks/useIsMobile";
+import { MobileSheet } from "../modal";
 import { Tag } from "../tag/Tag";
 import {
   SelectChip,
@@ -77,6 +79,9 @@ export interface WorkspaceTagSelectProps extends SelectFieldProps {
   dropdownWidth?: "trigger" | "sm" | "md" | "lg";
   menuTitle?: string;
   emptySelectedContent?: ReactNode;
+  mobileSheet?: boolean;
+  mobileSheetTitle?: ReactNode;
+  mobileSheetSubtitle?: ReactNode;
   renderTrigger?: (
     props: WorkspaceTagSelectRenderTriggerProps,
   ) => ReactNode;
@@ -117,10 +122,15 @@ export function WorkspaceTagSelect({
   dropdownWidth = "trigger",
   menuTitle = "Tags",
   emptySelectedContent,
+  mobileSheet = false,
+  mobileSheetTitle,
+  mobileSheetSubtitle,
   renderTrigger,
 }: WorkspaceTagSelectProps) {
   const generatedId = useId();
   const fieldId = id ?? `workspace-tag-select-${generatedId}`;
+  const isMobile = useIsMobile();
+  const shouldUseMobileSheet = mobileSheet && isMobile;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -175,8 +185,19 @@ export function WorkspaceTagSelect({
     disabled,
     closeOnSelect: false,
     getOptionDisabled: (option) => Boolean(option.disabled || option.busy),
+    outsideDismiss: !shouldUseMobileSheet,
     onSelect: (option) => updateValue(option),
   });
+
+  const runEmptyAction = (query: string) => {
+    if (!onEmptyAction) return;
+
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    controller.close(false);
+    onEmptyAction(trimmedQuery);
+  };
 
   useEffect(() => {
     if (!controller.isOpen) {
@@ -284,105 +305,127 @@ export function WorkspaceTagSelect({
       ) : null
     ) : null;
 
+  const optionRows =
+    filteredOptions.length === 0 ? (
+      <>
+        <SelectEmptyState message={emptyMessage} />
+        {onEmptyAction && emptyActionLabel && searchTerm.trim() ? (
+          <div className="border-t border-[var(--color-gray-200)] p-[var(--spacing-sm)]">
+            <button
+              type="button"
+              onClick={() => runEmptyAction(searchTerm)}
+              className="w-full rounded-[var(--radius-md)] border border-dashed border-[var(--color-primary)] bg-[var(--color-primary-light)] px-[var(--spacing-md)] py-[var(--spacing-sm)] text-left text-sm font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-gray-50)]"
+            >
+              {typeof emptyActionLabel === "function"
+                ? emptyActionLabel(searchTerm.trim())
+                : emptyActionLabel}
+            </button>
+          </div>
+        ) : null}
+      </>
+    ) : (
+      filteredOptions.map((option, index) => (
+        <SelectOptionRow
+          key={option.value}
+          id={getSelectOptionId(controller.listId, index)}
+          selected={value.includes(option.value)}
+          highlighted={controller.highlightedIndex === index}
+          disabled={option.disabled || option.busy}
+          onSelect={() => controller.selectByIndex(index)}
+          onMouseEnter={() => controller.setHighlightedIndex(index)}
+          trailing={
+            option.busy ? (
+              <Loader2
+                size={16}
+                className="mt-0.5 shrink-0 animate-spin text-[var(--color-primary)]"
+              />
+            ) : undefined
+          }
+        >
+          {optionAppearance === "tag" ? (
+            <div className="space-y-[6px]">
+              <Tag
+                label={option.label}
+                emoji={option.emoji || undefined}
+                bgColor={option.color || "tag-indigo"}
+                size="sm"
+              />
+              {option.description ? (
+                <p className="text-xs text-[var(--color-gray-500)]">
+                  {option.description}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <SelectOptionLabel
+              label={option.label}
+              subtitle={option.description}
+            />
+          )}
+        </SelectOptionRow>
+      ))
+    );
+
+  const menuContent = (
+    <>
+      <SelectMenuHeader
+        title={menuTitle}
+        actionLabel={selectedOptions.length > 0 ? clearActionLabel : undefined}
+        onAction={selectedOptions.length > 0 ? () => onChange?.([]) : undefined}
+      />
+
+      <SelectSearchInput
+        inputRef={searchInputRef}
+        value={searchTerm}
+        onChange={setSearchTerm}
+        onKeyDown={controller.handleListKeyDown}
+        placeholder={searchPlaceholder}
+      />
+
+      <SelectList id={controller.listId} onKeyDown={controller.handleListKeyDown}>
+        {optionRows}
+      </SelectList>
+    </>
+  );
+
   const content = (
     <div ref={controller.containerRef} className="relative">
       {triggerNode}
       {selectedListNode}
 
-      <SelectDropdown
-        isOpen={controller.isOpen}
-        placement={dropdownPlacement}
-        align={dropdownAlign}
-        width={dropdownWidth}
-      >
-        <SelectMenuHeader
-          title={menuTitle}
-          actionLabel={
-            selectedOptions.length > 0 ? clearActionLabel : undefined
-          }
-          onAction={
-            selectedOptions.length > 0 ? () => onChange?.([]) : undefined
-          }
-        />
-
-        <SelectSearchInput
-          inputRef={searchInputRef}
-          value={searchTerm}
-          onChange={setSearchTerm}
-          onKeyDown={controller.handleListKeyDown}
-          placeholder={searchPlaceholder}
-        />
-
-        <SelectList
-          id={controller.listId}
-          onKeyDown={controller.handleListKeyDown}
+      {!shouldUseMobileSheet ? (
+        <SelectDropdown
+          isOpen={controller.isOpen}
+          placement={dropdownPlacement}
+          align={dropdownAlign}
+          width={dropdownWidth}
         >
-          {filteredOptions.length === 0 ? (
-            <>
-              <SelectEmptyState message={emptyMessage} />
-              {onEmptyAction && emptyActionLabel && searchTerm.trim() ? (
-                <div className="border-t border-[var(--color-gray-200)] p-[var(--spacing-sm)]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.close(false);
-                      onEmptyAction(searchTerm.trim());
-                    }}
-                    className="w-full rounded-[var(--radius-md)] border border-dashed border-[var(--color-primary)] bg-[var(--color-primary-light)] px-[var(--spacing-md)] py-[var(--spacing-sm)] text-left text-sm font-medium text-[var(--color-primary)] transition-colors hover:bg-[var(--color-gray-50)]"
-                  >
-                    {typeof emptyActionLabel === "function"
-                      ? emptyActionLabel(searchTerm.trim())
-                      : emptyActionLabel}
-                  </button>
-                </div>
+          {menuContent}
+        </SelectDropdown>
+      ) : (
+        <MobileSheet
+          isOpen={controller.isOpen}
+          onClose={() => controller.close(false)}
+          title={
+            <div>
+              <p className="truncate text-base font-semibold text-slate-900">
+                {mobileSheetTitle ?? menuTitle ?? placeholder}
+              </p>
+              {mobileSheetSubtitle ? (
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {mobileSheetSubtitle}
+                </p>
               ) : null}
-            </>
-          ) : (
-            filteredOptions.map((option, index) => (
-              <SelectOptionRow
-                key={option.value}
-                id={getSelectOptionId(controller.listId, index)}
-                selected={value.includes(option.value)}
-                highlighted={controller.highlightedIndex === index}
-                disabled={option.disabled || option.busy}
-                onSelect={() => controller.selectByIndex(index)}
-                onMouseEnter={() =>
-                  controller.setHighlightedIndex(index)
-                }
-                trailing={
-                  option.busy ? (
-                    <Loader2
-                      size={16}
-                      className="mt-0.5 shrink-0 animate-spin text-[var(--color-primary)]"
-                    />
-                  ) : undefined
-                }
-              >
-                {optionAppearance === "tag" ? (
-                  <div className="space-y-[6px]">
-                    <Tag
-                      label={option.label}
-                      emoji={option.emoji || undefined}
-                      bgColor={option.color || "tag-indigo"}
-                      size="sm"
-                    />
-                    {option.description ? (
-                      <p className="text-xs text-[var(--color-gray-500)]">
-                        {option.description}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <SelectOptionLabel
-                    label={option.label}
-                    subtitle={option.description}
-                  />
-                )}
-              </SelectOptionRow>
-            ))
-          )}
-        </SelectList>
-      </SelectDropdown>
+            </div>
+          }
+        >
+          <div className="p-4">
+            <div className="overflow-hidden rounded-2xl border border-gray-100">
+              {menuContent}
+            </div>
+          </div>
+        </MobileSheet>
+      )}
     </div>
   );
 

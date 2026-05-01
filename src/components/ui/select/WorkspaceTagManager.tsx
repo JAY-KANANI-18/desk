@@ -32,6 +32,9 @@ export interface WorkspaceTagManagerProps
     | "emptyMessage"
     | "emptySelectedContent"
     | "menuTitle"
+    | "mobileSheet"
+    | "mobileSheetSubtitle"
+    | "mobileSheetTitle"
     | "onChange"
     | "onEmptyAction"
     | "onToggleOption"
@@ -164,6 +167,9 @@ export function WorkspaceTagManager({
   dropdownAlign = "start",
   dropdownWidth = "trigger",
   menuTitle,
+  mobileSheet = true,
+  mobileSheetTitle,
+  mobileSheetSubtitle,
   disabled = false,
   clearActionLabel,
   onClearAll,
@@ -299,6 +305,9 @@ export function WorkspaceTagManager({
         dropdownAlign={dropdownAlign}
         dropdownWidth={dropdownWidth}
         menuTitle={menuTitle}
+        mobileSheet={mobileSheet}
+        mobileSheetTitle={mobileSheetTitle ?? (typeof label === "string" ? label : "Tags")}
+        mobileSheetSubtitle={mobileSheetSubtitle}
         clearActionLabel={undefined}
         emptySelectedContent={resolvedEmptySelectedContent}
         disabled={disabled}

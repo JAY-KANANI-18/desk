@@ -66,17 +66,29 @@ export function useModalPresence(isOpen: boolean) {
   return { isMounted, isVisible };
 }
 
+let bodyScrollLockCount = 0;
+let previousBodyOverflow: string | null = null;
+
 export function useBodyScrollLock(active: boolean) {
   useEffect(() => {
     if (!active || typeof document === "undefined") {
       return undefined;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (bodyScrollLockCount === 0) {
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+
+    bodyScrollLockCount += 1;
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      bodyScrollLockCount = Math.max(0, bodyScrollLockCount - 1);
+
+      if (bodyScrollLockCount === 0) {
+        document.body.style.overflow = previousBodyOverflow ?? "";
+        previousBodyOverflow = null;
+      }
     };
   }, [active]);
 }
