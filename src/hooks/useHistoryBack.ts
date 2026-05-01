@@ -1,14 +1,6 @@
-// hooks/useHistoryBack.ts
-import { useEffect, useRef } from "react";
-
-/**
- * Pushes a dummy history entry when `isOpen` becomes true.
- * When the user hits the back button (popstate), calls `onClose`.
- * When `isOpen` becomes false programmatically, calls history.back()
- * to clean up the dummy entry — but only if we pushed it.
- */
 // useHistoryBack.ts
 
+import { useEffect, useRef } from "react";
 
 // ─── Singleton Stack ───────────────────────────────────────────────────────────
 
@@ -38,14 +30,10 @@ export function useHistoryBack(isOpen: boolean, onClose: () => void) {
       window.history.pushState({ mobileSheet: true }, "");
       pushed.current = true;
       stack.push(() => onCloseRef.current());
-
-      return () => {
-        stack.pop();
-      };
     } else {
       if (pushed.current) {
         pushed.current = false;
-        stack.pop();
+        stack.pop(); // only pop once here
         const isDummyStillOnTop = window.history.state?.mobileSheet === true;
         if (isDummyStillOnTop) {
           window.history.back();
