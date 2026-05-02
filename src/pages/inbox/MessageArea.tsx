@@ -23,6 +23,7 @@ import { TimelineItemRow } from "./message-area/TimelineItemRow";
 import { dateBadgeLabel } from "./message-area/helpers";
 import type {
   Message,
+  MessageGroupPosition,
   RenderItem,
   ReplyContext,
   TimelineItem,
@@ -42,6 +43,81 @@ interface MessageAreaProps {
   onMsgSearchChange: (value: string) => void;
   onCloseMsgSearch: () => void;
   onReply?: (ctx: ReplyContext) => void;
+}
+
+const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
+const NON_GROUPABLE_MESSAGE_TYPES = new Set<Message["type"]>([
+  "comment",
+  "system",
+  "event",
+  "call_event",
+  "status",
+]);
+
+function isGroupableMessageItem(
+  item?: RenderItem,
+): item is Extract<RenderItem, { kind: "message" }> {
+  return (
+    item?.kind === "message" &&
+    !NON_GROUPABLE_MESSAGE_TYPES.has(item.msg.type)
+  );
+}
+
+function getMessageSenderKey(message: Message) {
+  const direction = message.direction ?? "incoming";
+
+  if (direction === "incoming") {
+    return "incoming";
+  }
+
+  if (typeof message.author === "string") {
+    return `outgoing:${message.author}`;
+  }
+
+  return `outgoing:${
+    message.author?.id ??
+    message.metadata?.sender?.userId ??
+    message.initials ??
+    "user"
+  }`;
+}
+
+function areItemsInSameMessageGroup(
+  current?: RenderItem,
+  next?: RenderItem,
+) {
+  if (!isGroupableMessageItem(current) || !isGroupableMessageItem(next)) {
+    return false;
+  }
+
+  const currentMessage = current.msg;
+  const nextMessage = next.msg;
+  const currentTime = current.timestamp.getTime();
+  const nextTime = next.timestamp.getTime();
+
+  if (!Number.isFinite(currentTime) || !Number.isFinite(nextTime)) {
+    return false;
+  }
+
+  return (
+    (currentMessage.direction ?? "incoming") ===
+      (nextMessage.direction ?? "incoming") &&
+    getMessageSenderKey(currentMessage) === getMessageSenderKey(nextMessage) &&
+    (currentMessage.channelId || currentMessage.channel || "") ===
+      (nextMessage.channelId || nextMessage.channel || "") &&
+    nextTime - currentTime >= 0 &&
+    nextTime - currentTime <= MESSAGE_GROUP_WINDOW_MS
+  );
+}
+
+function getMessageGroupPosition(
+  groupedWithPrevious: boolean,
+  groupedWithNext: boolean,
+): MessageGroupPosition {
+  if (groupedWithPrevious && groupedWithNext) return "middle";
+  if (groupedWithPrevious) return "last";
+  if (groupedWithNext) return "first";
+  return "single";
 }
 
 export function MessageArea({
@@ -72,6 +148,9 @@ export function MessageArea({
   const targetHighlightTimeoutRef = useRef<number | null>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const newItemAnimationTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -82,6 +161,9 @@ export function MessageArea({
   const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(true);
+  const [animatedItemKeys, setAnimatedItemKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
 // Add these near your other state declarations
 const [isListHovered, setIsListHovered] = useState(false);
 const [isScrolling, setIsScrolling] = useState(false);
@@ -103,6 +185,40 @@ const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
   } = useInbox();
 
   const previewLength = 220;
+
+  const clearNewItemAnimations = useCallback(() => {
+    newItemAnimationTimersRef.current.forEach((timer) => clearTimeout(timer));
+    newItemAnimationTimersRef.current.clear();
+    setAnimatedItemKeys(new Set());
+  }, []);
+
+  const markNewItemKeys = useCallback((keys: string[]) => {
+    const uniqueKeys = Array.from(new Set(keys.filter(Boolean)));
+    if (uniqueKeys.length === 0) return;
+
+    setAnimatedItemKeys((current) => {
+      const next = new Set(current);
+      uniqueKeys.forEach((key) => next.add(key));
+      return next;
+    });
+
+    uniqueKeys.forEach((key) => {
+      const existingTimer = newItemAnimationTimersRef.current.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      const timer = setTimeout(() => {
+        newItemAnimationTimersRef.current.delete(key);
+        setAnimatedItemKeys((current) => {
+          if (!current.has(key)) return current;
+          const next = new Set(current);
+          next.delete(key);
+          return next;
+        });
+      }, 700);
+
+      newItemAnimationTimersRef.current.set(key, timer);
+    });
+  }, []);
 
   useEffect(() => {
     if (timelineItems !== undefined) {
@@ -292,7 +408,7 @@ const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
   const totalLen = allItems.length;
   const lastItemKey = allItems[allItems.length - 1]?.key ?? null;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const convChanged = prevConvIdRef.current !== selectedConversation?.id;
 
     if (convChanged || isFirstRenderRef.current) {
@@ -302,6 +418,7 @@ const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
       pendingJumpModeRef.current = targetMessageId ? "target" : "bottom";
       targetScrollDoneRef.current = null;
       setExpanded({});
+      clearNewItemAnimations();
 
       if (scrollRef.current) {
         scrollRef.current.style.visibility = "hidden";
@@ -310,6 +427,20 @@ const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
     }
 
     if (lastItemKey && lastItemKey !== prevLastItemKeyRef.current) {
+      const previousLastItemKey = prevLastItemKeyRef.current;
+      const previousLastItemIndex = previousLastItemKey
+        ? allItems.findIndex((item) => item.key === previousLastItemKey)
+        : -1;
+
+      if (previousLastItemIndex >= 0 && previousLastItemIndex < allItems.length - 1) {
+        markNewItemKeys(
+          allItems
+            .slice(previousLastItemIndex + 1)
+            .filter((item) => item.kind === "message")
+            .map((item) => item.key),
+        );
+      }
+
       prevLastItemKeyRef.current = lastItemKey;
       const el = scrollRef.current;
 
@@ -326,7 +457,15 @@ const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
     }
 
     prevLastItemKeyRef.current = lastItemKey;
-  }, [selectedConversation?.id, totalLen, lastItemKey, targetMessageId]);
+  }, [
+    allItems,
+    clearNewItemAnimations,
+    lastItemKey,
+    markNewItemKeys,
+    selectedConversation?.id,
+    targetMessageId,
+    totalLen,
+  ]);
 
   const tryScrollToTarget = useCallback(() => {
     if (!targetMessageId) return false;
@@ -443,7 +582,11 @@ const handleScroll = useCallback(() => {
   loadingOlderTimeline,
 ]);
 useEffect(() => {
-  return () => clearTimeout(scrollTimer.current);
+  return () => {
+    clearTimeout(scrollTimer.current);
+    newItemAnimationTimersRef.current.forEach((timer) => clearTimeout(timer));
+    newItemAnimationTimersRef.current.clear();
+  };
 }, []);
 
   type DateGroup = { dateKey: string; items: RenderItem[] };
@@ -518,7 +661,7 @@ useEffect(() => {
   onScroll={handleScroll}
   onMouseEnter={() => setIsListHovered(true)}
   onMouseLeave={() => setIsListHovered(false)}
-  className={`relative flex-1 overflow-x-hidden px-3 py-4 sm:px-4 sm:py-6 ${
+  className={`relative flex-1 overflow-x-hidden px-2 py-3 sm:px-4 sm:py-4 ${
     isListHovered || isScrolling ? "msg-area-scroll--visible" : "msg-area-scroll"
   }`}
   style={{ scrollBehavior: "auto", overflowAnchor: "none" }}
@@ -606,27 +749,43 @@ useEffect(() => {
               <div key={dateKey}>
                 <MessageAreaDateBadge label={dateBadgeLabel(dateKey)} />
 
-                {items.map((item) => (
-                  <TimelineItemRow
-                    key={item.key}
-                    item={item}
-                    currentUser={currentUser}
-                    msgSearch={msgSearch}
-                    highlighted={highlightedMessageId === item.key}
-                    matchRingClass={matchRingClass}
-                    setItemRef={setItemRef}
-                    selectedConversation={selectedConversation}
-                    channels={channels}
-                    workspaceUsers={workspaceUsers}
-                    hoveredMsgId={hoveredMsgId}
-                    setHoveredMsgId={setHoveredMsgId}
-                    expanded={expanded}
-                    setExpanded={setExpanded}
-                    previewLength={previewLength}
-                    onReply={onReply}
-                    onOpenEmailModal={setEmailModalMsg}
-                  />
-                ))}
+                {items.map((item, index) => {
+                  const groupedWithPrevious = areItemsInSameMessageGroup(
+                    items[index - 1],
+                    item,
+                  );
+                  const groupedWithNext = areItemsInSameMessageGroup(
+                    item,
+                    items[index + 1],
+                  );
+
+                  return (
+                    <TimelineItemRow
+                      key={item.key}
+                      item={item}
+                      currentUser={currentUser}
+                      msgSearch={msgSearch}
+                      highlighted={highlightedMessageId === item.key}
+                      matchRingClass={matchRingClass}
+                      setItemRef={setItemRef}
+                      selectedConversation={selectedConversation}
+                      channels={channels}
+                      workspaceUsers={workspaceUsers}
+                      hoveredMsgId={hoveredMsgId}
+                      setHoveredMsgId={setHoveredMsgId}
+                      expanded={expanded}
+                      setExpanded={setExpanded}
+                      previewLength={previewLength}
+                      onReply={onReply}
+                      onOpenEmailModal={setEmailModalMsg}
+                      animateIn={animatedItemKeys.has(item.key)}
+                      groupPosition={getMessageGroupPosition(
+                        groupedWithPrevious,
+                        groupedWithNext,
+                      )}
+                    />
+                  );
+                })}
               </div>
             ))}
           </>

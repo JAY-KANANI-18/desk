@@ -1,9 +1,8 @@
 import React from "react";
-import { AlertTriangle, MessageSquare, PhoneCall, Workflow } from "lucide-react";
+import { MessageSquare, PhoneCall, Workflow } from "lucide-react";
 import { Avatar, AvatarWithBadge } from "../../../components/ui/Avatar";
 import { Tag } from "../../../components/ui/Tag";
 import type { User } from "../../../context/AuthContext";
-import { Tooltip } from "../../../components/ui/Tooltip";
 import { getChannelBadgeType } from "../channelUtils";
 import { channelConfig } from "../data";
 import type { Conversation } from "../types";
@@ -11,9 +10,13 @@ import { ActivityRow } from "./ActivityRow";
 import { highlightText, formatMsgTime, getFailedMessageCopy } from "./helpers";
 import { LegacyEventRow } from "./LegacyEventRow";
 import { MessageBubble } from "./MessageBubble";
-import { MessageStatusIcon } from "./MessageStatusIcon";
 import { QuickActions } from "./QuickActions";
-import type { Message, RenderItem, ReplyContext } from "./types";
+import type {
+  Message,
+  MessageGroupPosition,
+  RenderItem,
+  ReplyContext,
+} from "./types";
 
 type WorkspaceUser = User;
 
@@ -52,6 +55,8 @@ export function TimelineItemRow({
   previewLength,
   onReply,
   onOpenEmailModal,
+  groupPosition,
+  animateIn,
 }: {
   item: RenderItem;
   currentUser: User | null;
@@ -69,6 +74,8 @@ export function TimelineItemRow({
   previewLength: number;
   onReply?: (ctx: ReplyContext) => void;
   onOpenEmailModal: (message: Message) => void;
+  groupPosition: MessageGroupPosition;
+  animateIn?: boolean;
 }) {
   const targetHighlightClass = highlighted
     ? "ring-2 ring-amber-300 bg-amber-50/70 rounded-2xl transition-all duration-500"
@@ -119,11 +126,20 @@ export function TimelineItemRow({
   const outgoingSender = workspaceUsers?.find(
     (user) => user.id === msg.metadata?.sender?.userId,
   );
+  const outgoingAuthor =
+    typeof msg.author !== "string" && msg.author?.id ? msg.author : null;
+  const isLastInGroup = groupPosition === "single" || groupPosition === "last";
+  const rowSpacingClass =
+    groupPosition === "single" || groupPosition === "last" ? "mb-5" : "mb-1";
+  const avatarOffsetClass = isLastInGroup ? "translate-y-4" : "";
+  const avatarVisibilityClass = isLastInGroup
+    ? "visible opacity-100 scale-100 transition-transform duration-200 ease-out motion-reduce:transition-none"
+    : "invisible opacity-0 scale-100 pointer-events-none";
   const bubbleColor = isAiMessage
-    ? "bg-slate-950 text-white rounded-br-sm ring-1 ring-slate-700"
+    ? "bg-slate-950 text-white ring-1 ring-slate-700"
     : isOutgoing
-    ? "bg-indigo-500 text-white rounded-br-sm"
-    : "bg-gray-100 text-gray-900 rounded-bl-sm";
+    ? "bg-indigo-500 text-white"
+    : "bg-gray-100 text-gray-900";
 
   if (isEvent) {
     return (
@@ -194,24 +210,31 @@ export function TimelineItemRow({
     <div
       key={msg.id}
       ref={(el) => setItemRef(item.key, el)}
-      className={`flex items-end gap-3 mb-4 ${isOutgoing ? "justify-end" : "justify-start"} ${matchRingClass(item.key)} ${targetHighlightClass}`}
+      className={`flex items-end gap-2 ${rowSpacingClass} ${isOutgoing ? "justify-end" : "justify-start"} ${matchRingClass(item.key)} ${targetHighlightClass}`}
       onMouseEnter={() => setHoveredMsgId(hoverKey)}
       onMouseLeave={() => setHoveredMsgId(null)}
     >
       {!isOutgoing && (
-        <AvatarWithBadge
-          src={selectedConversation?.contact?.avatarUrl}
-          name={getContactDisplayName(selectedConversation)}
-          size="sm"
-          fallbackTone="neutral"
-          badgeType={badgeType}
-          badgeSrc={channelBadge.icon}
-          badgeAlt={channelBadge.label}
-          badgePlacement="overlap"
-        />
+        <div
+          className={`flex w-8 shrink-0 justify-center ${avatarOffsetClass} ${avatarVisibilityClass}`}
+          aria-hidden={!isLastInGroup}
+        >
+          <AvatarWithBadge
+            src={selectedConversation?.contact?.avatarUrl}
+            name={getContactDisplayName(selectedConversation)}
+            size="sm"
+            fallbackTone="neutral"
+            badgeType={badgeType}
+            badgeSrc={channelBadge.icon}
+            badgeAlt={channelBadge.label}
+            badgePlacement="overlap"
+          />
+        </div>
       )}
 
-      <div className="relative flex flex-col max-w-sm">
+      <div
+        className={`relative flex max-w-[78%] flex-col sm:max-w-md ${isOutgoing ? "items-end" : "items-start"}`}
+      >
         <QuickActions
           channel={resolvedChannelType}
           isOutgoing={isOutgoing}
@@ -235,41 +258,28 @@ export function TimelineItemRow({
           onOpenEmailModal={() => onOpenEmailModal(msg)}
           previewLength={previewLength}
           searchTerm={msgSearch || undefined}
+          displayTime={displayTime}
+          groupPosition={groupPosition}
+          isAiMessage={isAiMessage}
+          failedMessageCopy={failedMessageCopy}
+          animateIn={animateIn}
         />
-        <div className="mt-1">
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            {isAiMessage ? (
-              <Tag label="AI" size="sm" bgColor="gray" />
-            ) : null}
-            <span>{displayTime}</span>
-            {isOutgoing && !failedMessageCopy && (
-              <MessageStatusIcon status={msg.status} />
-            )}
-            {failedMessageCopy && (
-              <Tooltip content={failedMessageCopy} position="left">
-                <span className="inline-flex cursor-help items-center">
-                  <AlertTriangle
-                    size={14}
-                    className="text-red-500 flex-shrink-0"
-                  />
-                </span>
-              </Tooltip>
-            )}
-          </div>
-        </div>
       </div>
 
       {isOutgoing && (
-        <div className="relative flex-shrink-0">
+        <div
+          className={`relative flex w-8 shrink-0 justify-center ${avatarOffsetClass} ${avatarVisibilityClass}`}
+          aria-hidden={!isLastInGroup}
+        >
           <div className="flex items-center justify-center text-xs">
-            {typeof msg.author !== "string" && msg.author?.id ? (
+            {outgoingAuthor ? (
               <AvatarWithBadge
-                src={msg.author.avatarUrl}
+                src={outgoingAuthor.avatarUrl}
                 name={
                   [outgoingSender?.firstName, outgoingSender?.lastName]
                     .filter(Boolean)
                     .join(" ") ||
-                  getAuthorDisplayName(msg.author) ||
+                  getAuthorDisplayName(outgoingAuthor) ||
                   msg.initials ||
                   "User"
                 }
@@ -285,7 +295,7 @@ export function TimelineItemRow({
               </div>
             )}
           </div>
-          {typeof msg.author !== "string" && msg.author?.id ? null : (
+          {!outgoingAuthor ? (
             <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white bg-white">
               <img
                 src={channelBadge.icon}
@@ -293,7 +303,7 @@ export function TimelineItemRow({
                 className="w-3 h-3"
               />
             </span>
-          )}
+          ) : null}
         </div>
       )}
     </div>

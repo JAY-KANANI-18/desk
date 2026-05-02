@@ -1,5 +1,7 @@
 export type MessageStatus = "pending" | "sent" | "delivered" | "read" | "failed";
 
+export type MessageGroupPosition = "single" | "first" | "middle" | "last";
+
 export interface MediaAttachment {
   type: "image" | "video" | "audio" | "file";
   url: string;

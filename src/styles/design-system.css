@@ -586,6 +586,41 @@ body {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 99px;
 }
+
+@keyframes messageBubbleEnter {
+  from {
+    opacity: 0.55;
+    transform: translate3d(var(--message-bubble-enter-x, 0), 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.message-bubble-enter {
+  --message-bubble-enter-x: 0;
+  animation: messageBubbleEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  backface-visibility: hidden;
+  transform-origin: bottom center;
+  will-change: opacity, transform;
+}
+
+.message-bubble-enter--incoming {
+  --message-bubble-enter-x: -6px;
+  transform-origin: bottom left;
+}
+
+.message-bubble-enter--outgoing {
+  --message-bubble-enter-x: 6px;
+  transform-origin: bottom right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-bubble-enter {
+    animation: none;
+  }
+}
 /* ── Call window animations ─────────────────────────────────────────────── */
 
 @keyframes callRingOuter {
