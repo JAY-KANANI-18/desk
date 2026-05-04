@@ -50,9 +50,9 @@ export function FloatingActionButton({
         ...classDrivenButtonStyle,
         right: "1.5rem",
         bottom: offsetStyles[offset],
-        width: 42,
-        height: 42,
-        borderRadius: 9999,
+        width: 46,
+        height: 46,
+        borderRadius: "0.75rem",
         ...style,
       }}
     />

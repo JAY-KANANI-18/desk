@@ -26,6 +26,7 @@ export type SelectTriggerAppearance =
   | "button";
 export type SelectOptionTone = "primary" | "warning" | "neutral";
 export type SelectOptionSurface = "flush" | "inset";
+export type SelectOptionRowSize = "default" | "lg";
 
 export interface SelectOption {
   value: string;
@@ -635,6 +636,7 @@ export function SelectOptionRow({
   trailing,
   tone = "primary",
   surface = "flush",
+  size = "default",
   children,
 }: {
   id: string;
@@ -647,6 +649,7 @@ export function SelectOptionRow({
   trailing?: ReactNode;
   tone?: SelectOptionTone;
   surface?: SelectOptionSurface;
+  size?: SelectOptionRowSize;
   children: ReactNode;
 }) {
   const toneBackgroundClass =
@@ -673,7 +676,10 @@ export function SelectOptionRow({
       onMouseDown={onMouseDown}
       onMouseEnter={onMouseEnter}
       className={cx(
-        "flex w-full items-start gap-[var(--spacing-sm)] px-[var(--spacing-md)] py-[var(--spacing-sm)] text-left transition-colors",
+        "flex w-full items-start gap-[var(--spacing-sm)] text-left transition-colors",
+        size === "lg"
+          ? "px-3 py-3.5"
+          : "px-[var(--spacing-md)] py-[var(--spacing-sm)]",
         surface === "inset" && "mx-[var(--spacing-xs)] rounded-[var(--radius-lg)]",
         surface === "inset"
           ? selected

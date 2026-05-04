@@ -59,6 +59,7 @@ export function ContactsHeader({
           onOpenImport();
         }}
         variant="ghost"
+        size={isMobile ? "lg" : "sm"}
         fullWidth
         contentAlign="start"
       >
@@ -70,6 +71,7 @@ export function ContactsHeader({
           onExport();
         }}
         variant="ghost"
+        size={isMobile ? "lg" : "sm"}
         fullWidth
         contentAlign="start"
       >
@@ -81,6 +83,7 @@ export function ContactsHeader({
           onOpenImportJobs();
         }}
         variant="ghost"
+        size={isMobile ? "lg" : "sm"}
         fullWidth
         contentAlign="start"
       >
@@ -255,10 +258,8 @@ export function ContactsHeader({
             </div>
           }
         >
-          <div className="p-4">
-            <div className="overflow-hidden rounded-[24px] bg-slate-50">
-              {actionItems}
-            </div>
+          <div className="p-3">
+            {actionItems}
           </div>
         </MobileSheet>
       ) : null}

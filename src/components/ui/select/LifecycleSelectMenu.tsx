@@ -241,6 +241,8 @@ export function LifecycleSelectMenu<TStage extends LifecycleSelectStage>({
       mobileSheet={mobileSheet}
       mobileSheetTitle={mobileSheetTitle ?? label ?? "Select lifecycle"}
       mobileSheetSubtitle={mobileSheetSubtitle}
+      mobileSheetListVariant="plain"
+      mobileSheetOptionSize="lg"
       disabled={disabled}
       placeholder={resolvedPlaceholder}
       triggerClassName={cx(

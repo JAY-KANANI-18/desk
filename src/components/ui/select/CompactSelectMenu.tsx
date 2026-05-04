@@ -21,6 +21,7 @@ import {
   getSelectOptionId,
   useSelectController,
   type SelectOptionTone,
+  type SelectOptionRowSize,
   type SelectSize,
   type SelectTriggerAppearance,
 } from "./shared";
@@ -47,6 +48,8 @@ export interface CompactSelectMenuGroup {
   options: CompactSelectMenuOption[];
 }
 
+export type CompactSelectMenuMobileListVariant = "framed" | "plain";
+
 export interface CompactSelectMenuProps {
   id?: string;
   value?: string;
@@ -71,6 +74,8 @@ export interface CompactSelectMenuProps {
   mobileSheet?: boolean;
   mobileSheetTitle?: ReactNode;
   mobileSheetSubtitle?: ReactNode;
+  mobileSheetListVariant?: CompactSelectMenuMobileListVariant;
+  mobileSheetOptionSize?: SelectOptionRowSize;
 }
 
 function getDescriptionToneClass(
@@ -134,6 +139,8 @@ export function CompactSelectMenu({
   mobileSheet = false,
   mobileSheetTitle,
   mobileSheetSubtitle,
+  mobileSheetListVariant = "framed",
+  mobileSheetOptionSize = "default",
 }: CompactSelectMenuProps) {
   const generatedId = useId();
   const fieldId = id ?? `compact-select-menu-${generatedId}`;
@@ -237,6 +244,8 @@ export function CompactSelectMenu({
   }, [controller.isOpen, controller.setHighlightedIndex, filteredOptions, value]);
 
   const resolvedHasValue = hasValue ?? Boolean(selectedOption);
+  const optionRowSize = shouldUseMobileSheet ? mobileSheetOptionSize : "default";
+  const plainMobileList = shouldUseMobileSheet && mobileSheetListVariant === "plain";
   const optionRows =
     filteredOptions.length === 0 ? (
       <SelectEmptyState message={emptyMessage} />
@@ -244,7 +253,14 @@ export function CompactSelectMenu({
       filteredGroups.map((group, groupIndex) => (
         <div key={group.label ?? `group-${groupIndex}`}>
           {group.label ? (
-            <div className="px-[var(--spacing-md)] pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-gray-400)]">
+            <div
+              className={cx(
+                "font-semibold uppercase text-[var(--color-gray-400)]",
+                optionRowSize === "lg"
+                  ? "px-3 pb-2 pt-3 text-[11px] tracking-[0.12em]"
+                  : "px-[var(--spacing-md)] pb-1 pt-2 text-[10px] tracking-[0.08em]",
+              )}
+            >
               {group.label}
             </div>
           ) : null}
@@ -262,10 +278,11 @@ export function CompactSelectMenu({
                 onMouseEnter={() => controller.setHighlightedIndex(option.index)}
                 tone={option.tone}
                 surface="inset"
+                size={optionRowSize}
                 trailing={
                   isSelected ? (
                     <CheckCircle2
-                      size={16}
+                      size={optionRowSize === "lg" ? 18 : 16}
                       className={cx(
                         "mt-0.5 shrink-0",
                         getSelectedIndicatorClass(option.tone),
@@ -274,14 +291,20 @@ export function CompactSelectMenu({
                   ) : undefined
                 }
               >
-                <div className="flex min-w-0 items-center gap-[var(--spacing-sm)]">
+                <div
+                  className={cx(
+                    "flex min-w-0 items-center",
+                    optionRowSize === "lg" ? "gap-3" : "gap-[var(--spacing-sm)]",
+                  )}
+                >
                   {option.leading ? (
                     <span className="shrink-0">{option.leading}</span>
                   ) : null}
                   <div className="min-w-0 flex-1">
                     <div
                       className={cx(
-                        "truncate text-sm font-medium",
+                        "truncate font-medium",
+                        optionRowSize === "lg" ? "text-base" : "text-sm",
                         isSelected
                           ? getSelectedLabelClass(option.tone)
                           : "text-[var(--color-gray-800)]",
@@ -292,7 +315,8 @@ export function CompactSelectMenu({
                     {option.description ? (
                       <div
                         className={cx(
-                          "mt-[2px] truncate text-xs",
+                          "mt-[2px] truncate",
+                          optionRowSize === "lg" ? "text-sm" : "text-xs",
                           getDescriptionToneClass(option.descriptionTone),
                         )}
                       >
@@ -371,9 +395,15 @@ export function CompactSelectMenu({
             </div>
           }
         >
-          <div className="p-4">
+          <div className={plainMobileList ? "p-3" : "p-4"}>
             {searchable ? (
-              <div className="mb-4 overflow-hidden rounded-2xl border border-gray-100">
+              <div
+                className={
+                  plainMobileList
+                    ? "mb-4"
+                    : "mb-4 overflow-hidden rounded-2xl border border-gray-100"
+                }
+              >
                 <SelectSearchInput
                   inputRef={searchInputRef}
                   value={searchTerm}
@@ -383,13 +413,19 @@ export function CompactSelectMenu({
                 />
               </div>
             ) : null}
-            <div className="overflow-hidden rounded-2xl border border-gray-100 p-1.5">
+            <div
+              className={
+                plainMobileList
+                  ? "space-y-1"
+                  : "overflow-hidden rounded-2xl border border-gray-100 p-1.5"
+              }
+            >
               <div
                 id={controller.listId}
                 role="listbox"
                 tabIndex={-1}
                 onKeyDown={controller.handleListKeyDown}
-                className="py-[var(--spacing-xs)]"
+                className={plainMobileList ? "py-0" : "py-[var(--spacing-xs)]"}
               >
                 {optionRows}
               </div>

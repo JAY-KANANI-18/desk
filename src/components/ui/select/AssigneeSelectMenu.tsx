@@ -274,6 +274,8 @@ export function AssigneeSelectMenu<TUser extends AssigneeSelectUser>({
       mobileSheet={mobileSheet}
       mobileSheetTitle={mobileSheetTitle ?? label ?? "Assign user"}
       mobileSheetSubtitle={mobileSheetSubtitle}
+      mobileSheetListVariant="plain"
+      mobileSheetOptionSize="lg"
       triggerClassName={cx(
         variant === "icon" &&
           "inline-flex h-9 w-9 min-h-0 justify-center rounded-lg border border-gray-200 bg-white px-0 py-0 shadow-sm hover:bg-gray-50",
