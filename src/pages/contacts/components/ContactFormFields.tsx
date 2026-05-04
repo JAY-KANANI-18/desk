@@ -1,5 +1,9 @@
 import type { LifecycleStage } from "../../workspace/types";
-import { Select, WorkspaceTagManager } from "../../../components/ui/Select";
+import {
+  LifecycleSelectMenu,
+  Select,
+  WorkspaceTagManager,
+} from "../../../components/ui/Select";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import type {
   ContactFormState,
@@ -100,19 +104,15 @@ export function ContactFormFields<TForm extends ContactFormState>({
 
   const renderWorkspaceFields = () => (
     <div className="grid gap-4 md:grid-cols-2">
-      <Select
+      <LifecycleSelectMenu
         label="Lifecycle"
-        appearance={fieldAppearance}
-        labelVariant={labelVariant}
+        variant={variant === "sidebar" ? "sidebar" : "field"}
         value={value.lifecycle}
-        onChange={(event) => update({ lifecycle: event.target.value })}
-        options={[
-          { value: "", label: "Select Lifecycle" },
-          ...stages.map((stage) => ({
-            value: String(stage.id),
-            label: [stage.emoji, stage.name].filter(Boolean).join(" "),
-          })),
-        ]}
+        stages={stages}
+        onChange={(stageId) => update({ lifecycle: stageId ?? "" })}
+        noneLabel="No Stage"
+        placeholder="Select lifecycle"
+        dropdownWidth="trigger"
       />
 
       {includeAssignee ? (

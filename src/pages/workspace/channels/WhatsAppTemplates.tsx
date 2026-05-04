@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, Check, Eye, RefreshCw, Search } from '@/components/ui/icons';
+import { AlertCircle, Check, Eye, RefreshCw } from '@/components/ui/icons';
 
 import {
   DataTable,
@@ -8,6 +8,7 @@ import {
 } from '../../../components/ui/DataTable';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../../components/ui/inputs';
 import { CenterModal } from '../../../components/ui/modal/CenterModal';
 import { BaseSelect } from '../../../components/ui/select/BaseSelect';
 import type { SelectOption } from '../../../components/ui/select/shared';
@@ -420,11 +421,13 @@ export const WhatsAppTemplatesSection = ({
 
       <div className="flex flex-shrink-0 flex-wrap items-start gap-2">
         <form onSubmit={handleSearch} className="min-w-[200px] flex-1">
-          <BaseInput
+          <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search templates..."
-            leftIcon={<Search size={14} />}
+            searchIconSize={14}
+            onClear={() => setSearch('')}
+            clearAriaLabel="Clear template search"
           />
         </form>
         <div className="min-w-[180px]">

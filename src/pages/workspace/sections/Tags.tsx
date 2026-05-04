@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, Search, Trash2 } from '@/components/ui/icons';
+import { Pencil, Plus, Trash2 } from '@/components/ui/icons';
 
 import { ConfirmDeleteModal } from '../../../components/ui/modal';
 import { Button } from '../../../components/ui/Button';
@@ -7,7 +7,7 @@ import { DataTable, type DataTableColumn } from '../../../components/ui/DataTabl
 import { ListPagination } from '../../../components/ui/ListPagination';
 import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { Tag } from '../../../components/ui/Tag';
-import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../../components/ui/inputs';
 import {
   INITIAL_WORKSPACE_TAG_FORM,
   WorkspaceTagFormModal,
@@ -181,13 +181,13 @@ export const Tags = () => {
     isMobile
       ? {
           panel: (
-            <BaseInput
+            <SearchInput
               appearance="toolbar"
-              type="search"
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               placeholder="Search tags..."
-              leftIcon={<Search size={15} />}
+              onClear={() => setSearchDraft('')}
+              clearAriaLabel="Clear tag search"
               aria-label="Search tags"
             />
           ),
@@ -252,13 +252,13 @@ export const Tags = () => {
 
         <div className={`${isMobile ? 'hidden' : 'px-6 py-4'} flex-shrink-0 border-b border-gray-100`}>
           <div className="w-full md:max-w-xs">
-            <BaseInput
+            <SearchInput
               appearance="toolbar"
-              type="search"
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               placeholder="Search tags..."
-              leftIcon={<Search size={15} />}
+              onClear={() => setSearchDraft('')}
+              clearAriaLabel="Clear tag search"
             />
           </div>
         </div>

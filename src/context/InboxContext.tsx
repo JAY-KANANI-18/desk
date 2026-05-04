@@ -196,6 +196,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [convLoading, setConvLoading] = useState(false);
   const [nextConvCursor, setNextConvCursor] = useState<string | undefined>();
   const [hasMoreConvs, setHasMoreConvs] = useState(false);
+  const conversationRequestIdRef = useRef(0);
+  const conversationAbortRef = useRef<AbortController | null>(null);
+  const conversationLoadingRef = useRef(false);
 
   /* ── Selected conversation ── */
   const [selectedConversation, setSelectedConversation] =
@@ -266,46 +269,83 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchConversations = useCallback(
     async (replace: boolean) => {
+      if (!wsId) return;
+      if (!replace && conversationLoadingRef.current) return;
+
+      const requestId = conversationRequestIdRef.current + 1;
+      conversationRequestIdRef.current = requestId;
+      conversationAbortRef.current?.abort();
+      const controller = new AbortController();
+      conversationAbortRef.current = controller;
+      conversationLoadingRef.current = true;
       setConvLoading(true);
       try {
         const result = await inboxApi.getConversations({
           ...filters,
           search: convSearch || undefined,
           cursor: replace ? undefined : nextConvCursor,
+        }, {
+          signal: controller.signal,
         });
+        if (requestId !== conversationRequestIdRef.current) return;
         setConvList((prev) =>
           replace ? result.data : [...prev, ...result.data],
         );
         setNextConvCursor(result.nextCursor);
         setHasMoreConvs(!!result.nextCursor);
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("[InboxContext] fetchConversations:", err);
       } finally {
-        setConvLoading(false);
+        if (requestId === conversationRequestIdRef.current) {
+          conversationLoadingRef.current = false;
+          if (conversationAbortRef.current === controller) {
+            conversationAbortRef.current = null;
+          }
+          setConvLoading(false);
+        }
       }
     },
     [wsId, filters, convSearch, nextConvCursor],
   );
 
   const refreshConversations = useCallback(async () => {
+    if (!wsId) return [];
+
+    const requestId = conversationRequestIdRef.current + 1;
+    conversationRequestIdRef.current = requestId;
+    conversationAbortRef.current?.abort();
+    const controller = new AbortController();
+    conversationAbortRef.current = controller;
+    conversationLoadingRef.current = true;
     setConvLoading(true);
     try {
       const result = await inboxApi.getConversations({
         ...filters,
         search: convSearch || undefined,
         cursor: undefined,
+      }, {
+        signal: controller.signal,
       });
+      if (requestId !== conversationRequestIdRef.current) return [];
       setConvList(result.data);
       setNextConvCursor(result.nextCursor);
       setHasMoreConvs(!!result.nextCursor);
       return result.data;
     } catch (err) {
+      if (controller.signal.aborted) return [];
       console.error("[InboxContext] refreshConversations:", err);
       return [];
     } finally {
-      setConvLoading(false);
+      if (requestId === conversationRequestIdRef.current) {
+        conversationLoadingRef.current = false;
+        if (conversationAbortRef.current === controller) {
+          conversationAbortRef.current = null;
+        }
+        setConvLoading(false);
+      }
     }
-  }, [filters, convSearch]);
+  }, [wsId, filters, convSearch]);
 
   /* Initial load + re-load when filters change */
   useEffect(() => {
@@ -314,8 +354,15 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [wsId, filters, convSearch]);
 
   const loadMoreConversations = useCallback(() => {
-    if (!convLoading && hasMoreConvs) fetchConversations(false);
-  }, [convLoading, hasMoreConvs, fetchConversations]);
+    if (!conversationLoadingRef.current && hasMoreConvs) fetchConversations(false);
+  }, [hasMoreConvs, fetchConversations]);
+
+  useEffect(() => {
+    return () => {
+      conversationRequestIdRef.current += 1;
+      conversationAbortRef.current?.abort();
+    };
+  }, []);
 
   /* ══════════════════════════════════════════════════════════════
      SELECT CONVERSATION → load timeline

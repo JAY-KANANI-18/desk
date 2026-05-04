@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ExternalLink, ChevronRight } from "@/components/ui/icons";
+import { ExternalLink, ChevronRight } from "@/components/ui/icons";
 import { BackButton } from "../components/channels/BackButton";
 import { Button } from "../components/ui/button/Button";
-import { BaseInput } from "../components/ui/inputs/BaseInput";
+import { SearchInput } from "../components/ui/inputs";
 import { PageLayout } from "../components/ui/PageLayout";
 import { Tag } from "../components/ui/Tag";
 import {
@@ -60,13 +60,13 @@ export const ChannelCatalogView = () => {
       </div>
 
       <div className="w-full lg:max-w-xs">
-        <BaseInput
-          type="search"
+        <SearchInput
           appearance="toolbar"
           placeholder="Search channels..."
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          leftIcon={<Search size={15} />}
+          onClear={() => setSearchQuery("")}
+          clearAriaLabel="Clear channel search"
         />
       </div>
     </div>

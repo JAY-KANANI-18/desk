@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Check, Edit3, Loader2, Search, ShieldCheck, X } from "@/components/ui/icons";
+import { Check, Edit3, Loader2, ShieldCheck, X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
-import { BaseInput, CheckboxInput, TextareaInput } from "../../../components/ui/inputs";
+import { CheckboxInput, SearchInput, TextareaInput } from "../../../components/ui/inputs";
 import { CenterModal } from "../../../components/ui/Modal";
 import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
@@ -141,11 +141,12 @@ export function ApprovalQueuePage() {
       }
       toolbar={
         <div className="max-w-md">
-          <BaseInput
+          <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by agent, contact, tool, or intent"
-            leftIcon={<Search size={15} />}
+            onClear={() => setQuery("")}
+            clearAriaLabel="Clear approval search"
             size="sm"
           />
         </div>

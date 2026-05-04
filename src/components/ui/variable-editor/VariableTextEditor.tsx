@@ -126,6 +126,12 @@ function setCaretAfter(node: Node) {
   selection.addRange(range);
 }
 
+function createRenderedTextFragment(text: string) {
+  const template = document.createElement("template");
+  template.innerHTML = renderVariableTokenHtml(text);
+  return template.content;
+}
+
 export const VariableTextEditor = forwardRef<
   VariableTextEditorHandle,
   VariableTextEditorProps
@@ -423,9 +429,31 @@ export const VariableTextEditor = forwardRef<
       }
 
       event.preventDefault();
+      const editor = editorRef.current;
       const text = event.clipboardData.getData("text/plain");
-      document.execCommand("insertText", false, text);
-      emitChange();
+      const selection = window.getSelection();
+      if (!editor) return;
+
+      let range: Range;
+      if (selection?.rangeCount && isEditorSelection(editor, selection)) {
+        range = selection.getRangeAt(0);
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+      }
+
+      const fragment = createRenderedTextFragment(text);
+      const lastNode = fragment.lastChild;
+      range.deleteContents();
+      range.insertNode(fragment);
+
+      if (lastNode) {
+        setCaretAfter(lastNode);
+      }
+
+      onChange(extractRawText(editor));
+      updateTrigger();
     };
 
     const handleCopy = (event: ClipboardEvent<HTMLDivElement>) => {

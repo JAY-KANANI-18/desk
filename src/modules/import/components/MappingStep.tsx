@@ -1,6 +1,6 @@
-import { Search, X } from "@/components/ui/icons";
+import { X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
-import { Input } from "../../../components/ui/Input";
+import { SearchInput } from "../../../components/ui/inputs";
 import { Select } from "../../../components/ui/Select";
 
 const FIELD_OPTIONS = [
@@ -65,13 +65,14 @@ export function MappingStep({
         </div>
 
         <div className="w-full max-w-[220px]">
-          <Input
-            type="search"
+          <SearchInput
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search columns..."
-            inputSize="sm"
-            leftIcon={<Search size={14} />}
+            size="sm"
+            searchIconSize={14}
+            onClear={() => onSearchChange("")}
+            clearAriaLabel="Clear column search"
           />
         </div>
       </div>

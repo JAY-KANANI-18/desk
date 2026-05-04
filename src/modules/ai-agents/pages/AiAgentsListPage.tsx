@@ -9,12 +9,11 @@ import {
   Pencil,
   Plus,
   Rocket,
-  Search,
   Trash2,
 } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
-import { BaseInput } from "../../../components/ui/inputs";
+import { SearchInput } from "../../../components/ui/inputs";
 import { CompactSelectMenu, type CompactSelectMenuGroup } from "../../../components/ui/Select";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useSocket } from "../../../socket/socket-provider";
@@ -162,11 +161,12 @@ export function AiAgentsListPage() {
   const toolbar = (
     <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
       <div className="max-w-md flex-1">
-        <BaseInput
+        <SearchInput
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search agents"
-          leftIcon={<Search size={15} />}
+          onClear={() => setQuery("")}
+          clearAriaLabel="Clear agent search"
           size="sm"
         />
       </div>

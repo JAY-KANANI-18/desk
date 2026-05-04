@@ -1,7 +1,7 @@
-import { Calendar, List, ListFilter, Plus, RefreshCw, Search, Table } from "@/components/ui/icons";
+import { Calendar, List, ListFilter, Plus, RefreshCw, Table } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
-import { BaseInput } from "../../components/ui/inputs/BaseInput";
+import { SearchInput } from "../../components/ui/inputs";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { STATUS_FILTERS } from "./constants";
@@ -44,13 +44,13 @@ export function BroadcastToolbar({
           panel: (
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <BaseInput
+                <SearchInput
                   appearance="toolbar"
-                  leftIcon={<Search size={15} />}
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder="Search broadcasts"
-                  type="search"
                   value={searchQuery}
+                  onClear={() => onSearchChange("")}
+                  clearAriaLabel="Clear broadcast search"
                   aria-label="Search broadcasts"
                 />
               </div>
@@ -160,13 +160,14 @@ export function BroadcastToolbar({
 
             <div className="flex flex-wrap items-center gap-3 xl:justify-end">
               <div className="w-full md:w-64">
-                <BaseInput
+                <SearchInput
                   appearance="toolbar"
-                  type="text"
                   placeholder="Search broadcasts"
                   value={searchQuery}
                   onChange={(event) => onSearchChange(event.target.value)}
-                  leftIcon={<Search size={16} />}
+                  onClear={() => onSearchChange("")}
+                  clearAriaLabel="Clear broadcast search"
+                  searchIconSize={16}
                 />
               </div>
 

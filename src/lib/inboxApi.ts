@@ -287,7 +287,8 @@ export const inboxApi = {
    *              unreplied (bool), search, cursor, limit
    */
   getConversations(
-    filters: ConversationFilters = {}
+    filters: ConversationFilters = {},
+    options?: RequestInit,
   ): Promise<PaginatedConversations> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => {
@@ -296,7 +297,7 @@ export const inboxApi = {
       }
     });
     const qs = params.toString();
-    return api.get(`/conversations${qs ? `?${qs}` : ""}`);
+    return api.get(`/conversations${qs ? `?${qs}` : ""}`, options);
   },
 
   /**

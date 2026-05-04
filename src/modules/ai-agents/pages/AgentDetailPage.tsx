@@ -33,6 +33,7 @@ import { Button } from "../../../components/ui/Button";
 import {
   BaseInput,
   RangeInput,
+  SearchInput,
   TextareaInput,
 } from "../../../components/ui/inputs";
 import { Select } from "../../../components/ui/Select";
@@ -550,10 +551,12 @@ function KnowledgeTab({
               here.
             </p>
           </div>
-          <BaseInput
+          <SearchInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search knowledge"
+            onClear={() => setQuery("")}
+            clearAriaLabel="Clear knowledge search"
             size="sm"
           />
         </div>

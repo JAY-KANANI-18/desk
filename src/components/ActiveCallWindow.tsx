@@ -3,12 +3,12 @@ import {
   Mic, MicOff, Pause, Play, Volume2, VolumeX,
   Grid3x3, ArrowRightLeft, Circle, Square,
   PhoneOff, ChevronDown, ChevronUp,
-  FileText, Search, Phone,
+  FileText, Phone,
 } from '@/components/ui/icons';
 import { useCall } from '../context/CallContext';
 import { Avatar } from './ui/Avatar';
 import { Button } from './ui/Button';
-import { BaseInput, TextareaInput } from './ui/inputs';
+import { BaseInput, SearchInput, TextareaInput } from './ui/inputs';
 import { Tag } from './ui/Tag';
 import { Tooltip } from './ui/Tooltip';
 
@@ -362,12 +362,15 @@ export const ActiveCallWindow = () => {
           {panel === 'transfer' && (
             <div className="bg-gray-800 rounded-2xl p-3">
               <p className="text-gray-300 text-xs font-semibold mb-2.5">Transfer to agent</p>
-              <div className="relative mb-2">
-                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-                <BaseInput
-                  type="search"
+              <div className="mb-2">
+                <SearchInput
                   value={transferSearch}
                   onChange={e => setTransferSearch(e.target.value)}
+                  searchIconSize={12}
+                  clearIconSize={12}
+                  onClear={() => setTransferSearch('')}
+                  clearAriaLabel="Clear agent search"
+                  clearButtonClassName="bg-gray-500 text-white hover:bg-gray-400 focus-visible:ring-[var(--color-primary)]"
                   placeholder="Search agents…"
                   className="w-full bg-gray-700 text-white text-xs pl-7 pr-3 py-2 rounded-lg outline-none placeholder-gray-500 border border-gray-600 focus:border-[var(--color-primary)] transition-colors"
                 />

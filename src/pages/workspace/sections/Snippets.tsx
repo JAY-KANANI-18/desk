@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Edit2, Plus, Search, Trash2 } from "@/components/ui/icons";
+import { Edit2, Plus, Trash2 } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { SearchInput } from "../../../components/ui/inputs";
 import { TextareaInput } from "../../../components/ui/inputs/TextareaInput";
 import { CenterModal } from "../../../components/ui/modal/CenterModal";
 import { Tag } from "../../../components/ui/Tag";
@@ -123,12 +124,14 @@ export const Snippets = () => {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-44">
-              <BaseInput
+              <SearchInput
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search snippets..."
                 size="sm"
-                leftIcon={<Search size={14} />}
+                searchIconSize={14}
+                onClear={() => setSearch("")}
+                clearAriaLabel="Clear snippet search"
                 aria-label="Search snippets"
               />
             </div>

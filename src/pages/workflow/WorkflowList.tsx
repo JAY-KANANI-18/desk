@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
-  Plus, Search, Play, Square, Pencil,
+  Plus, Play, Square, Pencil,
   Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight,
 } from '@/components/ui/icons';
 import { Workflow, WorkflowStatus } from './workflow.types';
@@ -13,6 +13,7 @@ import { Button } from '../../components/ui/Button';
 import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../components/ui/inputs';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -140,13 +141,13 @@ export function WorkflowList() {
     isMobile
       ? {
           panel: (
-            <BaseInput
-              type="search"
+            <SearchInput
               placeholder="Search workflows..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               appearance="toolbar"
-              leftIcon={<Search size={15} />}
+              onClear={() => setSearchDraft('')}
+              clearAriaLabel="Clear workflow search"
               aria-label="Search workflows"
             />
           ),
@@ -396,14 +397,14 @@ export function WorkflowList() {
       </div>
 
       <div className="hidden md:ml-auto md:block md:w-48">
-        <BaseInput
-          type="search"
+        <SearchInput
           placeholder="Search..."
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           appearance="toolbar"
-   
-          leftIcon={<Search size={13} />}
+          searchIconSize={13}
+          onClear={() => setSearchDraft('')}
+          clearAriaLabel="Clear workflow search"
         />
       </div>
     </div>

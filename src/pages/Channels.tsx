@@ -6,7 +6,6 @@ import {
   Loader2,
   RadioTower,
   Plus,
-  Search,
   Settings,
 } from "@/components/ui/icons";
 import { ChannelApi } from "../lib/channelApi";
@@ -18,7 +17,7 @@ import { useMobileHeaderActions } from "../components/mobileHeaderActions";
 import { ChannelBadgeStack } from "../components/channels/ChannelBadges";
 import { Button } from "../components/ui/button/Button";
 import { FloatingActionButton } from "../components/ui/FloatingActionButton";
-import { BaseInput } from "../components/ui/inputs";
+import { SearchInput } from "../components/ui/inputs";
 
 interface ConnectedChannel {
   id: number;
@@ -78,13 +77,13 @@ const ConnectedChannelsView = ({
     isMobile
       ? {
           panel: (
-            <BaseInput
-              type="search"
+            <SearchInput
               appearance="toolbar"
-              leftIcon={<Search size={15} />}
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search channels..."
+              onClear={() => onSearchChange("")}
+              clearAriaLabel="Clear channel search"
               aria-label="Search channels"
             />
           ),
@@ -114,13 +113,13 @@ const ConnectedChannelsView = ({
 
             <div className="mt-4 hidden grid-cols-1 gap-3 md:flex md:flex-wrap md:items-center">
               <div className="w-full md:max-w-sm">
-                <BaseInput
-                  type="search"
+                <SearchInput
                   appearance="toolbar"
-                  leftIcon={<Search size={15} />}
                   value={search}
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder="Search channels..."
+                  onClear={() => onSearchChange("")}
+                  clearAriaLabel="Clear channel search"
                   aria-label="Search channels"
                 />
               </div>
@@ -304,13 +303,13 @@ export const Channels = () => {
   const desktopToolbar = isMobile ? undefined : (
     <div className="flex flex-wrap items-center gap-3">
       <div className="w-full md:max-w-sm">
-        <BaseInput
-          type="search"
+        <SearchInput
           appearance="toolbar"
-          leftIcon={<Search size={15} />}
           value={searchDraft}
           onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Search channels..."
+          onClear={() => setSearchDraft("")}
+          clearAriaLabel="Clear channel search"
           aria-label="Search channels"
         />
       </div>

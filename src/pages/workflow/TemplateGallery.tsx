@@ -9,7 +9,7 @@ import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { PageLayout } from '../../components/ui/PageLayout';
 import { Button } from '../../components/ui/Button';
 import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
-import { BaseInput } from '../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../components/ui/inputs';
 import { Tag } from '../../components/ui/Tag';
 import { BackButton } from '../../components/channels/BackButton';
 
@@ -71,13 +71,13 @@ export function TemplateGallery() {
   useMobileHeaderActions(
     {
       panel: (
-        <BaseInput
-          type="search"
+        <SearchInput
           placeholder="Search templates..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           appearance="toolbar"
-          leftIcon={<Search size={15} />}
+          onClear={() => setSearch('')}
+          clearAriaLabel="Clear template search"
           aria-label="Search templates"
         />
       ),
@@ -111,13 +111,14 @@ export function TemplateGallery() {
       </div> */}
 
       <div className="relative w-full lg:max-w-xs">
-        <BaseInput
-          type="search"
+        <SearchInput
           placeholder="Search templates..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           appearance="toolbar"
-          leftIcon={<Search size={16} />}
+          searchIconSize={16}
+          onClear={() => setSearch('')}
+          clearAriaLabel="Clear template search"
         />
       </div>
     </div>

@@ -6,7 +6,6 @@ import {
   PanelLeftOpen,
   Search,
   UserCircle2,
-  X,
 } from "@/components/ui/icons";
 import {
   Avatar,
@@ -14,7 +13,7 @@ import {
 } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
-import { BaseInput } from "../../components/ui/inputs/BaseInput";
+import { SearchInput } from "../../components/ui/inputs";
 import { Select } from "../../components/ui/Select";
 import { Tag } from "../../components/ui/Tag";
 import { Toggle } from "../../components/ui/Toggle";
@@ -405,27 +404,16 @@ useEffect(() => {
 
       {searchOpen ? (
         <div className="border-b border-gray-100 px-3 py-2">
-          <BaseInput
+          <SearchInput
             autoFocus
-            type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search by name, email, phone..."
             size="sm"
             appearance="toolbar"
-            leftIcon={<Search size={13} />}
-            rightIcon={
-              searchInput ? (
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  icon={<X size={12} />}
-                  onClick={() => setSearchInput("")}
-                  aria-label="Clear conversation search"
-                />
-              ) : undefined
-            }
+            searchIconSize={13}
+            onClear={() => setSearchInput("")}
+            clearAriaLabel="Clear conversation search"
           />
         </div>
       ) : null}

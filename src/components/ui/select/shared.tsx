@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -8,7 +9,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Check, ChevronDown, Search, X } from "@/components/ui/icons";
+import { Check, ChevronDown, X } from "@/components/ui/icons";
+import { SearchInput } from "../inputs/SearchInput";
 import {
   FieldShell,
   cx,
@@ -154,6 +156,58 @@ function useDropdownPresence(isOpen: boolean) {
   }, [isOpen]);
 
   return { isMounted, isVisible };
+}
+
+function getDropdownBoundary(anchor: HTMLElement) {
+  let top = 0;
+  let bottom = window.innerHeight;
+  let current = anchor.parentElement;
+
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    const overflow = `${style.overflow} ${style.overflowY}`;
+
+    if (/(auto|scroll|hidden|clip)/.test(overflow)) {
+      const rect = current.getBoundingClientRect();
+      top = Math.max(top, rect.top);
+      bottom = Math.min(bottom, rect.bottom);
+    }
+
+    current = current.parentElement;
+  }
+
+  return { top, bottom };
+}
+
+function getBestDropdownPlacement(
+  preferredPlacement: "top" | "bottom",
+  anchor: HTMLElement,
+  dropdown: HTMLElement,
+) {
+  const gap = 8;
+  const anchorRect = anchor.getBoundingClientRect();
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const boundary = getDropdownBoundary(anchor);
+  const spaceAbove = anchorRect.top - boundary.top - gap;
+  const spaceBelow = boundary.bottom - anchorRect.bottom - gap;
+
+  if (
+    preferredPlacement === "bottom" &&
+    dropdownRect.height > spaceBelow &&
+    spaceAbove > spaceBelow
+  ) {
+    return "top";
+  }
+
+  if (
+    preferredPlacement === "top" &&
+    dropdownRect.height > spaceAbove &&
+    spaceBelow > spaceAbove
+  ) {
+    return "bottom";
+  }
+
+  return preferredPlacement;
 }
 
 export function useSelectController<T>({
@@ -554,6 +608,33 @@ export function SelectDropdown({
   children: ReactNode;
 }) {
   const { isMounted, isVisible } = useDropdownPresence(isOpen);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [resolvedPlacement, setResolvedPlacement] = useState(placement);
+
+  useLayoutEffect(() => {
+    if (!isMounted || !isOpen) {
+      return;
+    }
+
+    const dropdown = dropdownRef.current;
+    const anchor = dropdown?.parentElement;
+    if (!dropdown || !anchor) {
+      return;
+    }
+
+    const updatePlacement = () => {
+      setResolvedPlacement(getBestDropdownPlacement(placement, anchor, dropdown));
+    };
+
+    updatePlacement();
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
+    };
+  }, [align, children, isMounted, isOpen, placement, width]);
 
   if (!isMounted) {
     return null;
@@ -561,9 +642,10 @@ export function SelectDropdown({
 
   return (
     <div
+      ref={dropdownRef}
       className={cx(
         "absolute overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md",
-        placement === "top"
+        resolvedPlacement === "top"
           ? "bottom-full mb-[var(--spacing-xs)]"
           : "top-full mt-[var(--spacing-xs)]",
         width === "trigger"
@@ -580,11 +662,11 @@ export function SelectDropdown({
         opacity: isVisible ? 1 : 0,
         transform: isVisible
           ? "translateY(0) scale(1)"
-          : placement === "top"
+          : resolvedPlacement === "top"
             ? "translateY(4px) scale(0.98)"
             : "translateY(-4px) scale(0.98)",
         transformOrigin:
-          placement === "top" ? "bottom center" : "top center",
+          resolvedPlacement === "top" ? "bottom center" : "top center",
         transition:
           "opacity var(--transition-fast), transform var(--transition-fast)",
         pointerEvents: isVisible ? "auto" : "none",
@@ -763,26 +845,16 @@ export function SelectSearchInput({
 }) {
   return (
     <div className="border-b border-[var(--color-gray-200)] p-[var(--spacing-sm)]">
-      <div className="relative">
-        <span className="pointer-events-none absolute inset-y-0 left-[var(--spacing-md)] flex items-center text-[var(--color-gray-400)]">
-          <Search size={14} />
-        </span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={placeholder}
-          className={getInputControlClassName({
-            size: "sm",
-            hasLeftIcon: true,
-          })}
-          style={getInputControlStyle({
-            paddingLeft: "calc(var(--spacing-xl) + var(--spacing-sm))",
-          })}
-        />
-      </div>
+      <SearchInput
+        ref={inputRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        size="sm"
+        searchIconSize={14}
+        onClear={value ? () => onChange("") : undefined}
+      />
     </div>
   );
 }

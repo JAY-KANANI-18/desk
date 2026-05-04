@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MoreVertical, Pencil, Plus, Search, Trash2, UserRoundPlus } from "@/components/ui/icons";
+import { MoreVertical, Pencil, Plus, Trash2, UserRoundPlus } from "@/components/ui/icons";
 
 import { ConfirmDeleteModal, MobileSheet } from "../../components/ui/modal";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
@@ -14,7 +14,7 @@ import { Tag } from "../../components/ui/Tag";
 import { Button } from "../../components/ui/button/Button";
 import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { IconButton } from "../../components/ui/button/IconButton";
-import { BaseInput } from "../../components/ui/inputs";
+import { BaseInput, SearchInput } from "../../components/ui/inputs";
 import { CenterModal } from "../../components/ui/Modal";
 import { BaseSelect } from "../../components/ui/select/BaseSelect";
 import type { SelectOption } from "../../components/ui/select/shared";
@@ -542,13 +542,13 @@ export const OrgUsersSettings = () => {
     isMobile
       ? {
           panel: (
-            <BaseInput
-              type="search"
+            <SearchInput
               appearance="toolbar"
-              leftIcon={<Search size={15} />}
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
               placeholder="Search organization users..."
+              onClear={() => setSearchDraft("")}
+              clearAriaLabel="Clear organization user search"
               aria-label="Search organization users"
             />
           ),
@@ -564,13 +564,13 @@ export const OrgUsersSettings = () => {
     <div>
       <div className="mb-4 hidden items-center justify-between md:flex">
         <div className="w-full max-w-xs">
-          <BaseInput
-            type="search"
+          <SearchInput
             appearance="toolbar"
-            leftIcon={<Search size={15} />}
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
             placeholder="Search organization users..."
+            onClear={() => setSearchDraft("")}
+            clearAriaLabel="Clear organization user search"
             aria-label="Search organization users"
           />
         </div>

@@ -12,6 +12,8 @@ export { PasswordInput } from "./PasswordInput";
 export type { PasswordInputProps } from "./PasswordInput";
 export { RangeInput } from "./RangeInput";
 export type { RangeInputProps } from "./RangeInput";
+export { SearchInput } from "./SearchInput";
+export type { SearchInputProps } from "./SearchInput";
 export { TagInput } from "./TagInput";
 export type { TagInputProps } from "./TagInput";
 export { TagColorSwatchPicker } from "./TagColorSwatchPicker";

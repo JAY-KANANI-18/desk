@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, RefreshCw, Search, X } from "@/components/ui/icons";
+import { ChevronDown, ChevronUp, RefreshCw } from "@/components/ui/icons";
 import { MessageSearchResult } from "../../lib/inboxApi";
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
+import { SearchInput } from "../../components/ui/inputs";
 import { Tag } from "../../components/ui/Tag";
 import { IconButton } from "../../components/ui/button/IconButton";
 
@@ -42,18 +42,19 @@ export function MessageAreaSearchBar({
     <div className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-lg">
       <div className="flex items-center gap-2">
         <div className="flex-1">
-          <Input
+          <SearchInput
             ref={inputRef}
-            type="search"
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onFocus={onFocus}
             placeholder="Search messages..."
-            inputSize="sm"
-            leftIcon={<Search size={14} />}
+            size="sm"
+            searchIconSize={14}
+            onClear={() => onChange("")}
+            clearAriaLabel="Clear message search"
           />
         </div>
-        {value && (
+        {value && matchCount > 0 && (
           <Tag
             label={matchCount === 0 ? "No results" : `${matchIndex + 1} / ${matchCount}`}
             bgColor="gray"
@@ -80,16 +81,6 @@ export function MessageAreaSearchBar({
               size="xs"
             />
           </div>
-        )}
-        {value && (
-          <IconButton
-            type="button"
-            aria-label="Clear search"
-            icon={<X size={13} />}
-            onClick={() => onChange("")}
-            variant="ghost"
-            size="xs"
-          />
         )}
         <Button
           type="button"

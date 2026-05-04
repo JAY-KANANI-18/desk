@@ -10,7 +10,7 @@ import {
 import { Button } from '../components/ui/Button';
 import { CountBadge } from '../components/ui/CountBadge';
 import { IconButton } from '../components/ui/button/IconButton';
-import { BaseInput } from '../components/ui/inputs/BaseInput';
+import { SearchInput } from '../components/ui/inputs';
 import { Tag } from '../components/ui/Tag';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -631,26 +631,15 @@ export const AppSitemap = () => {
         <div className="px-6 py-3 md:px-10">
           {/* Search */}
           <div className="mb-3">
-            <BaseInput
-              type="search"
+            <SearchInput
               placeholder="Search pages, features..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               size="sm"
               appearance="toolbar"
-              leftIcon={<Search size={16} />}
-              rightIcon={
-                search ? (
-                  <IconButton
-                    type="button"
-                    onClick={() => setSearch('')}
-                    icon={<X size={14} />}
-                    aria-label="Clear sitemap search"
-                    size="xs"
-                    variant="ghost"
-                  />
-                ) : undefined
-              }
+              searchIconSize={16}
+              onClear={() => setSearch('')}
+              clearAriaLabel="Clear sitemap search"
             />
           </div>
 

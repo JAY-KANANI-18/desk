@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X } from '@/components/ui/icons';
+import { X } from '@/components/ui/icons';
 import { MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { STEP_LIST, STEPS_BY_CATEGORY, StepMeta } from './stepTypes';
 import { StepType } from '../workflow.types';
 import { Button } from '../../../components/ui/Button';
 import { IconButton } from '../../../components/ui/button/IconButton';
-import { BaseInput } from '../../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../../components/ui/inputs';
 import { Tag } from '../../../components/ui/Tag';
 
 interface AddStepMenuProps {
@@ -54,15 +54,16 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
   const content = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="border-b border-gray-100 px-3 py-2.5">
-        <BaseInput
+        <SearchInput
           ref={inputRef}
-          type="search"
           placeholder="Search steps..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           appearance="toolbar"
           size="sm"
-          leftIcon={<Search size={13} />}
+          searchIconSize={13}
+          onClear={() => setSearch('')}
+          clearAriaLabel="Clear step search"
         />
 
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">

@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { ResponsiveModal } from '../../components/ui/modal';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
+import { SearchInput } from '../../components/ui/inputs';
 import { Tag } from '../../components/ui/Tag';
 import { useInbox } from '../../context/InboxContext';
 
@@ -603,26 +604,15 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                 {step === 'list' && (
                     <div className="flex h-full flex-col overflow-hidden">
                         <div className="px-4 pt-3 pb-2.5 flex-shrink-0 space-y-2 border-b border-gray-50">
-                            <BaseInput
+                            <SearchInput
                                 ref={searchRef}
-                                type="search"
                                 appearance="toolbar"
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
-                                    placeholder="Search templates by name or type..."
-                                leftIcon={<Search size={13} />}
-                                rightIcon={
-                                    query ? (
-                                        <IconButton
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            icon={<X size={11} />}
-                                            onClick={() => setQuery('')}
-                                            aria-label="Clear template search"
-                                        />
-                                    ) : undefined
-                                }
+                                placeholder="Search templates by name or type..."
+                                searchIconSize={13}
+                                onClear={() => setQuery('')}
+                                clearAriaLabel="Clear template search"
                             />
                             <div className="flex gap-1.5 overflow-x-auto pb-0.5">
                                 {(['all', ...cats] as const).map(c => (

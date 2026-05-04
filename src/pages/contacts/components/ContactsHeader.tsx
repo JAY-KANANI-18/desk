@@ -1,10 +1,10 @@
-import { AlertCircle, CheckCircle2, MoreVertical, Plus, Search, X } from "@/components/ui/icons";
+import { AlertCircle, CheckCircle2, MoreVertical, Plus, X } from "@/components/ui/icons";
 import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
 import { MobileSheet } from "../../../components/ui/modal";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 import { IconButton } from "../../../components/ui/button/IconButton";
-import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { SearchInput } from "../../../components/ui/inputs";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { ContactsToast, SortOption } from "../types";
 
@@ -98,27 +98,15 @@ export function ContactsHeader({
           panel: (
             <div className="flex items-center gap-2">
               <div className="relative min-w-0 flex-1">
-                <BaseInput
+                <SearchInput
                   appearance="toolbar"
-                  type="search"
-                  inputMode="search"
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search contacts..."
                   value={searchQuery}
-                  leftIcon={<Search size={15} />}
+                  onClear={() => setSearchQuery("")}
+                  clearAriaLabel="Clear contact search"
                   aria-label="Search contacts"
                 />
-                {searchQuery ? (
-                  <IconButton
-                    icon={<X size={13} />}
-                    aria-label="Clear contact search"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setSearchQuery("")}
-                    type="button"
-                  />
-                ) : null}
               </div>
               <IconButton
                 aria-label="Contact actions"
@@ -169,26 +157,16 @@ export function ContactsHeader({
 
       <div className="hidden md:flex md:items-center md:gap-3">
         <div className="relative w-full md:w-72 lg:w-80">
-          <BaseInput
-            type="search"
+          <SearchInput
             appearance="toolbar"
-            leftIcon={<Search size={16} />}
+            searchIconSize={16}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search contacts..."
+            onClear={() => setSearchQuery("")}
+            clearAriaLabel="Clear contact search"
             aria-label="Search contacts"
           />
-          {searchQuery && (
-            <IconButton
-              type="button"
-              icon={<X size={14} />}
-              aria-label="Clear contact search"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2"
-            />
-          )}
         </div>
 
         <div className="ml-auto flex items-center gap-2">

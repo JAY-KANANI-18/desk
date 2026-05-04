@@ -3,7 +3,6 @@ import {
   MoreVertical,
   Pencil,
   Plus,
-  Search,
   Trash2,
   UserRoundPlus,
 } from "@/components/ui/icons";
@@ -24,7 +23,7 @@ import { Tag } from "../../../components/ui/Tag";
 import { Button } from "../../../components/ui/button/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { FloatingActionButton } from "../../../components/ui/FloatingActionButton";
-import { BaseInput } from "../../../components/ui/inputs";
+import { BaseInput, SearchInput } from "../../../components/ui/inputs";
 import { CenterModal } from "../../../components/ui/Modal";
 import { BaseSelect } from "../../../components/ui/select/BaseSelect";
 import type { SelectOption } from "../../../components/ui/select/shared";
@@ -545,13 +544,13 @@ export const WorkspaceUsers = () => {
     isMobile
       ? {
           panel: (
-            <BaseInput
-              type="search"
+            <SearchInput
               appearance="toolbar"
-              leftIcon={<Search size={15} />}
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
               placeholder="Search members..."
+              onClear={() => setSearchDraft("")}
+              clearAriaLabel="Clear member search"
               aria-label="Search members"
             />
           ),
@@ -567,13 +566,13 @@ export const WorkspaceUsers = () => {
     <div>
       <div className="mb-4 hidden items-center justify-between md:flex">
         <div className="w-full max-w-xs">
-          <BaseInput
-            type="search"
+          <SearchInput
             appearance="toolbar"
-            leftIcon={<Search size={15} />}
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
             placeholder="Search members..."
+            onClear={() => setSearchDraft("")}
+            clearAriaLabel="Clear member search"
             aria-label="Search members"
           />
         </div>
