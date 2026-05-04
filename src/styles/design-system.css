@@ -96,6 +96,7 @@
   --appearance-muted: #64748b;
   --appearance-faint: #94a3b8;
   --appearance-topbar-bg: rgb(255 255 255 / 0.95);
+  --appearance-overlay: rgb(15 23 42 / 0.35);
   --appearance-shadow: 0 18px 45px rgb(15 23 42 / 0.08);
   --message-outgoing-bg: var(--color-primary);
   --message-outgoing-text: #ffffff;
@@ -140,6 +141,7 @@ html[data-appearance-theme="dark"] {
   --appearance-muted: #8b93a8;
   --appearance-faint: #5a6175;
   --appearance-topbar-bg: #13161f;
+  --appearance-overlay: rgb(0 0 0 / 0.58);
   --appearance-shadow: 0 18px 55px rgb(0 0 0 / 0.28);
   --message-outgoing-bg: #3d3f8f;
   --message-outgoing-text: #c7d0ff;

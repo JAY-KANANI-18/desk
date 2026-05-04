@@ -607,7 +607,7 @@ export function MobileSheet({
           <div
             id={backdropId}
             data-motion={motionState}
-            className={`mobile-sheet-backdrop fixed inset-0 bg-slate-950/35 backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
+            className={`mobile-sheet-backdrop fixed inset-0 bg-[var(--appearance-overlay)] backdrop-blur-[2px] transition-opacity ease-out md:hidden ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             style={{
@@ -678,14 +678,14 @@ export function MobileSheet({
             onPointerUp={onDragEnd}
             onPointerCancel={onDragEnd}
             className={`
-              flex flex-col overflow-hidden bg-white
+              flex flex-col overflow-hidden bg-[var(--appearance-surface)]
               focus:outline-none
               ${
                 fullScreen
                   ? "h-[100dvh] max-h-[100dvh]"
                   : `max-h-[88vh] min-h-[42vh] rounded-t-[28px]
-                     shadow-[0_-18px_50px_rgba(15,23,42,0.18)]
-                     ${borderless ? "" : "border border-slate-200"}`
+                     shadow-[var(--appearance-shadow)]
+                     ${borderless ? "" : "border border-[var(--appearance-border)]"}`
               }
             `}
             style={{
@@ -699,7 +699,7 @@ export function MobileSheet({
             <div
               className={`
                 flex-shrink-0 cursor-grab px-4 active:cursor-grabbing
-                ${borderless ? "" : "border-b border-slate-100"}
+                ${borderless ? "" : "border-b border-[var(--appearance-border)]"}
                 ${
                   fullScreen
                     ? "pb-3 pt-[max(1rem,env(safe-area-inset-top))]"
@@ -714,7 +714,7 @@ export function MobileSheet({
             >
               {/* Visual pill */}
               <div className="mb-3 flex justify-center">
-                <div className="h-1.5 w-14 rounded-full bg-slate-200 transition-colors active:bg-slate-300" />
+                <div className="h-1.5 w-14 rounded-full bg-[var(--appearance-border)] transition-colors active:bg-[var(--appearance-faint)]" />
               </div>
 
               {/* Title row */}
@@ -732,9 +732,9 @@ export function MobileSheet({
                         onClick={onClose}
                         className={`
                           inline-flex h-10 w-10 items-center justify-center
-                          rounded-2xl text-slate-500 transition-colors
-                          hover:bg-slate-100
-                          ${borderless ? "" : "border border-slate-200"}
+                          rounded-2xl text-[var(--appearance-muted)] transition-colors
+                          hover:bg-[var(--appearance-subtle)]
+                          ${borderless ? "" : "border border-[var(--appearance-border)]"}
                         `}
                         style={classDrivenIconButtonStyle}
                         variant="unstyled"
@@ -767,7 +767,7 @@ export function MobileSheet({
                 className={`
                   flex-shrink-0 px-4 py-3
                   pb-[max(0.75rem,env(safe-area-inset-bottom))]
-                  ${borderless ? "" : "border-t border-slate-100"}
+                  ${borderless ? "" : "border-t border-[var(--appearance-border)]"}
                 `}
               >
                 {footer}
