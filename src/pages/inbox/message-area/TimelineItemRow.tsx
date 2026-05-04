@@ -91,6 +91,7 @@ export function TimelineItemRow({
           activity={item.act}
           searchTerm={msgSearch || undefined}
           currentUser={currentUser}
+          workspaceUsers={workspaceUsers}
         />
       </div>
     );

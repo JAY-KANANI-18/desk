@@ -27,11 +27,13 @@ import { Template, TemplateModal } from './TemplateModal';
 import { Button } from '../../components/ui/Button';
 import {
   ChannelSelectMenu,
-  MentionSuggestionMenu,
-  VariableSuggestionMenu,
   type MentionSuggestionOption,
 } from '../../components/ui/Select';
-import { TextareaInput } from '../../components/ui/inputs/TextareaInput';
+import {
+  extractMentionIds,
+  VariableTextEditor,
+  type VariableTextEditorHandle,
+} from '../../components/ui/variable-editor';
 import { useInbox } from '../../context/InboxContext';
 import type { SharedInputProps } from './InputArea';
 import type { ReplyContext } from './MessageArea';
@@ -42,7 +44,6 @@ import {
   useInboxAiComposer,
 } from './composerShared';
 import { useWorkspace } from '../../context/WorkspaceContext';
-import { extractMentionIds } from './utils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useDisclosure } from '../../hooks/useDisclosure';
 import { findMatchingContactChannel, getContactScopedChannels, isSameChannel } from './channelUtils';
@@ -175,30 +176,14 @@ export function ReplyInput({
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const emojiMenu = useDisclosure();
   const [showRecorder, setShowRecorder] = useState(false);
-  const [variableQuery, setVariableQuery] = useState<string | null>(null);
-  const [variableHighlight, setVariableHighlight] = useState(0);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionHighlight, setMentionHighlight] = useState(0);
   const templateModal = useDisclosure();
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composerEditorRef = useRef<VariableTextEditorHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
-  const variableDropdownRef = useRef<HTMLDivElement>(null);
   const aiPromptMenuRef = useRef<HTMLDivElement>(null);
-  const mentionDropdownRef = useRef<HTMLDivElement>(null);
-
-  const resizeTextarea = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const minHeight = isMobile ? 52 : 44;
-    const maxHeight = isMobile ? 132 : 200;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)}px`;
-  }, [isMobile]);
 
   const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
@@ -208,8 +193,7 @@ export function ReplyInput({
     setDraft: (text) => {
       setMessage(text);
       requestAnimationFrame(() => {
-        resizeTextarea();
-        textareaRef.current?.focus();
+        composerEditorRef.current?.focus();
       });
     },
     switchToReply: () => onInputModeChange('reply'),
@@ -306,19 +290,7 @@ export function ReplyInput({
     selectedConversation?.contact?.email ||
     undefined;
 
-  const filteredVariables = variableQuery !== null
-    ? variables.filter(v =>
-      v.key.toLowerCase().includes(variableQuery.toLowerCase()) ||
-      v.label.toLowerCase().includes(variableQuery.toLowerCase())
-    )
-    : [];
-  const filteredMentionUsers = mentionQuery !== null
-    ? (workspaceUsers ?? []).filter((user) => {
-      const label = workspaceUserLabel(user);
-      return label.toLowerCase().includes(mentionQuery.toLowerCase());
-    })
-    : [];
-  const mentionOptions = filteredMentionUsers.map((user) => {
+  const mentionOptions = (workspaceUsers ?? []).map((user) => {
     const status = getMentionStatus(user);
 
     return {
@@ -339,14 +311,6 @@ export function ReplyInput({
         aiComposer.setAiPromptMenuOpen(false);
         aiComposer.setActivePromptParent(null);
       }
-      if (
-        variableDropdownRef.current && !variableDropdownRef.current.contains(e.target as Node) &&
-        textareaRef.current && !textareaRef.current.contains(e.target as Node)
-      ) setVariableQuery(null);
-      if (
-        mentionDropdownRef.current && !mentionDropdownRef.current.contains(e.target as Node) &&
-        textareaRef.current && !textareaRef.current.contains(e.target as Node)
-      ) setMentionQuery(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -358,8 +322,6 @@ export function ReplyInput({
     aiComposer.setAiPromptMenuOpen(false);
     aiComposer.setActivePromptParent(null);
     setShowRecorder(false);
-    setVariableQuery(null);
-    setMentionQuery(null);
   }, [aiComposer, emojiMenu, isReplyComposerLocked]);
 
   useEffect(() => {
@@ -367,101 +329,6 @@ export function ReplyInput({
     if (availableReplyChannels.some((channel) => isSameChannel(channel, selectedChannel))) return;
     onChannelChange(availableReplyChannels[0]);
   }, [availableReplyChannels, isNote, onChannelChange, selectedChannel]);
-
-  useEffect(() => {
-    resizeTextarea();
-  }, [message, resizeTextarea]);
-
-  // auto-grow textarea
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (isReplyComposerLocked) return;
-    aiComposer.clearAiComposerNotice();
-    const val = e.target.value;
-    setMessage(val);
-    const cursorPos = e.target.selectionStart ?? val.length;
-    const textBeforeCursor = val.slice(0, cursorPos);
-    const mentionMatch = isNote ? textBeforeCursor.match(/@([\w.-]*)$/) : null;
-    if (mentionMatch) {
-      setMentionQuery(mentionMatch[1]);
-      setMentionHighlight(0);
-      setVariableQuery(null);
-    } else if (isNote && textBeforeCursor.endsWith('@')) {
-      setMentionQuery('');
-      setMentionHighlight(0);
-      setVariableQuery(null);
-    } else {
-      setMentionQuery(null);
-      const varMatch = textBeforeCursor.match(/\$(\w*)$/);
-      if (varMatch) { setVariableQuery(varMatch[1]); setVariableHighlight(0); }
-      else setVariableQuery(null);
-    }
-    // auto-grow
-    resizeTextarea();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (isReplyComposerLocked) return;
-    if (isAiBusy) {
-      e.preventDefault();
-      return;
-    }
-    if (mentionQuery !== null && filteredMentionUsers.length > 0) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionHighlight(h => Math.min(h + 1, filteredMentionUsers.length - 1)); return; }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionHighlight(h => Math.max(h - 1, 0)); return; }
-      if (e.key === 'Enter') { e.preventDefault(); insertMention(filteredMentionUsers[mentionHighlight]); return; }
-      if (e.key === 'Escape') { setMentionQuery(null); return; }
-    }
-    if (variableQuery !== null && filteredVariables.length > 0) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setVariableHighlight(h => Math.min(h + 1, filteredVariables.length - 1)); return; }
-      if (e.key === 'ArrowUp') { e.preventDefault(); setVariableHighlight(h => Math.max(h - 1, 0)); return; }
-      if (e.key === 'Enter') { e.preventDefault(); insertVariable(filteredVariables[variableHighlight]); return; }
-      if (e.key === 'Escape') { setVariableQuery(null); return; }
-    }
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
-  };
-
-  const insertMention = (user: WorkspaceUserLike) => {
-    if (!textareaRef.current) return;
-    const cursorPos = textareaRef.current.selectionStart ?? message.length;
-    const textBeforeCursor = message.slice(0, cursorPos);
-    const mentionMatch = textBeforeCursor.match(/@([\w.-]*)$/) || textBeforeCursor.match(/@$/);
-    if (!mentionMatch) return;
-
-    const start = cursorPos - mentionMatch[0].length;
-    const label = workspaceUserLabel(user);
-    const insertion = `@[${user.id}|${label}] `;
-    const newText = message.slice(0, start) + insertion + message.slice(cursorPos);
-    setMessage(newText);
-    setMentionQuery(null);
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newPos = start + insertion.length;
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(newPos, newPos);
-      }
-    }, 0);
-  };
-
-  const insertVariable = (variable: typeof variables[0]) => {
-    if (!textareaRef.current) return;
-    const cursorPos = textareaRef.current.selectionStart ?? message.length;
-    const textBeforeCursor = message.slice(0, cursorPos);
-    const varMatch = textBeforeCursor.match(/\$(\w*)$/);
-    if (varMatch) {
-      const start = cursorPos - varMatch[0].length;
-      const insertion = `{{${variable.key}}}`;
-      const newText = message.slice(0, start) + insertion + message.slice(cursorPos);
-      setMessage(newText);
-      setVariableQuery(null);
-      setTimeout(() => {
-        if (textareaRef.current) {
-          const newPos = start + insertion.length;
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newPos, newPos);
-        }
-      }, 0);
-    }
-  };
 
   const addFiles = async (files: FileList | null) => {
     if (isReplyComposerLocked) return;
@@ -519,7 +386,6 @@ export function ReplyInput({
     setMessage('');
     setAttachedFiles([]);
     onClearReplyContext?.();
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleAudioSend = async (audioBlob: Blob) => {
@@ -556,8 +422,6 @@ export function ReplyInput({
         template
       }
     } as any);
-
-    // setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
   const templateContextValues: Record<string, string> = {
@@ -568,6 +432,14 @@ export function ReplyInput({
   /* ── bg ── */
   const actionButtonSize = 'xs';
   const borderClr = isNote ? 'border-amber-300' : 'border-gray-300';
+  const composerPlaceholder = isAiBusy
+    ? 'AI is working...'
+    : isNote
+      ? "Write an internal note... type '@' to mention teammates or '$' for variables"
+      : "Reply... type '$' for variables";
+  const composerPlaceholderClassName = isNote
+    ? 'left-3 top-2 text-[13px] leading-6 text-amber-400 sm:left-4 sm:text-sm sm:leading-relaxed'
+    : 'left-3 top-2 text-[13px] leading-6 text-gray-400 sm:left-4 sm:text-sm sm:leading-relaxed';
   const channelSelector = !isNote && activeComposerChannel ? (
     <ChannelSelectMenu
       channels={availableReplyChannels}
@@ -617,51 +489,30 @@ export function ReplyInput({
 
           {/* Variable dropdown */}
           <div className="relative">
-            <MentionSuggestionMenu
-              ref={mentionDropdownRef}
-              isOpen={mentionQuery !== null}
-              query={mentionQuery ?? ""}
-              title="Mention a teammate"
-              options={mentionOptions}
-              highlightedIndex={mentionHighlight}
-              onHighlightChange={setMentionHighlight}
-              onSelect={(option) => {
-                const user = filteredMentionUsers.find((item) => String(item.id) === option.id);
-                if (user) {
-                  insertMention(user);
-                }
-              }}
-              showEmptyState={Boolean(mentionQuery)}
-            />
-            <VariableSuggestionMenu
-              ref={variableDropdownRef}
-              isOpen={variableQuery !== null}
-              query={variableQuery ?? ""}
-              options={filteredVariables}
-              highlightedIndex={variableHighlight}
-              onHighlightChange={setVariableHighlight}
-              onSelect={insertVariable}
-              showEmptyState={Boolean(variableQuery)}
-            />
-
-            {/* Textarea */}
+            {/* Composer editor */}
             <AiComposerInlineStatus
               loadingAction={aiComposer.aiLoadingAction}
               notice={aiComposer.aiComposerNotice}
             />
             {!isReplyComposerLocked ? (
-              <TextareaInput
-              ref={textareaRef}
-              value={message}
-              onChange={handleMessageChange}
-              onKeyDown={handleKeyDown}
-              readOnly={isAiBusy}
-              placeholder={isAiBusy ? "AI is working..." : isNote ? "Write an internal note… type '@' to mention teammates" : "Reply… type '$' for variables"}
-              appearance={isNote ? 'composer-note' : 'composer'}
-              autoResize
-              rows={1}
-              maxRows={isMobile ? 4 : 7}
-            />
+              <VariableTextEditor
+                ref={composerEditorRef}
+                value={message}
+                onChange={(nextMessage) => {
+                  aiComposer.clearAiComposerNotice();
+                  setMessage(nextMessage);
+                }}
+                variables={variables}
+                mentionOptions={isNote ? mentionOptions : undefined}
+                mentionTitle="Mention a teammate"
+                readOnly={isAiBusy}
+                placeholder={composerPlaceholder}
+                placeholderClassName={composerPlaceholderClassName}
+                appearance={isNote ? 'composer-note' : 'composer'}
+                aria-label={isNote ? "Internal note" : "Reply message"}
+                onSubmit={handleSend}
+                editorClassName="min-h-[40px] max-h-[132px] overflow-y-auto !py-2 sm:max-h-[180px] sm:!py-2"
+              />
             ) : null}
       
           </div>
@@ -751,15 +602,7 @@ export function ReplyInput({
                 <Button
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    const pos = textareaRef.current?.selectionStart ?? message.length;
-                    const nextValue = message.slice(0, pos) + '@' + message.slice(pos);
-                    setMessage(nextValue);
-                    setMentionQuery('');
-                    setMentionHighlight(0);
-                    setTimeout(() => {
-                      textareaRef.current?.focus();
-                      textareaRef.current?.setSelectionRange(pos + 1, pos + 1);
-                    }, 0);
+                    composerEditorRef.current?.insertText('@');
                   }}
                   variant="soft-warning"
                   size="xs"

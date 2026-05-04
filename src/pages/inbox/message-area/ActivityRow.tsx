@@ -21,6 +21,18 @@ import type { ActivityResponse } from "./types";
 import { extractMentionLabels, renderCommentText } from "../utils";
 import { formatMsgTime, highlightText } from "./helpers";
 
+type MentionableUser = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+};
+
+function getMentionUserLabel(user: MentionableUser | undefined, fallback: string) {
+  if (!user) return fallback;
+  return [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.email || fallback;
+}
+
 const ACTIVITY_CONFIG: Record<
   string,
   {
@@ -144,10 +156,12 @@ export function ActivityRow({
   activity,
   searchTerm,
   currentUser,
+  workspaceUsers,
 }: {
   activity: ActivityResponse;
   searchTerm?: string;
   currentUser: any;
+  workspaceUsers?: MentionableUser[] | null;
 }) {
   const cfg = ACTIVITY_CONFIG[activity.eventType] ?? {
     icon: RefreshCw,
@@ -159,6 +173,16 @@ export function ActivityRow({
     const text = activity.metadata?.text as string | undefined;
     const mentionIds = (activity.metadata?.mentionedUserIds ?? []) as string[];
     const mentionLabels = extractMentionLabels(text ?? "");
+    const actorLabel = activity.actor
+      ? currentUser.id === activity.actor.id
+        ? "You"
+        : activity.actor.name
+      : activity.actorType === "automation"
+        ? "Automation"
+        : "System";
+    const workspaceUserById = new Map(
+      (workspaceUsers ?? []).map((user) => [String(user.id), user]),
+    );
     return (
       <div className="flex justify-center my-4 px-4">
         <div className="w-full max-w-md bg-amber-50 border border-amber-200 rounded-xl overflow-hidden shadow-sm">
@@ -168,13 +192,9 @@ export function ActivityRow({
               Internal Note
             </span>
             <div className="flex items-center gap-1.5 ml-auto">
-              {activity.actor && (
-                <span className="text-[11px] font-medium text-amber-800">
-                  {currentUser.id === activity.actor.id
-                    ? "You"
-                    : activity.actor.name}
-                </span>
-              )}
+              <span className="text-[11px] font-medium text-amber-800">
+                {actorLabel}
+              </span>
               <span className="text-[10px] text-amber-600/70 ml-1">{time}</span>
             </div>
           </div>
@@ -193,7 +213,10 @@ export function ActivityRow({
                     key: mention.userId,
                     label: mention.displayName,
                   }))
-                : mentionIds.map((uid) => ({ key: uid, label: uid }))).map(
+                : mentionIds.map((uid) => ({
+                    key: uid,
+                    label: getMentionUserLabel(workspaceUserById.get(String(uid)), uid),
+                  }))).map(
                 (mention) => (
                   <UiTag
                     key={mention.key}

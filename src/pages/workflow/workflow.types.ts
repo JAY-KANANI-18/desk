@@ -383,6 +383,7 @@ export interface CloseConversationData {
 
 export interface AddCommentData {
   comment: string; // supports $variables
+  mentionedUserIds?: string[];
 }
 
 export interface JumpToData {

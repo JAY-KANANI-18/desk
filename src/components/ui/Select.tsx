@@ -136,6 +136,7 @@ export type {
   UserSelectOption,
   UserAssignSelectProps,
   VariableSuggestionMenuProps,
+  VariableSuggestionMenuPlacement,
   VariableSuggestionOption,
   WorkspaceTagManagerLabelAppearance,
   WorkspaceTagManagerProps,

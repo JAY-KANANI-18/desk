@@ -72,6 +72,41 @@ const ASSIGNEE_OPTIONS = [
   { value: "unassigned", label: "Unassigned" },
 ];
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function getLocalDayStart(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function formatConversationListTimestamp(value?: string | number | null) {
+  if (value == null) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffDays = Math.round((getLocalDayStart(now) - getLocalDayStart(date)) / DAY_MS);
+
+  if (diffDays <= 0) {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  if (diffDays === 1) return "Yesterday";
+
+  if (diffDays < 7) {
+    return date.toLocaleDateString("en-GB", { weekday: "long" });
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+  });
+}
+
 function FilterPill({
   label,
   onRemove,
@@ -472,6 +507,9 @@ useEffect(() => {
           const channel = channelConfig[channelType] ?? channelConfig.email;
           const contact = conversation.contact;
           const lastMessage = conversation.lastMessage;
+          const timestampLabel = formatConversationListTimestamp(
+            conversation.lastMessageAt ?? lastMessage?.createdAt ?? conversation.lastMessageTime,
+          );
           const isUnread = conversation.unreadCount > 0;
           const isSelected = selectedConversation?.id === conversation.id;
           const contactName = `${contact?.firstName ?? ""} ${contact?.lastName ?? ""}`.trim() || "Unknown contact";
@@ -533,13 +571,8 @@ useEffect(() => {
                       />
                     </span>
                     <span className="flex flex-shrink-0 items-center gap-1.5">
-                      <span className={`text-xs ${isUnread ? "font-semibold text-[var(--color-primary)]" :  "text-gray-400"}`}>
-                        {conversation.lastMessageAt
-                          ? new Date(conversation.lastMessageAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : ""}
+                      <span className={`whitespace-nowrap text-xs ${isUnread ? "font-semibold text-[var(--color-primary)]" :  "text-gray-400"}`}>
+                        {timestampLabel}
                       </span>
                     </span>
                   </span>

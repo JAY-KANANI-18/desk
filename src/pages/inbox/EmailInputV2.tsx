@@ -46,6 +46,7 @@ import { workspaceUserLabel } from './contact-sidebar/utils';
 import type { WorkspaceUserLike } from './contact-sidebar/types';
 
 type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl: string };
+type SelectedMention = { id: string; label: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
 
 function getMentionStatus(user: WorkspaceUserLike): MentionSuggestionOption['status'] | undefined {
@@ -110,6 +111,7 @@ export function EmailInput({
   const [showBcc, setShowBcc] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [draftText, setDraftText] = useState('');
+  const [selectedMentions, setSelectedMentions] = useState<SelectedMention[]>([]);
   const [trigger, setTrigger] = useState<TriggerState>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
   const emojiMenu = useDisclosure();
@@ -245,6 +247,7 @@ export function EmailInput({
     setShowBcc(false);
     setAttachedFiles([]);
     setTrigger(null);
+    setSelectedMentions([]);
     setDraftText('');
     if (editorRef.current) editorRef.current.innerHTML = '';
     onClearReplyContext?.();
@@ -260,6 +263,9 @@ export function EmailInput({
     aiComposer.clearAiComposerNotice();
     const text = editorRef.current?.innerText?.replace(/\n{3,}/g, '\n\n') ?? '';
     setDraftText(text.trimEnd());
+    setSelectedMentions((prev) =>
+      prev.filter((mention) => text.includes(`@${mention.label}`)),
+    );
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) {
       setTrigger(null);
@@ -324,7 +330,13 @@ export function EmailInput({
 
   const insertMention = useCallback((user: WorkspaceUserLike) => {
     const label = workspaceUserLabel(user);
-    insertAtSelection(`@[${user.id}|${label}] `, /@([\w.-]*)$/);
+    setSelectedMentions((prev) => {
+      const nextMention = { id: String(user.id), label };
+      return prev.some((mention) => mention.id === nextMention.id)
+        ? prev.map((mention) => (mention.id === nextMention.id ? nextMention : mention))
+        : [...prev, nextMention];
+    });
+    insertAtSelection(`@${label} `, /@([\w.-]*)$/);
   }, [insertAtSelection]);
 
   const addFiles = async (files: FileList | null) => {
@@ -357,7 +369,14 @@ export function EmailInput({
     if (isNote) {
       onSendNote({
         text: draftText.trim(),
-        mentionedUserIds: extractMentionIds(draftText),
+        mentionedUserIds: Array.from(
+          new Set([
+            ...extractMentionIds(draftText),
+            ...selectedMentions
+              .filter((mention) => draftText.includes(`@${mention.label}`))
+              .map((mention) => mention.id),
+          ]),
+        ),
       } as any);
     } else {
       const attachments: MediaAttachment[] = attachedFiles.map((file) => ({
@@ -403,6 +422,7 @@ export function EmailInput({
     setDraftText('');
     setAttachedFiles([]);
     setTrigger(null);
+    setSelectedMentions([]);
     if (editorRef.current) editorRef.current.innerHTML = '';
     if (!isNote) setSubject('');
     onClearReplyContext?.();

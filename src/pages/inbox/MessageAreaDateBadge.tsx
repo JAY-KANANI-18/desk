@@ -2,7 +2,7 @@ import { Tag } from "../../components/ui/Tag";
 
 export function MessageAreaDateBadge({ label }: { label: string }) {
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-center py-2">
+    <div className="pointer-events-none sticky top-0 z-40 flex items-center justify-center py-2">
       <Tag
         label={label}
         size="sm"

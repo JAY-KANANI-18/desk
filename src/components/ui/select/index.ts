@@ -36,6 +36,7 @@ export type {
 export { VariableSuggestionMenu } from "./VariableSuggestionMenu";
 export type {
   VariableSuggestionMenuProps,
+  VariableSuggestionMenuPlacement,
   VariableSuggestionOption,
 } from "./VariableSuggestionMenu";
 export { MentionSuggestionMenu } from "./MentionSuggestionMenu";

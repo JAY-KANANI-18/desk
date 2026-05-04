@@ -3,6 +3,7 @@ import { AtSign } from "@/components/ui/icons";
 import { Avatar } from "../Avatar";
 import { Tag } from "../Tag";
 import { SelectEmptyState, SelectList, SelectOptionRow } from "./shared";
+import type { VariableSuggestionMenuPlacement } from "./VariableSuggestionMenu";
 
 export type MentionSuggestionStatus = "online" | "offline" | "away" | "busy";
 
@@ -25,6 +26,7 @@ export interface MentionSuggestionMenuProps {
   title?: string;
   showEmptyState?: boolean;
   emptyMessage?: string;
+  placement?: VariableSuggestionMenuPlacement;
   className?: string;
 }
 
@@ -57,6 +59,7 @@ export const MentionSuggestionMenu = forwardRef<
       title = "Mention teammate",
       showEmptyState = false,
       emptyMessage,
+      placement = "top",
       className = "",
     },
     ref,
@@ -72,10 +75,15 @@ export const MentionSuggestionMenu = forwardRef<
       return null;
     }
 
+    const placementClassName =
+      placement === "bottom"
+        ? "top-full mt-[var(--spacing-xs)]"
+        : "bottom-full mb-[var(--spacing-xs)]";
+
     return (
       <div
         ref={ref}
-        className={`absolute bottom-full left-0 z-[var(--z-dropdown)] mb-[var(--spacing-xs)] w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md ${className}`}
+        className={`absolute left-0 z-[var(--z-dropdown)] w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md ${placementClassName} ${className}`}
       >
         <div className="flex items-center gap-[var(--spacing-sm)] border-b border-[var(--color-gray-100)] px-[var(--spacing-md)] py-[var(--spacing-sm)]">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-amber-50 text-[var(--color-warning)]">

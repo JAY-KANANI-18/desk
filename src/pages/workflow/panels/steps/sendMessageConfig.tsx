@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, ToggleRow } from "../PanelShell";
 import { Upload, X } from "@/components/ui/icons";
@@ -7,7 +7,8 @@ import { useChannel } from "../../../../context/ChannelContext";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
 import { ChannelSelectMenu } from "../../../../components/ui/Select";
-import { useDisclosure } from "../../../../hooks/useDisclosure";
+import { VariableTextEditor } from "../../../../components/ui/variable-editor";
+import type { VariableSuggestionOption } from "../../../../components/ui/Select";
 
 
 
@@ -23,6 +24,11 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
+
+const workflowVariableOptions: VariableSuggestionOption[] = VARIABLE_OPTIONS.map((key) => ({
+  key,
+  label: key,
+}));
 
 function AttachmentIcon({ type }: { type: string }) {
   // simple icon based on type
@@ -129,10 +135,10 @@ export function SendMessageConfig({ step, onChange }: SP) {
           <Field
             label="Content"
             required
-            hint="Type $ to insert variables. Example: {{$first_name}}"
+            hint="Type $ to insert variables. Example: {{contact.first_name}}"
           >
             <div className="relative">
-              <VariableEditor
+              <VariableTextEditor
                 value={data.defaultMessage.text ?? ""}
                 onChange={(v) =>
                   u({
@@ -142,8 +148,10 @@ export function SendMessageConfig({ step, onChange }: SP) {
                     },
                   })
                 }
-                variables={VARIABLE_OPTIONS}
+                variables={workflowVariableOptions}
                 placeholder="Type your message..."
+                menuPlacement="bottom"
+                editorClassName="min-h-[110px] w-full rounded-xl border border-[var(--color-gray-300)] px-3 py-2 text-sm text-[var(--color-gray-700)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
               />
 
             </div>
@@ -252,6 +260,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
   );
 }
 
+/*
 type VariableEditorProps = {
   value: string;
   onChange: (value: string) => void;
@@ -462,3 +471,4 @@ export function VariableEditor({
     </div>
   );
 }
+*/

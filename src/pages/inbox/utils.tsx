@@ -32,11 +32,11 @@ export function renderCommentText(text: string) {
   const parts = text.split(/(@\[[^|\]]+\|[^\]]+\]|@[A-Za-z][A-Za-z ]*)/g);
   return parts.map((part, i) =>
     part.startsWith('@[') ? (
-      <span key={i} className="inline-flex items-center gap-0.5 text-blue-600 font-semibold bg-blue-50 rounded px-1 py-0.5 text-xs">
+      <span key={i} className="font-semibold text-blue-600">
         @{part.replace(/^@\[[^|\]]+\|([^\]]+)\]$/, '$1')}
       </span>
     ) : part.startsWith('@') ? (
-      <span key={i} className="inline-flex items-center gap-0.5 text-blue-600 font-semibold bg-blue-50 rounded px-1 py-0.5 text-xs">
+      <span key={i} className="font-semibold text-blue-600">
         {part}
       </span>
     ) : (

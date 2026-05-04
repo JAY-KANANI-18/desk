@@ -1062,6 +1062,7 @@ Props:
 - `onSelect: (option) => void`; required; insertion callback.
 - `showEmptyState?: boolean`; default `false`; shows no-results state when no options exist.
 - `emptyMessage?: string`; default derived from query; empty-state text.
+- `placement?: "top" | "bottom"`; default `"top"`; opens above composer surfaces or below panel fields.
 - `className?: string`; default `""`; menu positioning override.
 
 Minimal:
@@ -1078,6 +1079,40 @@ Minimal:
 ```
 
 Migration note: replaces page-local composer variable dropdowns in reply, email, comment, note, and template editors.
+
+## VariableTextEditor
+
+Import path: `src/components/ui/variable-editor`.
+
+Use it for rich text composer fields that should insert non-editable `$variable` and optional `@teammate` tokens while storing raw `{{variable}}` and `@[userId|Name]` text.
+
+Do not use it for plain selected values or forms without variable insertion; use `TextareaInput` instead.
+
+Props:
+
+- `value: string`; required; raw text containing optional `{{variable}}` and `@[userId|Name]` tokens.
+- `onChange: (value: string) => void`; required; receives raw text with normalized variable and mention tokens.
+- `variables: Array<{ key: string; label: string; description?: string }>`; required; autocomplete options.
+- `mentionOptions?: Array<{ id: string; label: string; subtitle?: string; avatarSrc?: string; status?: "online" | "offline" | "away" | "busy"; statusLabel?: string }>`; default `[]`; teammate autocomplete options.
+- `mentionTitle?: string`; default `"Mention a teammate"`; mention menu header label.
+- `placeholder?: string`; default `"Type your message..."`; empty editor placeholder.
+- `readOnly?: boolean`; default `false`; prevents edits and keeps the current value visible.
+- `disabled?: boolean`; default `false`; disables editing.
+- `menuPlacement?: "top" | "bottom"`; default `"top"`; positions the variable menu.
+- `onSubmit?: () => void`; optional Ctrl/Cmd+Enter submit handler.
+- `editorClassName?: string`; optional editor surface classes for the owning composer or panel.
+
+Minimal:
+
+```tsx
+<VariableTextEditor
+  value={message}
+  onChange={setMessage}
+  variables={variableOptions}
+/>
+```
+
+Migration note: replaces page-local contenteditable variable editors and textarea-only variable token handling when chip behavior is required.
 
 ## MentionSuggestionMenu
 
@@ -1098,6 +1133,7 @@ Props:
 - `title?: string`; default `"Mention teammate"`; menu heading.
 - `showEmptyState?: boolean`; default `false`; shows no-results state when no options exist.
 - `emptyMessage?: string`; default derived from query; empty-state text.
+- `placement?: "top" | "bottom"`; default `"top"`; opens above composer surfaces or below panel fields.
 - `className?: string`; default `""`; menu positioning override.
 
 Minimal:
