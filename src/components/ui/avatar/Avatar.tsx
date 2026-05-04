@@ -83,6 +83,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
         ) : (
           <span
             aria-label={alt ?? name}
+            data-avatar-fallback-tone={fallbackTone}
             className={cx(
               "inline-flex h-full w-full items-center justify-center overflow-hidden font-semibold",
               fallbackToneClassNames[fallbackTone],

@@ -93,7 +93,7 @@ export const AppSidebar = ({
 
   return (
     <aside
-      className={`relative flex h-full flex-col  bg-white ${
+      className={`app-sidebar relative flex h-full flex-col bg-white ${
         isMobileDrawer
           ? "w-[280px] max-w-[calc(100vw-1.5rem)] rounded-[30px] border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
           : "w-20 border-r border-slate-200"

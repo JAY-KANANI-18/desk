@@ -140,7 +140,7 @@ export const Layout = () => {
 
   return (
     <MobileHeaderActionsContext.Provider value={mobileHeaderActionsContextValue}>
-    <div className="flex h-screen min-h-0 bg-slate-50 overflow-hidden">
+    <div className="app-shell flex h-screen min-h-0 overflow-hidden bg-slate-50">
       <div className="hidden md:flex md:flex-shrink-0">
         <AppSidebar />
       </div>
@@ -162,7 +162,7 @@ export const Layout = () => {
         <AppSidebar variant="mobile" onNavigate={() => setSidebarOpen(false)} />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="app-main-shell flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className={hideTopBarOnMobile ? "hidden md:block" : "block"}>
           <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
         </div>
@@ -180,7 +180,7 @@ export const Layout = () => {
             {mobileHeaderRegistration.panel}
           </div>
         ) : null}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="app-content-shell flex min-h-0 flex-1 flex-col overflow-hidden">
           <div
             className={`flex min-h-0 flex-1 flex-col ${
               hideTopBarOnMobile ? "" : "pb-[4.5rem] md:pb-0" 

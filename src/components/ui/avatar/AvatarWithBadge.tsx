@@ -39,10 +39,12 @@ export const AvatarWithBadge = forwardRef<HTMLSpanElement, AvatarWithBadgeProps>
     const badgeStyle: CSSProperties = {
       width: resolvedBadgeSize,
       height: resolvedBadgeSize,
-      backgroundColor: badgeSrc ? "white" : badgeAppearance.backgroundColor,
+      backgroundColor: badgeSrc
+        ? "var(--avatar-badge-bg, white)"
+        : badgeAppearance.backgroundColor,
       backgroundImage: badgeSrc ? undefined : badgeAppearance.backgroundImage,
-      color: badgeSrc ? "inherit" : badgeAppearance.color,
-      boxShadow: "0 0 0 2px white",
+      color: badgeSrc ? "inherit" : "var(--avatar-badge-fg, white)",
+      boxShadow: "0 0 0 2px var(--avatar-badge-ring, white)",
     };
 
     return (

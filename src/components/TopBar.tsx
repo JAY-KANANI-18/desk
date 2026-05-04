@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { BadgeCheck, Bell, HelpCircle } from "lucide-react";
+import { BadgeCheck, Bell, HelpCircle, Palette } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -16,6 +16,7 @@ import { UserMenu } from "./topbar/UserMenu";
 import { WorkspaceSwitcher } from "./topbar/WorkspaceSwitcher";
 import { ACTIVITY_STATUSES } from "./topbar/constants";
 import type { ActivityStatusOption } from "./topbar/types";
+import { AppearanceSettingsPanel } from "./appearance/AppearanceSettingsPanel";
 
 interface TopBarProps {
   onOpenSidebar?: () => void;
@@ -42,6 +43,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
   const showOnboarding = !dismissed && !isComplete;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showAppearance, setShowAppearance] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [activityStatus, setActivityStatus] =
     useState<ActivityStatusOption | null>(null);
@@ -81,6 +83,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
 
     setShowNotifications(true);
     setShowHelp(false);
+    setShowAppearance(false);
     closeUserMenu();
   }, [browserPermission, closeUserMenu, requestBrowserPermission]);
 
@@ -116,7 +119,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
   const userLabel = user?.firstName + user?.lastName || user?.email || "User";
 
   return (
-    <div className="flex min-h-[4rem] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur sm:px-4 md:relative md:z-40 md:px-6">
+    <div className="app-topbar flex min-h-[4rem] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-3 backdrop-blur sm:px-4 md:relative md:z-40 md:px-6">
       <div className="flex min-w-0 items-center gap-2">
         <WorkspaceSwitcher isMobile={isMobile} />
       </div>
@@ -164,6 +167,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
               onClick={() => {
                 setShowHelp((value) => !value);
                 setShowNotifications(false);
+                setShowAppearance(false);
                 closeUserMenu();
               }}
               aria-label="Help"
@@ -184,6 +188,36 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
               onClose={() => setShowHelp(false)}
             />
           )}
+        </div>
+
+        <div className="relative">
+          <Tooltip content="Appearance">
+            <Button
+              type="button"
+              variant="unstyled"
+              onClick={() => {
+                setShowAppearance((value) => !value);
+                setShowNotifications(false);
+                setShowHelp(false);
+                closeUserMenu();
+              }}
+              aria-label="Appearance settings"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                showAppearance
+                  ? "bg-gray-100 text-gray-700"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
+              style={classDrivenButtonStyle}
+              preserveChildLayout
+            >
+              <Palette size={20} />
+            </Button>
+          </Tooltip>
+          <AppearanceSettingsPanel
+            open={showAppearance}
+            isMobile={isMobile}
+            onClose={() => setShowAppearance(false)}
+          />
         </div>
 
         <div className="relative">
@@ -234,6 +268,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
                 setShowUserMenu((value) => !value);
                 setShowNotifications(false);
                 setShowHelp(false);
+                setShowAppearance(false);
               }}
               className="flex h-9 items-center gap-2 rounded-lg px-2 transition-colors hover:bg-gray-100"
               style={classDrivenButtonStyle}

@@ -1,10 +1,14 @@
+import type { PropsWithChildren } from "react";
 import { AuthProvider } from "../context/AuthContext";
+import { AppearanceProvider } from "../context/AppearanceContext";
 import { InnerProviders } from "./InnerProviders";
 
-export const AppProviders = ({ children }: any) => {
+export const AppProviders = ({ children }: PropsWithChildren) => {
   return (
-    <AuthProvider>
-      <InnerProviders>{children}</InnerProviders>
-    </AuthProvider>
+    <AppearanceProvider>
+      <AuthProvider>
+        <InnerProviders>{children}</InnerProviders>
+      </AuthProvider>
+    </AppearanceProvider>
   );
 };
