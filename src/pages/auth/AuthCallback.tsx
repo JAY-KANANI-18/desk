@@ -157,7 +157,7 @@ export const AuthCallback = () => {
           Need another link?{" "}
           <Link
             to="/auth/forgot-password"
-            className="font-medium text-indigo-600 transition hover:text-indigo-700"
+            className="font-medium text-[var(--color-primary)] transition hover:text-[var(--color-primary)]"
           >
             Request a new one
           </Link>

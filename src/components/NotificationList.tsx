@@ -32,10 +32,10 @@ const TYPE_CONFIG: Record<
   },
   mention: {
     icon: <AtSign size={15} />,
-    iconBg: 'bg-violet-100',
-    iconColor: 'text-violet-600',
-    border: 'border-violet-100',
-    progressColor: 'bg-violet-500',
+    iconBg: 'bg-[var(--color-primary-light)]',
+    iconColor: 'text-[var(--color-primary)]',
+    border: 'border-[var(--color-primary-light)]',
+    progressColor: 'bg-[var(--color-primary)]',
   },
 };
 

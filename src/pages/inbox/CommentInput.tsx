@@ -410,7 +410,7 @@ export function CommentInput({ conversationId, onSendMessage }: CommentInputProp
 
       <p className="mt-2 text-xs text-amber-500/80">
         Tip: use <kbd className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[10px] text-amber-600">@</kbd> to mention agents and{" "}
-        <kbd className="rounded bg-violet-100 px-1 py-0.5 font-mono text-[10px] text-violet-600">$</kbd> to insert variables.
+        <kbd className="rounded bg-[var(--color-primary-light)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-primary)]">$</kbd> to insert variables.
       </p>
 
       <input

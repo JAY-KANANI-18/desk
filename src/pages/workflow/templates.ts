@@ -61,7 +61,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
     category: 'welcome',
     tags: ['messaging', 'data-collection'],
     iconName: 'Mail',
-    color: 'bg-indigo-500',
+    color: 'bg-[var(--color-primary)]',
     defaultWorkflow: {
       config: {
         "trigger": {
@@ -1010,7 +1010,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
   //   tags: ['routing', 'messaging', 'assignment'],
   //   popular: true,
   //   iconName: 'Headphones',
-  //   color: 'bg-purple-500',
+  //   color: 'bg-[var(--color-primary)]',
   //   defaultWorkflow: { trigger: null, steps: [] },
   // },
   // {
@@ -1127,7 +1127,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
   //   category: 'routing',
   //   tags: ['routing', 'segmentation'],
   //   iconName: 'GitFork',
-  //   color: 'bg-indigo-500',
+  //   color: 'bg-[var(--color-primary)]',
   //   defaultWorkflow: { trigger: null, steps: [] },
   // },
   // {

@@ -57,7 +57,7 @@ export function ChannelBadge({
   const isLinked = linked && Boolean(connectPath);
   const rootClassName = [
     "group relative flex flex-col items-center gap-2.5 rounded-full no-underline outline-none",
-    "focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+    "focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-2",
     isLinked ? "cursor-pointer" : "cursor-default",
     className,
   ]

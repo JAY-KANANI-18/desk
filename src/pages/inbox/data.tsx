@@ -207,7 +207,7 @@ export const teamMembers = [
 
 export const teams = [
   { id: "t1", name: "Sales Team", color: "bg-blue-500" },
-  { id: "t2", name: "Support Team", color: "bg-purple-500" },
+  { id: "t2", name: "Support Team", color: "bg-[var(--color-primary)]" },
   { id: "t3", name: "Tech Team", color: "bg-orange-500" },
 ];
 
@@ -319,7 +319,7 @@ export const lifecycleItems = [
   { label: "New Lead", bg: "bg-blue-100", dot: "bg-blue-600" },
   { label: "Hot Lead", bg: "bg-orange-100", dot: "bg-orange-600" },
   { label: "Payment", bg: "bg-green-100", dot: "bg-green-600" },
-  { label: "Customer", bg: "bg-purple-100", dot: "bg-purple-600" },
+  { label: "Customer", bg: "bg-[var(--color-primary-light)]", dot: "bg-[var(--color-primary-hover)]" },
 ];
 
 export const WAVEFORM_BARS = [

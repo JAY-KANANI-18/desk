@@ -10,7 +10,7 @@ const activeRowClassName = 'opacity-100';
 const labelIconClassName = 'text-[#8b95a5]';
 const labelTextClassName = 'text-[10px] font-semibold uppercase text-[#5f6b7a]';
 const inactiveRowClassName =
-  'group/row -mx-2 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#f7f9fc] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1';
+  'group/row -mx-2 flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#f7f9fc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-1';
 const inactiveValueClassName = 'text-[13px] font-medium leading-snug text-[#1c2030]';
 const inactivePlaceholderClassName = 'text-[13px] font-medium leading-snug text-[#7b8494]';
 
@@ -189,7 +189,7 @@ export function ContactNameRow({
           type="button"
           tabIndex={isBlocked ? -1 : 0}
           aria-disabled={isBlocked || undefined}
-          className="min-w-0 max-w-[calc(100%-1.75rem)] rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+          className="min-w-0 max-w-[calc(100%-1.75rem)] rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-1"
           onClick={() => {
             if (!isBlocked) {
               onActivate(fieldKey);

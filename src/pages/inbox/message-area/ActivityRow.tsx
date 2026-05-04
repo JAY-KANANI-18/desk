@@ -44,7 +44,7 @@ const ACTIVITY_CONFIG: Record<
   },
   reopen: {
     icon: RefreshCw,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} reopened this conversation`,
   },
@@ -56,7 +56,7 @@ const ACTIVITY_CONFIG: Record<
   },
   assign_user: {
     icon: UserCheck,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} assigned this conversation to ${a.subjectUser?.name ?? "a teammate"}`,
   },
@@ -68,7 +68,7 @@ const ACTIVITY_CONFIG: Record<
   },
   assign_team: {
     icon: UserPlus,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} assigned this conversation to ${a.subjectTeam?.name ?? "a team"}`,
   },
@@ -80,7 +80,7 @@ const ACTIVITY_CONFIG: Record<
   },
   merge_contact: {
     icon: GitMerge,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} merged this contact`,
   },
@@ -97,7 +97,7 @@ const ACTIVITY_CONFIG: Record<
   },
   label_added: {
     icon: TagIcon,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} added label ${a.metadata?.label ?? ""}`,
   },
@@ -109,7 +109,7 @@ const ACTIVITY_CONFIG: Record<
   },
   priority_changed: {
     icon: TrendingUp,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a, currentUser) =>
       `${currentUser.id === a.actor?.id ? "You" : (a.actor?.name ?? "System")} set priority to ${a.metadata?.priority ?? ""}`,
   },
@@ -120,22 +120,22 @@ const ACTIVITY_CONFIG: Record<
   },
   assign_user_automation: {
     icon: Workflow,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a) => `Automation assigned this conversation`,
   },
   call_started: {
     icon: PhoneCall,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a) => `Call started`,
   },
   call_ended: {
     icon: PhoneCall,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a) => `Call ended`,
   },
   bot_handoff: {
     icon: ArrowRightLeft,
-    pill: "text-indigo-700 bg-indigo-50 border-indigo-200",
+    pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a) => `Bot handoff`,
   },
 };

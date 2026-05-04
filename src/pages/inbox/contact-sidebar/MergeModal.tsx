@@ -187,7 +187,7 @@ export function MergeModal({
       onClose={onCancel}
       title="Merge Contact"
       subtitle="Review and select information to be merged here."
-      headerIcon={<GitMerge size={18} className="text-indigo-600" />}
+      headerIcon={<GitMerge size={18} className="text-[var(--color-primary)]" />}
       size="lg"
       width={672}
       closeOnOverlayClick={false}
@@ -245,7 +245,7 @@ export function MergeModal({
                         <img src={channel.meta.icon} alt={channel.meta.label} className="w-5 h-5 rounded-full" />
                       ) : (
                         <span className="w-5 h-5 rounded-full bg-[#eef2ff] flex items-center justify-center">
-                          <Users size={11} className="text-indigo-600" />
+                          <Users size={11} className="text-[var(--color-primary)]" />
                         </span>
                       )}
                       <Tag
@@ -282,7 +282,7 @@ export function MergeModal({
                   <div className="mb-2 flex items-center gap-2">
                     <span className="text-[14px] font-medium text-[#374151]">{field.label}</span>
                     {!field.isTags && field.key === conflictField ? (
-                      <span className="text-[11px] text-indigo-600 font-medium">Matched field</span>
+                      <span className="text-[11px] text-[var(--color-primary)] font-medium">Matched field</span>
                     ) : null}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -310,10 +310,10 @@ export function MergeModal({
                           <div className="flex items-start gap-3">
                             <span
                               className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                chosen ? 'border-indigo-600' : 'border-[#9ca3af]'
+                                chosen ? 'border-[var(--color-primary)]' : 'border-[#9ca3af]'
                               }`}
                             >
-                              {chosen ? <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" /> : null}
+                              {chosen ? <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)]" /> : null}
                             </span>
                             <div className="min-w-0 flex-1">{renderVal(contact, field)}</div>
                           </div>
@@ -324,7 +324,7 @@ export function MergeModal({
                       <div className="col-span-2">
                         <div
                           className={`mt-3 rounded-xl border px-4 py-3 transition-all ${
-                            mergeTags ? 'border-indigo-600 bg-indigo-50' : 'border-[#d1d5db]'
+                            mergeTags ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]' : 'border-[#d1d5db]'
                           }`}
                         >
                           <CheckboxInput
@@ -354,13 +354,13 @@ export function MergeModal({
 
             <div className="mt-5 rounded-xl border border-[#e0e7ff] bg-[#f8faff] p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#374151]">
-                <AlertTriangle size={14} className="text-indigo-600" />
+                <AlertTriangle size={14} className="text-[var(--color-primary)]" />
                 Merge impact
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {impactCards.map((card) => (
                   <div key={card.label} className="rounded-xl border border-[#e5e7eb] bg-white px-3 py-3">
-                    <div className="mb-1 flex items-center gap-1.5 text-indigo-600">{card.icon}</div>
+                    <div className="mb-1 flex items-center gap-1.5 text-[var(--color-primary)]">{card.icon}</div>
                     <div className="text-lg font-semibold text-[#111827]">{card.value}</div>
                     <div className="text-[12px] text-[#6b7280]">{card.label}</div>
                   </div>

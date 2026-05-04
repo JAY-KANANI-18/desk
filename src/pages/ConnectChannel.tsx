@@ -152,13 +152,13 @@ export const ChannelCatalogView = () => {
 
                         <span
                           aria-hidden="true"
-                          className="pointer-events-none flex items-center justify-end gap-1.5 border-t border-gray-100 pt-3 text-xs font-medium text-indigo-600 md:hidden"
+                          className="pointer-events-none flex items-center justify-end gap-1.5 border-t border-gray-100 pt-3 text-xs font-medium text-[var(--color-primary)] md:hidden"
                         >
                           Connect channel
                           <ChevronRight size={15} />
                         </span>
 
-                        <span className="mt-5 hidden items-center justify-end gap-1.5 text-xs font-medium text-indigo-600 md:flex">
+                        <span className="mt-5 hidden items-center justify-end gap-1.5 text-xs font-medium text-[var(--color-primary)] md:flex">
                           Connect
                           <ExternalLink size={13} />
                         </span>

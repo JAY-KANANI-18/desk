@@ -130,7 +130,7 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
             type="button"
             variant="unstyled"
             onClick={() => navigate("/get-started")}
-            className="hidden min-[390px]:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-500 px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_30px_rgba(99,102,241,0.28)] transition-transform hover:-translate-y-0.5"
+            className="hidden min-[390px]:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] px-3 py-2 text-[12px] font-semibold text-white shadow-[var(--appearance-shadow)] transition-transform hover:-translate-y-0.5"
             style={{
               ...classDrivenButtonStyle,
               animation: "topbarPulse 2.5s ease infinite",
@@ -139,8 +139,8 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
           >
             <style>{`
       @keyframes topbarPulse {
-        0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); }
-        50%      { box-shadow: 0 0 0 7px rgba(99,102,241,0); }
+        0%,100% { box-shadow: 0 0 0 0 var(--color-primary-light); }
+        50%      { box-shadow: 0 0 0 7px transparent; }
       }
       @keyframes sparkSpin {
         from { transform: rotate(0deg); }

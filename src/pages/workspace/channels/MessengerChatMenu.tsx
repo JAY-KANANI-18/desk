@@ -143,7 +143,7 @@ const MenuItemRow = ({
       ref={cardRef}
       className={`scroll-mt-24 rounded-lg border p-4 transition-colors duration-700 ${
         highlighted
-          ? "border-indigo-300 bg-indigo-50/60 ring-2 ring-indigo-100"
+          ? "border-[var(--color-primary-light)] bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary-light)]"
           : "border-gray-200 bg-white"
       }`}
     >
@@ -505,8 +505,8 @@ export const MessengerChatMenuSection = ({
         </div>
       ) : activeTab === "menu" ? (
         <div className="space-y-3">
-          <div className="flex items-start gap-2.5 border-l border-indigo-300 pl-3">
-            <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
+          <div className="flex items-start gap-2.5 border-l border-[var(--color-primary-light)] pl-3">
+            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
             <p className="text-sm text-gray-600">
               The persistent menu appears as a hamburger icon in Messenger. Add
               up to 5 buttons and decide whether typing is allowed.
@@ -589,8 +589,8 @@ export const MessengerChatMenuSection = ({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-start gap-2.5 border-l border-indigo-300 pl-3">
-            <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
+          <div className="flex items-start gap-2.5 border-l border-[var(--color-primary-light)] pl-3">
+            <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
             <p className="text-sm text-gray-600">
               The Get Started button appears the first time someone opens a
               conversation with your page. The payload is sent to your webhook.

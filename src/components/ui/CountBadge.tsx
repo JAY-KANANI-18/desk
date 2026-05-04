@@ -21,7 +21,7 @@ const sizeClassNames: Record<CountBadgeSize, string> = {
 };
 
 const toneClassNames: Record<CountBadgeTone, string> = {
-  primary: "bg-indigo-100 text-indigo-700",
+  primary: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
   neutral: "bg-gray-100 text-gray-500",
   warning: "bg-orange-100 text-orange-700",
   danger: "bg-red-100 text-red-700",
@@ -53,7 +53,7 @@ export function CountBadge({
         sizeClassNames[resolvedSize],
         toneClassNames[tone],
         compact && "absolute -right-1.5 -top-1.5",
-        compact && tone === "primary" && "bg-indigo-600 text-white",
+        compact && tone === "primary" && "bg-[var(--color-primary)] text-white",
         compact && tone === "warning" && "bg-orange-500 text-white",
         compact && tone === "danger" && "bg-red-500 text-white",
         className,

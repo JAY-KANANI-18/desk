@@ -145,7 +145,7 @@ function UsageBar({ title, icon, current, limit, unit, extra, onAddExtra }: {
         <span className="text-xs text-gray-400">of {limit.toLocaleString()} {unit}</span>
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-        <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-red-500' : high ? 'bg-amber-400' : 'bg-gradient-to-r from-indigo-500 to-indigo-600'}`}
+        <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-red-500' : high ? 'bg-amber-400' : 'bg-gradient-to-r from-[var(--color-primary-light)]0 to-[var(--color-primary-hover)]'}`}
           style={{ width: `${Math.min(p, 100)}%` }} />
       </div>
       {over ? (
@@ -207,8 +207,8 @@ function InvoiceModal({ invoice, onClose, onPay, paying }: {
       title={invoice.type === 'addon' ? 'Add-on Invoice' : 'Subscription Invoice'}
       subtitle={<span className="font-mono">{invoice.id}</span>}
       headerIcon={
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${invoice.type === 'addon' ? 'bg-violet-50' : 'bg-indigo-50'}`}>
-          <FileText size={18} className={invoice.type === 'addon' ? 'text-violet-600' : 'text-indigo-600'} />
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${invoice.type === 'addon' ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-primary-light)]'}`}>
+          <FileText size={18} className={invoice.type === 'addon' ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary)]'} />
         </div>
       }
       secondaryAction={
@@ -312,9 +312,9 @@ function AddonModal({ type, addonPricing, onClose, onSave, saving }: {
         </Button>
       }
     >
-      <div className="bg-indigo-50 rounded-xl p-3 mb-5 flex gap-2">
-        <Info size={13} className="text-indigo-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-indigo-700">
+      <div className="bg-[var(--color-primary-light)] rounded-xl p-3 mb-5 flex gap-2">
+        <Info size={13} className="text-[var(--color-primary)] mt-0.5 shrink-0" />
+        <p className="text-xs text-[var(--color-primary)]">
           {isAgents
             ? 'Charged as a separate invoice on the same billing date as your subscription.'
             : `Added in slabs of ${slabSize.toLocaleString()} contacts. Charged as a separate invoice on your next billing date.`}
@@ -603,15 +603,15 @@ export const Billing = () => {
         )}
 
         {pendingPlan && (
-          <div className={`rounded-2xl p-4 border flex items-start gap-3 ${isPendingUpgrade ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className={`rounded-2xl p-4 border flex items-start gap-3 ${isPendingUpgrade ? 'bg-[var(--color-primary-light)] border-[var(--color-primary-light)]' : 'bg-amber-50 border-amber-200'}`}>
             {isPendingUpgrade
-              ? <ArrowUp size={15} className="text-indigo-500 mt-0.5 shrink-0" />
+              ? <ArrowUp size={15} className="text-[var(--color-primary)] mt-0.5 shrink-0" />
               : <ArrowDown size={15} className="text-amber-500 mt-0.5 shrink-0" />}
             <div>
-              <p className={`font-semibold text-sm ${isPendingUpgrade ? 'text-indigo-800' : 'text-amber-800'}`}>
+              <p className={`font-semibold text-sm ${isPendingUpgrade ? 'text-[var(--color-primary)]' : 'text-amber-800'}`}>
                 {isPendingUpgrade ? 'Upgrade' : 'Downgrade'} to <span className="capitalize">{PLAN_DISPLAY[pendingPlan]?.badge}</span> scheduled
               </p>
-              <p className={`text-xs mt-0.5 ${isPendingUpgrade ? 'text-indigo-600' : 'text-amber-600'}`}>
+              <p className={`text-xs mt-0.5 ${isPendingUpgrade ? 'text-[var(--color-primary)]' : 'text-amber-600'}`}>
                 {sub?.pendingEffectiveAt === 'now'
                   ? 'Taking effect immediately after confirmation.'
                   : `Takes effect at end of billing cycle (${fmtDate(sub?.currentPeriodEnd)}).`}
@@ -621,13 +621,13 @@ export const Billing = () => {
         )}
 
         {sub?.lastRefundAmount && sub.lastRefundStatus && (
-          <div className={`rounded-2xl p-4 border flex items-start gap-3 ${sub.lastRefundStatus === 'processed' ? 'bg-emerald-50 border-emerald-200' : 'bg-indigo-50 border-indigo-200'}`}>
-            <CheckCircle size={15} className={`mt-0.5 shrink-0 ${sub.lastRefundStatus === 'processed' ? 'text-emerald-500' : 'text-indigo-500'}`} />
+          <div className={`rounded-2xl p-4 border flex items-start gap-3 ${sub.lastRefundStatus === 'processed' ? 'bg-emerald-50 border-emerald-200' : 'bg-[var(--color-primary-light)] border-[var(--color-primary-light)]'}`}>
+            <CheckCircle size={15} className={`mt-0.5 shrink-0 ${sub.lastRefundStatus === 'processed' ? 'text-emerald-500' : 'text-[var(--color-primary)]'}`} />
             <div>
-              <p className={`font-semibold text-sm ${sub.lastRefundStatus === 'processed' ? 'text-emerald-800' : 'text-indigo-800'}`}>
+              <p className={`font-semibold text-sm ${sub.lastRefundStatus === 'processed' ? 'text-emerald-800' : 'text-[var(--color-primary)]'}`}>
                 Refund {sub.lastRefundStatus === 'processed' ? 'processed' : 'initiated'}: {fmt(sub.lastRefundAmount, 'INR')}
               </p>
-              <p className={`text-xs mt-0.5 ${sub.lastRefundStatus === 'processed' ? 'text-emerald-600' : 'text-indigo-600'}`}>
+              <p className={`text-xs mt-0.5 ${sub.lastRefundStatus === 'processed' ? 'text-emerald-600' : 'text-[var(--color-primary)]'}`}>
                 {sub.lastRefundStatus === 'processed' ? 'Credited to your original payment method.' : 'Will be credited within 5–7 business days.'}
               </p>
             </div>
@@ -775,8 +775,8 @@ export const Billing = () => {
                 preserveChildLayout
               >
                 <div className="flex w-full items-center gap-4 text-left">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                    <UserRound size={16} className="text-indigo-600" />
+                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-light)] flex items-center justify-center shrink-0">
+                    <UserRound size={16} className="text-[var(--color-primary)]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Add Extra Agents</p>
@@ -797,8 +797,8 @@ export const Billing = () => {
                 preserveChildLayout
               >
                 <div className="flex w-full items-center gap-4 text-left">
-                  <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
-                    <Users size={16} className="text-violet-600" />
+                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-light)] flex items-center justify-center shrink-0">
+                    <Users size={16} className="text-[var(--color-primary)]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Add Extra Contacts</p>
@@ -819,7 +819,7 @@ export const Billing = () => {
               const isCurrent = currentPlan === plan.key;
               const up = isUpgrade(currentPlan, plan.key);
               return (
-                <div key={plan.key} className={`rounded-2xl border p-5 relative transition-all ${isCurrent ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200 hover:border-gray-300'}`}>
+                <div key={plan.key} className={`rounded-2xl border p-5 relative transition-all ${isCurrent ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]' : 'border-gray-200 hover:border-gray-300'}`}>
                   {plan.popular && !isCurrent && (
                     <div className="absolute -top-2.5 left-4">
                       <Tag label="POPULAR" size="sm" bgColor="tag-purple" />

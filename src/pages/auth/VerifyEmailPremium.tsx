@@ -130,7 +130,7 @@ export const VerifyEmailPremium = () => {
           Wrong address?{" "}
           <Link
             to="/auth/login"
-            className="font-medium text-indigo-600 transition hover:text-indigo-700"
+            className="font-medium text-[var(--color-primary)] transition hover:text-[var(--color-primary)]"
           >
             Go back and start again
           </Link>

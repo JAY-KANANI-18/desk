@@ -91,6 +91,7 @@ export function MessageBubble({
         isOutgoing ? "message-bubble-enter--outgoing" : "message-bubble-enter--incoming"
       }`
     : "";
+  const messageDirection = isOutgoing ? "outgoing" : "incoming";
 
   const defaultMetaTextClass = isOutgoing ? "text-white/75" : "text-gray-500";
   const defaultAiPillClass = isOutgoing
@@ -161,7 +162,7 @@ export function MessageBubble({
 
   const expandBtn = (outgoing: boolean) =>
     needsExpand && (
-      <div className={`mt-1 ${outgoing ? "text-indigo-200" : "text-indigo-500"}`}>
+      <div className={`mt-1 ${outgoing ? "text-[var(--color-primary-light)]" : "text-[var(--color-primary)]"}`}>
         <Button
           type="button"
           variant="inherit-ghost"
@@ -200,6 +201,8 @@ export function MessageBubble({
     return (
       <div className={`relative max-w-[300px] overflow-visible ${bubbleEnterClass}`}>
         <div
+          data-message-bubble="true"
+          data-message-direction={messageDirection}
           className={`relative z-10 overflow-hidden bg-white shadow-sm ${bubbleShapeClass}`}
           style={{
             fontFamily: '-apple-system, "Segoe UI", sans-serif',
@@ -326,6 +329,8 @@ export function MessageBubble({
     return (
       <div className={`relative max-w-full overflow-visible ${bubbleEnterClass}`}>
         <div
+          data-message-bubble="true"
+          data-message-direction={messageDirection}
           className={`relative z-10 overflow-hidden shadow-sm ${bubbleColor} ${bubbleShapeClass} max-w-full`}
         >
           {msg.metadata?.email?.subject && (
@@ -403,6 +408,8 @@ export function MessageBubble({
   return (
     <div className={`relative max-w-full overflow-visible ${bubbleEnterClass}`}>
       <div
+        data-message-bubble="true"
+        data-message-direction={messageDirection}
         className={`relative z-10 overflow-hidden shadow-sm ${bubbleColor} ${bubbleShapeClass} max-w-full`}
       >
         {quoted && <QuotedPreview {...quoted} isOutgoing={isOutgoing} />}

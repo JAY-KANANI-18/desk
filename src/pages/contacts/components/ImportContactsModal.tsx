@@ -50,8 +50,8 @@ export function ImportContactsModal({
       title="Import Contacts"
       subtitle="Upload a CSV file to bulk-import contacts"
       headerIcon={
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100">
-          <Upload size={18} className="text-indigo-600" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary-light)]">
+          <Upload size={18} className="text-[var(--color-primary)]" />
         </div>
       }
       size="lg"
@@ -156,13 +156,13 @@ export function ImportContactsModal({
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-                  importDragging ? "border-indigo-400 bg-indigo-50" : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"
+                  importDragging ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]" : "border-gray-300 hover:border-[var(--color-primary)] hover:bg-gray-50"
                 }`}
               >
-                <Upload size={28} className={`mx-auto mb-2 ${importDragging ? "text-indigo-500" : "text-gray-400"}`} />
+                <Upload size={28} className={`mx-auto mb-2 ${importDragging ? "text-[var(--color-primary)]" : "text-gray-400"}`} />
                 <p className="text-sm font-medium text-gray-700">Drag and drop your CSV file here</p>
                 <p className="mt-1 text-xs text-gray-400">
-                  or <span className="font-medium text-indigo-600">click to browse</span>
+                  or <span className="font-medium text-[var(--color-primary)]">click to browse</span>
                 </p>
                 <p className="mt-2 text-xs text-gray-400">Supports .csv files only</p>
                 <input

@@ -670,7 +670,7 @@ export const Dashboard = () => {
                             ) : (
                               <ArrowUpRight
                                 size={11}
-                                className="text-indigo-500 flex-shrink-0"
+                                className="text-[var(--color-primary)] flex-shrink-0"
                               />
                             )}
                             <p className={`text-xs truncate  text-gray-500`}>
@@ -923,7 +923,7 @@ function UnreadBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <span
-      className="flex-shrink-0 min-w-[18px] h-[18px] bg-indigo-600 text-white
+      className="flex-shrink-0 min-w-[18px] h-[18px] bg-[var(--color-primary)] text-white
       text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none"
     >
       {count > 99 ? "99+" : count}

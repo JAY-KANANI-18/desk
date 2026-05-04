@@ -239,7 +239,7 @@ export function InboxPage() {
           <p className="text-gray-500">Loading inbox...</p>
         </div>
       ) : showNoChannelsState ? (
-        <div className="hidden flex-1 items-center justify-center border-l border-slate-100 bg-gradient-to-br from-white via-slate-50 to-indigo-50/40 md:flex">
+        <div className="hidden flex-1 items-center justify-center border-l border-slate-100 bg-gradient-to-br from-white via-slate-50 to-[var(--color-primary-light)] md:flex">
           <InboxAddChannelPrompt message="Connect a channel and the next customer hello lands here, ready for your reply." />
         </div>
       ) : (

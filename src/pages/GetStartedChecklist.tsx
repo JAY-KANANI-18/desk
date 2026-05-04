@@ -215,8 +215,8 @@ export const GetStartedChecklist = ({
                       x2="100%"
                       y2="100%"
                     >
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
+                      <stop offset="0%" stopColor="var(--color-primary)" />
+                      <stop offset="100%" stopColor="var(--color-primary-hover)" />
                     </linearGradient>
                   </defs>
 
@@ -282,9 +282,9 @@ export const GetStartedChecklist = ({
                     <div
                       className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 md:h-9 md:w-9 md:text-sm ${
                         done
-                          ? "border-transparent bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md"
+                          ? "border-transparent bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white shadow-md"
                           : isOpen
-                            ? "border-[var(--color-primary,#6366f1)] bg-indigo-600 text-white shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[0_0_0_6px_var(--color-primary-light)]"
                             : "border-[var(--color-border,#cbd5e1)] bg-[var(--color-card,#ffffff)] text-[var(--color-text-secondary,#94a3b8)]"
                       }`}
                     >
@@ -295,7 +295,7 @@ export const GetStartedChecklist = ({
                       <div
                         className={`mt-2 w-[2px] flex-1 rounded-full ${
                           done
-                            ? "bg-gradient-to-b from-indigo-600 to-slate-200"
+                            ? "bg-gradient-to-b from-[var(--color-primary)] to-slate-200"
                             : "bg-[var(--color-border,#e2e8f0)]"
                         }`}
                       />
@@ -305,7 +305,7 @@ export const GetStartedChecklist = ({
                   <div
                     className={`flex-1 overflow-hidden rounded-[20px] border bg-[var(--color-card,#ffffff)] transition-all duration-300 md:rounded-2xl ${
                       isOpen
-                        ? "border-indigo-600 shadow-xl shadow-slate-200/50"
+                        ? "border-[var(--color-primary)] shadow-xl shadow-slate-200/50"
                         : done
                           ? "border-[var(--color-border,#eef2f7)] opacity-70"
                           : "border-[var(--color-border,#e2e8f0)] shadow-sm"
@@ -327,7 +327,7 @@ export const GetStartedChecklist = ({
                             done
                               ? "bg-slate-100 text-slate-300"
                               : isOpen
-                                ? "bg-indigo-600 text-white"
+                                ? "bg-[var(--color-primary)] text-white"
                                 : "bg-[var(--color-muted,#f1f5f9)] text-[var(--color-text,#334155)]"
                           }`}
                         >
@@ -404,16 +404,16 @@ export const GetStartedChecklist = ({
             })}
 
             {allDone ? (
-              <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-violet-950 p-5 text-white shadow-2xl sm:mt-6 sm:flex-row sm:items-center sm:p-6">
+              <div className="mt-4 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-950 via-[var(--color-primary-hover)] to-[var(--color-primary-hover)] p-5 text-white shadow-2xl sm:mt-6 sm:flex-row sm:items-center sm:p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                  <Zap size={22} className="text-violet-300" />
+                  <Zap size={22} className="text-[var(--color-primary-light)]" />
                 </div>
 
                 <div className="flex-1">
                   <h3 className="text-base font-bold tracking-tight">
                     Workspace fully set up. Time to ship. 🚀
                   </h3>
-                  <p className="mt-1 text-sm text-violet-200">
+                  <p className="mt-1 text-sm text-[var(--color-primary-light)]">
                     All three steps complete — your team is ready.
                   </p>
                 </div>
@@ -445,8 +445,8 @@ export const GetStartedChecklist = ({
                 <svg width="110" height="110" viewBox="0 0 96 96">
                   <defs>
                     <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
+                      <stop offset="0%" stopColor="var(--color-primary)" />
+                      <stop offset="100%" stopColor="var(--color-primary-hover)" />
                     </linearGradient>
                   </defs>
 

@@ -81,7 +81,7 @@ export const SignUpPremium = () => {
           Already have an account?{" "}
           <Link
             to="/auth/login"
-            className="font-semibold text-indigo-600 transition hover:text-indigo-700"
+            className="font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary)]"
           >
             Sign in
           </Link>

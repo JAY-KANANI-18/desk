@@ -64,16 +64,16 @@ export const AuthShell = ({
   contentClassName,
   headerAlign = "left",
 }: AuthShellProps) => (
-  <div className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
+  <div className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-br from-[var(--color-primary-light)] via-white to-[var(--color-primary-light)]">
     <motion.div
       aria-hidden
-      className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-indigo-100/70 blur-3xl"
+      className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-[var(--color-primary-light)] blur-3xl"
       animate={{ x: [0, 24, -10, 0], y: [0, -10, 18, 0] }}
       transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
     />
     <motion.div
       aria-hidden
-      className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-indigo-200/35 blur-3xl"
+      className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[var(--color-primary-light)] blur-3xl"
       animate={{ x: [0, -18, 12, 0], y: [0, 18, -10, 0] }}
       transition={{ repeat: Infinity, duration: 14, ease: "easeInOut" }}
     />
@@ -122,7 +122,7 @@ export const AuthShell = ({
                     {typeof progress === "number" ? (
                       <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <motion.div
-                          className="h-full rounded-full bg-indigo-600"
+                          className="h-full rounded-full bg-[var(--color-primary)]"
                           initial={false}
                           animate={{ width: progressWidth(progress) }}
                           transition={{ duration: 0.35, ease: "easeOut" }}

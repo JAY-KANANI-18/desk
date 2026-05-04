@@ -62,8 +62,8 @@ export const LoginPremium = () => {
   };
 
   const roleColors: Record<string, string> = {
-    owner: "bg-purple-100 text-purple-700",
-    admin: "bg-indigo-100 text-indigo-700",
+    owner: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
+    admin: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
     supervisor: "bg-amber-100 text-amber-700",
     agent: "bg-green-100 text-green-700",
   };
@@ -79,7 +79,7 @@ export const LoginPremium = () => {
           Don&apos;t have an account?{" "}
           <Link
             to="/auth/signup"
-            className="font-semibold text-indigo-600 transition hover:text-indigo-700"
+            className="font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary)]"
           >
             Create one
           </Link>
@@ -134,7 +134,7 @@ export const LoginPremium = () => {
             helpText={
               <Link
                 to="/auth/forgot-password"
-                className="font-medium text-indigo-600 transition hover:text-indigo-700"
+                className="font-medium text-[var(--color-primary)] transition hover:text-[var(--color-primary)]"
               >
                 Forgot password?
               </Link>

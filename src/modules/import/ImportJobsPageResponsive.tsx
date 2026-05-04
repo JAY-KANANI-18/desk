@@ -118,10 +118,10 @@ export default function ImportJobsPageResponsive() {
         ) : null}
 
         <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col overflow-y-auto px-4 py-4 pb-28 sm:px-6 sm:py-6 sm:pb-32 md:overflow-hidden md:pb-6">
-          <section className="rounded-[30px] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-5 shadow-[0_24px_60px_rgba(79,70,229,0.08)] sm:p-6">
+          <section className="rounded-[30px] border border-[var(--color-primary-light)] bg-gradient-to-br from-[var(--color-primary-light)] via-white to-slate-50 p-5 shadow-[0_24px_60px_rgba(79,70,229,0.08)] sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-indigo-700 shadow-sm ring-1 ring-indigo-100">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[var(--color-primary)] shadow-sm ring-1 ring-[var(--color-primary-light)]">
                   <BriefcaseBusiness size={14} />
                   Background imports
                 </div>
@@ -315,7 +315,7 @@ function SummaryStat({
 }) {
   const toneClass =
     tone === "indigo"
-      ? "bg-indigo-50 text-indigo-700 ring-indigo-100"
+      ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] ring-[var(--color-primary-light)]"
       : tone === "green"
         ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
         : tone === "amber"

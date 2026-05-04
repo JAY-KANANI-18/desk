@@ -56,7 +56,7 @@ function MobilePageSentinel({
       {page < totalPages ? (
         pendingPage && pendingPage > page ? (
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-500" />
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--color-primary)]" />
             Loading more...
           </span>
         ) : (
@@ -123,7 +123,7 @@ export function ListPagination({
               key={item}
               onClick={() => onPageChange(item)}
               className={`h-8 w-8 rounded-lg text-xs transition-colors md:border ${
-                page === item ? "bg-indigo-600 text-white md:border-indigo-600" : "bg-slate-100 text-gray-700 hover:bg-slate-200 md:border-gray-300 md:bg-white md:hover:bg-gray-50"
+                page === item ? "bg-[var(--color-primary)] text-white md:border-[var(--color-primary)]" : "bg-slate-100 text-gray-700 hover:bg-slate-200 md:border-gray-300 md:bg-white md:hover:bg-gray-50"
               }`}
             >
               {item}

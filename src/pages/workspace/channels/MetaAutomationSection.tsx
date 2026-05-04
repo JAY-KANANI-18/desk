@@ -619,7 +619,7 @@ export const MetaAutomationSection = ({
                         }}
                         className={`scroll-mt-24 rounded-lg border p-4 transition-colors duration-700 ${
                           highlightedPostId === rule.postId
-                            ? 'border-indigo-300 bg-indigo-50/60 ring-2 ring-indigo-100'
+                            ? 'border-[var(--color-primary-light)] bg-[var(--color-primary-light)] ring-2 ring-[var(--color-primary-light)]'
                             : 'border-gray-200 bg-white'
                         }`}
                       >
@@ -661,9 +661,9 @@ export const MetaAutomationSection = ({
           )}
         </div>
       ) : (
-        <div className="border-l border-indigo-300 pl-3">
+        <div className="border-l border-[var(--color-primary-light)] pl-3">
           <div className="flex items-start gap-2.5">
-            <MessageCircle size={15} className="mt-0.5 text-indigo-500" />
+            <MessageCircle size={15} className="mt-0.5 text-[var(--color-primary)]" />
             <p className="text-sm text-gray-600">
               Story replies already arrive as real messages, so the automation
               uses the existing conversation flow and adds the reply immediately

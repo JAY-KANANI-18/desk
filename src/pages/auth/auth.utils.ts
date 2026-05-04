@@ -20,5 +20,5 @@ export const getPasswordStrength = (password: string) => {
     return { label: "Strong", color: "bg-green-500", width: "100%" };
   }
 
-  return { label: "Good", color: "bg-indigo-400", width: "75%" };
+  return { label: "Good", color: "bg-[var(--color-primary)]", width: "75%" };
 };

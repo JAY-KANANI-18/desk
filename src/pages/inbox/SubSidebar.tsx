@@ -82,7 +82,7 @@ function SidebarItemBtn({
       aria-label={item.label}
       leftIcon={
         <span className="relative inline-flex">
-          <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-500"} />
+          <Icon size={18} className={isActive ? "text-[var(--color-primary)]" : "text-gray-500"} />
           <CountBadge count={count} compact />
         </span>
       }
@@ -100,7 +100,7 @@ function SidebarItemBtn({
       className="group"
     >
       <span className="flex w-full items-center gap-2.5">
-        <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-500"} />
+        <Icon size={18} className={isActive ? "text-[var(--color-primary)]" : "text-gray-500"} />
         <span className="min-w-0 flex-1 truncate text-left text-xs font-medium">
           {item.label}
         </span>

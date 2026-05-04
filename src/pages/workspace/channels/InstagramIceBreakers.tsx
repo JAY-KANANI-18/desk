@@ -161,8 +161,8 @@ export const InstagramIceBreakersSection = ({
         </div>
       </div>
 
-      <div className="flex items-start gap-2.5 border-l border-indigo-300 pl-3">
-        <Info size={15} className="mt-0.5 shrink-0 text-indigo-500" />
+      <div className="flex items-start gap-2.5 border-l border-[var(--color-primary-light)] pl-3">
+        <Info size={15} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
         <p className="text-sm text-gray-600">
           Ice-breakers are shown to contacts <strong>before</strong> they send
           their first message. You can add up to {MAX_ICEBREAKERS}. Changes are

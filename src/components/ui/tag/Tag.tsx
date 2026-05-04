@@ -193,6 +193,7 @@ export function Tag({
     maxWidth,
     ...style,
   };
+  const normalizedLabel = label.trim().toLowerCase();
 
   const isInteractive = Boolean(onClick) && !disabled;
 
@@ -237,6 +238,7 @@ export function Tag({
       style={tagStyle}
       role={isInteractive ? "button" : props.role}
       tabIndex={isInteractive ? 0 : props.tabIndex}
+      data-tag-label={normalizedLabel}
       aria-disabled={disabled || undefined}
       onClick={isInteractive ? onClick : undefined}
       onKeyDown={handleKeyDown}

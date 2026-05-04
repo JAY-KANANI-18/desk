@@ -194,7 +194,7 @@ export const AIPrompts = () => {
       <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 sm:h-10 sm:w-10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-light)]0 to-blue-600 sm:h-10 sm:w-10">
               <Sparkles size={18} className="text-white" />
             </div>
             <div className="min-w-0">
@@ -229,7 +229,7 @@ export const AIPrompts = () => {
             <div
               key={prompt.id}
               className={`rounded-2xl px-4 py-4 transition-colors sm:px-5 sm:py-5 ${
-                prompt.isEnabled ? 'bg-indigo-50/60' : 'bg-slate-50/80'
+                prompt.isEnabled ? 'bg-[var(--color-primary-light)]' : 'bg-slate-50/80'
               }`}
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

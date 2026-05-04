@@ -73,7 +73,7 @@ export const AIAssist = () => {
       <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 sm:h-10 sm:w-10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-light)]0 to-blue-600 sm:h-10 sm:w-10">
               <Wand2 size={20} className="text-white" />
             </div>
             <div className="min-w-0">

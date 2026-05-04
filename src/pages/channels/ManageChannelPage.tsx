@@ -831,7 +831,7 @@ export const ManageChannelPage = () => {
           {meta.additionalResources.map((resource) => (
             <li key={resource.label}>
               <a
-                className="text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-800 hover:underline"
+                className="text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary)] hover:underline"
                 href={resource.href}
                 rel="noopener noreferrer"
                 target="_blank"

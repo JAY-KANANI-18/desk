@@ -190,7 +190,7 @@ export function AiComposerInlineStatus({
 }) {
   if (loadingAction) {
     return (
-      <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-700 sm:mx-4">
+      <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg border border-[var(--color-primary-light)] bg-[var(--color-primary-light)] px-3 py-2 text-sm text-[var(--color-primary)] sm:mx-4">
         <Loader2 size={14} className="flex-shrink-0 animate-spin" />
         <span>{AI_LOADING_COPY[loadingAction]}</span>
       </div>
@@ -240,8 +240,8 @@ export function ComposerAttachmentPreviewStrip({
 
   const getFileChipClass = (type: AttachmentType) => {
     if (type === 'audio') return 'border-red-200 bg-red-50 text-red-700';
-    if (type === 'video') return 'border-purple-200 bg-purple-50 text-purple-700';
-    return 'border-indigo-200 bg-indigo-50 text-indigo-700';
+    if (type === 'video') return 'border-[var(--color-primary-light)] bg-[var(--color-primary-light)] text-[var(--color-primary)]';
+    return 'border-[var(--color-primary-light)] bg-[var(--color-primary-light)] text-[var(--color-primary)]';
   };
 
   return (

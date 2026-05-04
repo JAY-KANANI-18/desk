@@ -85,8 +85,8 @@ function resolveNotificationTypeAppearance(type: string): NotificationAppearance
   if (normalized.includes("mention")) {
     return {
       icon: <AtSign size={15} />,
-      iconClassName: "bg-violet-100 text-violet-700",
-      chipClassName: "bg-violet-50 text-violet-700",
+      iconClassName: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
+      chipClassName: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
       label: "Mention",
     };
   }
@@ -290,7 +290,7 @@ export function NotificationPanel({
             type="button"
             variant="unstyled"
             onClick={() => void loadTab(activeTab)}
-            className="text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700"
+            className="text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary)]"
             style={classDrivenButtonStyle}
             preserveChildLayout
           >
@@ -317,7 +317,7 @@ export function NotificationPanel({
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === tab
-                  ? "bg-indigo-50 text-indigo-600"
+                  ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                   : "text-gray-500 hover:bg-gray-100"
               }`}
               style={classDrivenButtonStyle}
@@ -343,7 +343,7 @@ export function NotificationPanel({
               type="button"
               variant="unstyled"
               onClick={() => void loadTab(activeTab, true)}
-              className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              className="mt-3 text-xs font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary)]"
               style={classDrivenButtonStyle}
               preserveChildLayout
             >
@@ -383,7 +383,7 @@ export function NotificationPanel({
                 <div
                   key={notification.id}
                   className={`group px-4 py-3.5 transition-colors ${
-                    isUnread ? "bg-indigo-50/45" : "bg-white"
+                    isUnread ? "bg-[var(--color-primary-light)]" : "bg-white"
                   } ${notificationPath ? "cursor-pointer hover:bg-slate-50" : ""}`}
                   onClick={() => {
                     if (!notificationPath) return;
@@ -406,7 +406,7 @@ export function NotificationPanel({
                           {typeAppearance.label}
                         </span>
                         {isUnread && (
-                          <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-700">
+                          <span className="inline-flex items-center rounded-full bg-[var(--color-primary-light)] px-2 py-1 text-[10px] font-semibold text-[var(--color-primary)]">
                             New
                           </span>
                         )}

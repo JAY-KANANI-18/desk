@@ -177,10 +177,10 @@ const StageRow = ({
 >
       {/* Drop indicator line */}
       {isDragOver && dragOverPosition === "above" && (
-        <div className="absolute -top-px left-8 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
+        <div className="absolute -top-px left-8 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10" />
       )}
       {isDragOver && dragOverPosition === "below" && (
-        <div className="absolute -bottom-px left-8 right-0 h-0.5 bg-indigo-500 rounded-full z-10" />
+        <div className="absolute -bottom-px left-8 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10" />
       )}
 
       <div className="pl-9 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
@@ -231,7 +231,7 @@ const StageRow = ({
         )}
 
         {/* Saving spinner */}
-        {stage._saving && <Loader2 size={14} className="animate-spin text-indigo-400 shrink-0" />}
+        {stage._saving && <Loader2 size={14} className="animate-spin text-[var(--color-primary)] shrink-0" />}
 
         {/* New stage actions */}
         {stage._isNew ? (

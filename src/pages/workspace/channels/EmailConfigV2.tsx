@@ -94,10 +94,10 @@ export const EmailConfiguration = ({
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 sm:flex-row sm:items-center">
-          <span className="h-2 w-2 rounded-full bg-indigo-400" />
+          <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
           <span className="text-sm font-semibold text-slate-800">Email Channel</span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 sm:ml-auto">
-            <Mail size={13} className="text-indigo-500" />
+            <Mail size={13} className="text-[var(--color-primary)]" />
             <span className="break-all">{emailAddress || channel?.identifier}</span>
           </div>
         </div>

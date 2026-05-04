@@ -54,7 +54,7 @@ export function ImportJobProgressBar({
     >
       <div
         className={`h-full rounded-full transition-all ${
-          status === "FAILED" ? "bg-red-500" : "bg-indigo-600"
+          status === "FAILED" ? "bg-red-500" : "bg-[var(--color-primary)]"
         }`}
         style={{ width: `${safeProgress}%` }}
       />

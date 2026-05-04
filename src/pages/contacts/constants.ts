@@ -7,10 +7,10 @@ export const DUMMY_MODE = false;
 export const PAGE_SIZE = 10;
 
 export const lifecycleStages = [
-  { name: "New Lead", color: "bg-indigo-500", count: 1 },
+  { name: "New Lead", color: "bg-[var(--color-primary)]", count: 1 },
   { name: "Hot Lead", color: "bg-orange-500", count: 1 },
   { name: "Payment", color: "bg-green-500", count: 0 },
-  { name: "Customer", color: "bg-purple-500", count: 0 },
+  { name: "Customer", color: "bg-[var(--color-primary)]", count: 0 },
 ];
 
 export const lostStages = [{ name: "Cold Lead", color: "bg-gray-500", count: 0 }];

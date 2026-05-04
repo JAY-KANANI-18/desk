@@ -38,7 +38,7 @@ export const OnboardingOptionCard = ({
         <span className="text-base">{option.emoji}</span>
       ) 
       // : Icon ? (
-      //   <Icon size={16} className={selected ? "text-indigo-700" : undefined} />
+      //   <Icon size={16} className={selected ? "text-[var(--color-primary)]" : undefined} />
       // ) 
       : null
     ) 

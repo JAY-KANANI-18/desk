@@ -119,7 +119,7 @@ const TeamModal = ({ team, members, onClose, onSave }: TeamModalProps) => {
                   checked={isSelected}
                   onChange={() => toggle(member.id)}
                   className={`w-full rounded-lg px-3 py-2 transition-colors ${
-                    isSelected ? "bg-indigo-50" : "hover:bg-gray-50"
+                    isSelected ? "bg-[var(--color-primary-light)]" : "hover:bg-gray-50"
                   }`}
                   label={
                     <span className="flex min-w-0 items-center gap-3">
@@ -220,8 +220,8 @@ export const Teams = () => {
 
         {teams.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
-              <Users size={22} className="text-indigo-400" />
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-light)]">
+              <Users size={22} className="text-[var(--color-primary)]" />
             </div>
             <p className="mb-1 text-sm font-medium text-gray-700">No teams yet</p>
             <p className="max-w-xs text-xs text-gray-500">
@@ -236,8 +236,8 @@ export const Teams = () => {
                 .filter(Boolean) as TeamMember[];
               return (
                 <div key={team.id} className="group flex items-center gap-4 px-6 py-4 hover:bg-gray-50">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100">
-                    <Users size={18} className="text-indigo-600" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)]">
+                    <Users size={18} className="text-[var(--color-primary)]" />
                   </div>
 
                   <div className="min-w-0 flex-1">

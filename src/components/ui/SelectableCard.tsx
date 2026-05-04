@@ -40,7 +40,7 @@ export function SelectableCard({
       className={[
         "relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all",
         selected
-          ? "border-indigo-500 bg-indigo-600 text-white"
+          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
           : "border-gray-200 bg-white text-transparent",
       ].join(" ")}
     >
@@ -72,7 +72,7 @@ export function SelectableCard({
             <div
               className={[
                 "text-sm font-medium leading-tight break-words",
-                selected ? "text-indigo-900" : "text-gray-900",
+                selected ? "text-[var(--color-primary)]" : "text-gray-900",
               ].join(" ")}
             >
               {title}
@@ -82,7 +82,7 @@ export function SelectableCard({
               <div
                 className={[
                   "mt-1 text-xs leading-5",
-                  selected ? "text-indigo-700" : "text-gray-500",
+                  selected ? "text-[var(--color-primary)]" : "text-gray-500",
                 ].join(" ")}
               >
                 {description}
@@ -90,7 +90,7 @@ export function SelectableCard({
             ) : null}
 
             {helper ? (
-              <div className="mt-2 text-xs font-medium text-indigo-600">
+              <div className="mt-2 text-xs font-medium text-[var(--color-primary)]">
                 {helper}
               </div>
             ) : null}

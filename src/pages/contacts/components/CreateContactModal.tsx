@@ -74,7 +74,7 @@ export function CreateContactModal({
       isOpen={open}
       onClose={onClose}
       title="New Contact"
-      headerIcon={<UserPlus2 size={20} className="text-indigo-600" />}
+      headerIcon={<UserPlus2 size={20} className="text-[var(--color-primary)]" />}
       size="lg"
       width={768}
       closeOnOverlayClick={false}

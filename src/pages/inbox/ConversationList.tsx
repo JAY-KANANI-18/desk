@@ -54,7 +54,7 @@ function UnreadBadge({ count }: { count: number }) {
   if (count <= 0) return null;
 
   return (
-    <span className="flex h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold leading-none text-white">
+    <span className="flex h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-[10px] font-bold leading-none text-white">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -245,7 +245,7 @@ useEffect(() => {
                   {activeCategoryLabel}
                 </span>
                 {totalUnread > 0 ? (
-                  <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     {totalUnread > 99 ? "99+" : totalUnread}
                   </span>
                 ) : null}
@@ -256,7 +256,7 @@ useEffect(() => {
           <div className={`${onOpenCategories ? "hidden md:flex" : "flex"} min-w-0 items-center gap-2`}>
             <span className="text-sm font-bold text-gray-800">Inbox</span>
             {totalUnread > 0 ? (
-              <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+              <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-primary)]">
                 {totalUnread > 99 ? "99+" : totalUnread}
               </span>
             ) : null}
@@ -283,7 +283,7 @@ useEffect(() => {
               aria-label="Open conversation filters"
             />
             {activePills.length > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-[8px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[8px] font-bold text-white">
                 {activePills.length}
               </span>
             ) : null}
@@ -533,7 +533,7 @@ useEffect(() => {
                       />
                     </span>
                     <span className="flex flex-shrink-0 items-center gap-1.5">
-                      <span className={`text-xs ${isUnread ? "font-semibold text-indigo-600" :  "text-gray-400"}`}>
+                      <span className={`text-xs ${isUnread ? "font-semibold text-[var(--color-primary)]" :  "text-gray-400"}`}>
                         {conversation.lastMessageAt
                           ? new Date(conversation.lastMessageAt).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -548,7 +548,7 @@ useEffect(() => {
                     {lastMessage?.direction === "incoming" ? (
                       <ArrowDownLeft size={11} className="flex-shrink-0 text-green-500" />
                     ) : (
-                      <ArrowUpRight size={11} className="flex-shrink-0 text-indigo-500" />
+                      <ArrowUpRight size={11} className="flex-shrink-0 text-[var(--color-primary)]" />
                     )}
                     <span className="min-w-0 flex-1">
                       <TruncatedText

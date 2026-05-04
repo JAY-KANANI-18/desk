@@ -106,8 +106,8 @@ export const ClosingNotes = () => {
           />
         </div>
         {settings.required ? (
-          <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-3">
-            <p className="flex items-center gap-1.5 text-xs text-indigo-700">
+          <div className="mt-4 rounded-lg border border-[var(--color-primary-light)] bg-[var(--color-primary-light)] p-3">
+            <p className="flex items-center gap-1.5 text-xs text-[var(--color-primary)]">
               <Info size={13} /> Agents will see a prompt to add a closing note when resolving conversations.
             </p>
           </div>

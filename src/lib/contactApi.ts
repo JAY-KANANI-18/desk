@@ -109,7 +109,7 @@ const lifecycleStages = [
     { name: "New Lead", color: "bg-blue-500", count: 1 },
     { name: "Hot Lead", color: "bg-orange-500", count: 1 },
     { name: "Payment", color: "bg-green-500", count: 0 },
-    { name: "Customer", color: "bg-purple-500", count: 0 },
+    { name: "Customer", color: "bg-[var(--color-primary)]", count: 0 },
 ];
 
 const lostStages = [{ name: "Cold Lead", color: "bg-gray-500", count: 0 }];

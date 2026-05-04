@@ -150,7 +150,7 @@ export const Integrations = () => {
       <p className="text-sm text-gray-600 max-w-2xl">
         Integrations extend your workspace with advertising and analytics capabilities. They are separate
         from messaging channels — use{" "}
-        <a href="/channels" className="text-indigo-600 hover:underline">
+        <a href="/channels" className="text-[var(--color-primary)] hover:underline">
           Channels
         </a>{" "}
         for WhatsApp, SMS, email, and similar.
@@ -176,7 +176,7 @@ export const Integrations = () => {
             {int.id === "meta_ads" && int.connected && int.routingChannelId && (
               <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 space-y-2 text-xs text-gray-700">
                 <p className="font-medium text-gray-800">Webhook URL</p>
-                <code className="block break-all text-[11px] text-indigo-800 bg-white border border-slate-200 rounded px-2 py-1.5">
+                <code className="block break-all text-[11px] text-[var(--color-primary)] bg-white border border-slate-200 rounded px-2 py-1.5">
                   {API_ROOT}/api/integrations/meta-ads/webhook/{int.routingChannelId}
                 </code>
                 <p className="text-gray-500">

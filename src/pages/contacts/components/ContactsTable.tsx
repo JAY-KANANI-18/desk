@@ -54,8 +54,7 @@ const LIFECYCLE_COLOR_MAP: Record<string, string> = {
   "bg-yellow-500": "#eab308",
   "bg-green-500": "#22c55e",
   "bg-blue-500": "#3b82f6",
-  "bg-indigo-500": "#6366f1",
-  "bg-purple-500": "#a855f7",
+  "bg-[var(--color-primary)]": "var(--color-primary)",
   "bg-pink-500": "#ec4899",
 };
 
@@ -109,13 +108,13 @@ function getLifecycleMeta(contact: Contact, stages: LifecycleStage[]) {
   }
 
   if (typeof contact.lifecycle === "string" && contact.lifecycle) {
-    return { label: contact.lifecycle, color: "#6366f1" };
+    return { label: contact.lifecycle, color: "var(--color-primary)" };
   }
 
   if (contact.lifecycle && typeof contact.lifecycle === "object") {
     return {
       label: [contact.lifecycle.emoji, contact.lifecycle.name].filter(Boolean).join(" "),
-      color: "#6366f1",
+      color: "var(--color-primary)",
     };
   }
 
@@ -410,7 +409,7 @@ export function ContactsTable({
   return (
     <>
       {someSelected ? (
-        <div className="flex flex-wrap items-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
+        <div className="flex flex-wrap items-center gap-3 bg-[var(--color-primary)] px-4 py-3 text-sm text-white">
           <span className="font-medium">{selectedIds.size} selected</span>
           <Button
             onClick={handleDeleteSelected}
@@ -461,7 +460,7 @@ export function ContactsTable({
           },
         ]}
         onRowClick={openEditModal}
-        getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-indigo-50/60" : "")}
+        getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-[var(--color-primary-light)]" : "")}
         renderMobileCard={(contact) => renderMobileCard(contact)}
         minTableWidth={980}
         mobileLoadMore={{

@@ -5,7 +5,7 @@ const TAG_COLOR_MAP: Record<string, string> = {
   'tag-yellow': '#fbbf24',
   'tag-green': '#4ade80',
   'tag-blue': '#60a5fa',
-  'tag-indigo': '#818cf8',
+  'tag-indigo': 'var(--color-primary-hover)',
   'tag-purple': '#c084fc',
   'tag-pink': '#f472b6',
 };
@@ -24,6 +24,14 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function colorWithAlpha(color: string, alpha: number) {
+  if (color.startsWith('var(')) {
+    return `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
+  }
+
+  return hexToRgba(color, alpha);
+}
+
 export function resolveTagBaseColor(color?: string | null) {
   if (!color) return TAG_COLOR_MAP['tag-indigo'];
   if (color.startsWith('#')) return color;
@@ -34,9 +42,9 @@ export function getTagSurfaceStyle(color?: string | null) {
   const base = resolveTagBaseColor(color);
 
   return {
-    backgroundColor: hexToRgba(base, 0.12),
-    borderColor: hexToRgba(base, 0.24),
-    color: '#374151',
+    backgroundColor: colorWithAlpha(base, 0.12),
+    borderColor: colorWithAlpha(base, 0.24),
+    color: base.startsWith('var(') ? base : '#374151',
   };
 }
 

@@ -186,14 +186,14 @@ export const UserSettings = () => {
                 alt="Avatar"
                 size="2xl"
                 style={{ width: '100%', height: '100%' }}
-                className="overflow-hidden ring-2 ring-transparent ring-offset-2 transition-all duration-200 group-hover:ring-indigo-400"
+                className="overflow-hidden ring-2 ring-transparent ring-offset-2 transition-all duration-200 group-hover:ring-[var(--color-primary-light)]"
               />
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarUploading}
-                className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-full bg-black/45 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/55 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-0"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-full bg-black/45 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/55 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-0"
                 aria-label="Change avatar"
               >
                 <Camera size={14} />
@@ -224,7 +224,7 @@ export const UserSettings = () => {
               <TruncatedText
                 text={avatarFile?.name ?? ''}
                 maxLength={20}
-                className="max-w-full text-center text-[11px] font-medium text-indigo-600 sm:max-w-[90px] sm:text-left"
+                className="max-w-full text-center text-[11px] font-medium text-[var(--color-primary)] sm:max-w-[90px] sm:text-left"
               />
             ) : null}
 

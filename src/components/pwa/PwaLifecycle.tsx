@@ -129,7 +129,7 @@ export function PwaLifecycle() {
       {needRefresh && (
         <div className="fixed bottom-[5.5rem] right-3 z-[70] w-[min(100%-1.5rem,24rem)] rounded-3xl bg-slate-950 p-4 text-white shadow-[0_24px_80px_rgba(15,23,42,0.3)] md:bottom-6 md:right-6">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-200">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-light)] text-[var(--color-primary-light)]">
               <RefreshCw size={18} />
             </div>
 
@@ -155,7 +155,7 @@ export function PwaLifecycle() {
             <button
               type="button"
               onClick={handleRefresh}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]"
             >
               <RefreshCw size={16} />
               Reload now
@@ -175,7 +175,7 @@ export function PwaLifecycle() {
       {canInstall && (
         <div className="fixed bottom-[5.5rem] right-3 z-[69] w-[min(100%-1.5rem,24rem)] rounded-3xl border border-slate-200 bg-white p-4 text-slate-900 shadow-[0_24px_80px_rgba(15,23,42,0.16)] md:bottom-6 md:right-6">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-light)] text-[var(--color-primary)]">
               <Download size={18} />
             </div>
 
@@ -201,7 +201,7 @@ export function PwaLifecycle() {
             <button
               type="button"
               onClick={() => void handleInstall()}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]"
             >
               <Download size={16} />
               Install app

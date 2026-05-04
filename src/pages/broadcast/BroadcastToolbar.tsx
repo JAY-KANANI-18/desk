@@ -61,7 +61,7 @@ export function BroadcastToolbar({
                     {selectedStatus !== "All" ? (
                       <span
                         aria-hidden="true"
-                        className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white"
+                        className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[var(--color-primary)] ring-2 ring-white"
                       />
                     ) : null}
                     <ListFilter size={17} />

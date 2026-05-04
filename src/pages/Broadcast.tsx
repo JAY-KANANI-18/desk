@@ -153,7 +153,7 @@ export const Broadcast = () => {
                 Broadcasts
               </p>
               <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
-                <Radio size={16} className="text-indigo-600" />
+                <Radio size={16} className="text-[var(--color-primary)]" />
                 {page.selectedStatus}
               </h2>
             </div>

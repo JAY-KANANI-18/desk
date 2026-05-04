@@ -27,10 +27,10 @@ export function QuotedPreview({
           : attachmentType
             ? { label: "File", Icon: File }
             : null;
-  const bar = isOutgoing ? "bg-white/40" : "bg-indigo-400";
+  const bar = isOutgoing ? "bg-white/40" : "bg-[var(--color-primary)]";
   const bg = isOutgoing ? "bg-white/10" : "bg-gray-200/60";
   const clr = isOutgoing ? "text-white/75" : "text-gray-600";
-  const actor = isOutgoing ? "text-white/90" : "text-indigo-600";
+  const actor = isOutgoing ? "text-white/90" : "text-[var(--color-primary)]";
   const attachmentChip = isOutgoing
     ? "bg-white/10 text-white/80"
     : "bg-white/80 text-gray-600";

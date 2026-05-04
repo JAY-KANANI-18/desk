@@ -107,7 +107,7 @@ export const WebsiteChatConfiguration = ({
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-          <Code2 size={15} className="text-indigo-500" />
+          <Code2 size={15} className="text-[var(--color-primary)]" />
           <span className="text-sm font-semibold text-slate-800">
             Embed Script
           </span>

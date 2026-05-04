@@ -40,9 +40,9 @@ export const GmailConfiguration = ({
         </div>
       </div>
 
-      <div className="space-y-2 border-l border-indigo-300 pl-3">
+      <div className="space-y-2 border-l border-[var(--color-primary-light)] pl-3">
         <div className="flex items-center gap-2">
-          <CheckCircle size={15} className="shrink-0 text-indigo-600" />
+          <CheckCircle size={15} className="shrink-0 text-[var(--color-primary)]" />
           <p className="text-sm font-medium text-slate-800">
             Connected via Google OAuth
           </p>

@@ -95,15 +95,15 @@ export function UploadStep({
             tabIndex={0}
             className={`relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-7 text-center transition-all ${
               dragging
-                ? "border-indigo-500 bg-indigo-50/80"
-                : "border-gray-200 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50/40"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary-light)]"
+                : "border-gray-200 bg-gray-50 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)]"
             }`}
           >
             <div
               className={`rounded-xl p-3 transition-colors ${
                 dragging
-                  ? "bg-indigo-100 text-indigo-600"
-                  : "bg-white text-indigo-400 shadow-sm"
+                  ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                  : "bg-white text-[var(--color-primary)] shadow-sm"
               }`}
             >
               <UploadCloud size={22} />

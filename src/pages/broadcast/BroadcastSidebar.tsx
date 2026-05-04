@@ -19,7 +19,7 @@ export function BroadcastSidebar({
     <>
       {isMobile ? null : (
         <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold text-gray-900">
-          <Radio size={18} className="text-indigo-600" />
+          <Radio size={18} className="text-[var(--color-primary)]" />
           Broadcasts
         </h2>
       )}

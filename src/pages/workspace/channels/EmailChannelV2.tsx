@@ -110,9 +110,9 @@ function ForwardingGuideIllustration({
   forwardingEmail: string;
 }) {
   return (
-    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5">
-      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-indigo-800">
-        <Sparkles size={15} className="text-indigo-500" />
+    <div className="rounded-2xl border border-[var(--color-primary-light)] bg-gradient-to-br from-[var(--color-primary-light)] via-white to-sky-50 p-5">
+      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--color-primary)]">
+        <Sparkles size={15} className="text-[var(--color-primary)]" />
         Set an auto-forwarding rule in your mailbox
       </div>
       <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
@@ -127,14 +127,14 @@ function ForwardingGuideIllustration({
             Forward new support emails automatically.
           </p>
         </div>
-        <div className="hidden items-center justify-center text-xl text-indigo-400 md:flex">
+        <div className="hidden items-center justify-center text-xl text-[var(--color-primary)] md:flex">
           to
         </div>
-        <div className="rounded-xl border border-indigo-200 bg-white px-4 py-4 shadow-sm">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-indigo-400">
+        <div className="rounded-xl border border-[var(--color-primary-light)] bg-white px-4 py-4 shadow-sm">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-primary)]">
             Forward To
           </p>
-          <p className="break-all text-sm font-semibold text-indigo-900">
+          <p className="break-all text-sm font-semibold text-[var(--color-primary)]">
             {forwardingEmail || 'support-workspace@inbound.yourapp.com'}
           </p>
           <p className="mt-1 text-xs text-gray-500">
@@ -317,7 +317,7 @@ export const EmailChannel = ({
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               Forwarding Inbox
             </p>
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-4">
+            <div className="rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-light)] px-4 py-4">
               <CopyInput
                 label="System-generated forwarding email"
                 value={

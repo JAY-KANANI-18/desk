@@ -66,9 +66,9 @@ const PAGES: PageEntry[] = [
     url: '/dashboard',
     category: 'core',
     icon: <LayoutDashboard size={22} />,
-    color: 'bg-indigo-100',
-    textColor: 'text-indigo-600',
-    borderColor: 'border-indigo-500',
+    color: 'bg-[var(--color-primary-light)]',
+    textColor: 'text-[var(--color-primary)]',
+    borderColor: 'border-[var(--color-primary)]',
     features: [
       'KPI stat cards (conversations, contacts, resolved, response time)',
       'Weekly conversation volume bar chart',
@@ -124,9 +124,9 @@ const PAGES: PageEntry[] = [
     url: '/workflows',
     category: 'core',
     icon: <Workflow size={22} />,
-    color: 'bg-violet-100',
-    textColor: 'text-violet-600',
-    borderColor: 'border-violet-500',
+    color: 'bg-[var(--color-primary-light)]',
+    textColor: 'text-[var(--color-primary)]',
+    borderColor: 'border-[var(--color-primary)]',
     features: [
       '18 pre-built templates (Welcome, Leads, Support, Sales…)',
       'Category sidebar with search filter',
@@ -227,9 +227,9 @@ const PAGES: PageEntry[] = [
     url: '/team',
     category: 'team',
     icon: <UsersRound size={22} />,
-    color: 'bg-purple-100',
-    textColor: 'text-purple-600',
-    borderColor: 'border-purple-500',
+    color: 'bg-[var(--color-primary-light)]',
+    textColor: 'text-[var(--color-primary)]',
+    borderColor: 'border-[var(--color-primary)]',
     features: [
       'All users table with role badges',
       'Active & pending member counts',
@@ -584,7 +584,7 @@ export const AppSitemap = () => {
     <div className="h-full overflow-y-auto bg-gray-50">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-[var(--color-primary-hover)] text-white">
         {/* Decorative circles */}
         <div className="absolute -top-16 -right-16 w-64 h-64 bg-white opacity-5 rounded-full" />
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white opacity-5 rounded-full" />

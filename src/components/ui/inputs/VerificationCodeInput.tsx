@@ -137,9 +137,9 @@ export function VerificationCodeInput({
           onKeyDown={(event) => handleKeyDown(index, event)}
           className={cx(
             "h-14 w-full rounded-2xl border text-center text-lg font-semibold outline-none transition",
-            "focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100",
+            "focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-light)]",
             digit
-              ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+              ? "border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]"
               : "border-gray-200 bg-white text-gray-900",
             invalid && "border-red-300 bg-red-50 text-red-600 focus:border-red-400 focus:ring-red-100",
             disabled && "cursor-not-allowed opacity-60",

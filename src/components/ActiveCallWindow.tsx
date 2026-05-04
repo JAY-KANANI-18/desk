@@ -65,7 +65,7 @@ interface CtrlBtnProps {
 
 const CtrlBtn = ({
   icon, label, active,
-  activeClass = 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  activeClass = 'bg-[var(--color-primary-light)] text-[var(--color-primary)] border-[var(--color-primary-light)]',
   onClick,
 }: CtrlBtnProps) => (
   <Button
@@ -288,7 +288,7 @@ export const ActiveCallWindow = () => {
               icon={<ArrowRightLeft size={17} />}
               label="Transfer"
               active={panel === 'transfer'}
-              activeClass="bg-violet-500/20 text-violet-400 border-violet-500/30"
+              activeClass="bg-[var(--color-primary-light)] text-[var(--color-primary)] border-[var(--color-primary-light)]"
               onClick={() => togglePanel('transfer')}
             />
             <CtrlBtn
@@ -317,7 +317,7 @@ export const ActiveCallWindow = () => {
             <span className="flex w-full items-center gap-2">
               <FileText size={13} />
               <span>{note ? 'Edit call note' : 'Add call note'}</span>
-              {note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
+              {note && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] flex-shrink-0" />}
             </span>
           </Button>
 
@@ -369,7 +369,7 @@ export const ActiveCallWindow = () => {
                   value={transferSearch}
                   onChange={e => setTransferSearch(e.target.value)}
                   placeholder="Search agents…"
-                  className="w-full bg-gray-700 text-white text-xs pl-7 pr-3 py-2 rounded-lg outline-none placeholder-gray-500 border border-gray-600 focus:border-indigo-500 transition-colors"
+                  className="w-full bg-gray-700 text-white text-xs pl-7 pr-3 py-2 rounded-lg outline-none placeholder-gray-500 border border-gray-600 focus:border-[var(--color-primary)] transition-colors"
                 />
               </div>
               <div className="space-y-0.5 max-h-36 overflow-y-auto">
@@ -410,7 +410,7 @@ export const ActiveCallWindow = () => {
               onChange={e => setNote(e.target.value)}
               placeholder="Type your call note…"
               rows={3}
-              className="w-full bg-gray-800 text-gray-200 text-xs px-3 py-2.5 rounded-xl outline-none placeholder-gray-600 resize-none border border-gray-700 focus:border-indigo-500 transition-colors"
+              className="w-full bg-gray-800 text-gray-200 text-xs px-3 py-2.5 rounded-xl outline-none placeholder-gray-600 resize-none border border-gray-700 focus:border-[var(--color-primary)] transition-colors"
             />
           )}
 

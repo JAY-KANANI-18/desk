@@ -31,7 +31,7 @@ export const OnboardingProgress = ({
 
       <div className="overflow-hidden rounded-full bg-gray-100">
         <motion.div
-          className="h-1.5 rounded-full bg-indigo-600"
+          className="h-1.5 rounded-full bg-[var(--color-primary)]"
           style={{ width: `${progress}%` }}
           initial={false}
           animate={{ width: `${progress}%` }}

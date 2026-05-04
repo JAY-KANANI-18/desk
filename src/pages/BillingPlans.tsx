@@ -80,7 +80,7 @@ const PLANS: Plan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    icon: <Building2 size={22} className="text-purple-500" />,
+    icon: <Building2 size={22} className="text-[var(--color-primary)]" />,
     monthlyPrice: 0,
     annualPrice: 0,
     description: 'Custom solutions for large organisations with complex needs.',
@@ -207,7 +207,7 @@ export const BillingPlans = () => {
                 <div className="p-7 flex-1 flex flex-col">
                   {/* Icon + name */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-                    isGrowth ? 'bg-blue-500' : plan.id === 'enterprise' ? 'bg-purple-50' : 'bg-blue-50'
+                    isGrowth ? 'bg-blue-500' : plan.id === 'enterprise' ? 'bg-[var(--color-primary-light)]' : 'bg-blue-50'
                   }`}>
                     {plan.icon}
                   </div>

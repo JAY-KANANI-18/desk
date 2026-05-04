@@ -185,7 +185,7 @@ export function BroadcastCalendarView({
                           isSelected
                             ? "bg-white/20 text-white"
                             : isToday
-                              ? "bg-indigo-50 text-indigo-600"
+                              ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                               : isCurrentMonth
                                 ? "text-slate-800"
                                 : "text-slate-300"
@@ -198,7 +198,7 @@ export function BroadcastCalendarView({
                           className={`mt-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold ${
                             isSelected
                               ? "bg-white/20 text-white"
-                              : "bg-indigo-50 text-indigo-600"
+                              : "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                           }`}
                         >
                           {events.length}
@@ -332,7 +332,7 @@ export function BroadcastCalendarView({
                   <span
                     className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1.5 text-xs ${
                       isToday
-                        ? "bg-indigo-600 text-white"
+                        ? "bg-[var(--color-primary)] text-white"
                         : isCurrentMonth
                           ? "text-gray-700"
                           : "text-gray-400"

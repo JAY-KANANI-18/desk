@@ -6,8 +6,8 @@ import { TruncatedText } from "../../../components/ui/TruncatedText";
 
 function getAttachmentToneClasses(isOutgoing?: boolean) {
   return {
-    icon: isOutgoing ? "text-white/60" : "text-indigo-500",
-    secondaryIcon: isOutgoing ? "text-white/60" : "text-purple-500",
+    icon: isOutgoing ? "text-white/60" : "text-[var(--color-primary)]",
+    secondaryIcon: isOutgoing ? "text-white/60" : "text-[var(--color-primary)]",
     title: isOutgoing ? "text-white/80" : "text-gray-600",
     fileTitle: isOutgoing ? "text-white" : "text-gray-800",
     meta: isOutgoing ? "text-white/60" : "text-gray-400",

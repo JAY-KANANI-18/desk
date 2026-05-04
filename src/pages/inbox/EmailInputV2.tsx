@@ -604,7 +604,7 @@ export function EmailInput({
 
           {!draftText && !aiComposer.aiLoadingAction && !aiComposer.aiComposerNotice && (
             <div className={`absolute left-3 top-3 pr-3 text-[13px] pointer-events-none select-none sm:left-4 sm:text-sm ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
-              {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-violet-400">$</span> for variables</>}
+              {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-[var(--color-primary)]">$</span> for variables</>}
             </div>
           )}
 
@@ -642,7 +642,7 @@ export function EmailInput({
               }
             }}
             aria-busy={isAiBusy}
-            className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-indigo-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
+            className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-[var(--color-primary)] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
             style={{ wordBreak: 'break-word' }}
           />
         </div>

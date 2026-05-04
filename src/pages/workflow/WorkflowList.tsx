@@ -493,8 +493,8 @@ export function WorkflowList() {
                   <div className="min-w-0 pr-6">
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 ring-1 ring-indigo-100">
-                          <Zap size={17} className="text-indigo-600" />
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-light)] ring-1 ring-[var(--color-primary-light)]">
+                          <Zap size={17} className="text-[var(--color-primary)]" />
                         </span>
 
                         <div className="min-w-0">

@@ -136,10 +136,10 @@ export function TimelineItemRow({
     ? "visible opacity-100 scale-100 transition-transform duration-200 ease-out motion-reduce:transition-none"
     : "invisible opacity-0 scale-100 pointer-events-none";
   const bubbleColor = isAiMessage
-    ? "bg-slate-950 text-white ring-1 ring-slate-700"
+    ? "bg-[var(--appearance-surface-raised)] text-[var(--appearance-text)] ring-1 ring-[var(--appearance-border)]"
     : isOutgoing
-    ? "bg-indigo-500 text-white"
-    : "bg-gray-100 text-gray-900";
+    ? "bg-[var(--message-outgoing-bg)] text-[var(--message-outgoing-text)]"
+    : "bg-[var(--message-incoming-bg)] text-[var(--message-incoming-text)]";
 
   if (isEvent) {
     return (

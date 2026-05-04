@@ -36,7 +36,7 @@ export default function ImportJobsPage() {
 
       <div className="mt-3 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
             <BriefcaseBusiness size={14} />
             Background imports
           </div>
@@ -116,7 +116,7 @@ export default function ImportJobsPage() {
                         ? "bg-green-100 text-green-700"
                         : job.status === "FAILED"
                           ? "bg-red-100 text-red-700"
-                          : "bg-indigo-100 text-indigo-700"
+                          : "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                     }`}
                   >
                     {job.status}
@@ -130,7 +130,7 @@ export default function ImportJobsPage() {
                   <button
                     type="button"
                     onClick={() => setActiveJobId(job.id)}
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    className="text-sm font-medium text-[var(--color-primary)] hover:text-[var(--color-primary)]"
                   >
                     View
                   </button>

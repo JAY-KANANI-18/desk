@@ -24,7 +24,7 @@ export function ContactAvatar({
     <img src={avatarUrl} alt="" className={`${classes} rounded-full object-cover`} />
   ) : (
     <div
-      className={`${classes} rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold`}
+      className={`${classes} rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] flex items-center justify-center font-semibold`}
     >
       {initials(firstName ?? "", lastName ?? "")}
     </div>

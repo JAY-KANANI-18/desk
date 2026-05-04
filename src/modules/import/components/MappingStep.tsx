@@ -119,7 +119,7 @@ export function MappingStep({
               <div
                 key={header}
                 className={`grid grid-cols-[1fr_20px_180px_180px_28px] items-center gap-3 border-b border-gray-100 px-4 py-2 text-sm last:border-0 ${
-                  isMapped ? "bg-indigo-50/30" : "bg-white"
+                  isMapped ? "bg-[var(--color-primary-light)]" : "bg-white"
                 }`}
               >
                 <div className="truncate text-xs font-medium text-gray-800">

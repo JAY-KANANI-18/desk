@@ -112,7 +112,7 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
                       onClick={() => selectWorkspace(workspace)}
                       className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${
                         activeWorkspace?.id === workspace.id
-                          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                          ? "border-[var(--color-primary-light)] bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                           : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                       style={classDrivenButtonStyle}
@@ -178,7 +178,7 @@ export function WorkspaceSwitcher({ isMobile }: { isMobile: boolean }) {
                         </div>
 
                         {activeWorkspace?.id === workspace.id && (
-                          <Check size={14} className="text-indigo-600" />
+                          <Check size={14} className="text-[var(--color-primary)]" />
                         )}
                       </span>
                     </Button>

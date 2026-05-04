@@ -530,8 +530,8 @@ export function ContactSidebarHybrid({
     <div className="flex h-full min-h-0 flex-col bg-white">
       <div className="flex flex-1 items-center justify-center px-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center">
-            <Loader2 size={18} className="animate-spin text-indigo-600" />
+          <div className="w-10 h-10 bg-[var(--color-primary-light)] rounded-full flex items-center justify-center">
+            <Loader2 size={18} className="animate-spin text-[var(--color-primary)]" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-700">Loading contact</p>
@@ -709,7 +709,7 @@ export function ContactSidebarHybrid({
                 >
                   <span
                     tabIndex={0}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-[#f3f5f9] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-[#f3f5f9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-1"
                   >
                     <img src={meta.icon} alt={meta.label} className="w-3.5 h-3.5 object-contain opacity-80" />
                   </span>

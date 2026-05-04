@@ -178,7 +178,7 @@ const PreviewModal = ({
               {preview.buttons?.map((button: any, index: number) => (
                 <div
                   key={`${button.text}-${index}`}
-                  className="border-t border-gray-100 px-3 py-2 text-center text-xs font-medium text-indigo-600"
+                  className="border-t border-gray-100 px-3 py-2 text-center text-xs font-medium text-[var(--color-primary)]"
                 >
                   {button.text}
                 </div>

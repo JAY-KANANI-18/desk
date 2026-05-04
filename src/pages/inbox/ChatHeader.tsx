@@ -85,7 +85,7 @@ function ActionListButton({
                   ? "text-[#c2410c]"
                   : tone === "neutral"
                     ? "text-gray-700"
-                    : "text-indigo-700"
+                    : "text-[var(--color-primary)]"
                 : "text-gray-800"
             }`}
           >
@@ -336,7 +336,7 @@ export function ChatHeader({
                 <button
                   type="button"
                   onClick={onOpenContactDetails}
-                  className="block min-w-0 max-w-full rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-1"
+                  className="block min-w-0 max-w-full rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] focus-visible:ring-offset-1"
                   aria-label="Open contact details"
                 >
                 <span className="block min-w-0 max-w-full whitespace-nowrap text-[14px] font-semibold leading-tight text-gray-900">

@@ -56,7 +56,7 @@ export const MOCK_DATA = {
     { id: 2, name: 'Instagram', identifier: '@mycompany', status: 'Connected', icon: '📸', color: 'bg-pink-500', msgs: 432, channelType: 'instagram' },
     { id: 3, name: 'Facebook Messenger', identifier: 'My Company Page', status: 'Connected', icon: '💙', color: 'bg-blue-600', msgs: 287, channelType: 'messenger' },
     { id: 4, name: 'Gmail', identifier: 'support@company.com', status: 'Connected', icon: '📧', color: 'bg-red-500', msgs: 891, channelType: 'gmail' },
-    { id: 5, name: 'Email (SMTP)', identifier: 'hello@company.com', status: 'Error', icon: '✉️', color: 'bg-indigo-500', msgs: 0, channelType: 'email' },
+    { id: 5, name: 'Email (SMTP)', identifier: 'hello@company.com', status: 'Error', icon: '✉️', color: 'bg-[var(--color-primary)]', msgs: 0, channelType: 'email' },
   ] as Channel[],
 
   integrations: [
@@ -90,7 +90,7 @@ export const MOCK_DATA = {
   ] as ContactField[],
 
   lifecycleStages: [
-    { id: 1, name: 'New lead', color: '#6366f1', count: 142 },
+    { id: 1, name: 'New lead', color: 'var(--color-primary)', count: 142 },
     { id: 2, name: 'Contacted', color: '#3b82f6', count: 87 },
     { id: 3, name: 'Qualified', color: '#f59e0b', count: 54 },
     { id: 4, name: 'Proposal sent', color: '#8b5cf6', count: 31 },

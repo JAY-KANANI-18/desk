@@ -214,7 +214,7 @@ const GenericSidebar = ({ meta }: { meta: ChannelRegistryItem }) => (
     {meta.videoTutorial ? (
       <a
         href={meta.videoTutorial}
-        className="flex items-center gap-2 text-[11px] font-medium text-indigo-600 no-underline hover:underline"
+        className="flex items-center gap-2 text-[11px] font-medium text-[var(--color-primary)] no-underline hover:underline"
       >
         <Video size={12} />
         Step-by-step video tutorial
@@ -231,7 +231,7 @@ const GenericSidebar = ({ meta }: { meta: ChannelRegistryItem }) => (
             <li key={resource.label}>
               <a
                 href={resource.href}
-                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-indigo-600 no-underline hover:underline"
+                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-[var(--color-primary)] no-underline hover:underline"
               >
                 <span className="mt-0.5 shrink-0 text-gray-300">-</span>
                 {resource.label}

@@ -110,9 +110,9 @@ function SortIcon({
 }) {
   if (!active) return <ArrowUpDown size={11} className="text-gray-300" />;
   return direction === "asc" ? (
-    <ArrowUp size={11} className="text-indigo-500" />
+    <ArrowUp size={11} className="text-[var(--color-primary)]" />
   ) : (
-    <ArrowDown size={11} className="text-indigo-500" />
+    <ArrowDown size={11} className="text-[var(--color-primary)]" />
   );
 }
 
@@ -280,7 +280,7 @@ function MobileLoadMoreSentinel({
     <div ref={sentinelRef} className="flex min-h-10 items-center justify-center px-4 py-3">
       {loading ? (
         <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
-          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-500" />
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--color-primary)]" />
           {loadingLabel}
         </span>
       ) : hasMore ? (
@@ -454,7 +454,7 @@ export function DataTable<T, SortField extends string = string>({
     <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
       {loading ? (
         <div className="flex items-center justify-center gap-2 py-20 text-sm text-gray-500">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[var(--color-primary)]" />
           {loadingLabel}
         </div>
       ) : rows.length === 0 ? (
@@ -564,7 +564,7 @@ export function DataTable<T, SortField extends string = string>({
                     aria-live="polite"
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-lg"
                   >
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-500" />
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--color-primary)]" />
                     {mobileLoadMore.loadingLabel ?? "Loading more..."}
                   </span>
                 </div>

@@ -513,7 +513,7 @@ export const OnboardingMinimalFlow = () => {
       case "welcome":
         return (
           <div className="flex flex-col items-center gap-4 py-3 text-center">
-            <div className="rounded-2xl shadow-lg shadow-indigo-200">
+            <div className="rounded-2xl shadow-lg shadow-[var(--appearance-shadow)]">
               <Avatar
                 src={user?.avatarUrl ?? undefined}
                 name={
@@ -539,7 +539,7 @@ export const OnboardingMinimalFlow = () => {
               </p>
             </div>
 
-            <div className="rounded-full bg-indigo-50 px-4 py-2 text-xs font-medium text-indigo-700">
+            <div className="rounded-full bg-[var(--color-primary-light)] px-4 py-2 text-xs font-medium text-[var(--color-primary)]">
               {hasExistingOrganization
                 ? "You're almost ready"
                 : "Quick setup, then you're in"}
@@ -723,16 +723,16 @@ export const OnboardingMinimalFlow = () => {
 
   if (isSubmitting) {
     return (
-      <div className="relative h-[100dvh] overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
+      <div className="relative h-[100dvh] overflow-hidden bg-gradient-to-br from-[var(--color-primary-light)] via-white to-[var(--color-primary-light)]">
         <motion.div
           aria-hidden
-          className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-indigo-100/70 blur-3xl"
+          className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-[var(--color-primary-light)] blur-3xl"
           animate={{ x: [0, 24, -8, 0], y: [0, -10, 16, 0] }}
           transition={{ repeat: Infinity, duration: 11, ease: "easeInOut" }}
         />
         <motion.div
           aria-hidden
-          className="absolute bottom-12 right-0 h-80 w-80 rounded-full bg-indigo-200/40 blur-3xl"
+          className="absolute bottom-12 right-0 h-80 w-80 rounded-full bg-[var(--color-primary-light)]/40 blur-3xl"
           animate={{ x: [0, -20, 12, 0], y: [0, 16, -12, 0] }}
           transition={{ repeat: Infinity, duration: 13, ease: "easeInOut" }}
         />
@@ -746,7 +746,7 @@ export const OnboardingMinimalFlow = () => {
           >
             <div className="relative mx-auto h-24 w-24">
               <motion.div
-                className="absolute inset-0 rounded-full border border-indigo-200"
+                className="absolute inset-0 rounded-full border border-[var(--color-primary-light)]"
                 animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0.2, 0.55] }}
                 transition={{
                   duration: 1.8,
@@ -755,7 +755,7 @@ export const OnboardingMinimalFlow = () => {
                 }}
               />
               <motion.div
-                className="absolute inset-3 rounded-full border border-indigo-300"
+                className="absolute inset-3 rounded-full border border-[var(--color-primary-light)]"
                 animate={{ scale: [1, 1.12, 1], opacity: [0.7, 0.3, 0.7] }}
                 transition={{
                   duration: 1.6,
@@ -765,7 +765,7 @@ export const OnboardingMinimalFlow = () => {
                 }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--appearance-shadow)]">
                   <Loader2 size={22} className="animate-spin" />
                 </div>
               </div>
@@ -777,7 +777,7 @@ export const OnboardingMinimalFlow = () => {
 
             <div className="mt-8 overflow-hidden rounded-full bg-gray-100">
               <motion.div
-                className="h-1.5 rounded-full bg-indigo-600"
+                className="h-1.5 rounded-full bg-[var(--color-primary)]"
                 initial={false}
                 animate={{ width: loadingProgress }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
@@ -791,8 +791,8 @@ export const OnboardingMinimalFlow = () => {
                   className={[
                     "h-2 rounded-full transition-all",
                     index <= loadingStep
-                      ? "w-6 bg-indigo-600"
-                      : "w-2 bg-indigo-100",
+                      ? "w-6 bg-[var(--color-primary)]"
+                      : "w-2 bg-[var(--color-primary-light)]",
                   ].join(" ")}
                   animate={{ opacity: index <= loadingStep ? 1 : 0.55 }}
                 />
@@ -805,16 +805,16 @@ export const OnboardingMinimalFlow = () => {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-gradient-to-br from-[var(--color-primary-light)] via-white to-[var(--color-primary-light)]">
       <motion.div
         aria-hidden
-        className="absolute -left-20 top-24 h-72 w-72 rounded-full bg-indigo-100/70 blur-3xl"
+        className="absolute -left-20 top-24 h-72 w-72 rounded-full bg-[var(--color-primary-light)] blur-3xl"
         animate={{ x: [0, 22, -8, 0], y: [0, -12, 18, 0] }}
         transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
       />
       <motion.div
         aria-hidden
-        className="absolute bottom-10 right-0 h-80 w-80 rounded-full bg-indigo-200/35 blur-3xl"
+        className="absolute bottom-10 right-0 h-80 w-80 rounded-full bg-[var(--color-primary-light)] blur-3xl"
         animate={{ x: [0, -18, 10, 0], y: [0, 18, -10, 0] }}
         transition={{ repeat: Infinity, duration: 14, ease: "easeInOut" }}
       />
@@ -836,7 +836,7 @@ export const OnboardingMinimalFlow = () => {
               <h1 className="mx-auto max-w-[18ch] text-2xl font-semibold leading-tight text-gray-950 sm:text-3xl md:text-4xl">
                 {currentStepConfig.title}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-indigo-600 sm:mt-5">
+              <p className="mt-3 text-sm leading-6 text-[var(--color-primary)] sm:mt-5">
                 {supportText}
               </p>
             </div>

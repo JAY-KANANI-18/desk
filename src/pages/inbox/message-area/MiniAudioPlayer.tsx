@@ -36,16 +36,16 @@ export function MiniAudioPlayer({
   };
 
   const trackBg = dark ? "bg-white/30" : "bg-gray-200";
-  const fill = dark ? "bg-white" : "bg-indigo-500";
+  const fill = dark ? "bg-white" : "bg-[var(--color-primary)]";
   const labelClr = dark ? "text-white/80" : "text-gray-500";
   const timeClr = dark ? "text-white/70" : "text-gray-400";
-  const wrapBg = dark ? "bg-indigo-600" : "bg-gray-100";
+  const wrapBg = dark ? "bg-[var(--color-primary)]" : "bg-gray-100";
   const playPauseIcon = playing ? (
-    <Pause size={14} className={dark ? "text-indigo-600" : undefined} />
+    <Pause size={14} className={dark ? "text-[var(--color-primary)]" : undefined} />
   ) : (
     <Play
       size={14}
-      className={dark ? "ml-0.5 text-indigo-600" : "ml-0.5"}
+      className={dark ? "ml-0.5 text-[var(--color-primary)]" : "ml-0.5"}
     />
   );
 

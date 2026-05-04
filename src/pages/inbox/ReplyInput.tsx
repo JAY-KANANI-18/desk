@@ -118,7 +118,7 @@ function QuotedReplyBanner({
 
   return (
     <div className="flex items-start gap-2 px-2.5 pb-0 pt-2 sm:px-3 sm:pt-2.5">
-      <div className="flex-1 flex items-start gap-2 bg-gray-50 border-l-[3px] border-indigo-500 rounded-r-lg px-3 py-2 min-w-0">
+      <div className="flex-1 flex items-start gap-2 bg-gray-50 border-l-[3px] border-[var(--color-primary)] rounded-r-lg px-3 py-2 min-w-0">
         {/* attachment thumb */}
         {q.attachmentType === 'image' && q.attachmentUrl && (
           <img src={q.attachmentUrl} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />
@@ -129,12 +129,12 @@ function QuotedReplyBanner({
           </div>
         )}
         {q.attachmentType === 'file' && (
-          <div className="w-9 h-9 rounded bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <FileIcon size={14} className="text-indigo-500" />
+          <div className="w-9 h-9 rounded bg-[var(--color-primary-light)] flex items-center justify-center flex-shrink-0">
+            <FileIcon size={14} className="text-[var(--color-primary)]" />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold text-indigo-600 mb-0.5">{q.author}</p>
+          <p className="text-[11px] font-semibold text-[var(--color-primary)] mb-0.5">{q.author}</p>
           {q.text ? (
             <p className="text-[12px] text-gray-600 truncate leading-snug">{q.text}</p>
           ) : q.attachmentType ? (

@@ -123,7 +123,7 @@ export function ContactsHeader({
               <IconButton
                 aria-label="Contact actions"
                 icon={<MoreVertical size={17} />}
-                className={showActionsMenu ? "bg-slate-100 text-indigo-600" : ""}
+                className={showActionsMenu ? "bg-slate-100 text-[var(--color-primary)]" : ""}
                 onClick={() => setShowActionsMenu((prev) => !prev)}
                 radius="full"
                 type="button"

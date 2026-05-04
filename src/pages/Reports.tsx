@@ -459,7 +459,7 @@ export const Reports = () => {
                 onClick={() => setActiveSection(item.key)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                   activeSection === item.key
-                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                    ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >

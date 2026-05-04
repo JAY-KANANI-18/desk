@@ -175,7 +175,7 @@ export function MobileBottomNav() {
       width: indicatorStyle.width,
     }}
   >
-    {/* <div className="mx-auto h-full w-10 rounded-b-full bg-indigo-500 shadow-[0_4px_10px_rgba(79,70,229,0.18)]" /> */}
+    {/* <div className="mx-auto h-full w-10 rounded-b-full bg-[var(--color-primary)] shadow-[0_4px_10px_rgba(79,70,229,0.18)]" /> */}
   </div>
 
   {navItems.map((item, index) => {
@@ -186,11 +186,11 @@ export function MobileBottomNav() {
           );
 
     const iconClassName = `relative z-10 transition-colors duration-300 ${
-      isActive ? "text-indigo-600" : "text-slate-500"
+      isActive ? "text-[var(--color-primary)]" : "text-slate-500"
     }`;
 
     const labelClassName = `relative z-10 text-[11px] leading-none whitespace-nowrap transition-colors duration-300 ${
-      isActive ? "font-semibold text-indigo-600" : "text-slate-500"
+      isActive ? "font-semibold text-[var(--color-primary)]" : "text-slate-500"
     }`;
 
     const content = (

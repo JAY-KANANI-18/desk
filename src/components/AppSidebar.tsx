@@ -31,8 +31,8 @@ export const AppSidebar = ({
     "flex h-[3.35rem] w-[3.6rem] flex-col items-center justify-center gap-1.5 rounded-[1.15rem] text-center transition-all";
   const inactiveNavClass = "text-slate-500 hover:bg-slate-100 hover:text-slate-900";
   const activeNavClass = isExpanded
-    ? "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.6rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
-    : "relative bg-transparent text-indigo-600 before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500";
+    ? "relative bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
+    : "relative bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]";
   const isSettingsRouteActive = settingsLinks.some(
     (link) =>
       location.pathname === link.path ||
@@ -194,7 +194,7 @@ export const AppSidebar = ({
                   className={({ isActive }) =>
                     `relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${
                       isActive
-                        ? "bg-transparent text-indigo-600 before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-indigo-500"
+                        ? "bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
                         : "text-slate-600 hover:bg-slate-100"
                     }`
                   }

@@ -112,7 +112,7 @@ export function WorkspaceTagFormModal({
                 <span className="text-lg leading-none">
                   {value.emoji || "Tag"}
                 </span>
-                <Smile size={16} className="text-indigo-600" />
+                <Smile size={16} className="text-[var(--color-primary)]" />
               </span>
             </Button>
             {emojiOpen ? (
