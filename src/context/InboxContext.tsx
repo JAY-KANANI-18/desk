@@ -35,6 +35,7 @@ import {
   ApiTimelineItem,
   TimelineWindowResult,
   ConversationFilters,
+  ConvStatus,
   ConvPriority,
 } from "../lib/inboxApi";
 import { workspaceApi } from "../lib/workspaceApi";
@@ -969,22 +970,33 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
+  const updateSelectedContactStatus = (status: ConvStatus) => {
+    if (!selectedConversation?.contact) return;
+
+    const contact = { ...selectedConversation.contact, status };
+
+    updateSelectedConv({ contact });
+    setSelectedContact((prev: any) =>
+      prev?.id === contact.id ? { ...prev, status } : prev,
+    );
+  };
+
   const closeConversation = useCallback(async () => {
     if (!wsId || !selectedConversation) return;
     await inboxApi.close(wsId, selectedConversation.id);
-    updateSelectedConv({ status: "closed" });
+    updateSelectedContactStatus("closed");
   }, [wsId, selectedConversation]);
 
   const openConversation = useCallback(async () => {
     if (!wsId || !selectedConversation) return;
     await inboxApi.open(wsId, selectedConversation.id);
-    updateSelectedConv({ status: "open" });
+    updateSelectedContactStatus("open");
   }, [wsId, selectedConversation]);
 
   const setPendingConversation = useCallback(async () => {
     if (!wsId || !selectedConversation) return;
     await inboxApi.setPending(wsId, selectedConversation.id);
-    updateSelectedConv({ status: "pending" });
+    updateSelectedContactStatus("pending");
   }, [wsId, selectedConversation]);
 
   const assignUser = useCallback(

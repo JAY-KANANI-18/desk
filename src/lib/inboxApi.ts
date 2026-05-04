@@ -55,7 +55,7 @@ export interface ApiConversation {
   contactId: string;
 
   subject?: string;
-  status: ConvStatus;
+  status?: ConvStatus;
   priority: ConvPriority;
   unreadCount: number;
   lastMessageAt?: string;

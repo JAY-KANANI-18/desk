@@ -223,9 +223,9 @@ export function SubSidebar() {
       .filter((conversation) => conversation.contact?.assigneeId == null)
       .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
     unreplied: convList.filter((conversation) => conversation.unreadCount > 0).length,
-    pending: convList.filter((conversation) => conversation.status === "pending").length,
-    resolved: convList.filter((conversation) => conversation.status === "resolved").length,
-    closed: convList.filter((conversation) => conversation.status === "closed").length,
+    pending: convList.filter((conversation) => conversation.contact?.status === "pending").length,
+    resolved: convList.filter((conversation) => conversation.contact?.status === "resolved").length,
+    closed: convList.filter((conversation) => conversation.contact?.status === "closed").length,
   };
 
   const handleSelectSection = (item: SidebarItem) => {

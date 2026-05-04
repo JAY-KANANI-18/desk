@@ -163,7 +163,7 @@ export function InboxPage() {
             snoozedUntil={snoozedUntil}
             onSnooze={setSnoozedUntil}
             onUnsnooze={() => setSnoozedUntil(null)}
-            chatStatus={selectedConversation.status === "closed" ? "closed" : "open"}
+            chatStatus={selectedConversation.contact?.status === "closed" ? "closed" : "open"}
             msgSearchOpen={msgSearchOpen}
             onToggleMsgSearch={toggleMsgSearch}
             onBack={() => navigate("/inbox")}
