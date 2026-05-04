@@ -1,19 +1,10 @@
 import {
-  Building2,
-  ChevronDown,
-  ChevronUp,
-  Mail,
   Pencil,
-  Phone,
   Trash2,
-  UserRound,
   X,
-  type LucideIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Button } from "../../../components/ui/Button";
-import { IconButton } from "../../../components/ui/button/IconButton";
 import { Tag } from "../../../components/ui/Tag";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { Tooltip } from "../../../components/ui/Tooltip";
@@ -140,31 +131,6 @@ function getContactName(contact: Contact) {
   return `${contact.firstName} ${contact.lastName ?? ""}`.trim();
 }
 
-function DetailLine({
-  icon: Icon,
-  value,
-  breakWords = false,
-}: {
-  icon: LucideIcon;
-  value: string;
-  breakWords?: boolean;
-}) {
-  return (
-    <div className="flex min-w-0 items-start gap-2.5">
-      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center text-slate-400">
-        <Icon size={13} />
-      </span>
-      <span
-        className={`min-w-0 text-[13px] font-medium text-slate-700 ${
-          breakWords ? "break-all" : "truncate"
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
 function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?: boolean }) {
   const visibleChannels = contact.contactChannels?.slice(0, MAX_VISIBLE_CHANNELS) ?? [];
   const overflowChannels = Math.max(
@@ -232,21 +198,8 @@ export function ContactsTable({
   totalPages,
   setCurrentPage,
 }: ContactsTableProps) {
-  const [expandedMobileContactIds, setExpandedMobileContactIds] = useState<Set<number | string>>(new Set());
   const tagMetaById = new Map(availableTags.map((tag) => [String(tag.id), tag]));
   const tagMetaByName = new Map(availableTags.map((tag) => [tag.name, tag]));
-
-  const toggleMobileContact = (contactId: number | string) => {
-    setExpandedMobileContactIds((current) => {
-      const next = new Set(current);
-      if (next.has(contactId)) {
-        next.delete(contactId);
-      } else {
-        next.add(contactId);
-      }
-      return next;
-    });
-  };
 
   const renderTags = (contact: Contact, mobile = false) => {
     if (!contact.tags?.length) {
@@ -408,11 +361,8 @@ export function ContactsTable({
     },
   ];
 
-  const renderMobileCard = (contact: Contact, actions: ReactNode) => {
-    const assigneeName = getAssigneeName(contact, workspaceUsers) || "Unassigned";
+  const renderMobileCard = (contact: Contact) => {
     const lifecycle = getLifecycleMeta(contact, stages);
-    const company = contact.company?.trim();
-    const expanded = expandedMobileContactIds.has(contact.id);
 
     return (
       <article
@@ -449,30 +399,8 @@ export function ContactsTable({
 
               <div className="flex flex-shrink-0 items-center gap-1">
                 <ChannelIcons contact={contact} compact />
-                <IconButton
-                  aria-label={expanded ? "Hide contact details" : "Show contact details"}
-                  aria-expanded={expanded}
-                  icon={expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleMobileContact(contact.id)}
-                />
-                {actions}
               </div>
             </div>
-
-            {expanded ? (
-              <>
-                <div className="grid min-w-0 gap-2.5 rounded-xl bg-slate-50 p-3">
-                  <DetailLine icon={UserRound} value={assigneeName} />
-                  {contact.email ? <DetailLine icon={Mail} value={contact.email} breakWords /> : null}
-                  {contact.phone ? <DetailLine icon={Phone} value={contact.phone} breakWords /> : null}
-                  {company ? <DetailLine icon={Building2} value={company} /> : null}
-                </div>
-
-                {contact.tags?.length ? renderTags(contact, true) : null}
-              </>
-            ) : null}
           </div>
         </div>
       </article>
@@ -534,7 +462,7 @@ export function ContactsTable({
         ]}
         onRowClick={openEditModal}
         getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-indigo-50/60" : "")}
-        renderMobileCard={(contact, helpers) => renderMobileCard(contact)}
+        renderMobileCard={(contact) => renderMobileCard(contact)}
         minTableWidth={980}
         mobileLoadMore={{
           hasMore: safePage < totalPages,
