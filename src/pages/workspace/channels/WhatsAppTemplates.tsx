@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, Check, Eye, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, Check, Eye, RefreshCw, Search } from '@/components/ui/icons';
 
 import {
   DataTable,

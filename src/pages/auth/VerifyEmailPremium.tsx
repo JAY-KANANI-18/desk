@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { VerificationCodeInput } from "../../components/ui/inputs/VerificationCodeInput";
 import { useAuth } from "../../context/AuthContext";

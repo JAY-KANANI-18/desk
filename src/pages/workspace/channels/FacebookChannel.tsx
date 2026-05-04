@@ -5,7 +5,7 @@ import {
   MessageSquare,
   ThumbsUp,
   Zap,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { ChannelConnectActionButton } from '../../../components/channels/ChannelConnectActionButton';
 import { Button } from '../../../components/ui/button/Button';
 import { Tag } from '../../../components/ui/tag/Tag';

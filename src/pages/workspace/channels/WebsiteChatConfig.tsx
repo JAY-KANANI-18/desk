@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Code2, Copy, ExternalLink, MessageSquare, Palette } from 'lucide-react';
+import { Check, Code2, Copy, ExternalLink, MessageSquare, Palette } from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { ColorInput } from '../../../components/ui/inputs/ColorInput';

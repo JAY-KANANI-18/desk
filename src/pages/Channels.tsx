@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
   Settings,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { ChannelApi } from "../lib/channelApi";
 import { channelConfig } from "./inbox/data";
 import { ListPagination } from "../components/ui/ListPagination";

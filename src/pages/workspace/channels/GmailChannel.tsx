@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { Tag } from '../../../components/ui/tag/Tag';
 import { DUMMY_MODE } from '../api';

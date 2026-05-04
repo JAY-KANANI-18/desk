@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Check } from "lucide-react";
+import { Save, Check } from "@/components/ui/icons";
 import { SectionError } from "../components/SectionError";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { useWorkspace, Workspace } from "../../../context/WorkspaceContext";

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Wand2 } from 'lucide-react';
+import { Wand2 } from '@/components/ui/icons';
 
 import { SectionError } from '../components/SectionError';
 import type { AISettings, AIPrompt } from '../types';

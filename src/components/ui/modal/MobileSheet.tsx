@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { IconButton } from "../button/IconButton";
 import {
   ModalPortal,

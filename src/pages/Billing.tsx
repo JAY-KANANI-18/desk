@@ -4,7 +4,7 @@ import {
   Loader2, AlertTriangle, Sparkles, Crown, ArrowUp, ArrowDown, Eye,
   RefreshCw, Plus, Minus, Zap, FileText, CheckCircle, Clock, Info,
   ChevronRight,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { workspaceApi } from '../lib/workspaceApi';
 import { Button } from '../components/ui/Button';
 import { IconButton } from '../components/ui/button/IconButton';

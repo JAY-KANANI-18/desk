@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { PanelLeftOpen } from 'lucide-react';
+import { PanelLeftOpen } from '@/components/ui/icons';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { IconButton } from '../../../components/ui/button/IconButton';
 

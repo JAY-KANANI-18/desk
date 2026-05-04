@@ -1,4 +1,4 @@
-import { Download, RefreshCcw } from "lucide-react";
+import { Download, RefreshCcw } from "@/components/ui/icons";
 import type { ReactNode } from "react";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";

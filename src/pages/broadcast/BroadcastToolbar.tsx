@@ -1,4 +1,4 @@
-import { Calendar, List, ListFilter, Plus, RefreshCw, Search, Table } from "lucide-react";
+import { Calendar, List, ListFilter, Plus, RefreshCw, Search, Table } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
 import { BaseInput } from "../../components/ui/inputs/BaseInput";

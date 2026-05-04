@@ -14,7 +14,7 @@ import {
   Plus,
   RefreshCw,
   Trash2,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { CountBadge } from '../../../components/ui/CountBadge';

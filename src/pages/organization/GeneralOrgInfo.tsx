@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, Globe } from "lucide-react";
+import { Building2, Globe } from "@/components/ui/icons";
 import { useOrganization } from "../../context/OrganizationContext";
 import { Button } from "../../components/ui/button/Button";
 import { BaseInput } from "../../components/ui/inputs/BaseInput";

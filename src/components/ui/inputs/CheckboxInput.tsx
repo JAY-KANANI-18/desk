@@ -1,5 +1,5 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@/components/ui/icons";
 import { cx } from "./shared";
 
 export type CheckboxInputSize = "sm" | "md";

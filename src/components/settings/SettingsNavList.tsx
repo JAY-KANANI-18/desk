@@ -1,5 +1,11 @@
-import { type KeyboardEvent } from "react";
-import { ChevronRight } from "lucide-react";
+import {
+  cloneElement,
+  isValidElement,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { ChevronRight } from "@/components/ui/icons";
 import { NavLink } from "react-router-dom";
 import { Tag } from "../ui/Tag";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
@@ -12,6 +18,16 @@ const navLinkClassName = (isActive: boolean, depth: number) =>
       ? "bg-slate-100 text-slate-900 "
       : "text-slate-900 md:text-slate-700 hover:bg-slate-50 hover:text-slate-900 "
   }`;
+
+const renderNavIcon = (icon: ReactNode, isActive: boolean) => {
+  if (!isValidElement(icon)) {
+    return icon;
+  }
+
+  return cloneElement(icon as ReactElement<{ weight?: "fill" | "regular" }>, {
+    weight: isActive ? "fill" : "regular",
+  });
+};
 
 export const handleSettingsListKeyNavigation = (
   event: KeyboardEvent<HTMLElement>,
@@ -149,7 +165,7 @@ const SidebarItem = ({
                   isActive ? "text-slate-900  " : "text-slate-600"
                 }`}
               >
-                {item.icon}
+                {renderNavIcon(item.icon, isActive)}
               </span>
             )}
 

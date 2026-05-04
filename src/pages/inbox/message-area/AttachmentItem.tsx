@@ -1,4 +1,4 @@
-import { Download, FileImage, FileText, Video } from "lucide-react";
+import { Download, FileImage, FileText, Video } from "@/components/ui/icons";
 import type { MediaAttachment } from "./types";
 import { formatFileSize } from "./helpers";
 import { MiniAudioPlayer } from "./MiniAudioPlayer";

@@ -7,7 +7,7 @@ import {
   TrendingUp,
   TrendingDown,
   Loader2,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   ResponsiveContainer,
   BarChart,

@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { Calendar } from "lucide-react";
+import { Calendar } from "@/components/ui/icons";
 import { useMobileHeaderActions } from "../../components/mobileHeaderActions";
 import { SettingsLayout } from "../../components/settings/SettingsLayout";
 import { ResponsiveModal } from "../../components/ui/modal";

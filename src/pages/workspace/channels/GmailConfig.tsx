@@ -1,4 +1,4 @@
-import { CheckCircle, Mail, RefreshCw } from 'lucide-react';
+import { CheckCircle, Mail, RefreshCw } from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { ChannelApi } from '../../../lib/channelApi';

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ExternalLink, ChevronRight } from "lucide-react";
+import { Search, ExternalLink, ChevronRight } from "@/components/ui/icons";
 import { BackButton } from "../components/channels/BackButton";
 import { Button } from "../components/ui/button/Button";
 import { BaseInput } from "../components/ui/inputs/BaseInput";

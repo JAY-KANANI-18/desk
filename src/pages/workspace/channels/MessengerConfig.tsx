@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, Key, Webhook } from "lucide-react";
+import { Check, Copy, Key, Webhook } from "@/components/ui/icons";
 import { ChannelApi } from "../../../lib/channelApi";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { BaseInput, type BaseInputProps } from "../../../components/ui/inputs/BaseInput";

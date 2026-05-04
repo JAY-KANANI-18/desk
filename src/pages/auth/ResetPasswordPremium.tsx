@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Lock, ShieldAlert } from "lucide-react";
+import { ArrowRight, Lock, ShieldAlert } from "@/components/ui/icons";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "./auth.utils";
 import {

@@ -13,7 +13,7 @@ import {
   Shield,
   Users,
   Zap,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { Channel } from "../types";
 import type { WhatsAppConfig } from "./types";
 import { ChannelApi } from "../../../lib/channelApi";

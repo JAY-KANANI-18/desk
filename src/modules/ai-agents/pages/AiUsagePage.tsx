@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Cpu, Loader2, MessageSquareText, ReceiptText, WalletCards } from "lucide-react";
+import { Cpu, Loader2, MessageSquareText, ReceiptText, WalletCards } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/Select";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";

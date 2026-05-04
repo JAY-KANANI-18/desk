@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Play, Pause, Trash2, Square } from 'lucide-react';
+import { Send, Play, Pause, Trash2, Square } from '@/components/ui/icons';
 import { WAVEFORM_BARS } from './data';
 import { formatTime } from './utils';
 import { Button } from '../../components/ui/Button';

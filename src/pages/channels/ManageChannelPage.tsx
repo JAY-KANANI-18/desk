@@ -16,7 +16,7 @@ import {
   Settings,
   ShoppingBag,
   Wrench,
-} from "lucide-react";
+} from "@/components/ui/icons";
 
 import { SettingsNavList } from "../../components/settings/SettingsNavList";
 import { SettingsSidebar } from "../../components/settings/SettingsSidebar";

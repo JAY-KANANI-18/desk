@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Phone, PhoneOff } from 'lucide-react';
+import { Phone, PhoneOff } from '@/components/ui/icons';
 import { useCall } from '../context/CallContext';
 import { Avatar } from './ui/Avatar';
 import { Button } from './ui/Button';

@@ -2,7 +2,7 @@ import {
   Pencil,
   Trash2,
   X,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";

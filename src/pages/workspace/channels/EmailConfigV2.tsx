@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle, Mail, Server, XCircle } from 'lucide-react';
+import { CheckCircle, Mail, Server, XCircle } from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { CopyInput } from '../../../components/ui/inputs/CopyInput';

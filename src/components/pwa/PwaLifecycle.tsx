@@ -1,4 +1,4 @@
-import { Download, RefreshCw, WifiOff, X } from "lucide-react";
+import { Download, RefreshCw, WifiOff, X } from "@/components/ui/icons";
 import { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 

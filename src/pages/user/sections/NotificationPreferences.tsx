@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Save } from "lucide-react";
+import { Check, Save } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/Select";
 import { useNotifications } from "../../../context/NotificationContext";

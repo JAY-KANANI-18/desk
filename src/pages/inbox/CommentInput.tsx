@@ -5,7 +5,7 @@ import {
   MessageSquare,
   Paperclip,
   Smile,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
 import { MentionSuggestionMenu, VariableSuggestionMenu } from "../../components/ui/Select";

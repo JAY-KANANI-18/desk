@@ -4,7 +4,7 @@ import {
   Grid3x3, ArrowRightLeft, Circle, Square,
   PhoneOff, ChevronDown, ChevronUp,
   FileText, Search, Phone,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { useCall } from '../context/CallContext';
 import { Avatar } from './ui/Avatar';
 import { Button } from './ui/Button';

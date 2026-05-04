@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X } from '@/components/ui/icons';
 import { MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { STEP_LIST, STEPS_BY_CATEGORY, StepMeta } from './stepTypes';

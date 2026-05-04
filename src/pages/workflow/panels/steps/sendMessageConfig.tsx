@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, ToggleRow } from "../PanelShell";
-import { Upload, X } from "lucide-react";
+import { Upload, X } from "@/components/ui/icons";
 import { useWorkflow } from "../../WorkflowContext";
 import { useChannel } from "../../../../context/ChannelContext";
 import { Button } from "../../../../components/ui/Button";

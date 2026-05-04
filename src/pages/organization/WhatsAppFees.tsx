@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 
 // ─── WhatsApp SVG icon ────────────────────────────────────────────────────────

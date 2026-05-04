@@ -4,7 +4,7 @@ import {
   CircleUserRound,
   Key,
   LogOut,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { CompactSelectMenu } from "../ui/select/CompactSelectMenu";

@@ -3,7 +3,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/ui/icons";
 import { cx } from "../inputs/shared";
 
 export interface DisclosureButtonProps

@@ -8,7 +8,7 @@ import {
   Square,
   Check,
   Pencil,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { useWorkflow } from '../WorkflowContext';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { Button } from '../../../components/ui/Button';

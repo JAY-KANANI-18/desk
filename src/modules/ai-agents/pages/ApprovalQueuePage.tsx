@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Check, Edit3, Loader2, Search, ShieldCheck, X } from "lucide-react";
+import { Check, Edit3, Loader2, Search, ShieldCheck, X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { BaseInput, CheckboxInput, TextareaInput } from "../../../components/ui/inputs";
 import { CenterModal } from "../../../components/ui/Modal";

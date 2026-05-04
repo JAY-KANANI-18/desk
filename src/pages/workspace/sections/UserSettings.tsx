@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Check, Camera, X } from 'lucide-react';
+import { Save, Check, Camera, X } from '@/components/ui/icons';
 import type { UserProfile, NotificationPrefs } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { useWorkspace } from '../../../context/WorkspaceContext';

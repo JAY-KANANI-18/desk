@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users } from "@/components/ui/icons";
 import { OrgGuard, useAuthorization } from "../../context/AuthorizationContext";
 import { ConfirmDeleteModal, MobileSheet } from "../../components/ui/modal";
 import { useWorkspace, type Workspace } from "../../context/WorkspaceContext";

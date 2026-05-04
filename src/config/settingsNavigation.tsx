@@ -17,7 +17,7 @@ import {
   Users2,
   UsersRound,
   Wand2,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { SettingsModuleConfig } from "../components/settings/navigation";
 
 export const workspaceSettingsConfig: SettingsModuleConfig = {

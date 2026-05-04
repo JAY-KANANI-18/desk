@@ -1,14 +1,14 @@
 import { TriggerType } from '../workflow.types';
 import {
   MessageSquare, CheckSquare, Tag, Edit3, Zap, Webhook,
-  MousePointerClick, Music, Hand, RefreshCcw, LucideIcon, Menu, Image, FileText,
-} from 'lucide-react';
+  MousePointerClick, Music, Hand, RefreshCcw, AppIcon, Menu, Image, FileText,
+} from '@/components/ui/icons';
 
 export interface TriggerMeta {
   type: TriggerType;
   label: string;
   description: string;
-  Icon: LucideIcon;
+  Icon: AppIcon;
   upgradeRequired?: boolean;
 }
 

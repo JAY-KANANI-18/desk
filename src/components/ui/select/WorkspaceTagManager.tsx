@@ -1,4 +1,4 @@
-import { Plus, type LucideIcon } from "lucide-react";
+import { Plus, type AppIcon } from "@/components/ui/icons";
 import { useMemo, useState, type ReactNode } from "react";
 import { workspaceApi, type WorkspaceTagInput } from "../../../lib/workspaceApi";
 import { Button } from "../button/Button";
@@ -54,7 +54,7 @@ export interface WorkspaceTagManagerProps
   closeButtonAriaLabel?: string;
   addButtonVariant?: ButtonVariant;
   addButtonSize?: ButtonSize;
-  addIcon?: LucideIcon;
+  addIcon?: AppIcon;
   allowCreate?: boolean;
   createModalTitle?: string;
   createActionLabel?: string;

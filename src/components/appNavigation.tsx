@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/components/ui/icons";
 import {
   ChartColumnBig,
   Bot,
@@ -8,11 +8,12 @@ import {
   MessageCircleMore,
   RadioTower,
   Workflow,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { WorkspacePermission } from "../context/AuthorizationContext";
+import { Contact } from "./ui/icons";
 
 export type AppNavItem = {
-  icon: LucideIcon;
+  icon: AppIcon;
   label: string;
   path: string;
   ws?: WorkspacePermission;
@@ -45,7 +46,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     mobile: true,
   },
   {
-    icon: ContactRound,
+    icon: Contact,
     label: "Contacts",
     path: "/contacts",
     ws: "ws:contacts:view",

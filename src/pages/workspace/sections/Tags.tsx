@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2 } from '@/components/ui/icons';
 
 import { ConfirmDeleteModal } from '../../../components/ui/modal';
 import { Button } from '../../../components/ui/Button';

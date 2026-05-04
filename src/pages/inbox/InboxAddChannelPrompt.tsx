@@ -1,4 +1,4 @@
-import { Globe, Plus, RadioTower } from "lucide-react";
+import { Globe, Plus, RadioTower } from "@/components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { ChannelBadgeStack } from "../../components/channels/ChannelBadges";
 import { useAuthorization } from "../../context/AuthorizationContext";

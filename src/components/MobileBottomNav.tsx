@@ -1,4 +1,4 @@
-import { BookCheck, MoreHorizontal } from "lucide-react";
+import { BookCheck, MoreHorizontal } from "@/components/ui/icons";
 import {
   useEffect,
   useLayoutEffect,
@@ -195,7 +195,11 @@ export function MobileBottomNav() {
 
     const content = (
       <div className="flex h-[64px] flex-col items-center justify-center gap-1.5">
-        <item.icon size={24} className={iconClassName} />
+        <item.icon
+          size={24}
+          weight={isActive ? "fill" : "regular"}
+          className={iconClassName}
+        />
         <span className={labelClassName}>
           {item.label}
         </span>

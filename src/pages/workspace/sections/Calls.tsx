@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Phone, Save } from "lucide-react";
+import { Check, Phone, Save } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { TextareaInput } from "../../../components/ui/inputs/TextareaInput";

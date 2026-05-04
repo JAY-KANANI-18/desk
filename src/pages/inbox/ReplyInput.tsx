@@ -18,7 +18,7 @@ import {
   MessageSquare, StickyNote,
   Play, File as FileIcon,
   Wand2, Sparkles, AtSign, AlertTriangle, Clock3,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { variables } from './data';
 import type { MediaAttachment, AttachmentType } from './types';
 import { EmojiPicker } from './EmojiPicker';

@@ -1,4 +1,4 @@
-import { UserPlus2 } from "lucide-react";
+import { UserPlus2 } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { CenterModal } from "../../../components/ui/Modal";
 import { MobileSheet } from "../../../components/ui/modal";

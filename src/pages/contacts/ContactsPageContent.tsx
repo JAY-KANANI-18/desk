@@ -1,5 +1,5 @@
 import type { ContactsPageContentProps } from "./types";
-import { Plus } from "lucide-react";
+import { Plus } from "@/components/ui/icons";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { CONTACT_SIDEBAR_WIDTH } from "../inbox/contact-sidebar/DesktopShell";

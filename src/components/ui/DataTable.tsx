@@ -5,7 +5,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   Search,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import {
   useEffect,
   useLayoutEffect,

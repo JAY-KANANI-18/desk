@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Info, Plus, Trash2 } from "lucide-react";
+import { Info, Plus, Trash2 } from "@/components/ui/icons";
 import { Button } from "../../../../components/ui/Button";
 import { DisclosureButton } from "../../../../components/ui/button/DisclosureButton";
 import { IconButton } from "../../../../components/ui/button/IconButton";

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { EdgeProps, getStraightPath, BaseEdge, EdgeLabelRenderer,getSmoothStepPath } from 'reactflow';
-import { Plus } from 'lucide-react';
+import { Plus } from '@/components/ui/icons';
 import { IconButton } from '../../../../components/ui/button/IconButton';
 
 export const BRANCH_COLORS = [

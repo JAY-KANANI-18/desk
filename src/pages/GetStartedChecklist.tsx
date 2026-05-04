@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   X,
   Zap,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../components/ui/Button";
 import { PageLayout } from "../components/ui/PageLayout";
 import { Tag } from "../components/ui/Tag";

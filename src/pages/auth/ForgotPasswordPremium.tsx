@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Mail } from "@/components/ui/icons";
 import { useAuth } from "../../context/AuthContext";
 import {
   AuthField,

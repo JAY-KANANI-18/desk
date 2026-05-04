@@ -1,6 +1,6 @@
 // LEGACY - not mounted in current router, pending removal
 import { useEffect, useState } from "react";
-import { ArrowLeft, BriefcaseBusiness, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Loader2, RefreshCw } from "@/components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { importApi, type ImportJobRecord } from "../../lib/importApi";
 import { JobProgressModal } from "./components/JobProgressModal";

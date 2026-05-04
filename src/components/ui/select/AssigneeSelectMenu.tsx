@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react";
-import { UserCircle2 } from "lucide-react";
+import { UserCircle2 } from "@/components/ui/icons";
 import { Avatar } from "../Avatar";
 import { FieldShell, cx } from "../inputs/shared";
 import {

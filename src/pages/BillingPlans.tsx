@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, ArrowLeft, Zap, Building2, Rocket } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, Zap, Building2, Rocket } from '@/components/ui/icons';
 import { Button } from '../components/ui/Button';
 import { DisclosureButton } from '../components/ui/button/DisclosureButton';
 import { Tag } from '../components/ui/Tag';

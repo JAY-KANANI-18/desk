@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react";
+import { Plus, X } from "@/components/ui/icons";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
 import { BaseInput, CheckboxInput } from "../../../../components/ui/inputs";

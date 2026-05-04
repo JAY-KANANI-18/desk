@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Building2, ChevronRight, Loader2 } from "@/components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";

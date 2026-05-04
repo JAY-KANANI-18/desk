@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, MessageCircle, Save } from "lucide-react";
+import { Check, Copy, MessageCircle, Save } from "@/components/ui/icons";
 import { MOCK_DATA } from "../api";
 import { Button } from "../../../components/ui/Button";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";

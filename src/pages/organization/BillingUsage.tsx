@@ -1,4 +1,4 @@
-import { CreditCard, Download, CheckCircle } from "lucide-react";
+import { CreditCard, Download, CheckCircle } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { Tag } from "../../components/ui/Tag";
 

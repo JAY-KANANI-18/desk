@@ -8,15 +8,17 @@ import {
   Palette,
   PanelLeft,
   RotateCcw,
+  Sparkles,
   Sun,
   Type,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import {
   APPEARANCE_COLOR_PRESETS,
   APPEARANCE_FONT_OPTIONS,
   useAppearance,
   type AppearanceColorPreset,
   type AppearanceFontFamily,
+  type AppearanceIconLibrary,
   type AppearanceNavigation,
 } from "../../context/AppearanceContext";
 import { Button } from "../ui/Button";
@@ -223,6 +225,10 @@ function AppearancePanelContent() {
     setSetting("navigation", value);
   };
 
+  const selectIconLibrary = (value: AppearanceIconLibrary) => {
+    setSetting("iconLibrary", value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
@@ -295,6 +301,23 @@ function AppearancePanelContent() {
               ))}
             </div>
           </div>
+        </div>
+      </PanelSection>
+
+      <PanelSection title="Icons" icon={<Sparkles size={12} />}>
+        <div className="grid grid-cols-2 gap-2">
+          <ChoiceButton
+            selected={settings.iconLibrary === "phosphor"}
+            icon={<Sparkles size={16} weight="fill" />}
+            label="Phosphor"
+            onClick={() => selectIconLibrary("phosphor")}
+          />
+          <ChoiceButton
+            selected={settings.iconLibrary === "lucide"}
+            icon={<Sparkles size={16} />}
+            label="Lucide"
+            onClick={() => selectIconLibrary("lucide")}
+          />
         </div>
       </PanelSection>
 

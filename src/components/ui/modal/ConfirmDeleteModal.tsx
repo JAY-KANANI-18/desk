@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/components/ui/icons";
 import { useEffect, useState, type ReactNode } from "react";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { Button } from "../button/Button";

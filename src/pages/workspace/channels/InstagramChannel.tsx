@@ -6,7 +6,7 @@ import {
   Heart,
   Image,
   MessageCircle,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { Channel } from "../types";
 import { ChannelConnectActionButton } from "../../../components/channels/ChannelConnectActionButton";
 import { Button } from "../../../components/ui/button/Button";

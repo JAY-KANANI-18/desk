@@ -5,7 +5,7 @@ import {
   useState,
   type InputHTMLAttributes,
 } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy } from "@/components/ui/icons";
 import {
   FieldShell,
   getActionButtonClassName,

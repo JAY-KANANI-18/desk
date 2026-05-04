@@ -6,7 +6,7 @@ import {
   KeyRound, Mail, ShieldCheck, ExternalLink, Search, X, ChevronRight,
   Inbox, Globe, Phone, Wand2, Sparkles, Tag as TagIcon, AlignLeft, CheckCircle,
   Contact, RefreshCw, Smile, UserCog, LayoutGrid, Map, Zap, ArrowRight,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Button } from '../components/ui/Button';
 import { CountBadge } from '../components/ui/CountBadge';
 import { IconButton } from '../components/ui/button/IconButton';

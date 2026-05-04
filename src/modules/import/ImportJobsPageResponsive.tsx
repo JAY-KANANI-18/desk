@@ -4,7 +4,7 @@ import {
   ArrowUpRight,
   BriefcaseBusiness,
   RefreshCw,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { PageLayout } from "../../components/ui/PageLayout";

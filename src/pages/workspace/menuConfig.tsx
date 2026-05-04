@@ -5,7 +5,7 @@ import {
   GitBranch,
   Info,
   Building,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 
 export type MenuItem = { name: string; icon: React.ReactNode; badge?: string };
 export type MenuSection = { title: string; items: MenuItem[] };

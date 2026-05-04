@@ -16,7 +16,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   UserCircle2,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { useMobileHeaderActions } from "../components/mobileHeaderActions";
 import { PageLayout } from "../components/ui/PageLayout";
 import { Button } from "../components/ui/button/Button";

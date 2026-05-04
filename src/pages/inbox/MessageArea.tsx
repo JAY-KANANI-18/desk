@@ -7,7 +7,7 @@ import React, {
   useMemo,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlarmClock, RefreshCw } from "lucide-react";
+import { AlarmClock, RefreshCw } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { Tag } from "../../components/ui/Tag";
 import { useChannel } from "../../context/ChannelContext";

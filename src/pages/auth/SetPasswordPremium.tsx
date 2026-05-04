@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "@/components/ui/icons";
 import { useAuth } from "../../context/AuthContext";
 import { getPasswordStrength } from "./auth.utils";
 import {

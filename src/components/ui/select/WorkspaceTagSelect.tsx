@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { MobileSheet } from "../modal";
 import { Tag } from "../tag/Tag";

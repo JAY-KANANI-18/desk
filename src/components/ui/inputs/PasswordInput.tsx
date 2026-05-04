@@ -1,5 +1,5 @@
 import { forwardRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@/components/ui/icons";
 import { BaseInput, type BaseInputProps } from "./BaseInput";
 import { getActionButtonClassName } from "./shared";
 

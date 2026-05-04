@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Edit2, Sparkles } from '@/components/ui/icons';
 
 import { SectionError } from '../components/SectionError';
 import type { AIPrompt } from '../types';

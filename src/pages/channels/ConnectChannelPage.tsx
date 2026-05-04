@@ -1,6 +1,6 @@
 import { useState, type ComponentType } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, MessageCircle, Video } from "lucide-react";
+import { AlertCircle, ArrowLeft, MessageCircle, Video } from "@/components/ui/icons";
 import { Button } from "../../components/ui/button/Button";
 import { BackButton } from "../../components/channels/BackButton";
 import { IconButton } from "../../components/ui/button/IconButton";

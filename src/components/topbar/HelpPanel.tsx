@@ -1,4 +1,4 @@
-import { BookOpen, CheckSquare, ExternalLink, MessageSquare } from "lucide-react";
+import { BookOpen, CheckSquare, ExternalLink, MessageSquare } from "@/components/ui/icons";
 import { MobileSheet } from "../ui/modal";
 
 export function HelpPanel({

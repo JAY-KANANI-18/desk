@@ -12,7 +12,7 @@ import {
   Trash2,
   Users,
   Workflow,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   contactsApi,
   type ContactDuplicateSuggestion,

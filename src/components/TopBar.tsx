@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { BadgeCheck, Bell, HelpCircle, Palette } from "lucide-react";
+import { BadgeCheck, Bell, HelpCircle, Palette } from "@/components/ui/icons";
 import { useAuth } from "../context/AuthContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useNotifications } from "../context/NotificationContext";

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { Check, Copy, Loader2, X } from 'lucide-react';
+import { Check, Copy, Loader2, X } from '@/components/ui/icons';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Tooltip } from '../../../components/ui/Tooltip';

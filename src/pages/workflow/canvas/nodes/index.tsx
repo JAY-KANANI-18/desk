@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { AlertCircle, Trash2, Copy, Plus, Zap } from 'lucide-react';
+import { AlertCircle, Trash2, Copy, Plus, Zap } from '@/components/ui/icons';
 import { TRIGGER_META } from '../triggerTypes';
 import { STEP_META } from '../stepTypes';
 import { StepType, TriggerType } from '../../workflow.types';

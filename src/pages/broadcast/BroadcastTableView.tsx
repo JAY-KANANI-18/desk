@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import {
   DataTable,

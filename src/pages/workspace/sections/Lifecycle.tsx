@@ -3,7 +3,7 @@ import {
   Plus, GripVertical, MoreHorizontal,
   ChevronDown, ChevronUp, Loader2, AlertCircle, RefreshCw,
   CheckCircle2,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { workspaceApi } from "../../../lib/workspaceApi";
 import { DataLoader } from "../../Loader";
 import { Button } from "../../../components/ui/Button";

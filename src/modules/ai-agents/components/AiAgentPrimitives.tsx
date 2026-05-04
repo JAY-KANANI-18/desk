@@ -10,7 +10,7 @@ import {
   MessageCircle,
   MessageSquare,
   Phone,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { PageLayout } from "../../../components/ui/PageLayout";
 import { Tag, type TagPresetColor } from "../../../components/ui/Tag";
 import { useIsMobile } from "../../../hooks/useIsMobile";

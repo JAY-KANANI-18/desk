@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { Select } from "../../../components/ui/Select";

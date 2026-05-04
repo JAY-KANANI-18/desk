@@ -1,4 +1,4 @@
-import { BarChart3, Loader2, PanelLeftOpen } from "lucide-react";
+import { BarChart3, Loader2, PanelLeftOpen } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { SideModal } from "../../components/ui/Modal";

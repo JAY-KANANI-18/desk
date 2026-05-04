@@ -1,6 +1,6 @@
 // ─── 2. Ask a Question ────────────────────────────────────────────────────────
 
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus } from "@/components/ui/icons";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
 import { QuestionType, SP, AskQuestionData, QUESTION_TYPES, genId, MOCK_FIELDS } from "../../workflow.types";

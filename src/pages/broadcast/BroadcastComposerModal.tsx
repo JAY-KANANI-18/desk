@@ -1,4 +1,4 @@
-import { ShieldCheck, Users } from "lucide-react";
+import { ShieldCheck, Users } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { CheckboxInput } from "../../components/ui/inputs";

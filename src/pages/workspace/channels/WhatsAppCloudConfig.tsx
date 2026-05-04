@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { Building2, Check, Copy, Hash, Key, Phone, Webhook } from 'lucide-react';
+import { Building2, Check, Copy, Hash, Key, Phone, Webhook } from '@/components/ui/icons';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { TruncatedText } from '../../../components/ui/truncated-text';

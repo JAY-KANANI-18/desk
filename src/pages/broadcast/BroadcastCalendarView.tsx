@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/components/ui/icons";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Tag } from "../../components/ui/Tag";

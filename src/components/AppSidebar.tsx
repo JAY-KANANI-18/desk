@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { BookCheck, Settings } from "lucide-react";
+import { BookCheck, Settings, type AppIcon } from "@/components/ui/icons";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useFeatureFlags } from "../context/FeatureFlagsContext";
@@ -52,7 +52,7 @@ export const AppSidebar = ({
   const renderPrimaryLink = (
     path: string,
     label: string,
-    Icon: typeof BookCheck,
+    Icon: AppIcon,
   ) => {
     const navLink = (
       <NavLink
@@ -70,14 +70,26 @@ export const AppSidebar = ({
           }`
         }
       >
-        <Icon size={22} className="flex-shrink-0 " />
-        {isExpanded ? (
-          <span className="truncate text-sm font-semibold">{label}</span>
-        ) : (
-          <span className="line-clamp-2 text-[10px] font-semibold leading-tight">
-            {label}
-          </span>
-        )}
+        {({ isActive }) => {
+          const active = isActive && !isSettingsActive;
+
+          return (
+            <>
+              <Icon
+                size={22}
+                weight={active ? "fill" : "regular"}
+                className="flex-shrink-0"
+              />
+              {isExpanded ? (
+                <span className="truncate text-sm font-semibold">{label}</span>
+              ) : (
+                <span className="line-clamp-2 text-[10px] font-semibold leading-tight">
+                  {label}
+                </span>
+              )}
+            </>
+          );
+        }}
       </NavLink>
     );
 
@@ -138,7 +150,7 @@ export const AppSidebar = ({
                 }`}
               >
                 <span className="flex h-full w-full flex-col items-center justify-center gap-1.5">
-                  <Settings size={22} />
+                  <Settings size={22} weight={isSettingsActive ? "fill" : "regular"} />
                   <span className="line-clamp-2 text-[10px] font-semibold leading-tight">
                     Settings
                   </span>
@@ -155,24 +167,40 @@ export const AppSidebar = ({
                     onClick={settingsMenu.close}
                   />
                   <div className="absolute bottom-0 left-full z-20 ml-3 w-72 rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
-                    {settingsLinks.map((link) => (
-                      <NavLink
-                        key={link.path}
-                        to={link.path}
-                        onClick={handleNavClick}
-                        className="flex items-center gap-3 rounded-2xl px-3 py-3 text-slate-700 transition-colors hover:bg-slate-50"
-                      >
-                        <link.icon size={20} className="flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-normal">
-                            {link.title}
-                          </p>
-                          <p className="truncate text-xs text-slate-400">
-                            {link.subtitle}
-                          </p>
-                        </div>
-                      </NavLink>
-                    ))}
+                    {settingsLinks.map((link) => {
+                      const LinkIcon = link.icon;
+
+                      return (
+                        <NavLink
+                          key={link.path}
+                          to={link.path}
+                          onClick={handleNavClick}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-slate-50 ${
+                              isActive ? "text-[var(--color-primary)]" : "text-slate-700"
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <LinkIcon
+                                size={20}
+                                weight={isActive ? "fill" : "regular"}
+                                className="flex-shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-normal">
+                                  {link.title}
+                                </p>
+                                <p className="truncate text-xs text-slate-400">
+                                  {link.subtitle}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -186,30 +214,42 @@ export const AppSidebar = ({
               Settings
             </p>
             <div className="space-y-1">
-              {settingsLinks.map((link) => (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  onClick={handleNavClick}
-                  className={({ isActive }) =>
-                    `relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${
-                      isActive
-                        ? "bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`
-                  }
-                >
-                  <link.icon size={18} className="flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-normal">
-                      {link.title}
-                    </p>
-                    <p className="truncate text-xs text-slate-400">
-                      {link.subtitle}
-                    </p>
-                  </div>
-                </NavLink>
-              ))}
+              {settingsLinks.map((link) => {
+                const LinkIcon = link.icon;
+
+                return (
+                  <NavLink
+                    key={link.path}
+                    to={link.path}
+                    onClick={handleNavClick}
+                    className={({ isActive }) =>
+                      `relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${
+                        isActive
+                          ? "bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <LinkIcon
+                          size={18}
+                          weight={isActive ? "fill" : "regular"}
+                          className="flex-shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-normal">
+                            {link.title}
+                          </p>
+                          <p className="truncate text-xs text-slate-400">
+                            {link.subtitle}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
           </div>
         ) : null}

@@ -1,6 +1,6 @@
 import { Outlet, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/components/ui/icons";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
 import { NotificationListWrapper } from "./NotificationList";

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Loader2, ShieldAlert } from "lucide-react";
+import { ArrowRight, Loader2, ShieldAlert } from "@/components/ui/icons";
 import { authApi } from "../../lib/authApi";
 import {
   AuthNotice,

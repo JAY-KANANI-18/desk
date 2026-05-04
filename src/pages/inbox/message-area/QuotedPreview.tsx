@@ -1,4 +1,4 @@
-import { File, ImageIcon, Mic, Video } from "lucide-react";
+import { File, ImageIcon, Mic, Video } from "@/components/ui/icons";
 import { TruncatedText } from "../../../components/ui/TruncatedText";
 import type { MediaAttachment } from "./types";
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
 
 export function AiAgentsFeatureRoute({ children }: { children: React.ReactNode }) {

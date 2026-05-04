@@ -4,7 +4,7 @@ import {
   Play,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { TruncatedText } from "../../../components/ui/TruncatedText";
 import { formatTime } from "../utils";

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Inbox, UserCircle2, UserMinus } from "lucide-react";
+import { Inbox, UserCircle2, UserMinus } from "@/components/ui/icons";
 import { useInbox } from "../../context/InboxContext";
 import { MobileSheet } from "../../components/ui/modal";
 import { Button } from "../../components/ui/Button";

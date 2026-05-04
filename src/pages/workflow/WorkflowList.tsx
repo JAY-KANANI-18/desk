@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   Plus, Search, Play, Square, Pencil,
   Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { DisclosureButton } from "../../components/ui/button/DisclosureButton";
 import { useAuth } from "../../context/AuthContext";

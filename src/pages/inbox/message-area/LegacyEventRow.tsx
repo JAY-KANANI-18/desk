@@ -10,7 +10,7 @@ import {
   UserCheck,
   UserMinus,
   UserPlus,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Tag } from "../../../components/ui/Tag";
 import type { ConversationEventType, Message } from "./types";
 import { formatMsgTime } from "./helpers";

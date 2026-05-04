@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@/components/ui/icons";
 import type { ReactNode } from "react";
 import { Button, type ButtonProps } from "./Button";
 

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronDown, Plus } from "lucide-react";
+import { Check, ChevronDown, Plus } from "@/components/ui/icons";
 import { useOrganization } from "../../context/OrganizationContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { Avatar } from "../ui/Avatar";

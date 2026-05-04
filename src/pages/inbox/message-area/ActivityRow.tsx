@@ -15,7 +15,7 @@ import {
   UserPlus,
   Workflow,
   ArrowRightLeft,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Tag as UiTag } from "../../../components/ui/Tag";
 import type { ActivityResponse } from "./types";
 import { extractMentionLabels, renderCommentText } from "../utils";

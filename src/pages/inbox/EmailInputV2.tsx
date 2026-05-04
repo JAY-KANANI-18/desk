@@ -16,7 +16,7 @@ import {
   Underline,
   Wand2,
   X,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import type { AttachmentType, MediaAttachment } from './types';
 import { variables } from './data';
 import { useInbox } from '../../context/InboxContext';

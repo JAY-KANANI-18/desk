@@ -6,7 +6,7 @@ import {
   Search,
   Trash2,
   UserRoundPlus,
-} from "lucide-react";
+} from "@/components/ui/icons";
 
 import { ConfirmDeleteModal, MobileSheet } from "../../../components/ui/modal";
 import { useWorkspace } from "../../../context/WorkspaceContext";

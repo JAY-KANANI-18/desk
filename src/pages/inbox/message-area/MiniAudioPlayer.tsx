@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { formatAudioTime } from "./helpers";
 

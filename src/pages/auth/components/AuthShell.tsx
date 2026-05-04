@@ -4,8 +4,8 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import type { LucideIcon } from "lucide-react";
-import { ArrowLeft } from "lucide-react";
+import type { AppIcon } from "@/components/ui/icons";
+import { ArrowLeft } from "@/components/ui/icons";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/Button";
@@ -30,7 +30,7 @@ interface AuthShellProps {
 
 interface AuthFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
   label: string;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   trailing?: ReactNode;
   helpText?: ReactNode;
   error?: boolean;

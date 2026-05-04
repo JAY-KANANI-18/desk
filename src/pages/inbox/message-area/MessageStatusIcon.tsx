@@ -1,4 +1,4 @@
-import { Check, CheckCheck, Clock } from "lucide-react";
+import { Check, CheckCheck, Clock } from "@/components/ui/icons";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import type { MessageStatus } from "./types";
 

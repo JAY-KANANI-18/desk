@@ -4,7 +4,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { resolveTagBaseColor } from "../../../lib/tagAppearance";
 import { Tooltip } from "../Tooltip";

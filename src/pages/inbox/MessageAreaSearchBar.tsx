@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, RefreshCw, Search, X } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, Search, X } from "@/components/ui/icons";
 import { MessageSearchResult } from "../../lib/inboxApi";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";

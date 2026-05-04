@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/components/ui/icons";
 
 export interface OnboardingOption {
   value: string;
@@ -6,7 +6,7 @@ export interface OnboardingOption {
   description?: string;
   helper?: string;
   emoji?: string;
-  icon?: LucideIcon;
+  icon?: AppIcon;
   iconUrl?: string;
 }
 

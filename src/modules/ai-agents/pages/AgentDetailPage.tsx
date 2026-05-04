@@ -20,7 +20,7 @@ import {
   ShieldCheck,
   TestTube2,
   Wrench,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import {
   Line,
   LineChart,

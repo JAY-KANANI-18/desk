@@ -9,7 +9,7 @@ import {
   Minus,
   Video,
   X,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { inboxApi } from '../../lib/inboxApi';
 import type { AIPrompt } from '../workspace/types';

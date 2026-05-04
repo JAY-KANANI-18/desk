@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, Check, Info, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, Info, Plus, RefreshCw, Trash2 } from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';

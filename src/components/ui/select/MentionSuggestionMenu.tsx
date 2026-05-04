@@ -1,5 +1,5 @@
 import { forwardRef, useId } from "react";
-import { AtSign } from "lucide-react";
+import { AtSign } from "@/components/ui/icons";
 import { Avatar } from "../Avatar";
 import { Tag } from "../Tag";
 import { SelectEmptyState, SelectList, SelectOptionRow } from "./shared";

@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useCallback, useState } from "react";
-import { ListFilter, PanelLeftOpen } from "lucide-react";
+import { ListFilter, PanelLeftOpen } from "@/components/ui/icons";
 import {
   useParams,
   useNavigate,

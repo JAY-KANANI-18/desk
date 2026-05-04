@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bot, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { Bot, ShieldCheck, UserRoundCheck } from "@/components/ui/icons";
 import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useFeatureFlags } from "../../../context/FeatureFlagsContext";

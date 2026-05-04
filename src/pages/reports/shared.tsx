@@ -6,7 +6,7 @@ import {
   MoreVertical,
   TrendingDown,
   TrendingUp,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { useSearchParams } from "react-router-dom";
 import {
   Bar,

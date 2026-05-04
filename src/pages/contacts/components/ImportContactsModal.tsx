@@ -1,5 +1,5 @@
 import type { ChangeEvent, DragEvent, RefObject } from "react";
-import { AlertCircle, CheckCircle2, Download, FileText, Upload, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, FileText, Upload, X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { CenterModal } from "../../../components/ui/Modal";
 import { IconButton } from "../../../components/ui/button/IconButton";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Bot, Loader2, Pause, Play, RefreshCw, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { Bot, Loader2, Pause, Play, RefreshCw, ShieldCheck, UserRoundCheck } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";

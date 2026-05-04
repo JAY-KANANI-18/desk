@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 

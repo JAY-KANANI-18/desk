@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, ArrowRight, Search, Loader2, Zap } from 'lucide-react';
+import { Plus, ArrowRight, Search, Loader2, Zap } from '@/components/ui/icons';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates';
 import { WorkflowTemplate } from './workflow.types';
-import * as Icons from 'lucide-react';
+import * as Icons from '@/components/ui/icons';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
@@ -228,7 +228,7 @@ function TemplateCard({ template, isCreating, onUse }: {
   isCreating: boolean;
   onUse: () => void;
 }) {
-  // Resolve lucide icon by name
+  // Resolve icon by name from the app icon adapter.
   const Icon = (Icons as any)[template.iconName] as React.ElementType ?? Zap;
 
   return (

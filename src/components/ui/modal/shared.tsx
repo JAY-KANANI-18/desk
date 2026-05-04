@@ -9,7 +9,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X } from "@/components/ui/icons";
 import { IconButton } from "../button/IconButton";
 import { cx } from "../inputs/shared";
 

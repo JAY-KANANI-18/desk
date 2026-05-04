@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X } from "@/components/ui/icons";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { DisclosureButton } from "../../../components/ui/button/DisclosureButton";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";

@@ -8,7 +8,7 @@ import {
   Trash2,
   Users,
   ExternalLink,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import type { Message, ReplyContext } from "./types";

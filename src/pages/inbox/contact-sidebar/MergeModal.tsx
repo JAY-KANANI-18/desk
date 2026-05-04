@@ -6,7 +6,7 @@ import {
   MessageSquareText,
   Users,
   Workflow,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Button } from '../../../components/ui/Button';
 import { Avatar } from '../../../components/ui/Avatar';
 import { CenterModal } from '../../../components/ui/Modal';

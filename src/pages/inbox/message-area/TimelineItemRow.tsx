@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageSquare, PhoneCall, Workflow } from "lucide-react";
+import { MessageSquare, PhoneCall, Workflow } from "@/components/ui/icons";
 import { Avatar, AvatarWithBadge } from "../../../components/ui/Avatar";
 import { Tag } from "../../../components/ui/Tag";
 import type { User } from "../../../context/AuthContext";

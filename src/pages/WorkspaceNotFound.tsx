@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Compass, Home, SearchX } from "lucide-react";
+import { Compass, Home, SearchX } from "@/components/ui/icons";
 
 export const WorkspaceNotFound = () => {
   const location = useLocation();

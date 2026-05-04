@@ -1,4 +1,4 @@
-import { Radio } from "lucide-react";
+import { Radio } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { STATUS_FILTERS } from "./constants";
 

@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/ui/icons";
 import { Button } from "../button/Button";
 import { Tag } from "../tag/Tag";
 import { FieldShell } from "./shared";

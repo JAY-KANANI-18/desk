@@ -1,4 +1,4 @@
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronRight, MoreHorizontal } from "@/components/ui/icons";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { cx } from "../inputs/shared";

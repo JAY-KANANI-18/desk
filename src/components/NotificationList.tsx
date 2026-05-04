@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { X, MessageCircle, UserCheck, AtSign, Volume2, VolumeX } from 'lucide-react';
+import { X, MessageCircle, UserCheck, AtSign, Volume2, VolumeX } from '@/components/ui/icons';
 import { useNotifications } from '../context/NotificationContext';
 import type { NotificationEventType } from '../context/NotificationContext';
 

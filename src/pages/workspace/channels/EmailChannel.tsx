@@ -7,7 +7,7 @@ import {
   Mail,
   Server,
   Shield,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { Channel } from "../types";
 import { Button } from "../../../components/ui/button/Button";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";

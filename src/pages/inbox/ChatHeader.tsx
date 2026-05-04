@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   LockOpen,
   MoreVertical,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { Conversation } from "./types";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useInbox } from "../../context/InboxContext";

@@ -12,7 +12,7 @@ import {
   Upload,
   X,
   Zap,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import type { Channel } from "../types";
 import { ChannelApi } from "../../../lib/channelApi";
 import { Button } from "../../../components/ui/button/Button";

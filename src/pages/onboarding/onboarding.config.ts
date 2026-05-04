@@ -18,7 +18,7 @@ import {
   TrendingUp,
   Users,
   Wrench,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import {
   ONBOARDING_CHANNEL_DEFINITIONS,
   type OnboardingChannelIconKey,

@@ -1,6 +1,6 @@
 import { useMemo, useState, type MouseEvent } from "react";
 import Avatar from "boring-avatars";
-import { CheckCircle2, RefreshCw, UploadCloud } from "lucide-react";
+import { CheckCircle2, RefreshCw, UploadCloud } from "@/components/ui/icons";
 import toast from "react-hot-toast";
 
 import { Button } from "../components/ui/Button";

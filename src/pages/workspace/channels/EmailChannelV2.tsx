@@ -8,7 +8,7 @@ import {
   Server,
   Shield,
   Sparkles,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { CopyInput } from '../../../components/ui/inputs/CopyInput';

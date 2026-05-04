@@ -3,8 +3,8 @@ import {
   CornerUpLeft,
   ExternalLink,
   Phone,
-  type LucideIcon,
-} from "lucide-react";
+  type AppIcon,
+} from "@/components/ui/icons";
 import type { WaTemplateButtonType } from "./types";
 
 export function formatFileSize(bytes: number) {
@@ -97,7 +97,7 @@ export function formatWaBody(text: string): string {
 
 export function getWaTemplateButtonIcon(
   type?: WaTemplateButtonType,
-): LucideIcon {
+): AppIcon {
   if (type === "URL") {
     return ExternalLink;
   }

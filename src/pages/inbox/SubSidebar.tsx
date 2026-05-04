@@ -5,7 +5,7 @@ import {
   PanelRightOpen,
   UserCircle2,
   UserMinus,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { CountBadge } from "../../components/ui/CountBadge";
 import { Tooltip } from "../../components/ui/Tooltip";

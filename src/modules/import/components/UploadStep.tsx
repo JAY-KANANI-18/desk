@@ -1,6 +1,6 @@
 import type { DragEvent, KeyboardEvent, ReactNode } from "react";
 import { useRef, useState } from "react";
-import { FileSpreadsheet, UploadCloud, X } from "lucide-react";
+import { FileSpreadsheet, UploadCloud, X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 

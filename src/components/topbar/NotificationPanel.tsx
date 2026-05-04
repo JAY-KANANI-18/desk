@@ -9,7 +9,7 @@ import {
   Volume2,
   VolumeX,
   X,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { useNotifications } from "../../context/NotificationContext";
 import type { NotificationRecord } from "../../lib/notificationApi";
 import { getNotificationPath } from "../../lib/notificationLink";

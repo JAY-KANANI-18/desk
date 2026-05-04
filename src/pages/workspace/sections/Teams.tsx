@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Trash2, Users } from "@/components/ui/icons";
 import { Avatar } from "../../../components/ui/Avatar";
 import { AvatarGroup } from "../../../components/ui/avatar/AvatarGroup";
 import { Button } from "../../../components/ui/Button";

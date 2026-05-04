@@ -16,12 +16,14 @@ export const APPEARANCE_CONTRASTS = ["standard", "high"] as const;
 export const APPEARANCE_DIRECTIONS = ["ltr", "rtl"] as const;
 export const APPEARANCE_DENSITIES = ["comfortable", "compact"] as const;
 export const APPEARANCE_NAVIGATION = ["integrated", "apparent"] as const;
+export const APPEARANCE_ICON_LIBRARIES = ["phosphor", "lucide"] as const;
 
 export type AppearanceTheme = (typeof APPEARANCE_THEMES)[number];
 export type AppearanceContrast = (typeof APPEARANCE_CONTRASTS)[number];
 export type AppearanceDirection = (typeof APPEARANCE_DIRECTIONS)[number];
 export type AppearanceDensity = (typeof APPEARANCE_DENSITIES)[number];
 export type AppearanceNavigation = (typeof APPEARANCE_NAVIGATION)[number];
+export type AppearanceIconLibrary = (typeof APPEARANCE_ICON_LIBRARIES)[number];
 
 export type AppearanceColorPreset =
   | "axodesk"
@@ -61,6 +63,7 @@ export interface AppearanceSettings {
   direction: AppearanceDirection;
   density: AppearanceDensity;
   navigation: AppearanceNavigation;
+  iconLibrary: AppearanceIconLibrary;
   colorPreset: AppearanceColorPreset;
   fontFamily: AppearanceFontFamily;
   fontSize: number;
@@ -181,9 +184,15 @@ export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
   direction: "ltr",
   density: "comfortable",
   navigation: "integrated",
+  iconLibrary: "lucide",
   colorPreset: "axodesk",
   fontFamily: "roboto",
   fontSize: 16,
+};
+
+const LEGACY_PHOSPHOR_DEFAULT_SETTINGS: AppearanceSettings = {
+  ...DEFAULT_APPEARANCE_SETTINGS,
+  iconLibrary: "phosphor",
 };
 
 const LEGACY_GENERATED_DEFAULT_SETTINGS: AppearanceSettings = {
@@ -231,6 +240,7 @@ function isSameAppearanceSettings(
     first.direction === second.direction &&
     first.density === second.density &&
     first.navigation === second.navigation &&
+    first.iconLibrary === second.iconLibrary &&
     first.colorPreset === second.colorPreset &&
     first.fontFamily === second.fontFamily &&
     first.fontSize === second.fontSize
@@ -270,6 +280,9 @@ function readStoredSettings(): AppearanceSettings {
       navigation: isOneOf(parsed.navigation, APPEARANCE_NAVIGATION)
         ? parsed.navigation
         : DEFAULT_APPEARANCE_SETTINGS.navigation,
+      iconLibrary: isOneOf(parsed.iconLibrary, APPEARANCE_ICON_LIBRARIES)
+        ? parsed.iconLibrary
+        : DEFAULT_APPEARANCE_SETTINGS.iconLibrary,
       colorPreset: isColorPreset(parsed.colorPreset)
         ? parsed.colorPreset
         : DEFAULT_APPEARANCE_SETTINGS.colorPreset,
@@ -279,7 +292,10 @@ function readStoredSettings(): AppearanceSettings {
       fontSize: normalizeFontSize(parsed.fontSize),
     };
 
-    if (isSameAppearanceSettings(normalized, LEGACY_GENERATED_DEFAULT_SETTINGS)) {
+    if (
+      isSameAppearanceSettings(normalized, LEGACY_GENERATED_DEFAULT_SETTINGS) ||
+      isSameAppearanceSettings(normalized, LEGACY_PHOSPHOR_DEFAULT_SETTINGS)
+    ) {
       return DEFAULT_APPEARANCE_SETTINGS;
     }
 
@@ -317,6 +333,7 @@ function applyAppearanceToDocument(settings: AppearanceSettings) {
   root.dataset.appearanceDirection = settings.direction;
   root.dataset.appearanceDensity = settings.density;
   root.dataset.appearanceNavigation = settings.navigation;
+  root.dataset.appearanceIconLibrary = settings.iconLibrary;
   root.dataset.appearanceFontSize = String(settings.fontSize);
   root.dir = settings.direction;
   root.classList.toggle("dark", settings.theme === "dark");

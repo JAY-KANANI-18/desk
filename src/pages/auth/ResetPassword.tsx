@@ -1,7 +1,7 @@
 // LEGACY - still mounted from WorkspaceRouter for authenticated reset flows.
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle, Lock, ShieldAlert } from "lucide-react";
+import { ArrowRight, CheckCircle, Lock, ShieldAlert } from "@/components/ui/icons";
 import { useAuth } from "../../context/AuthContext";
 import {
   AuthNotice,

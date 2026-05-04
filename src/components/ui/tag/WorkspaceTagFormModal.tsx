@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Smile } from "lucide-react";
+import { Smile } from "@/components/ui/icons";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { TAG_COLOR_OPTIONS } from "../../../lib/tagAppearance";
 import { Button } from "../button";

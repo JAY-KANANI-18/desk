@@ -4,7 +4,7 @@ import {
     Image as ImageIcon, Video, FileText, Phone, ExternalLink,
     ChevronLeft, ChevronDown, Play, Reply, MapPin, Package,
     ShoppingCart, Clock, ArrowRight
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { ChannelApi } from '../../lib/channelApi';
 import { Button } from '../../components/ui/Button';
 import { IconButton } from '../../components/ui/button/IconButton';

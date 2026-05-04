@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { DollarSign } from "lucide-react";
+import { DollarSign } from "@/components/ui/icons";
 import { Tag } from "../Tag";
 import { SelectEmptyState, SelectList, SelectOptionRow } from "./shared";
 

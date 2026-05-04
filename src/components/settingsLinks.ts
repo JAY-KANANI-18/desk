@@ -1,10 +1,10 @@
-import { Building, Building2, type LucideIcon, User } from "lucide-react";
+import { Building, Building2, type AppIcon, User } from "@/components/ui/icons";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useOrganization } from "../context/OrganizationContext";
 import { useWorkspace } from "../context/WorkspaceContext";
 
 export interface SettingsLink {
-  icon: LucideIcon;
+  icon: AppIcon;
   title: string;
   subtitle: string;
   path: string;

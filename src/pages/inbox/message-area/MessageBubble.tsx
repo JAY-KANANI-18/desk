@@ -8,7 +8,7 @@ import {
   Mail,
   Play,
   Reply,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import { TruncatedText } from "../../../components/ui/TruncatedText";

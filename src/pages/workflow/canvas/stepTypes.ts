@@ -3,14 +3,14 @@ import {
   MessageSquare, HelpCircle, UserCheck, GitBranch, Tag, Edit3,
   MessageCircle, XCircle, StickyNote, CornerDownRight, Clock,
   Workflow, Calendar, Globe, Table, BarChart2, TrendingUp, Bot,
-  LucideIcon,
-} from 'lucide-react';
+  AppIcon,
+} from '@/components/ui/icons';
 
 export interface StepMeta {
   type: StepType;
   label: string;
   description: string;
-  Icon: LucideIcon;
+  Icon: AppIcon;
   category: StepCategory;
   upgradeRequired?: boolean;
 }
@@ -22,7 +22,7 @@ export type StepCategory =
 export interface StepCategoryMeta {
   id: StepCategory;
   label: string;
-  Icon: LucideIcon;
+  Icon: AppIcon;
 }
 
 export const STEP_CATEGORIES: StepCategoryMeta[] = [
