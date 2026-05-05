@@ -25,11 +25,18 @@ export interface Workflow {
 
   // steps: StepConfig[];
   settings: WorkflowSettings;
-  createdBy: string;
+  createBy?: string;
+  createdBy?: string;
+  createdById?: string;
+  createdByName?: string;
+  publishedBy?: string | null;
+  publishedById?: string | null;
+  publishedByName?: string | null;
+  publishedAt?: string | null;
   createdAt: string;
-  lastPublishedBy?: string;
-  lastPublishedAt?: string;
-  updatedAt: string;
+  lastPublishedBy?: string | null;
+  lastPublishedAt?: string | null;
+  updatedAt?: string;
 }
 
 export interface WorkflowSettings {

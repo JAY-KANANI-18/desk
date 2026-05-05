@@ -101,13 +101,7 @@ export const APPEARANCE_COLOR_PRESETS: AppearanceColorPresetOption[] = [
     hover: "#1d4ed8",
     light: "#dbeafe",
   },
-  {
-    value: "emerald",
-    label: "Emerald",
-    color: "#059669",
-    hover: "#047857",
-    light: "#d1fae5",
-  },
+ 
   {
     value: "teal",
     label: "Executive Teal",
@@ -115,13 +109,7 @@ export const APPEARANCE_COLOR_PRESETS: AppearanceColorPresetOption[] = [
     hover: "#115e59",
     light: "#ccfbf1",
   },
-  {
-    value: "violet",
-    label: "Violet",
-    color: "#7c3aed",
-    hover: "#6d28d9",
-    light: "#ede9fe",
-  },
+  
   {
     value: "royal",
     label: "Royal Purple",
@@ -129,20 +117,7 @@ export const APPEARANCE_COLOR_PRESETS: AppearanceColorPresetOption[] = [
     hover: "#5b21b6",
     light: "#f3e8ff",
   },
-  {
-    value: "amber",
-    label: "Luxury Gold",
-    color: "#d97706",
-    hover: "#b45309",
-    light: "#fef3c7",
-  },
-  {
-    value: "rose",
-    label: "Ruby",
-    color: "#e11d48",
-    hover: "#be123c",
-    light: "#ffe4e6",
-  },
+  
 ];
 
 export const APPEARANCE_FONT_OPTIONS: AppearanceFontOption[] = [

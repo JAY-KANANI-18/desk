@@ -367,9 +367,12 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       // Save first
       await workspaceApi.saveWorkflow(state.workflow.id, {
         name: state.workflow.name,
-        trigger: state.workflow?.config?.trigger,
-        steps: state.workflow?.config?.steps,
-        settings: state.workflow?.config?.settings,
+        description: state.workflow.description,
+        config: {
+          trigger: state.workflow?.config?.trigger,
+          steps: state.workflow?.config?.steps,
+          settings: state.workflow?.config?.settings,
+        },
       });
       const published = await workspaceApi.publishWorkflow(state.workflow.id);
       dispatch({ type: "MARK_SAVED", payload: published });

@@ -1,52 +1,87 @@
-import React, { useState } from 'react';
-import { Plus, ArrowRight, Search, Loader2, Zap } from '@/components/ui/icons';
-import { TEMPLATES, TEMPLATE_CATEGORIES } from './templates';
-import { WorkflowTemplate } from './workflow.types';
-import * as Icons from '@/components/ui/icons';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowRight,
+  Loader2,
+  Plus,
+  Search,
+  Sparkles,
+} from '@/components/ui/icons';
+import {
+  WORKFLOW_STEP_METADATA,
+} from '../../config/workflowMetadata';
+import { TEMPLATES } from './templates';
+import type { WorkflowTemplate } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { PageLayout } from '../../components/ui/PageLayout';
 import { Button } from '../../components/ui/Button';
-import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
 import { SearchInput } from '../../components/ui/inputs';
-import { Tag } from '../../components/ui/Tag';
 import { BackButton } from '../../components/channels/BackButton';
+import { ResponsiveModal } from '../../components/ui/modal';
+import { WorkflowCanvasPreview } from './WorkflowCanvas';
 
+function cloneTemplateValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function getTemplateSteps(template: WorkflowTemplate) {
+  return template.defaultWorkflow?.config?.steps ?? [];
+}
+
+function getConfiguredSteps(template: WorkflowTemplate) {
+  return getTemplateSteps(template).filter((step) => step.type !== 'branch_connector');
+}
+
+function getBranchPathCount(template: WorkflowTemplate) {
+  return getTemplateSteps(template).filter((step) => step.type === 'branch_connector').length;
+}
 
 export function TemplateGallery() {
-
-
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState<string | null>(null);
-  const navigate  = useNavigate();
+  const [previewTemplate, setPreviewTemplate] = useState<WorkflowTemplate | null>(null);
+  const navigate = useNavigate();
 
-  const filtered = TEMPLATES.filter((t) => {
-    const matchCat = selectedCategory === 'all' ? true : selectedCategory === 'popular' ? t.popular : t.category === selectedCategory;
-    const matchSearch = !search
-      || t.name.toLowerCase().includes(search.toLowerCase())
-      || t.description.toLowerCase().includes(search.toLowerCase())
-      || t.tags.some((tag) => tag.includes(search.toLowerCase()));
-    return matchCat && matchSearch;
-  });
+  const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return TEMPLATES.filter((template) => {
+      return (
+        !normalizedSearch ||
+        template.name.toLowerCase().includes(normalizedSearch) ||
+        template.description.toLowerCase().includes(normalizedSearch) ||
+        template.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
+      );
+    });
+  }, [search]);
+
+  const handleOpen = (workflowId: string) => {
+    navigate(`/workflows/${workflowId}`);
+  };
 
   const handleUseTemplate = async (template: WorkflowTemplate) => {
     setCreating(template.id);
     try {
-      const wf = await workspaceApi.createWorkflow({ name: template.name, description: template.description });
-      if (template.defaultWorkflow?.config?.trigger || (template?.defaultWorkflow?.config?.steps ?? []).length > 0) {
-        await workspaceApi.saveWorkflow(wf.id, {
-          config: {
+      const workflow = await workspaceApi.createWorkflow({
+        name: template.name,
+        description: template.description,
+      });
+      const templateConfig = template.defaultWorkflow?.config;
 
-          trigger: template?.defaultWorkflow?.config?.trigger ?? null,
-          steps:   template?.defaultWorkflow?.config?.steps ?? [],
-          }
+      if (templateConfig?.trigger || (templateConfig?.steps ?? []).length > 0) {
+        await workspaceApi.saveWorkflow(workflow.id, {
+          config: {
+            trigger: cloneTemplateValue(templateConfig?.trigger ?? null),
+            steps: cloneTemplateValue(templateConfig?.steps ?? []),
+            settings: templateConfig?.settings,
+          },
         });
       }
-      handleOpen(wf.id);
-    } catch (e) {
-      console.error(e);
+
+      handleOpen(workflow.id);
+    } catch (error) {
+      console.error(error);
     } finally {
       setCreating(null);
     }
@@ -55,17 +90,17 @@ export function TemplateGallery() {
   const handleScratch = async () => {
     setCreating('scratch');
     try {
-      const wf = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
-      handleOpen(wf.id);
-    } catch (e) {
-      console.error(e);
+      const workflow = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
+      handleOpen(workflow.id);
+    } catch (error) {
+      console.error(error);
     } finally {
       setCreating(null);
     }
   };
+
   const handleBack = () => {
     navigate('/workflows');
-    
   };
 
   useMobileHeaderActions(
@@ -85,32 +120,9 @@ export function TemplateGallery() {
     [search],
   );
 
-  const handleOpen = (workflowId: string) => {
-    navigate(`/workflows/${workflowId}`);
-  };
-
   const desktopToolbar = (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      {/* <div className="flex gap-1 overflow-x-auto pb-1">
-        {TEMPLATE_CATEGORIES.map((category) => (
-          <Button
-            key={category.id}
-            onClick={() => {
-              setSelectedCategory(category.id);
-              setSearch('');
-            }}
-      
-                             variant="tab"
-                selected={selectedCategory === category.id && !search}
-
-                      radius="none"
-          >
-            {category.label}
-          </Button>
-        ))}
-      </div> */}
-
-      <div className="relative w-full lg:max-w-xs">
+    <div className="flex justify-end">
+      <div className="w-full lg:max-w-xs">
         <SearchInput
           placeholder="Search templates..."
           value={search}
@@ -123,20 +135,13 @@ export function TemplateGallery() {
       </div>
     </div>
   );
-  
 
   return (
     <PageLayout
       eyebrow="Workflows"
-      title="Workflow templates"
-      leading={
-        <BackButton
-          onClick={handleBack}
-          ariaLabel="Back to workflows"
-         
-
-        />
-      }
+      title="Workflow Templates"
+      subtitle="Preview a starter flow, then create it as a draft workflow."
+      leading={<BackButton onClick={handleBack} ariaLabel="Back to workflows" />}
       actions={
         <Button
           onClick={() => void handleScratch()}
@@ -153,46 +158,47 @@ export function TemplateGallery() {
       className="bg-white"
       contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
     >
-      <div className="flex h-full min-h-0 flex-col bg-white">
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* {!search ? (
-            <Button
-              onClick={handleScratch}
-              disabled={creating === 'scratch'}
-              variant="secondary"
-              size="lg"
-              radius="lg"
-              fullWidth
-              contentAlign="start"
-              preserveChildLayout
-              className="group mb-5 hidden md:flex"
-            >
-              <div className="flex w-full items-center gap-4 text-left">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gray-50 transition-colors group-hover:bg-gray-100">
-                  {creating === 'scratch'
-                    ? <Loader2 size={15} className="animate-spin text-gray-400" />
-                    : <Plus size={15} className="text-gray-400" />
-                  }
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700">Start from scratch</p>
-                  <p className="mt-0.5 text-xs text-gray-400">Build a custom workflow with a blank canvas</p>
-                </div>
-                <ArrowRight size={14} className="flex-shrink-0 text-gray-300 transition-colors group-hover:text-gray-500" />
-              </div>
-            </Button>
-          ) : null} */}
+      <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
+        <div className="flex-1 overflow-y-auto p-4 pb-8 md:p-6">
+          <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                {search
+                  ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`
+                  : 'Templates'}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Preview a starter flow first, or start with an empty workflow.
+              </p>
+            </div>
+            <span className="text-xs text-slate-400">
+              {TEMPLATES.length} templates available
+            </span>
+          </div>
 
-          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
-            {search
-              ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`
-              : TEMPLATE_CATEGORIES.find((category) => category.id === selectedCategory)?.label ?? 'Templates'}
-          </p>
+          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:hidden">
+            <p className="text-sm font-semibold text-slate-950">Start from scratch</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Open a blank draft and add your own trigger, steps, and paths.
+            </p>
+            <Button
+              fullWidth
+              className="mt-3"
+              onClick={() => void handleScratch()}
+              disabled={creating === 'scratch'}
+              loading={creating === 'scratch'}
+              loadingMode="inline"
+              leftIcon={<Plus size={16} />}
+            >
+              Create blank workflow
+            </Button>
+          </div>
 
           {filtered.length === 0 ? (
-            <div className="py-12 text-center">
-              <Search size={24} className="mx-auto mb-3 text-gray-200" />
-              <p className="text-sm text-gray-400">No templates match "{search}"</p>
+            <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 text-center">
+              <Search size={24} className="mb-3 text-slate-300" />
+              <p className="text-sm font-medium text-slate-600">No templates found</p>
+              <p className="mt-1 text-xs text-slate-400">Try a different search.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -201,76 +207,258 @@ export function TemplateGallery() {
                   key={template.id}
                   template={template}
                   isCreating={creating === template.id}
-                  onUse={() => handleUseTemplate(template)}
+                  onPreview={() => setPreviewTemplate(template)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
-      <FloatingActionButton
-        label="Start from scratch"
-        icon={
-          creating === 'scratch'
-            ? <Loader2 size={24} className="animate-spin" />
-            : <Plus size={24} />
-        }
-        disabled={creating === 'scratch'}
-        onClick={() => void handleScratch()}
+
+      <TemplatePreviewModal
+        template={previewTemplate}
+        creating={previewTemplate ? creating === previewTemplate.id : false}
+        onClose={() => setPreviewTemplate(null)}
+        onUse={(template) => void handleUseTemplate(template)}
       />
     </PageLayout>
   );
 }
 
-// ─── Template Card ─────────────────────────────────────────────────────────────
-
-function TemplateCard({ template, isCreating, onUse }: {
+function TemplateCard({
+  template,
+  isCreating,
+  onPreview,
+}: {
   template: WorkflowTemplate;
   isCreating: boolean;
-  onUse: () => void;
+  onPreview: () => void;
 }) {
-  // Resolve icon by name from the app icon adapter.
-  const Icon = (Icons as any)[template.iconName] as React.ElementType ?? Zap;
+  return (
+    <button
+      type="button"
+      onClick={onPreview}
+      disabled={isCreating}
+      className="group flex min-h-[158px] w-full min-w-0 flex-col rounded-lg border border-slate-200 bg-white p-4 text-left transition-all hover:border-[var(--color-primary)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] disabled:cursor-wait disabled:opacity-70"
+    >
+      <h2 className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+        {template.name}
+      </h2>
+
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">{template.description}</p>
+
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+        <span className="text-xs text-slate-400">Preview, then use</span>
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
+          {isCreating ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <>
+              Preview template
+              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+            </>
+          )}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function TemplatePreviewModal({
+  template,
+  creating,
+  onClose,
+  onUse,
+}: {
+  template: WorkflowTemplate | null;
+  creating: boolean;
+  onClose: () => void;
+  onUse: (template: WorkflowTemplate) => void;
+}) {
+  const benefits = template ? getTemplateBenefits(template) : [];
+  const includedItems = template ? getTemplateIncludedItems(template) : [];
+  const workflowConfig = template?.defaultWorkflow?.config;
+  const [mobilePreviewMode, setMobilePreviewMode] = useState<'overview' | 'flow'>('overview');
+
+  useEffect(() => {
+    setMobilePreviewMode('overview');
+  }, [template?.id]);
+
+  const renderUseTemplateAction = (label: string, fullWidth = false) =>
+    template ? (
+      <Button
+        onClick={() => onUse(template)}
+        loading={creating}
+        loadingMode="inline"
+        leftIcon={<Sparkles size={15} />}
+        fullWidth={fullWidth}
+      >
+        {label}
+      </Button>
+    ) : null;
 
   return (
-    <Button
-      onClick={onUse}
-      disabled={isCreating}
-      variant="secondary"
-      size="lg"
-      radius="lg"
-      fullWidth
-      contentAlign="start"
-      preserveChildLayout
-      className="group"
+    <ResponsiveModal
+      isOpen={Boolean(template)}
+      onClose={onClose}
+      title={template?.name ?? 'Template preview'}
+      size="fullscreen"
+      bodyPadding="none"
+      mobileFullScreen
+      mobileBorderless
+      headerActions={renderUseTemplateAction('Use Template')}
+      mobileFooter={renderUseTemplateAction('Use template', true)}
+      mobileBodyClassName="h-full min-h-0"
+      closeOnOverlayClick={!creating}
     >
-      <div className="w-full text-left">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-gray-100 transition-colors group-hover:bg-gray-200">
-            <Icon size={14} className="text-gray-600" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-sm font-medium leading-tight text-gray-800">{template.name}</p>
-              {template.popular ? <Tag label="Popular" bgColor="gray" size="sm" /> : null}
+      {template ? (
+        <div className="h-full min-h-0 bg-white">
+          <div className="flex h-full min-h-0 flex-col md:hidden">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setMobilePreviewMode('overview')}
+                  className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                    mobilePreviewMode === 'overview'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobilePreviewMode('flow')}
+                  className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                    mobilePreviewMode === 'flow'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  Flow
+                </button>
+              </div>
             </div>
+
+            {mobilePreviewMode === 'overview' ? (
+              <section className="min-h-0 flex-1 overflow-y-auto p-5">
+                <p className="text-sm leading-6 text-slate-700">
+                  {template.description}
+                </p>
+
+                <TemplateInfoBlock title="Benefits" items={benefits} />
+                <TemplateInfoBlock title="What it has" items={includedItems} />
+
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  className="mt-8"
+                  rightIcon={<ArrowRight size={15} />}
+                  onClick={() => setMobilePreviewMode('flow')}
+                >
+                  View flow preview
+                </Button>
+              </section>
+            ) : (
+              <div
+                className="min-h-0 flex-1"
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <WorkflowCanvasPreview
+                  trigger={workflowConfig?.trigger ?? null}
+                  steps={workflowConfig?.steps ?? []}
+                  className="h-full"
+                  minHeightClassName="min-h-0"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="hidden h-full min-h-0 grid-cols-[minmax(360px,0.82fr)_minmax(560px,1.18fr)] bg-white md:grid">
+            <section className="min-h-0 overflow-y-auto border-r border-slate-200 p-8">
+              <p className="max-w-2xl text-sm leading-6 text-slate-700">
+                {template.description}
+              </p>
+
+              <TemplateInfoBlock title="Benefits" items={benefits} />
+              <TemplateInfoBlock title="What it has" items={includedItems} />
+            </section>
+
+            <WorkflowCanvasPreview
+              trigger={workflowConfig?.trigger ?? null}
+              steps={workflowConfig?.steps ?? []}
+            />
           </div>
         </div>
-
-        <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-gray-400">{template.description}</p>
-
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap gap-1">
-            {template.tags.slice(0, 2).map((tag) => (
-              <Tag key={tag} label={tag} bgColor="gray" size="sm" maxWidth={120} />
-            ))}
-          </div>
-          {isCreating
-            ? <Loader2 size={12} className="shrink-0 animate-spin text-gray-400" />
-            : <ArrowRight size={12} className="shrink-0 text-gray-300 transition-colors group-hover:text-gray-600" />
-          }
-        </div>
-      </div>
-    </Button>
+      ) : null}
+    </ResponsiveModal>
   );
+}
+
+function TemplateInfoBlock({
+  title,
+  items,
+}: {
+  title: string;
+  items: string[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mt-8">
+      <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
+      <ul className="mt-3 space-y-2">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2 text-sm leading-6 text-slate-700">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function getTemplateBenefits(template: WorkflowTemplate) {
+  const stepTypes = new Set(getConfiguredSteps(template).map((step) => step.type));
+  const benefits: string[] = [];
+
+  if (stepTypes.has('assign_to')) {
+    benefits.push('Assign conversations automatically so contacts reach the right person faster.');
+  }
+  if (stepTypes.has('send_message')) {
+    benefits.push('Send consistent replies without typing the same message manually.');
+  }
+  if (stepTypes.has('ask_question')) {
+    benefits.push('Collect contact details directly inside the conversation.');
+  }
+  if (stepTypes.has('branch') || stepTypes.has('date_time')) {
+    benefits.push('Guide contacts down the right path based on conditions or timing.');
+  }
+  if (stepTypes.has('close_conversation') || stepTypes.has('open_conversation')) {
+    benefits.push('Keep conversation status aligned with the automation outcome.');
+  }
+
+  if (benefits.length === 0) {
+    benefits.push('Start from a ready workflow instead of a blank canvas.');
+  }
+
+  return benefits.slice(0, 4);
+}
+
+function getTemplateIncludedItems(template: WorkflowTemplate) {
+  const configuredSteps = getConfiguredSteps(template);
+  const uniqueStepLabels = Array.from(
+    new Set(
+      configuredSteps.map((step) => WORKFLOW_STEP_METADATA[step.type]?.label ?? step.name),
+    ),
+  );
+  const branchPathCount = getBranchPathCount(template);
+
+  return [
+    'A new draft workflow',
+    ...uniqueStepLabels,
+    ...(branchPathCount > 0 ? ['Branch paths already connected'] : []),
+  ].slice(0, 7);
 }

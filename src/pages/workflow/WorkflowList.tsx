@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect, type ReactNode } from 'react';
 import {
   Plus, Play, Square, Pencil,
-  Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight,
+  Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight, Calendar, User,
 } from '@/components/ui/icons';
 import { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
@@ -18,12 +18,116 @@ import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { ConfirmDeleteModal } from '../../components/ui/modal';
+import { useWorkspace } from '../../context/WorkspaceContext';
 
 type FilterStatus = 'all' | WorkflowStatus;
-type WorkflowSortField = 'name' | 'status' | 'lastPublishedAt';
+type WorkflowSortField = 'name' | 'status' | 'createdAt' | 'publishedAt';
+type WorkflowUserLookup = Map<string, string>;
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+const statusCopy: Record<WorkflowStatus, { label: string; dot: string; text: string }> = {
+  draft: { label: 'Draft', dot: 'bg-slate-300', text: 'text-slate-600' },
+  published: { label: 'Published', dot: 'bg-emerald-500', text: 'text-emerald-700' },
+  stopped: { label: 'Stopped', dot: 'bg-rose-400', text: 'text-rose-700' },
+};
+
+const formatDate = (iso?: string | null) => {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return dateFormatter.format(date);
+};
+
+const getWorkflowAuthor = (
+  workflow: Workflow,
+  kind: 'created' | 'published',
+  usersById: WorkflowUserLookup,
+) => {
+  const userId =
+    kind === 'created'
+      ? workflow.createBy ?? workflow.createdById
+      : workflow.publishedBy ?? workflow.publishedById;
+  const mappedName = userId ? usersById.get(String(userId)) : undefined;
+  const fallback =
+    kind === 'created'
+      ? workflow.createdByName ?? workflow.createdBy
+      : workflow.publishedByName ?? workflow.lastPublishedBy;
+
+  const fallbackName = fallback?.trim();
+  return mappedName ?? (fallbackName || 'Unknown user');
+};
+
+const getWorkflowPublishedMeta = (
+  workflow: Workflow,
+  usersById: WorkflowUserLookup,
+) => {
+  const trackedPublishedAt = workflow.publishedAt ?? workflow.lastPublishedAt;
+
+  if (trackedPublishedAt) {
+    return {
+      label: formatDate(trackedPublishedAt) ?? 'Unknown date',
+      by: getWorkflowAuthor(workflow, 'published', usersById),
+      muted: false,
+    };
+  }
+
+  if (workflow.status === 'published') {
+    return {
+      label: formatDate(workflow.createdAt) ?? 'Published',
+      by: getWorkflowAuthor(workflow, 'created', usersById),
+      muted: false,
+    };
+  }
+
+  return {
+    label: 'Not published',
+    by: undefined,
+    muted: true,
+  };
+};
+
+function StatusDot({ status }: { status: WorkflowStatus }) {
+  const meta = statusCopy[status] ?? statusCopy.draft;
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${meta.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+}
+
+function WorkflowMetaCell({
+  icon,
+  label,
+  by,
+  muted = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  by?: string;
+  muted?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2">
+      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center ${muted ? 'text-slate-300' : 'text-slate-400'}`}>
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className={`truncate text-sm ${muted ? 'text-slate-400' : 'text-slate-700'}`}>{label}</p>
+        {by ? <p className="mt-0.5 truncate text-xs text-slate-400">by {by}</p> : null}
+      </div>
+    </div>
+  );
+}
 
 export function WorkflowList() {
   const isMobile = useIsMobile();
+  const { workspaceUsers } = useWorkspace();
   const [workflows, setWorkflows]     = useState<Workflow[]>([]);
   const [loading, setLoading]         = useState(true);
   const [filter, setFilter]           = useState<FilterStatus>('all');
@@ -120,19 +224,6 @@ export function WorkflowList() {
     setRenameId(null);
   };
 
-  const fmt = (iso?: string) =>
-    iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-
-  const StatusDot = ({ status }: { status: WorkflowStatus }) => {
-    const color = { draft: 'bg-gray-300', published: 'bg-green-500', stopped: 'bg-red-400' }[status];
-    const label = { draft: 'Draft', published: 'Published', stopped: 'Stopped' }[status];
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-gray-500">
-        <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
-        {label}
-      </span>
-    );
-  };
   const handleCreateNew = useCallback(() => {
     navigate('/workflows/templates');
   }, [navigate]);
@@ -195,16 +286,32 @@ export function WorkflowList() {
     }
   };
 
+  const usersById = useMemo(() => {
+    return new Map(
+      (workspaceUsers ?? []).map((user) => {
+        const name =
+          [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+          user.email ||
+          'Unknown user';
+        return [String(user.id), name] as const;
+      }),
+    );
+  }, [workspaceUsers]);
+
   const sortedWorkflows = useMemo(() => {
     return [...workflows].sort((a, b) => {
       const aValue =
-        sortField === 'lastPublishedAt'
-          ? a.lastPublishedAt ?? ''
-          : String(a[sortField] ?? '');
+        sortField === 'publishedAt'
+          ? a.publishedAt ?? a.lastPublishedAt ?? ''
+          : sortField === 'createdAt'
+            ? a.createdAt ?? ''
+            : String(a[sortField] ?? '');
       const bValue =
-        sortField === 'lastPublishedAt'
-          ? b.lastPublishedAt ?? ''
-          : String(b[sortField] ?? '');
+        sortField === 'publishedAt'
+          ? b.publishedAt ?? b.lastPublishedAt ?? ''
+          : sortField === 'createdAt'
+            ? b.createdAt ?? ''
+            : String(b[sortField] ?? '');
       const result = String(aValue).localeCompare(String(bValue), undefined, {
         numeric: true,
         sensitivity: 'base',
@@ -222,8 +329,8 @@ export function WorkflowList() {
       mobile: 'primary',
       cell: (wf) => (
         <div className="min-w-0 flex items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
-            <Zap size={12} className="text-gray-400" />
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 ring-1 ring-slate-100">
+            <Zap size={14} className="text-[var(--color-primary)]" />
           </div>
           <div className="min-w-0">
             {renameId === wf.id ? (
@@ -263,18 +370,38 @@ export function WorkflowList() {
       mobile: 'detail',
     },
     {
-      id: 'lastPublishedAt',
-      header: 'Last published',
+      id: 'createdAt',
+      header: 'Created',
       sortable: true,
-      sortField: 'lastPublishedAt',
+      sortField: 'createdAt',
+      className: 'min-w-[180px]',
       cell: (wf) => (
-        <div>
-          <p className="text-sm text-gray-500">{wf.lastPublishedAt ? fmt(wf.lastPublishedAt) : '-'}</p>
-          {wf.lastPublishedBy && wf.lastPublishedAt && (
-            <p className="mt-0.5 text-xs text-gray-300">by {wf.lastPublishedBy}</p>
-          )}
-        </div>
+        <WorkflowMetaCell
+          icon={<Calendar size={14} />}
+          label={formatDate(wf.createdAt) ?? 'Unknown date'}
+          by={getWorkflowAuthor(wf, 'created', usersById)}
+        />
       ),
+      mobile: 'detail',
+    },
+    {
+      id: 'publishedAt',
+      header: 'Published',
+      sortable: true,
+      sortField: 'publishedAt',
+      className: 'min-w-[180px]',
+      cell: (wf) => {
+        const publishedMeta = getWorkflowPublishedMeta(wf, usersById);
+
+        return (
+          <WorkflowMetaCell
+            icon={<User size={14} />}
+            label={publishedMeta.label}
+            by={publishedMeta.by}
+            muted={publishedMeta.muted}
+          />
+        );
+      },
       mobile: 'detail',
     },
   ];
@@ -466,9 +593,9 @@ export function WorkflowList() {
             rowActions={workflowActions}
             onRowClick={(workflow) => handleOpenBuilder(workflow.id)}
             renderMobileCard={(workflow, helpers) => {
-              const lastPublishedLabel = workflow.lastPublishedAt
-                ? fmt(workflow.lastPublishedAt)
-                : 'Never published';
+              const createdLabel = formatDate(workflow.createdAt) ?? 'Unknown date';
+              const creatorLabel = getWorkflowAuthor(workflow, 'created', usersById);
+              const publishedMeta = getWorkflowPublishedMeta(workflow, usersById);
 
               return (
                 <article
@@ -532,19 +659,31 @@ export function WorkflowList() {
                       </div>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                        Last published
-                      </span>
-                      <span className="min-w-0 truncate text-right text-sm font-semibold text-slate-800">
-                        {lastPublishedLabel}
-                      </span>
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Created
+                        </p>
+                        <p className="mt-1 truncate text-xs font-medium text-slate-700">{createdLabel}</p>
+                        <p className="truncate text-[11px] text-slate-400">by {creatorLabel}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Published
+                        </p>
+                        <p className="mt-1 truncate text-xs font-medium text-slate-700">{publishedMeta.label}</p>
+                        {publishedMeta.by ? (
+                          <p className="truncate text-[11px] text-slate-400">by {publishedMeta.by}</p>
+                        ) : (
+                          <p className="truncate text-[11px] text-slate-300">Draft only</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </article>
               );
             }}
-            minTableWidth={720}
+            minTableWidth={920}
             mobileLoadMore={{
               hasMore: pagination.hasNextPage,
               loading: mobileLoadingMore,

@@ -521,6 +521,7 @@ export interface StepNodeData {
   onDelete: () => void;
   onCopy: () => void;
   onNavigateToStep?: (stepId: string) => void;
+  showActions?: boolean;
   highlightPulse?: boolean;
 }
 
@@ -539,12 +540,12 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
       showWarning={data.hasError}
       warningLabel={data.validationIssue}
       onClick={data.onSelect}
-      actions={
+      actions={data.showActions === false ? undefined : (
         <NodeActions
           onCopy={(e) => { e.stopPropagation(); data.onCopy(); }}
           onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
-      }
+      )}
       content={data.preview ? (
         <NodePreview preview={data.preview} onNavigateToStep={data.onNavigateToStep} />
       ) : null}
@@ -568,6 +569,7 @@ export interface BranchNodeData {
   onDelete: () => void;
   onCopy: () => void;
   onNavigateToStep?: (stepId: string) => void;
+  showActions?: boolean;
   highlightPulse?: boolean;
 }
 
@@ -587,12 +589,12 @@ export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) =
       showWarning={data.hasError}
       warningLabel={data.validationIssue}
       onClick={data.onSelect}
-      actions={
+      actions={data.showActions === false ? undefined : (
         <NodeActions
           onCopy={(e) => { e.stopPropagation(); data.onCopy(); }}
           onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
-      }
+      )}
       content={data.preview ? (
         <NodePreview preview={data.preview} onNavigateToStep={data.onNavigateToStep} />
       ) : null}

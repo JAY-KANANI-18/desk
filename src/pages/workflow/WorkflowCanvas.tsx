@@ -31,6 +31,7 @@ import {
 import { STEP_META } from "./canvas/stepTypes";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useDisclosure } from "../../hooks/useDisclosure";
+import { isMobileSheetHistoryTransition } from "../../hooks/useHistoryBack";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useChannel } from "../../context/ChannelContext";
 import { useWorkspace } from "../../context/WorkspaceContext";
@@ -128,6 +129,12 @@ interface BuildGraphCallbacks {
   onInsert: (ctx: InsertCtx) => void;
   onPaste: (ctx: InsertCtx) => void;
   copiedStepLabel?: string;
+}
+
+interface WorkflowGraphBuildOptions {
+  showAddNodes?: boolean;
+  showValidation?: boolean;
+  showActions?: boolean;
 }
 
 function getNodeDataHeight(data: unknown) {
@@ -498,12 +505,16 @@ function UnsavedChangesModal({
 /* ───────────────────────────────────────────── */
 // BUILD GRAPH
 
-function buildGraph(
+export function buildGraph(
   raw: WorkflowGraphConfig,
   cb: BuildGraphCallbacks,
   previewContext: WorkflowPreviewContext,
+  options: WorkflowGraphBuildOptions = {},
 ) {
   const { childrenMap } = buildWorkflow(raw);
+  const showAddNodes = options.showAddNodes ?? true;
+  const showValidation = options.showValidation ?? true;
+  const showActions = options.showActions ?? true;
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -548,8 +559,6 @@ function buildGraph(
     return centerX - NODE_W / 2;
   }
 
-  console.log({ raw });
-
   // ── Trigger ──
   nodes.push({
     id: "trigger",
@@ -566,10 +575,12 @@ function buildGraph(
   });
 
   const rootChildren = childrenMap.get("trigger") || [];
-  console.log({ rootChildren });
-
   // ── Empty state ──
   if (rootChildren.length === 0) {
+    if (!showAddNodes) {
+      return { nodes, edges };
+    }
+
     const addId = "add-trigger";
     const addY = yAfterNormal(TRIGGER_Y, TRIGGER_NODE_H);
 
@@ -654,6 +665,7 @@ function buildGraph(
       const validationIssue = getStepValidationIssue(step, previewContext.steps);
       const stepNumber = getStepNumber(step.id, previewContext.steps);
       const nodeHeight = estimateNodeHeight(nodePreview);
+      const hasValidationIssue = showValidation && Boolean(validationIssue);
 
       nodes.push({
         id: step.id,
@@ -668,9 +680,10 @@ function buildGraph(
           stepNumber,
           preview: nodePreview,
           height: nodeHeight,
-          isConfigured: !validationIssue,
-          hasError: Boolean(validationIssue),
-          validationIssue,
+          isConfigured: !hasValidationIssue,
+          hasError: hasValidationIssue,
+          validationIssue: showValidation ? validationIssue : undefined,
+          showActions,
           highlightPulse: previewContext.highlightStepId === step.id,
           onSelect: () => cb.onSelectStep(step.id),
           onDelete: () => cb.onDeleteStep(step.id),
@@ -726,7 +739,7 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
     const childSteps = childrenMap.get(conn.id) || [];
 
     // empty connector → add button
-    if (childSteps.length === 0) {
+    if (showAddNodes && childSteps.length === 0) {
       const addId = `add-${conn.id}`;
       const addY = yAfterPill(connectorY);
 
@@ -750,7 +763,7 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
   render(step.id, nodeX, nodeY, "normal", nodeHeight);
 
   const hasChildren = (childrenMap.get(step.id) || []).length > 0;
-  if (!hasChildren) {
+  if (showAddNodes && !hasChildren) {
     const addId = `add-${step.id}`;
     const addY = yAfterNormal(nodeY, nodeHeight);
 
@@ -777,6 +790,119 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
 }
 /* ───────────────────────────────────────────── */
 // DEFAULT DATA
+
+export interface WorkflowCanvasPreviewProps {
+  trigger: TriggerConfig | null;
+  steps: StepConfig[];
+  className?: string;
+  minHeightClassName?: string;
+  showControls?: boolean;
+}
+
+export function WorkflowCanvasPreview({
+  trigger,
+  steps,
+  className = "",
+  minHeightClassName = "min-h-[520px]",
+  showControls = true,
+}: WorkflowCanvasPreviewProps) {
+  const reactFlowRef = useRef<ReactFlowInstance | null>(null);
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
+
+  const graphSteps = useMemo(
+    () => (Array.isArray(steps) ? steps as WorkflowCanvasStep[] : []),
+    [steps],
+  );
+
+  useEffect(() => {
+    const { nodes, edges } = buildGraph(
+      { trigger, steps: graphSteps },
+      {
+        onSelectTrigger: () => undefined,
+        onSelectStep: () => undefined,
+        onDeleteStep: () => undefined,
+        onCopyStep: () => undefined,
+        onNavigateToStep: () => undefined,
+        onInsert: () => undefined,
+        onPaste: () => undefined,
+      },
+      {
+        channels: [],
+        steps: graphSteps,
+        workspaceUsers: [],
+        workspaceTags: [],
+      },
+      {
+        showAddNodes: false,
+        showValidation: false,
+        showActions: false,
+      },
+    );
+
+    setRfNodes(
+      nodes.map((node) => ({
+        ...node,
+        className: [node.className, "pointer-events-none"].filter(Boolean).join(" "),
+        selectable: false,
+        draggable: false,
+      })),
+    );
+    setRfEdges(edges.map((edge) => ({ ...edge, selectable: false })));
+
+    if (typeof window === "undefined") return undefined;
+
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        reactFlowRef.current?.fitView({
+          padding: 0.35,
+          maxZoom: FIT_VIEW_MAX_ZOOM,
+          duration: 0,
+        });
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [graphSteps, setRfEdges, setRfNodes, trigger]);
+
+  return (
+    <div className={`h-full ${minHeightClassName} bg-white ${className}`}>
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onInit={(instance) => {
+          reactFlowRef.current = instance;
+          window.requestAnimationFrame(() => {
+            instance.fitView({
+              padding: 0.35,
+              maxZoom: FIT_VIEW_MAX_ZOOM,
+              duration: 0,
+            });
+          });
+        }}
+        fitView
+        fitViewOptions={{ padding: 0.35, maxZoom: FIT_VIEW_MAX_ZOOM }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        nodesFocusable={false}
+        edgesFocusable={false}
+        edgesUpdatable={false}
+        elementsSelectable={false}
+        selectNodesOnDrag={false}
+        deleteKeyCode={null}
+        multiSelectionKeyCode={null}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background variant={BackgroundVariant.Dots} />
+        {showControls ? <Controls showInteractive={false} /> : null}
+      </ReactFlow>
+    </div>
+  );
+}
 
 function getDefaultStepData(type: StepType): StepConfig["data"] {
   switch (type) {
@@ -1188,7 +1314,10 @@ export function WorkflowCanvas() {
     if (!isDirty) return undefined;
 
     const handlePopState = () => {
-      if (bypassUnsavedPromptRef.current) {
+      if (
+        bypassUnsavedPromptRef.current ||
+        isMobileSheetHistoryTransition()
+      ) {
         return;
       }
 

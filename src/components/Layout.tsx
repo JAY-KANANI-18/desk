@@ -36,8 +36,8 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
   },
   {
     path: "/workflows/templates",
-    eyebrow: "Workflows",
-    title: "New workflow",
+    eyebrow: "New workflow",
+    title: "Workflow templates",
     backTo: "/workflows",
   },
   {

@@ -19,12 +19,15 @@ type PendingHistoryCleanup = {
 };
 
 const SHEET_HASH_PREFIX = "sheet-";
+const INTERNAL_HISTORY_POP_TIMEOUT_MS = 1000;
+const SHEET_HISTORY_POP_SUPPRESSION_MS = 1200;
 
 const stack: StackEntry[] = [];
 let listenerRegistered = false;
 let entrySequence = 0;
 let pendingHistoryCleanup: PendingHistoryCleanup | null = null;
 let internalHistoryPopTimeout: ReturnType<typeof setTimeout> | null = null;
+let sheetHistoryPopSuppressedUntil = 0;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -130,14 +133,30 @@ function clearPendingHistoryCleanup() {
   pendingHistoryCleanup = null;
 }
 
+function markSheetHistoryPopInProgress() {
+  sheetHistoryPopSuppressedUntil =
+    Date.now() + SHEET_HISTORY_POP_SUPPRESSION_MS;
+}
+
+export function isMobileSheetHistoryTransition() {
+  if (typeof window === "undefined") return false;
+
+  return (
+    Date.now() < sheetHistoryPopSuppressedUntil ||
+    Boolean(readCurrentSheetEntry().id) ||
+    stack.some((entry) => entry.isOpenRef.current)
+  );
+}
+
 function armInternalHistoryPop() {
   if (internalHistoryPopTimeout) {
     clearTimeout(internalHistoryPopTimeout);
   }
 
+  markSheetHistoryPopInProgress();
   internalHistoryPopTimeout = setTimeout(() => {
     internalHistoryPopTimeout = null;
-  }, 1000);
+  }, INTERNAL_HISTORY_POP_TIMEOUT_MS);
 }
 
 function consumeInternalHistoryPop() {
@@ -219,6 +238,7 @@ function registerGlobalListener() {
 
     if (stillOnTopEntry) return;
 
+    markSheetHistoryPopInProgress();
     stack.pop();
     topEntry.closeFromHistory();
     cleanupUnknownSheetHistory(current);
