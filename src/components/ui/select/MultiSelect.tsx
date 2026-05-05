@@ -55,6 +55,9 @@ export function MultiSelect({
     options,
     disabled,
     closeOnSelect: false,
+    initialHighlightedIndex: options.findIndex((option) =>
+      value.includes(option.value),
+    ),
     getOptionDisabled: (option) => Boolean(option.disabled),
     onSelect: (option) => updateValue(option.value),
   });

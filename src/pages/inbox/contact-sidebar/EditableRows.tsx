@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Check, Copy, Loader2, X } from '@/components/ui/icons';
+import { validatePhoneNumberForForm } from '@/lib/phoneNumber';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { IconButton } from '../../../components/ui/button/IconButton';
+import { PhoneField } from '../../../components/ui/phone';
 
 const blockedRowClassName = 'opacity-50 pointer-events-none select-none';
 const activeRowClassName = 'opacity-100';
@@ -16,6 +18,13 @@ const inactivePlaceholderClassName = 'text-[13px] font-medium leading-snug text-
 
 function messageFromError(error: unknown) {
   return error instanceof Error ? error.message : 'Save failed';
+}
+
+function isInsidePortaledSelectDropdown(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    target.closest('[data-select-dropdown="true"]')
+  );
 }
 
 function CopyBtn({ value, label = 'Copy' }: { value: string; label?: string }) {
@@ -90,6 +99,15 @@ interface FieldRowProps extends SharedRowProps {
   type?: ComponentProps<typeof Input>['type'];
   copyable?: boolean;
   warn?: boolean;
+  onSave: (value: string) => Promise<void>;
+}
+
+interface PhoneFieldRowProps extends SharedRowProps {
+  value: string;
+  placeholder?: string;
+  copyable?: boolean;
+  warn?: boolean;
+  defaultCountry?: string | null;
   onSave: (value: string) => Promise<void>;
 }
 
@@ -390,6 +408,175 @@ export function FieldRow({
             />
           </div>
           {err ? <p className="text-[11px] text-red-500 px-0.5">{err}</p> : null}
+        </div>
+      ) : (
+        <div
+          role="button"
+          tabIndex={isBlocked ? -1 : 0}
+          aria-disabled={isBlocked || undefined}
+          className={inactiveRowClassName}
+          onClick={() => onActivate(fieldKey)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onActivate(fieldKey);
+            }
+          }}
+        >
+          <span className={`truncate ${value ? inactiveValueClassName : inactivePlaceholderClassName}`}>
+            {value || placeholder}
+          </span>
+          <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+            {copyable && value ? <CopyBtn value={value} /> : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PhoneFieldRow({
+  fieldKey,
+  label,
+  icon,
+  value,
+  placeholder = 'Add phone number',
+  copyable,
+  warn,
+  defaultCountry = 'IN',
+  activeField,
+  onActivate,
+  onDeactivate,
+  onSave,
+}: PhoneFieldRowProps) {
+  const [draft, setDraft] = useState(value);
+  const [displayDraft, setDisplayDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  const isActive = activeField === fieldKey;
+  const isBlocked = activeField !== null && !isActive;
+
+  useEffect(() => {
+    setDraft(value);
+    setDisplayDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isActive) {
+      setTimeout(() => inputRef.current?.focus(), 20);
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleOutside = (event: MouseEvent) => {
+      if (saving || isInsidePortaledSelectDropdown(event.target)) return;
+      if (!rowRef.current?.contains(event.target as Node)) {
+        setDraft(value);
+        setDisplayDraft(value);
+        setErr('');
+        onDeactivate();
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isActive, onDeactivate, saving, value]);
+
+  const cancel = () => {
+    setDraft(value);
+    setDisplayDraft(value);
+    setErr('');
+    onDeactivate();
+  };
+
+  const save = async () => {
+    const trimmed = draft.trim();
+    const visibleDraft = displayDraft.trim();
+    const validationSource = trimmed || visibleDraft;
+
+    const validation = validatePhoneNumberForForm(validationSource, {
+      defaultCountry,
+      invalidMessage: 'Enter a valid phone number.',
+    });
+
+    if (validation !== true) {
+      setErr(validation);
+      return;
+    }
+
+    if (trimmed === value.trim()) {
+      onDeactivate();
+      return;
+    }
+
+    setSaving(true);
+    setErr('');
+    try {
+      await onSave(trimmed);
+      onDeactivate();
+    } catch (error: unknown) {
+      setErr(messageFromError(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div ref={rowRef} className={`transition-opacity ${isBlocked ? blockedRowClassName : activeRowClassName}`}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {icon && <span className={labelIconClassName}>{icon}</span>}
+        <span className={labelTextClassName}>{label}</span>
+        {warn && <span className="text-[10px] text-amber-500 font-semibold ml-1">merge suggestion</span>}
+      </div>
+
+      {isActive ? (
+        <div className="space-y-1.5 pb-1">
+          <PhoneField
+            value={draft}
+            defaultCountry={defaultCountry}
+            placeholder={placeholder}
+            appearance="sidebar"
+            size="sm"
+            error={err || undefined}
+            inputRef={inputRef}
+            allowClear={false}
+            onChange={(nextValue, meta) => {
+              setDraft(nextValue);
+              setDisplayDraft(meta.displayValue);
+              if (err) setErr('');
+            }}
+            onInputKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                void save();
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                cancel();
+              }
+            }}
+          />
+          <div className="flex justify-end gap-1">
+            <InlineActionButton
+              title="Cancel"
+              onClick={cancel}
+              disabled={saving}
+              icon={<X size={14} />}
+            />
+            <InlineActionButton
+              title="Save"
+              onClick={() => void save()}
+              disabled={saving}
+              tone="primary"
+              icon={<Check size={14} />}
+              loading={saving}
+            />
+          </div>
         </div>
       ) : (
         <div

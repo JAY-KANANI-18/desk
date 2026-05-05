@@ -43,6 +43,7 @@ export function SelectWithIconLabel({
   const controller = useSelectController({
     options,
     disabled,
+    initialHighlightedIndex: options.findIndex((option) => option.value === value),
     getOptionDisabled: (option) => Boolean(option.disabled),
     onSelect: (option) => onChange?.(option.value),
   });

@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui/Button";
 import { CenterModal } from "../../../components/ui/Modal";
 import { MobileSheet } from "../../../components/ui/modal";
 import { useIsMobile } from "../../../hooks/useIsMobile";
+import { validatePhoneNumberForForm } from "../../../lib/phoneNumber";
 import type { LifecycleStage } from "../../workspace/types";
 import type { ContactFormState, ContactTagOption } from "../types";
 import { ContactFormFields } from "./ContactFormFields";
@@ -27,6 +28,10 @@ export function CreateContactModal({
   onSubmit,
 }: CreateContactModalProps) {
   const isMobile = useIsMobile();
+  const canSubmit =
+    Boolean(value.firstName.trim()) &&
+    validatePhoneNumberForForm(value.phone) === true;
+
   if (!open) {
     return null;
   }
@@ -49,7 +54,7 @@ export function CreateContactModal({
             </Button>
             <Button
               onClick={() => void onSubmit()}
-              disabled={!value.firstName.trim()}
+              disabled={!canSubmit}
               fullWidth
             >
               Create
@@ -87,20 +92,18 @@ export function CreateContactModal({
       primaryAction={
         <Button
           onClick={() => void onSubmit()}
-          disabled={!value.firstName.trim()}
+          disabled={!canSubmit}
         >
           Create
         </Button>
       }
     >
-      <div className="max-h-[70vh] overflow-y-auto pr-1">
-        <ContactFormFields
-          value={value}
-          onChange={onChange}
-          stages={stages}
-          availableTags={availableTags}
-        />
-      </div>
+      <ContactFormFields
+        value={value}
+        onChange={onChange}
+        stages={stages}
+        availableTags={availableTags}
+      />
     </CenterModal>
   );
 }

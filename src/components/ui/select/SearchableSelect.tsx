@@ -54,6 +54,9 @@ export function SearchableSelect({
   const controller = useSelectController({
     options: filteredOptions,
     disabled,
+    initialHighlightedIndex: filteredOptions.findIndex(
+      (option) => option.value === value,
+    ),
     getOptionDisabled: (option) => Boolean(option.disabled),
     onSelect: (option) => {
       onChange?.(option.value);

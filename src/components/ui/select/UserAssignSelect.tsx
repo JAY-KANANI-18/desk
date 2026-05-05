@@ -53,6 +53,9 @@ export function UserAssignSelect({
   const controller = useSelectController({
     options: assignableOptions,
     disabled,
+    initialHighlightedIndex: assignableOptions.findIndex((option) =>
+      option.value === "__unassigned__" ? !value : option.value === value,
+    ),
     getOptionDisabled: (option) => Boolean(option.disabled),
     onSelect: (option) => {
       if (option.value === "__unassigned__") {

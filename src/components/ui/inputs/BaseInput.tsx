@@ -59,6 +59,7 @@ export const BaseInput = forwardRef<HTMLInputElement, BaseInputProps>(
       required,
       readOnly,
       disabled,
+      "aria-describedby": ariaDescribedBy,
       ...props
     },
     ref,
@@ -66,6 +67,9 @@ export const BaseInput = forwardRef<HTMLInputElement, BaseInputProps>(
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const descriptionId = getDescriptionId(inputId, Boolean(error || hint));
+    const resolvedDescriptionId = [ariaDescribedBy, descriptionId]
+      .filter(Boolean)
+      .join(" ") || undefined;
     const widthSource =
       props.value ?? props.defaultValue ?? props.placeholder ?? "";
     const autoWidthCh = Math.min(
@@ -107,7 +111,7 @@ export const BaseInput = forwardRef<HTMLInputElement, BaseInputProps>(
             readOnly={readOnly}
             disabled={disabled}
             aria-invalid={error || invalid ? "true" : undefined}
-            aria-describedby={descriptionId}
+            aria-describedby={resolvedDescriptionId}
             className={getInputControlClassName({
               size,
               appearance,

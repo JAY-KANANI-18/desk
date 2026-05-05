@@ -5,12 +5,12 @@ import {
   WorkspaceTagManager,
 } from "../../../components/ui/Select";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { PhoneField } from "../../../components/ui/phone";
 import type {
   ContactFormState,
   ContactTagOption,
   WorkspaceUser,
 } from "../types";
-import { PhoneNumberField } from "./PhoneNumberField";
 
 export function ContactFormFields<TForm extends ContactFormState>({
   value,
@@ -84,21 +84,14 @@ export function ContactFormFields<TForm extends ContactFormState>({
         />
       </div>
 
-      <div>
-        <span className={variant === "sidebar"
-          ? "mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-[#b0b8c8]"
-          : "mb-1 block text-sm font-medium text-gray-700"}
-        >
-          Phone Number
-        </span>
-        <PhoneNumberField
-          phoneCountryCode={value.phoneCountryCode}
-          customPhoneCountryCode={value.customPhoneCountryCode}
-          phoneLocalNumber={value.phoneLocalNumber}
-          onChange={(patch) => update(patch)}
-          variant={variant}
-        />
-      </div>
+      <PhoneField
+        label="Phone Number"
+        value={value.phone}
+        defaultCountry="IN"
+        appearance={fieldAppearance}
+        labelVariant={labelVariant}
+        onChange={(phone) => update({ phone })}
+      />
     </>
   );
 

@@ -18,10 +18,11 @@ import { contactsToCSV, parseCSV, sampleToCSV } from "./csv";
 import { DeleteContactsModal } from "./components/DeleteContactsModal";
 import { EditContactModal } from "./components/EditContactModal";
 import {
-  buildPhoneNumber,
-  DEFAULT_PHONE_COUNTRY_CODE,
-  splitPhoneNumber,
-} from "./phoneUtils";
+  DEFAULT_PHONE_COUNTRY,
+  normalizePhoneE164,
+  validatePhoneNumber,
+  validatePhoneNumberForForm,
+} from "../../lib/phoneNumber";
 import { ContactsHeader } from "./components/ContactsHeader";
 import type {
   Contact,
@@ -38,9 +39,7 @@ const createEmptyContactForm = (): ContactFormState => ({
   firstName: "",
   lastName: "",
   company: "",
-  phoneCountryCode: DEFAULT_PHONE_COUNTRY_CODE,
-  customPhoneCountryCode: "",
-  phoneLocalNumber: "",
+  phone: "",
   email: "",
   lifecycle: "",
   assigneeId: "",
@@ -79,16 +78,12 @@ function mapTagIdsToNames(
 }
 
 function buildFormFromContact(contact: Contact): EditContactFormState {
-  const parsedPhone = splitPhoneNumber(contact.phone);
-
   return {
     id: contact.id,
     firstName: contact.firstName ?? "",
     lastName: contact.lastName ?? "",
     company: contact.company ?? "",
-    phoneCountryCode: parsedPhone.phoneCountryCode,
-    customPhoneCountryCode: parsedPhone.customPhoneCountryCode,
-    phoneLocalNumber: parsedPhone.phoneLocalNumber,
+    phone: normalizePhoneE164(contact.phone, DEFAULT_PHONE_COUNTRY),
     email: contact.email ?? "",
     lifecycle: contact.lifecycleId ? String(contact.lifecycleId) : "",
     assigneeId: contact.assigneeId ?? "",
@@ -103,11 +98,8 @@ function buildContactPayload(
   const lastName = form.lastName.trim();
   const company = form.company.trim();
   const email = form.email.trim();
-  const phone = buildPhoneNumber(
-    form.phoneCountryCode,
-    form.customPhoneCountryCode,
-    form.phoneLocalNumber,
-  );
+  const phoneValidation = validatePhoneNumber(form.phone, DEFAULT_PHONE_COUNTRY);
+  const phone = phoneValidation.isValid ? phoneValidation.e164 : "";
 
   return {
     firstName,
@@ -445,7 +437,11 @@ export function ContactsPage() {
   );
 
   const handleUpdateContact = async () => {
-    if (!editingContact || !editForm.firstName.trim()) {
+    if (
+      !editingContact ||
+      !editForm.firstName.trim() ||
+      validatePhoneNumberForForm(editForm.phone) !== true
+    ) {
       return;
     }
 
@@ -549,7 +545,10 @@ export function ContactsPage() {
   };
 
   const handleCreateContact = async () => {
-    if (!newContact.firstName.trim()) {
+    if (
+      !newContact.firstName.trim() ||
+      validatePhoneNumberForForm(newContact.phone) !== true
+    ) {
       return;
     }
 

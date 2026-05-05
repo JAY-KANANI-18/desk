@@ -205,6 +205,8 @@ export function CompactSelectMenu({
   const controller = useSelectController({
     options: filteredOptions,
     disabled,
+    initialHighlightedIndex:
+      filteredOptions.find((option) => option.value === value)?.index ?? -1,
     outsideDismiss: !shouldUseMobileSheet,
     onSelect: (option) => {
       onChange(option.value);

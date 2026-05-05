@@ -23,7 +23,7 @@ import { workspaceApi } from '../../lib/workspaceApi';
 import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
 import type { LifecycleStage } from '../workspace/types';
 import { ContactSidebarDesktopShell } from './contact-sidebar/DesktopShell';
-import { ContactNameRow, FieldRow } from './contact-sidebar/EditableRows';
+import { ContactNameRow, FieldRow, PhoneFieldRow } from './contact-sidebar/EditableRows';
 import { MergeModal } from './contact-sidebar/MergeModal';
 import type {
   SidebarContact,
@@ -735,14 +735,13 @@ export function ContactSidebarHybrid({
           warn={!!selectedSuggestion && conflictField === 'email'}
           onSave={(value) => persist({ email: value })}
         />
-        <FieldRow
+        <PhoneFieldRow
           {...fieldProps}
           fieldKey="phone"
           label="Phone"
           icon={<Phone size={10} />}
           value={contact?.phone ?? ''}
           placeholder="Add phone number"
-          type="tel"
           copyable
           warn={!!selectedSuggestion && conflictField === 'phone'}
           onSave={(value) => persist({ phone: value })}

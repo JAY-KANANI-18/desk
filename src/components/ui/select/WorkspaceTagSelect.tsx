@@ -184,6 +184,9 @@ export function WorkspaceTagSelect({
     options: filteredOptions,
     disabled,
     closeOnSelect: false,
+    initialHighlightedIndex: filteredOptions.findIndex((option) =>
+      value.includes(option.value),
+    ),
     getOptionDisabled: (option) => Boolean(option.disabled || option.busy),
     outsideDismiss: !shouldUseMobileSheet,
     onSelect: (option) => updateValue(option),

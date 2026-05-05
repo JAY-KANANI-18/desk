@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, X } from "@/components/ui/icons";
 import { SearchInput } from "../inputs/SearchInput";
 import {
@@ -112,6 +113,13 @@ function useOutsideDismiss(
         return;
       }
 
+      if (
+        target instanceof Element &&
+        target.closest("[data-select-dropdown='true']")
+      ) {
+        return;
+      }
+
       if (!containerRef.current?.contains(target)) {
         onDismiss();
       }
@@ -158,56 +166,81 @@ function useDropdownPresence(isOpen: boolean) {
   return { isMounted, isVisible };
 }
 
-function getDropdownBoundary(anchor: HTMLElement) {
-  let top = 0;
-  let bottom = window.innerHeight;
-  let current = anchor.parentElement;
-
-  while (current && current !== document.body) {
-    const style = window.getComputedStyle(current);
-    const overflow = `${style.overflow} ${style.overflowY}`;
-
-    if (/(auto|scroll|hidden|clip)/.test(overflow)) {
-      const rect = current.getBoundingClientRect();
-      top = Math.max(top, rect.top);
-      bottom = Math.min(bottom, rect.bottom);
-    }
-
-    current = current.parentElement;
-  }
-
-  return { top, bottom };
+interface DropdownGeometry {
+  left: number;
+  top: number;
+  width: number;
+  placement: "top" | "bottom";
 }
 
-function getBestDropdownPlacement(
-  preferredPlacement: "top" | "bottom",
-  anchor: HTMLElement,
-  dropdown: HTMLElement,
+const dropdownWidthBySize = {
+  sm: 240,
+  md: 280,
+  lg: 320,
+} satisfies Record<"sm" | "md" | "lg", number>;
+
+function getDropdownWidth(
+  width: "trigger" | "sm" | "md" | "lg",
+  anchorRect: DOMRect,
 ) {
+  const viewportPadding = 16;
+  const maxWidth = window.innerWidth - viewportPadding * 2;
+
+  return Math.min(
+    width === "trigger" ? anchorRect.width : dropdownWidthBySize[width],
+    maxWidth,
+  );
+}
+
+function getDropdownGeometry({
+  align,
+  anchor,
+  dropdown,
+  placement,
+  width,
+}: {
+  align: "start" | "end";
+  anchor: HTMLElement;
+  dropdown: HTMLElement;
+  placement: "top" | "bottom";
+  width: "trigger" | "sm" | "md" | "lg";
+}): DropdownGeometry {
   const gap = 8;
+  const viewportPadding = 8;
   const anchorRect = anchor.getBoundingClientRect();
   const dropdownRect = dropdown.getBoundingClientRect();
-  const boundary = getDropdownBoundary(anchor);
-  const spaceAbove = anchorRect.top - boundary.top - gap;
-  const spaceBelow = boundary.bottom - anchorRect.bottom - gap;
+  const dropdownWidth = getDropdownWidth(width, anchorRect);
+  const spaceAbove = anchorRect.top - viewportPadding - gap;
+  const spaceBelow = window.innerHeight - anchorRect.bottom - viewportPadding - gap;
+  const resolvedPlacement =
+    placement === "bottom" && dropdownRect.height > spaceBelow && spaceAbove > spaceBelow
+      ? "top"
+      : placement === "top" && dropdownRect.height > spaceAbove && spaceBelow > spaceAbove
+        ? "bottom"
+        : placement;
+  const unclampedLeft =
+    width === "trigger" || align === "start"
+      ? anchorRect.left
+      : anchorRect.right - dropdownWidth;
+  const left = Math.min(
+    Math.max(viewportPadding, unclampedLeft),
+    Math.max(viewportPadding, window.innerWidth - dropdownWidth - viewportPadding),
+  );
+  const unclampedTop =
+    resolvedPlacement === "top"
+      ? anchorRect.top - dropdownRect.height - gap
+      : anchorRect.bottom + gap;
+  const top = Math.min(
+    Math.max(viewportPadding, unclampedTop),
+    Math.max(viewportPadding, window.innerHeight - dropdownRect.height - viewportPadding),
+  );
 
-  if (
-    preferredPlacement === "bottom" &&
-    dropdownRect.height > spaceBelow &&
-    spaceAbove > spaceBelow
-  ) {
-    return "top";
-  }
-
-  if (
-    preferredPlacement === "top" &&
-    dropdownRect.height > spaceAbove &&
-    spaceBelow > spaceAbove
-  ) {
-    return "bottom";
-  }
-
-  return preferredPlacement;
+  return {
+    left,
+    top,
+    width: dropdownWidth,
+    placement: resolvedPlacement,
+  };
 }
 
 export function useSelectController<T>({
@@ -215,6 +248,7 @@ export function useSelectController<T>({
   disabled = false,
   closeOnSelect = true,
   getOptionDisabled,
+  initialHighlightedIndex = -1,
   outsideDismiss = true,
   onSelect,
 }: {
@@ -222,6 +256,7 @@ export function useSelectController<T>({
   disabled?: boolean;
   closeOnSelect?: boolean;
   getOptionDisabled?: (option: T) => boolean;
+  initialHighlightedIndex?: number;
   outsideDismiss?: boolean;
   onSelect: (option: T, index: number) => void;
 }) {
@@ -383,9 +418,15 @@ export function useSelectController<T>({
       return;
     }
 
-    const nextIndex = findEnabledIndex(options, isOptionDisabled, -1, 1);
+    const initialOption = options[initialHighlightedIndex];
+    const nextIndex =
+      initialHighlightedIndex >= 0 &&
+      initialOption &&
+      !isOptionDisabled(initialOption)
+        ? initialHighlightedIndex
+        : findEnabledIndex(options, isOptionDisabled, -1, 1);
     setHighlightedIndex(nextIndex);
-  }, [isOpen, options, isOptionDisabled]);
+  }, [initialHighlightedIndex, isOpen, options, isOptionDisabled]);
 
   return {
     containerRef,
@@ -608,72 +649,88 @@ export function SelectDropdown({
   children: ReactNode;
 }) {
   const { isMounted, isVisible } = useDropdownPresence(isOpen);
+  const anchorRef = useRef<HTMLSpanElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [resolvedPlacement, setResolvedPlacement] = useState(placement);
+  const [geometry, setGeometry] = useState<DropdownGeometry | null>(null);
 
   useLayoutEffect(() => {
     if (!isMounted || !isOpen) {
-      return;
+      setGeometry(null);
+      return undefined;
     }
 
+    const anchor = anchorRef.current?.parentElement;
     const dropdown = dropdownRef.current;
-    const anchor = dropdown?.parentElement;
-    if (!dropdown || !anchor) {
-      return;
+
+    if (!anchor || !dropdown) {
+      return undefined;
     }
 
-    const updatePlacement = () => {
-      setResolvedPlacement(getBestDropdownPlacement(placement, anchor, dropdown));
+    const updateGeometry = () => {
+      setGeometry(
+        getDropdownGeometry({
+          align,
+          anchor,
+          dropdown,
+          placement,
+          width,
+        }),
+      );
     };
 
-    updatePlacement();
-    window.addEventListener("resize", updatePlacement);
-    window.addEventListener("scroll", updatePlacement, true);
+    updateGeometry();
+    window.addEventListener("resize", updateGeometry);
+    window.addEventListener("scroll", updateGeometry, true);
 
     return () => {
-      window.removeEventListener("resize", updatePlacement);
-      window.removeEventListener("scroll", updatePlacement, true);
+      window.removeEventListener("resize", updateGeometry);
+      window.removeEventListener("scroll", updateGeometry, true);
     };
   }, [align, children, isMounted, isOpen, placement, width]);
 
   if (!isMounted) {
-    return null;
+    return <span ref={anchorRef} className="hidden" />;
   }
 
-  return (
+  const renderedDropdown = (
     <div
       ref={dropdownRef}
+      data-select-dropdown="true"
+      onMouseDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
       className={cx(
-        "absolute overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md",
-        resolvedPlacement === "top"
-          ? "bottom-full mb-[var(--spacing-xs)]"
-          : "top-full mt-[var(--spacing-xs)]",
-        width === "trigger"
-          ? "left-0 right-0"
-          : align === "end"
-            ? "right-0"
-            : "left-0",
-        width === "sm" && "w-[240px] max-w-[calc(100vw-2rem)]",
-        width === "md" && "w-[280px] max-w-[calc(100vw-2rem)]",
-        width === "lg" && "w-[320px] max-w-[calc(100vw-2rem)]",
+        "fixed overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md",
+        !geometry && "pointer-events-none invisible",
       )}
       style={{
-        zIndex: "var(--z-dropdown)",
+        left: geometry?.left,
+        top: geometry?.top,
+        width: geometry?.width,
+        zIndex: "calc(var(--z-modal) + 10)",
         opacity: isVisible ? 1 : 0,
         transform: isVisible
           ? "translateY(0) scale(1)"
-          : resolvedPlacement === "top"
+          : geometry?.placement === "top"
             ? "translateY(4px) scale(0.98)"
             : "translateY(-4px) scale(0.98)",
         transformOrigin:
-          resolvedPlacement === "top" ? "bottom center" : "top center",
+          geometry?.placement === "top" ? "bottom center" : "top center",
         transition:
           "opacity var(--transition-fast), transform var(--transition-fast)",
-        pointerEvents: isVisible ? "auto" : "none",
+        pointerEvents: isVisible && geometry ? "auto" : "none",
       }}
     >
       {children}
     </div>
+  );
+
+  return (
+    <>
+      <span ref={anchorRef} className="hidden" />
+      {typeof document !== "undefined"
+        ? createPortal(renderedDropdown, document.body)
+        : null}
+    </>
   );
 }
 
@@ -734,6 +791,7 @@ export function SelectOptionRow({
   size?: SelectOptionRowSize;
   children: ReactNode;
 }) {
+  const rowRef = useRef<HTMLButtonElement>(null);
   const toneBackgroundClass =
     tone === "warning"
       ? "bg-[#fff7ed]"
@@ -747,8 +805,25 @@ export function SelectOptionRow({
         ? "text-[var(--color-gray-500)]"
         : "text-[var(--color-primary)]";
 
+  useLayoutEffect(() => {
+    if (!highlighted) {
+      return undefined;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      rowRef.current?.scrollIntoView({
+        block: "nearest",
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [highlighted]);
+
   return (
     <button
+      ref={rowRef}
       id={id}
       type="button"
       role="option"

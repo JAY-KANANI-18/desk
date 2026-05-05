@@ -387,7 +387,7 @@ Field trigger matches input styling. Other trigger appearances:
 - `toolbar`: rounded-full transparent trigger, active background `--color-primary-light`, active text `--color-primary`, hover `--color-gray-100`.
 - `inline`: borderless rounded-full text trigger, selected `--color-primary`, empty `--color-gray-500`.
 
-Dropdown: absolute panel, `--radius-md`, `--color-gray-200` border, white background, `shadow-md`, z-index `--z-dropdown`.
+Dropdown: portal-based fixed panel anchored to the trigger, `--radius-md`, `--color-gray-200` border, white background, `shadow-md`, and a modal-safe z-index above `--z-modal`. Placement resolves between top and bottom based on viewport space so menus are not clipped by modal bodies or sticky footers.
 
 Option rows: `--spacing-md --spacing-sm` padding, selected/highlighted backgrounds use primary-light or gray surfaces. `surface="inset"` rows use `--radius-lg` and inset margins.
 

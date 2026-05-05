@@ -267,6 +267,73 @@ Advanced:
 Migration note: replaces raw text, email, number, date, time, search, tel, and url `<input>` controls except file pickers.
 Search inputs hide the browser-native clear affordance so shared or local clear buttons do not render a second `x`.
 
+## PhoneField
+
+Import path: `src/components/ui/phone`.
+
+Use it for international phone number entry where the stored value must be E.164.
+
+Do not use prebuilt phone input UI packages or split country/local-number state in new forms.
+
+Props:
+
+- `value?: string | null`; current E.164 value such as `+919876543210`; empty values are `""` or `null`.
+- `onChange: (value: string, meta: PhoneFieldChangeMeta) => void`; emits only an E.164-like value or `""`.
+- `defaultCountry?: string`; default `"IN"`; fallback country for national numbers.
+- `label`, `hint`, `error`, `required`, `disabled`, `readOnly`; standard field props.
+- `size?: "xs" | "sm" | "md" | "lg"`; default `"sm"`.
+- `appearance?: InputAppearance`; default `"default"`; supports sidebar styling.
+- `labelVariant?: FieldLabelVariant`; default `"default"`.
+- `placeholder?: string`; default `"Phone number"`.
+- `countrySearchPlaceholder?: string`; default `"Search country or code"`.
+- `allowClear?: boolean`; default `true`.
+
+Minimal:
+
+```tsx
+import { PhoneField } from "@/components/ui/phone";
+
+<PhoneField
+  label="Phone Number"
+  value={phone}
+  defaultCountry="IN"
+  onChange={setPhone}
+/>
+```
+
+React Hook Form:
+
+```tsx
+import { Controller } from "react-hook-form";
+import { PhoneField } from "@/components/ui/phone";
+import { validatePhoneNumberForForm } from "@/lib/phoneNumber";
+
+<Controller
+  name="phone"
+  control={control}
+  rules={{
+    validate: (value) =>
+      validatePhoneNumberForForm(value, {
+        defaultCountry: "IN",
+        required: true,
+      }),
+  }}
+  render={({ field, fieldState }) => (
+    <PhoneField
+      label="Phone Number"
+      required
+      value={field.value}
+      defaultCountry="IN"
+      error={fieldState.error?.message}
+      onBlur={field.onBlur}
+      onChange={field.onChange}
+    />
+  )}
+/>
+```
+
+Migration note: replaces page-local country-code selects and phone text inputs. It uses `libphonenumber-js/min` for parsing, as-you-type formatting, country detection, and validation.
+
 ## Input
 
 Import path: `src/components/ui/Input`.

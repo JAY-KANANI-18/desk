@@ -57,9 +57,7 @@ export interface ContactFormState {
   firstName: string;
   lastName: string;
   company: string;
-  phoneCountryCode: string;
-  customPhoneCountryCode: string;
-  phoneLocalNumber: string;
+  phone: string;
   email: string;
   lifecycle: string;
   assigneeId: string;
