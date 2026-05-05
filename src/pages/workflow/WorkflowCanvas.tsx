@@ -18,7 +18,9 @@ import { TopBar } from "./canvas/TopBar";
 import { TriggerPanel } from "./panels/TriggerPanel";
 import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
-import { MobileSheet } from "../../components/ui/modal";
+import { CenterModal, MobileSheet } from "../../components/ui/modal";
+import { Button } from "../../components/ui/Button";
+import { AlertTriangle } from "@/components/ui/icons";
 import {
   StepType,
   StepConfig,
@@ -27,7 +29,7 @@ import {
   type BranchConnectorData,
 } from "./workflow.types";
 import { STEP_META } from "./canvas/stepTypes";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useDisclosure } from "../../hooks/useDisclosure";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useChannel } from "../../context/ChannelContext";
@@ -86,6 +88,11 @@ export const NODE_X_CENTER = 400;
 export const TRIGGER_Y = 80;
 const FIT_VIEW_PADDING = 0.5;
 const FIT_VIEW_MAX_ZOOM = 0.95;
+
+type PendingNavigation =
+  | { kind: "route"; to: string; replace?: boolean }
+  | { kind: "external"; href: string }
+  | { kind: "history-back" };
 
 // ── Y calculator ──────────────────────────────────────────────────────────────
 // Each node type has a different height, so Y depends on what came before it.
@@ -379,6 +386,113 @@ function createPastedStep(
     },
     connectors,
   };
+}
+
+interface UnsavedChangesModalProps {
+  open: boolean;
+  isMobile: boolean;
+  isSaving: boolean;
+  onSaveAndLeave: () => void;
+  onDiscard: () => void;
+  onStay: () => void;
+}
+
+function UnsavedChangesModal({
+  open,
+  isMobile,
+  isSaving,
+  onSaveAndLeave,
+  onDiscard,
+  onStay,
+}: UnsavedChangesModalProps) {
+  const title = "Unsaved changes";
+  const body = (
+    <div className="space-y-3">
+      <div className="flex items-start gap-3 rounded-2xl  p-4">
+       
+        <div>
+          <p className="text-sm font-semibold text-amber-950">
+            Save workflow changes before leaving?
+          </p>
+          <p className="mt-1 text-sm leading-5 text-amber-800">
+            Your latest edits have not been saved yet.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileSheet
+        isOpen={open}
+        onClose={onStay}
+        borderless
+        title={<h3 className="text-base font-semibold text-slate-900">{title}</h3>}
+        footer={
+          <div className="flex flex-col-reverse gap-2">
+            <Button onClick={onStay} disabled={isSaving} variant="secondary" fullWidth>
+              Stay
+            </Button>
+            <Button onClick={onDiscard} disabled={isSaving} variant="danger-ghost" fullWidth>
+              Discard changes
+            </Button>
+            <Button
+              onClick={onSaveAndLeave}
+              loading={isSaving}
+              loadingMode="inline"
+              variant="primary"
+              fullWidth
+            >
+              Save and leave
+            </Button>
+          </div>
+        }
+      >
+        <div className="p-4">{body}</div>
+      </MobileSheet>
+    );
+  }
+
+  return (
+    <CenterModal
+      isOpen={open}
+      onClose={onStay}
+      title={title}
+      headerIcon={
+        <div className="rounded-full bg-amber-100 p-2 text-amber-600">
+          <AlertTriangle size={18} />
+        </div>
+      }
+      size="sm"
+      width={460}
+      closeOnOverlayClick={false}
+      showCloseButton={!isSaving}
+      bodyPadding="lg"
+      secondaryAction={
+        <Button onClick={onStay} disabled={isSaving} variant="secondary">
+          Stay
+        </Button>
+      }
+      footerMeta={
+        <Button onClick={onDiscard} disabled={isSaving} variant="danger-ghost">
+          Discard changes
+        </Button>
+      }
+      primaryAction={
+        <Button
+          onClick={onSaveAndLeave}
+          loading={isSaving}
+          loadingMode="inline"
+          variant="primary"
+        >
+          Save and leave
+        </Button>
+      }
+    >
+      {body}
+    </CenterModal>
+  );
 }
 
 /* ───────────────────────────────────────────── */
@@ -762,8 +876,12 @@ export function WorkflowCanvas() {
   const stepCounter = useRef(1);
   const jumpHighlightTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const autoFitTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const currentUrlRef = useRef<string>("");
+  const bypassUnsavedPromptRef = useRef(false);
+  const browserBackGuardArmedRef = useRef(false);
   const { workflowId } = useParams(); // from URL :id
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
@@ -775,6 +893,7 @@ export function WorkflowCanvas() {
     addStep,
     insertStepAfter,
     deleteStep,
+    saveWorkflow,
     setNodes,
     setEdges,
   } = useWorkflow();
@@ -783,8 +902,11 @@ export function WorkflowCanvas() {
   const [workspaceTags, setWorkspaceTags] = useState<WorkflowPreviewTag[]>([]);
   const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null);
   const [copiedStepId, setCopiedStepId] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] =
+    useState<PendingNavigation | null>(null);
+  const [isSavingBeforeLeave, setIsSavingBeforeLeave] = useState(false);
 
-  const { workflow, selectedNodeId, selectedPanelType } = state;
+  const { workflow, selectedNodeId, selectedPanelType, isDirty } = state;
   const previewChannels = Array.isArray(rawChannels)
     ? rawChannels.filter(isPreviewChannel)
     : [];
@@ -796,6 +918,10 @@ export function WorkflowCanvas() {
   const copiedStepLabel = copiedStep
     ? STEP_META[copiedStep.type]?.label ?? copiedStep.name
     : undefined;
+  const currentUrl = useMemo(
+    () => `${location.pathname}${location.search}${location.hash}`,
+    [location.hash, location.pathname, location.search],
+  );
 
   const loadWorkspaceTags = useCallback(async () => {
     try {
@@ -837,6 +963,82 @@ export function WorkflowCanvas() {
     },
     [addStep, copiedStep, insertStepAfter, selectNode, workflow],
   );
+
+  const armBrowserBackGuard = useCallback(() => {
+    if (
+      typeof window === "undefined" ||
+      browserBackGuardArmedRef.current ||
+      !currentUrlRef.current
+    ) {
+      return;
+    }
+
+    window.history.pushState(
+      { workflowUnsavedGuard: true },
+      "",
+      currentUrlRef.current,
+    );
+    browserBackGuardArmedRef.current = true;
+  }, []);
+
+  const proceedWithPendingNavigation = useCallback(
+    (navigation: PendingNavigation) => {
+      bypassUnsavedPromptRef.current = true;
+      setPendingNavigation(null);
+
+      if (navigation.kind === "route") {
+        navigate(navigation.to, { replace: navigation.replace });
+      } else if (navigation.kind === "external") {
+        window.location.assign(navigation.href);
+        return;
+      } else {
+        window.history.back();
+      }
+
+      window.setTimeout(() => {
+        bypassUnsavedPromptRef.current = false;
+      }, 500);
+    },
+    [navigate],
+  );
+
+  const requestNavigation = useCallback(
+    (to: string, replace = false) => {
+      if (!isDirty || bypassUnsavedPromptRef.current) {
+        navigate(to, { replace });
+        return;
+      }
+
+      setPendingNavigation({ kind: "route", to, replace });
+    },
+    [isDirty, navigate],
+  );
+
+  const handleStayOnWorkflow = useCallback(() => {
+    setPendingNavigation(null);
+    if (isDirty) {
+      armBrowserBackGuard();
+    }
+  }, [armBrowserBackGuard, isDirty]);
+
+  const handleDiscardAndLeave = useCallback(() => {
+    if (!pendingNavigation) return;
+    proceedWithPendingNavigation(pendingNavigation);
+  }, [pendingNavigation, proceedWithPendingNavigation]);
+
+  const handleSaveAndLeave = useCallback(async () => {
+    if (!pendingNavigation) return;
+
+    setIsSavingBeforeLeave(true);
+    try {
+      await saveWorkflow();
+      proceedWithPendingNavigation(pendingNavigation);
+    } catch (error) {
+      console.error("Failed to save workflow before leaving", error);
+    } finally {
+      setIsSavingBeforeLeave(false);
+    }
+  }, [pendingNavigation, proceedWithPendingNavigation, saveWorkflow]);
 
   const setRenderedNodeHighlight = useCallback(
     (stepId: string, highlighted: boolean) => {
@@ -914,6 +1116,89 @@ export function WorkflowCanvas() {
       });
     });
   }, []);
+
+  useEffect(() => {
+    currentUrlRef.current = currentUrl;
+  }, [currentUrl]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    armBrowserBackGuard();
+  }, [armBrowserBackGuard, isDirty]);
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (
+        bypassUnsavedPromptRef.current ||
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.shiftKey
+      ) {
+        return;
+      }
+
+      const target = event.target as Element | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+
+      if (
+        !anchor ||
+        anchor.target && anchor.target !== "_self" ||
+        anchor.hasAttribute("download")
+      ) {
+        return;
+      }
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+
+      event.preventDefault();
+
+      if (nextUrl.origin === window.location.origin) {
+        const to = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+        if (to !== currentUrlRef.current) {
+          setPendingNavigation({ kind: "route", to });
+        }
+        return;
+      }
+
+      setPendingNavigation({ kind: "external", href: nextUrl.href });
+    };
+
+    document.addEventListener("click", handleDocumentClick, true);
+    return () => document.removeEventListener("click", handleDocumentClick, true);
+  }, [isDirty]);
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    const handlePopState = () => {
+      if (bypassUnsavedPromptRef.current) {
+        return;
+      }
+
+      browserBackGuardArmedRef.current = false;
+      setPendingNavigation({ kind: "history-back" });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDirty]);
 
   useEffect(() => {
     if (!workflowId) return;
@@ -1066,7 +1351,7 @@ export function WorkflowCanvas() {
     return;
   };
   const handleBack = () => {
-    navigate("/workflows");
+    requestNavigation("/workflows");
   };
 
   const selectedStep =
@@ -1183,6 +1468,17 @@ export function WorkflowCanvas() {
           }}
         />
       )}
+
+      <UnsavedChangesModal
+        open={Boolean(pendingNavigation)}
+        isMobile={isMobile}
+        isSaving={isSavingBeforeLeave || state.isSaving}
+        onSaveAndLeave={() => {
+          void handleSaveAndLeave();
+        }}
+        onDiscard={handleDiscardAndLeave}
+        onStay={handleStayOnWorkflow}
+      />
     </div>
   );
 }
