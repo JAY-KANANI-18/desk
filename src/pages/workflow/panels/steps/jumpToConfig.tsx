@@ -1,5 +1,6 @@
 // ─── 10. Jump To ──────────────────────────────────────────────────────────────
 
+import { useEffect, useMemo } from "react";
 import { SP, JumpToData } from "../../workflow.types";
 import { useWorkflow } from "../../WorkflowContext";
 import { RangeInput } from "../../../../components/ui/inputs";
@@ -10,13 +11,31 @@ export function JumpToConfig({ step, onChange }: SP) {
   const u = (p: Partial<JumpToData>) => onChange({ ...data, ...p });
   const { state } = useWorkflow();
   const { workflow } = state;
-  const stepOptions =
-    workflow?.config?.steps
-      ?.filter((s) => s?.id?.includes("step-"))
+  const stepOptions = useMemo(
+    () =>
+      workflow?.config?.steps
+        ?.filter(
+          (candidate) =>
+            candidate.id !== step.id &&
+            candidate.type !== "jump_to" &&
+            candidate.type !== "branch_connector",
+        )
       .map((s) => ({
         value: s.id,
         label: s.name,
-      })) ?? [];
+      })) ?? [],
+    [step.id, workflow?.config?.steps],
+  );
+  const selectedTargetIsAllowed =
+    !data.targetStepId ||
+    stepOptions.some((option) => option.value === data.targetStepId);
+
+  useEffect(() => {
+    if (data.targetStepId && !selectedTargetIsAllowed) {
+      u({ targetStepId: "" });
+    }
+  }, [data.targetStepId, selectedTargetIsAllowed]);
+
   console.log({ data });
 
   return (

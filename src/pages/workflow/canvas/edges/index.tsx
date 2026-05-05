@@ -213,15 +213,65 @@ BranchFanEdge.displayName = 'BranchFanEdge';
 
 
 
-export function StepEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd }: EdgeProps) {
-  const [edgePath] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+export interface StepEdgeData {
+  color?: string;
+  dashed?: boolean;
+}
+
+function getRoundedStepPath(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+) {
+  const isVertical = Math.abs(sourceX - targetX) < 1;
+  if (isVertical) return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+
+  const verticalGap = Math.abs(targetY - sourceY);
+  const midY = sourceY + Math.max(22, Math.min(56, verticalGap / 2));
+  const horizontalDirection = targetX > sourceX ? 1 : -1;
+  const verticalDirection = targetY > sourceY ? 1 : -1;
+  const radius = Math.min(
+    12,
+    Math.abs(targetX - sourceX) / 2,
+    Math.abs(midY - sourceY) / 2,
+    Math.abs(targetY - midY) / 2,
+  );
+
+  return [
+    `M ${sourceX} ${sourceY}`,
+    `L ${sourceX} ${midY - verticalDirection * radius}`,
+    `Q ${sourceX} ${midY} ${sourceX + horizontalDirection * radius} ${midY}`,
+    `L ${targetX - horizontalDirection * radius} ${midY}`,
+    `Q ${targetX} ${midY} ${targetX} ${midY + verticalDirection * radius}`,
+    `L ${targetX} ${targetY}`,
+  ].join(' ');
+}
+
+export function StepEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  markerEnd,
+  data,
+}: EdgeProps<StepEdgeData>) {
+  const color = data?.color ?? '#cbd5e1';
+  const edgePath = getRoundedStepPath(sourceX, sourceY, targetX, targetY);
+
   return (
-    <path
+    <BaseEdge
       id={id}
-      className="react-flow__edge-path"
-      d={edgePath}
+      path={edgePath}
       markerEnd={markerEnd}
-      style={{ stroke: "#94a3b8", strokeWidth: 1.5, fill: "none" }}
+      style={{
+        stroke: color,
+        strokeWidth: 1.8,
+        strokeDasharray: data?.dashed ? '5 4' : undefined,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      }}
     />
   );
 }
@@ -229,6 +279,7 @@ export function StepEdge({ id, sourceX, sourceY, targetX, targetY, markerEnd }: 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const edgeTypes = {
+  step:          StepEdge,
   addButtonEdge: AddButtonEdge,
   plainEdge:     PlainEdge,
   stepEdge:      StepEdge,

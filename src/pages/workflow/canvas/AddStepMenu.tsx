@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/Button';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { SearchInput } from '../../../components/ui/inputs';
 import { Tag } from '../../../components/ui/Tag';
+import { getWorkflowNodeColor } from './nodeColors';
 
 interface AddStepMenuProps {
   onSelect: (type: StepType) => void;
@@ -92,6 +93,8 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
         ) : (
           filtered.map((step) => {
             const { Icon } = step;
+            const color = getWorkflowNodeColor(step.type);
+
             return (
               <Button
                 key={step.type}
@@ -107,8 +110,8 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
                 className="group"
               >
                 <div className="flex w-full items-center gap-3 text-left">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-gray-200">
-                    <Icon size={15} className="text-gray-600" />
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center transition-transform group-hover:scale-[1.04]">
+                    <Icon size={16} style={{ color }} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">

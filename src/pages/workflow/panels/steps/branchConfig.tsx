@@ -31,10 +31,25 @@ import {
   type BranchCategory,
   type BranchCondition,
   type ConditionOperator,
+  type StepConfig,
   type Tag,
 } from "../../workflow.types";
 import { useWorkflow } from "../../WorkflowContext";
 import { workspaceApi } from "../../../../lib/workspaceApi";
+import { isElseBranchConnector } from "../../canvas/branchConnectors";
+
+type BranchConnectorStep = StepConfig & {
+  parentId?: string;
+  data: StepConfig["data"] & {
+    conditions?: BranchCondition[];
+    isElse?: boolean;
+  };
+};
+
+function getConnectorIds(step: StepConfig, connectors: BranchConnectorStep[]) {
+  const data = step.data as { connectors?: string[] };
+  return data.connectors ?? connectors.map((connector) => connector.id);
+}
 
 function Select<T extends string>({
   value,
@@ -496,7 +511,7 @@ function BranchCard({
   tags,
   tagsLoading,
 }: {
-  conn: any;
+  conn: BranchConnectorStep;
   canClone: boolean;
   onRename: (name: string) => void;
   onClone: () => void;
@@ -639,22 +654,36 @@ export function BranchConfig({ step, onChange }: SP) {
   const connectors = (state.workflow?.config?.steps ?? []).filter(
     (candidate) =>
       candidate.parentId === step.id && candidate.type === "branch_connector",
+  ) as BranchConnectorStep[];
+  const branchConnectors = connectors.filter(
+    (connector, index) => !isElseBranchConnector(connector, index, connectors),
+  );
+  const elseConnector = connectors.find((connector, index) =>
+    isElseBranchConnector(connector, index, connectors),
   );
 
   const uid = () =>
     `conn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
 
   const addConnector = () => {
-    if (connectors.length >= 9) {
+    if (branchConnectors.length >= 9) {
       return;
     }
 
     const id = uid();
+    const existingConnectorIds = getConnectorIds(step, connectors);
+    const nextConnectorIds = elseConnector
+      ? [
+          ...existingConnectorIds.filter((connectorId) => connectorId !== elseConnector.id),
+          id,
+          elseConnector.id,
+        ]
+      : [...existingConnectorIds, id];
 
     addStep({
       id,
       type: "branch_connector",
-      name: `Branch ${connectors.length + 1}`,
+      name: `Branch ${branchConnectors.length + 1}`,
       parentId: step.id,
       data: { conditions: [] },
       position: { x: 0, y: 0 },
@@ -664,25 +693,47 @@ export function BranchConfig({ step, onChange }: SP) {
       ...step,
       data: {
         ...step.data,
-        connectors: [...(step.data?.connectors ?? []), id],
+        connectors: nextConnectorIds,
       },
     });
   };
 
   const removeConnector = (id: string) => {
-    (state.workflow?.steps ?? [])
-      .filter((candidate) => candidate.parentId === id)
-      .forEach((child) => deleteStep(child.id));
+    const steps = state.workflow?.config?.steps ?? [];
+    const collectDescendantIds = (parentId: string): string[] =>
+      steps
+        .filter((candidate) => candidate.parentId === parentId)
+        .flatMap((child) => [child.id, ...collectDescendantIds(child.id)]);
+
+    collectDescendantIds(id).forEach((childId) => deleteStep(childId));
 
     deleteStep(id);
+
+    updateStep({
+      ...step,
+      data: {
+        ...step.data,
+        connectors: getConnectorIds(step, connectors).filter(
+          (connectorId) => connectorId !== id,
+        ),
+      },
+    });
   };
 
-  const cloneConnector = (conn: any) => {
-    if (connectors.length >= 9) {
+  const cloneConnector = (conn: BranchConnectorStep) => {
+    if (branchConnectors.length >= 9) {
       return;
     }
 
     const id = uid();
+    const existingConnectorIds = getConnectorIds(step, connectors);
+    const nextConnectorIds = elseConnector
+      ? [
+          ...existingConnectorIds.filter((connectorId) => connectorId !== elseConnector.id),
+          id,
+          elseConnector.id,
+        ]
+      : [...existingConnectorIds, id];
 
     addStep({
       ...conn,
@@ -691,10 +742,11 @@ export function BranchConfig({ step, onChange }: SP) {
       parentId: step.id,
       data: {
         ...conn.data,
-        conditions: (conn.data?.conditions ?? []).map((condition: any) => ({
+        conditions: (conn.data?.conditions ?? []).map((condition) => ({
           ...condition,
           id: `cond-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         })),
+        isElse: false,
       },
       position: { x: 0, y: 0 },
     });
@@ -703,7 +755,7 @@ export function BranchConfig({ step, onChange }: SP) {
       ...step,
       data: {
         ...step.data,
-        connectors: [...(step.data?.connectors ?? []), id],
+        connectors: nextConnectorIds,
       },
     });
   };
@@ -792,7 +844,7 @@ export function BranchConfig({ step, onChange }: SP) {
           Each branch is a path. Contacts matching no branch go to Else.
         </p>
 
-        {connectors.length < 9 ? (
+        {branchConnectors.length < 9 ? (
           <Button
             variant="primary"
             size="sm"
@@ -806,17 +858,17 @@ export function BranchConfig({ step, onChange }: SP) {
       </div>
 
       <div className="space-y-3 p-4">
-        {connectors.length === 0 ? (
+        {branchConnectors.length === 0 ? (
           <div className="py-6 text-center text-xs text-gray-400">
             No branches yet - click <strong>Add Branch</strong> to get started.
           </div>
         ) : null}
 
-        {connectors.map((conn) => (
+        {branchConnectors.map((conn) => (
           <BranchCard
             key={conn.id}
             conn={conn}
-            canClone={connectors.length < 9}
+            canClone={branchConnectors.length < 9}
             onRename={(name) => renameConnector(conn.id, name)}
             onClone={() => cloneConnector(conn)}
             onRemove={() => removeConnector(conn.id)}
@@ -830,7 +882,10 @@ export function BranchConfig({ step, onChange }: SP) {
           />
         ))}
 
-        <div className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2.5">
+        <div
+          className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2.5"
+          title={elseConnector ? "Else path is available on the canvas" : "Fallback path will be created for new branch nodes"}
+        >
           <span className="text-xs font-semibold text-gray-400">Else</span>
           <span className="text-xs text-gray-400">
             - fallback if no branch matches

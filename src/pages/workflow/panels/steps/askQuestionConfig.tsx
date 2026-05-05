@@ -3,9 +3,12 @@
 import { Trash2, Plus } from "@/components/ui/icons";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
+import { SelectWithIconLabel } from "../../../../components/ui/select";
 import { QuestionType, SP, AskQuestionData, QUESTION_TYPES, genId, MOCK_FIELDS } from "../../workflow.types";
 import { Field, Textarea, Select, TextInput, ToggleRow, DurationInput, Section } from "../PanelShell";
+import { toQuestionTypeIconOption } from "../../questionTypeVisuals";
 
+const QUESTION_TYPE_OPTIONS = QUESTION_TYPES.map(toQuestionTypeIconOption);
 
 
 export function AskQuestionConfig({ step, onChange }: SP) {
@@ -21,9 +24,15 @@ export function AskQuestionConfig({ step, onChange }: SP) {
         <Field label="Question Text" required>
           <Textarea value={data.questionText} onChange={(v) => u({ questionText: v })} placeholder="What is your email address?" rows={3} />
         </Field>
-        <Field label="Answer Type" required>
-          <Select value={data.questionType} onChange={(v) => u({ questionType: v as QuestionType })} options={QUESTION_TYPES} />
-        </Field>
+        <SelectWithIconLabel
+          label="Answer Type"
+          required
+          value={data.questionType}
+          onChange={(v) => u({ questionType: v as QuestionType })}
+          options={QUESTION_TYPE_OPTIONS}
+          placeholder="Select answer type"
+          size="sm"
+        />
         {data.questionType === 'multiple_choice' && (
           <Field label="Options" hint="Up to 10, max 20 chars each">
             <div className="space-y-2">

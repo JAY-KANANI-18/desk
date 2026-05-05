@@ -214,6 +214,7 @@ export interface StepConfig {
   type: StepType;
   name: string;
   data: StepData;
+  parentId?: string;
   // For branching steps — maps branch key to next step id
   branches?: Record<string, string | null>;
   nextStepId?: string | null;
@@ -225,6 +226,7 @@ export type StepData =
   | AskQuestionData
   | AssignToData
   | BranchData
+  | BranchConnectorData
   | UpdateContactTagData
   | UpdateContactFieldData
   | OpenConversationData
@@ -305,6 +307,7 @@ export interface AskQuestionData {
   timeoutValue: number;
   timeoutUnit: 'seconds' | 'minutes' | 'hours' | 'days';
   addMessageFailureBranch: boolean;
+  connectors?: string[];
 }
 
 export type AssignAction =
@@ -356,8 +359,14 @@ export interface BranchCase {
 }
 
 export interface BranchData {
-  branches: BranchCase[];   // up to 9 named branches
-  elseSteps: StepConfig[];  // steps in the Else arm
+  connectors?: string[];
+  branches?: BranchCase[];   // legacy nested branch shape
+  elseSteps?: StepConfig[];  // legacy nested Else arm
+}
+
+export interface BranchConnectorData {
+  conditions: BranchCondition[];
+  isElse?: boolean;
 }
 
 export interface UpdateContactTagData {
@@ -414,6 +423,7 @@ export interface DateTimeData {
   businessHours?: Record<string, BusinessHours>; // key = 'monday' etc
   dateRangeStart?: string;
   dateRangeEnd?: string;
+  connectors?: string[];
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

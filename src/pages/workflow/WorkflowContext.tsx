@@ -60,6 +60,43 @@ const initialState: WorkflowBuilderState = {
 // ACTIONS
 // ─────────────────────────────────────────────
 
+const defaultWorkflowSettings: WorkflowSettings = {
+  allowStopForContact: false,
+  exitOnOutgoingMessage: false,
+  exitOnIncomingMessage: false,
+  exitOnManualAssignment: false,
+};
+
+type RuntimeWorkflow = Omit<Workflow, "config" | "settings"> & {
+  config?: Workflow["config"] | null;
+  trigger?: TriggerConfig | null;
+  steps?: StepConfig[] | null;
+  settings?: WorkflowSettings | null;
+};
+
+function normalizeWorkflow(workflow: Workflow): Workflow {
+  const runtimeWorkflow = workflow as RuntimeWorkflow;
+  const config = runtimeWorkflow.config;
+  const settings =
+    config?.settings ??
+    runtimeWorkflow.settings ??
+    defaultWorkflowSettings;
+
+  return {
+    ...workflow,
+    config: {
+      trigger: config?.trigger ?? runtimeWorkflow.trigger ?? null,
+      steps: Array.isArray(config?.steps)
+        ? config.steps
+        : Array.isArray(runtimeWorkflow.steps)
+          ? runtimeWorkflow.steps
+          : [],
+      settings,
+    },
+    settings,
+  };
+}
+
 type Action =
   | { type: "LOAD_WORKFLOW"; payload: Workflow }
   | { type: "SET_NODES"; payload: Node[] }
@@ -96,7 +133,7 @@ function reducer(
       
       return {
         ...state,
-        workflow: action.payload,
+        workflow: normalizeWorkflow(action.payload),
         isDirty: false,
         errors: [],
         selectedNodeId: null,
@@ -209,7 +246,7 @@ case 'DELETE_STEP': {
       return { ...state, isPublishing: action.payload };
 
     case "MARK_SAVED":
-      return { ...state, isDirty: false, workflow: action.payload };
+      return { ...state, isDirty: false, workflow: normalizeWorkflow(action.payload) };
 
     case "SET_ERRORS":
       return { ...state, errors: action.payload };

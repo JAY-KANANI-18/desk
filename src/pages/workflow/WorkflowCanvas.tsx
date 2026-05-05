@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
   Node,
   Edge,
+  type ReactFlowInstance,
   useNodesState,
   useEdgesState,
   BackgroundVariant,
@@ -17,10 +18,26 @@ import { TopBar } from "./canvas/TopBar";
 import { TriggerPanel } from "./panels/TriggerPanel";
 import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
-import { StepType, StepConfig, TriggerConfig, InsertCtx, Step } from "./workflow.types";
+import { StepType, StepConfig, TriggerConfig, InsertCtx } from "./workflow.types";
 import { useNavigate, useParams } from "react-router";
 import { useDisclosure } from "../../hooks/useDisclosure";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { useChannel } from "../../context/ChannelContext";
+import { useWorkspace } from "../../context/WorkspaceContext";
+import {
+  getStepNodePreview,
+  type WorkflowNodePreview,
+  type WorkflowCanvasStep,
+  type WorkflowPreviewContext,
+  type WorkflowPreviewTag,
+  type WorkflowPreviewUser,
+} from "./canvas/nodeSummaries";
+import { DEFAULT_NODE_COLOR, getWorkflowNodeColor } from "./canvas/nodeColors";
+import {
+  getBranchConnectorDisplayName,
+  orderBranchConnectors,
+} from "./canvas/branchConnectors";
+import { workspaceApi } from "../../lib/workspaceApi";
 
 /* ───────────────────────────────────────────────────────────────────────────
    layout.constants.ts
@@ -36,19 +53,21 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 ─────────────────────────────────────────────────────────────────────────── */
 
 // ── Node dimensions ──────────────────────────────────────────────────────────
-export const NODE_W = 208; // w-52 = 208px  (TriggerNode, StepNode, BranchNode)
-export const NODE_H = 72; // normal node height
-export const NODE_W_PILL = 140; // BranchPillNode width
-export const NODE_H_PILL = 28; // BranchPillNode height
-export const NODE_W_ADD = 32; // w-8 = 32px (AddStepNode)
-export const NODE_H_ADD = 32; // h-8
+export const NODE_W = 192; // TriggerNode, StepNode, BranchNode
+export const NODE_H = 64; // compact normal node fallback
+export const NODE_H_MAX = 112; // cap for expanded context previews
+export const TRIGGER_NODE_H = 68;
+export const NODE_W_PILL = 112; // BranchPillNode width
+export const NODE_H_PILL = 22; // BranchPillNode height
+export const NODE_W_ADD = 28; // AddStepNode width
+export const NODE_H_ADD = 28; // AddStepNode height
 
 // ── Spacing ───────────────────────────────────────────────────────────────────
-export const H_GAP = 40; // min horizontal gap between siblings
-export const H_SPACING = NODE_W + H_GAP; // 248px — one slot width
+export const H_GAP = 132; // min horizontal gap between siblings
+export const H_SPACING = NODE_W + H_GAP; // one slot width
 
-export const V_GAP = 24; // vertical gap between normal nodes
-export const V_GAP_AFTER_PILL = 12; // tighter gap after a pill (pill is small)
+export const V_GAP = 52; // vertical gap between normal nodes
+export const V_GAP_AFTER_PILL = 28; // tighter gap after a pill (pill is small)
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
 export const NODE_X_CENTER = 400;
@@ -59,8 +78,8 @@ export const TRIGGER_Y = 80;
 // Use these helpers so the gap is always based on the actual rendered height
 // of the PARENT node, not a fixed level multiplier.
 
-export function yAfterNormal(parentY: number): number {
-  return parentY + NODE_H + V_GAP;
+export function yAfterNormal(parentY: number, parentHeight = NODE_H): number {
+  return parentY + parentHeight + V_GAP;
 }
 
 export function yAfterPill(parentY: number): number {
@@ -74,8 +93,128 @@ export function yAfterAdd(parentY: number): number {
 /* ───────────────────────────────────────────── */
 // BUILD WORKFLOW MAP
 
-function buildWorkflow(raw: { steps: Step[] }) {
-  const childrenMap = new Map<string, Step[]>();
+type WorkflowGraphConfig = {
+  steps?: WorkflowCanvasStep[];
+  trigger?: TriggerConfig | null;
+};
+
+interface BuildGraphCallbacks {
+  onSelectTrigger: () => void;
+  onSelectStep: (id: string) => void;
+  onDeleteStep: (id: string) => void;
+  onDuplicateStep: (id: string) => void;
+  onNavigateToStep: (id: string) => void;
+  onInsert: (ctx: InsertCtx) => void;
+}
+
+function getNodeDataHeight(data: unknown) {
+  if (typeof data !== "object" || data === null || !("height" in data)) {
+    return undefined;
+  }
+
+  const height = (data as { height?: unknown }).height;
+  return typeof height === "number" ? height : undefined;
+}
+
+function isPreviewChannel(
+  value: unknown,
+): value is WorkflowPreviewContext["channels"][number] {
+  return typeof value === "object" && value !== null;
+}
+
+function getStepNumber(stepId: string, steps: WorkflowCanvasStep[]) {
+  const visibleSteps = steps.filter((step) => step.type !== "branch_connector");
+  const index = visibleSteps.findIndex((step) => step.id === stepId);
+  return index >= 0 ? index + 1 : undefined;
+}
+
+function getGraphStructureSignature(config: WorkflowGraphConfig) {
+  const triggerType = config.trigger?.type ?? "none";
+  const steps = config.steps ?? [];
+
+  return [
+    triggerType,
+    steps
+      .map((step) =>
+        [
+          step.id,
+          step.type,
+          step.parentId ?? "trigger",
+          step.name,
+        ].join(":"),
+      )
+      .join("|"),
+  ].join("::");
+}
+
+function estimateNodeHeight(preview?: WorkflowNodePreview) {
+  if (!preview) return NODE_H;
+
+  const hasTokens = preview.tokens.length > 0;
+  const textLength = preview.text?.length ?? 0;
+  const needsTextLine = textLength > 0;
+  const needsSecondTextLine = textLength > 50;
+
+  if (preview.variant === "message") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 50 + textRows);
+  }
+
+  if (preview.variant === "question") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 48 + textRows);
+  }
+
+  if (preview.variant === "assignment") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 48 + textRows);
+  }
+
+  if (preview.variant === "branch") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 48 + textRows);
+  }
+
+  if (preview.variant === "plain") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 48 + textRows);
+  }
+
+  if (preview.variant === "jump") {
+    return Math.min(NODE_H_MAX, 64);
+  }
+
+  if (preview.variant === "field") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    return Math.min(NODE_H_MAX, 62 + textRows);
+  }
+
+  if (preview.variant === "conversation") {
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+    const statusRow = preview.tokens.length > 0 ? 14 : 0;
+    return Math.min(NODE_H_MAX, 48 + statusRow + textRows);
+  }
+
+  if (preview.variant === "tags") {
+    const visibleRows = preview.tokens.length > 3
+      ? 3
+      : Math.min(3, Math.max(1, preview.tokens.length));
+    return Math.min(136, 64 + visibleRows * 20);
+  }
+
+  const needsWrappedTokens = preview.tokens.length > 2;
+
+  const base = 32;
+  const label = 9;
+  const tokenRows = hasTokens ? (needsWrappedTokens ? 34 : 18) : 0;
+  const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
+  const divider = hasTokens || needsTextLine ? 5 : 0;
+
+  return Math.min(NODE_H_MAX, base + label + tokenRows + textRows + divider);
+}
+
+function buildWorkflow(raw: WorkflowGraphConfig) {
+  const childrenMap = new Map<string, WorkflowCanvasStep[]>();
 
   raw?.steps?.forEach((s) => {
     const parent = s.parentId || "trigger";
@@ -89,11 +228,37 @@ function buildWorkflow(raw: { steps: Step[] }) {
 /* ───────────────────────────────────────────── */
 // BUILD GRAPH
 
-function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
+function buildGraph(
+  raw: WorkflowGraphConfig,
+  cb: BuildGraphCallbacks,
+  previewContext: WorkflowPreviewContext,
+) {
   const { childrenMap } = buildWorkflow(raw);
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
+  const stepById = new Map((raw.steps ?? []).map((step) => [step.id, step]));
+  const connectorColorById = new Map<string, string>();
+
+  function getEdgeColor(sourceId: string) {
+    if (sourceId === "trigger") return getWorkflowNodeColor("trigger");
+
+    const connectorColor = connectorColorById.get(sourceId);
+    if (connectorColor) return connectorColor;
+
+    const sourceStep = stepById.get(sourceId);
+    return sourceStep ? getWorkflowNodeColor(sourceStep.type) : DEFAULT_NODE_COLOR;
+  }
+
+  function pushStepEdge(source: string, target: string, color = getEdgeColor(source)) {
+    edges.push({
+      id: `e-${source}-${target}`,
+      source,
+      target,
+      type: "step",
+      data: { color },
+    });
+  }
 
   // center X → React Flow top-left X
   function toLeftEdge(centerX: number, nodeType: "normal" | "pill" | "add") {
@@ -111,8 +276,8 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
     position: { x: toLeftEdge(NODE_X_CENTER, "normal"), y: TRIGGER_Y },
     width: NODE_W,
     data: {
-      triggerType: raw?.trigger?.type || "conversationOpened",
-      isConfigured: true,
+      triggerType: raw?.trigger?.type ?? null,
+      isConfigured: Boolean(raw?.trigger?.type),
       hasError: false,
       onSelect: cb.onSelectTrigger,
     },
@@ -124,22 +289,20 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
   // ── Empty state ──
   if (rootChildren.length === 0) {
     const addId = "add-trigger";
-    const addY = yAfterNormal(TRIGGER_Y);
+    const addY = yAfterNormal(TRIGGER_Y, TRIGGER_NODE_H);
 
     nodes.push({
       id: addId,
       type: "addStepNode",
       position: { x: toLeftEdge(NODE_X_CENTER, "add"), y: addY },
       width: NODE_W_ADD,
-      data: { onAdd: () => cb.onInsert({ afterNodeId: "trigger" }) },
+      data: {
+        color: getEdgeColor("trigger"),
+        onAdd: () => cb.onInsert({ afterNodeId: "trigger" }),
+      },
     });
 
-    edges.push({
-      id: "e-trigger-add",
-      source: "trigger",
-      target: addId,
-      type: "step",
-    });
+    pushStepEdge("trigger", addId);
 
     return { nodes, edges };
   }
@@ -159,6 +322,7 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
     centerX: number,
     parentY: number,
     parentType: "normal" | "pill" | "add",
+    parentHeight: number,
   ) {
     const children = childrenMap.get(parentId) || [];
     const totalWidth = children.reduce(
@@ -169,7 +333,7 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
 
     // Y of children depends on parent's actual height
     const nodeY =
-      parentType === "pill" ? yAfterPill(parentY) : yAfterNormal(parentY);
+      parentType === "pill" ? yAfterPill(parentY) : yAfterNormal(parentY, parentHeight);
 
     children.forEach((step) => {
       const subtreeWidth = getSubtreeWidth(step.id);
@@ -177,53 +341,64 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
 
       // ── BRANCH CONNECTOR (child of normal parent) ──
       if (step.type === "branch_connector") {
+        const siblingConnectors = children.filter(
+          (candidate) => candidate.type === "branch_connector",
+        );
+        const connectorIndex = siblingConnectors.findIndex(
+          (candidate) => candidate.id === step.id,
+        );
+
         nodes.push({
           id: step.id,
           type: "branchPillNode",
           position: { x: toLeftEdge(nodeX, "pill"), y: nodeY },
           width: NODE_W_PILL,
           data: {
-            label: step.name,
+            label: getBranchConnectorDisplayName(
+              step,
+              connectorIndex,
+              siblingConnectors,
+            ),
             onSelect: () => cb.onSelectStep(step.id),
           },
         });
 
-        edges.push({
-          id: `e-${parentId}-${step.id}`,
-          source: parentId,
-          target: step.id,
-          type: "step",
-        });
+        pushStepEdge(parentId, step.id);
 
-        render(step.id, nodeX, nodeY, "pill");
+        render(step.id, nodeX, nodeY, "pill", NODE_H_PILL);
         currentX += subtreeWidth * H_SPACING;
         return;
       }
 
       // ── NORMAL / BRANCH NODE ──
+      const nodePreview = getStepNodePreview(step, previewContext);
+      const stepNumber = getStepNumber(step.id, previewContext.steps);
+      const nodeHeight = estimateNodeHeight(nodePreview);
+
       nodes.push({
         id: step.id,
         type: step.type === "branch" ? "branchNode" : "stepNode",
         position: { x: toLeftEdge(nodeX, "normal"), y: nodeY },
+        height: nodeHeight,
         width: NODE_W,
         data: {
           stepId: step.id,
           stepType: step.type,
           label: step.name,
+          stepNumber,
+          preview: nodePreview,
+          height: nodeHeight,
           isConfigured: true,
           hasError: false,
+          highlightPulse: previewContext.highlightStepId === step.id,
           onSelect: () => cb.onSelectStep(step.id),
           onDelete: () => cb.onDeleteStep(step.id),
           onDuplicate: () => cb.onDuplicateStep(step.id),
+          onNavigateToStep: cb.onNavigateToStep,
         },
       });
 
-      edges.push({
-        id: `e-${parentId}-${step.id}`,
-        source: parentId,
-        target: step.id,
-        type: "step",
-      });
+      pushStepEdge(parentId, step.id);
 
       // ── BRANCH HANDLING ──
      // ── In buildGraph render(), update the NORMAL NODE section ─────────────────
@@ -231,26 +406,24 @@ function buildGraph(raw: { steps: Step[]; trigger: TriggerConfig }, cb: any) {
 
 // ── BRANCH / ASK_QUESTION / DATE_TIME: render named connectors ──
 if (step.type === "branch" || step.type === "ask_question" || step.type === "date_time") {
-  const connectors = childrenMap.get(step.id) || [];
+  const rawConnectors = childrenMap.get(step.id) || [];
+  const connectors =
+    step.type === "branch"
+      ? orderBranchConnectors(rawConnectors)
+      : rawConnectors;
   const branchWidth = connectors.reduce(
     (sum, c) => sum + getSubtreeWidth(c.id),
     0,
   );
   let branchX = nodeX - (branchWidth * H_SPACING) / 2;
 
-  // pill colors per step type
-  const pillColor: Record<string, Record<string, string>> = {
-    ask_question: { Success: "#22c55e", Failure: "#ef4444" },
-    date_time:    { "In Range": "#3b82f6", "Out of Range": "#f97316" },
-  };
-
-  connectors.forEach((conn) => {
+  connectors.forEach((conn, i) => {
     const connWidth = getSubtreeWidth(conn.id);
     const cx = branchX + (connWidth * H_SPACING) / 2;
-    const connectorY = yAfterNormal(nodeY);
+    const connectorY = yAfterNormal(nodeY, nodeHeight);
 
-    const color =
-      pillColor[step.type]?.[conn.name] ?? "#3b82f6";
+    const color = getWorkflowNodeColor(step.type);
+    connectorColorById.set(conn.id, color);
 
     nodes.push({
       id: conn.id,
@@ -258,18 +431,16 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
       position: { x: toLeftEdge(cx, "pill"), y: connectorY },
       width: NODE_W_PILL,
       data: {
-        label: conn.name,
+        label:
+          step.type === "branch"
+            ? getBranchConnectorDisplayName(conn, i, connectors)
+            : conn.name,
         color,
         onSelect: () => cb.onSelectStep(conn.id),
       },
     });
 
-    edges.push({
-      id: `e-${step.id}-${conn.id}`,
-      source: step.id,
-      target: conn.id,
-      type: "step",
-    });
+    pushStepEdge(step.id, conn.id);
 
     const childSteps = childrenMap.get(conn.id) || [];
 
@@ -283,44 +454,37 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
         type: "addStepNode",
         position: { x: toLeftEdge(cx, "add"), y: addY },
         width: NODE_W_ADD,
-        data: { onAdd: () => cb.onInsert({ afterNodeId: conn.id }) },
+        data: { color, onAdd: () => cb.onInsert({ afterNodeId: conn.id }) },
       });
 
-      edges.push({
-        id: `e-${conn.id}-${addId}`,
-        source: conn.id,
-        target: addId,
-        type: "step",
-      });
+      pushStepEdge(conn.id, addId, color);
     }
 
-    render(conn.id, cx, connectorY, "pill");
+    render(conn.id, cx, connectorY, "pill", NODE_H_PILL);
     branchX += connWidth * H_SPACING;
   });
 
 } else {
   // ── NORMAL NODE: recurse + add button if leaf ──
-  render(step.id, nodeX, nodeY, "normal");
+  render(step.id, nodeX, nodeY, "normal", nodeHeight);
 
   const hasChildren = (childrenMap.get(step.id) || []).length > 0;
   if (!hasChildren) {
     const addId = `add-${step.id}`;
-    const addY = yAfterNormal(nodeY);
+    const addY = yAfterNormal(nodeY, nodeHeight);
 
     nodes.push({
       id: addId,
       type: "addStepNode",
       position: { x: toLeftEdge(nodeX, "add"), y: addY },
       width: NODE_W_ADD,
-      data: { onAdd: () => cb.onInsert({ afterNodeId: step.id }) },
+      data: {
+        color: getEdgeColor(step.id),
+        onAdd: () => cb.onInsert({ afterNodeId: step.id }),
+      },
     });
 
-    edges.push({
-      id: `e-${step.id}-${addId}`,
-      source: step.id,
-      target: addId,
-      type: "step",
-    });
+    pushStepEdge(step.id, addId);
   }
 }
 
@@ -329,7 +493,7 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
   }
 
   // start: trigger is a normal node at TRIGGER_Y
-  render("trigger", NODE_X_CENTER, TRIGGER_Y, "normal");
+  render("trigger", NODE_X_CENTER, TRIGGER_Y, "normal", TRIGGER_NODE_H);
 
   return { nodes, edges };
 }
@@ -375,7 +539,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
       const id = Date.now();
 
       return {
-        connectors: [`conn-${id}-1`, `conn-${id}-2`],
+        connectors: [`conn-${id}-branch-1`, `conn-${id}-else`],
       };
     case "update_contact_tag":
       return { action: "add", tags: [] };
@@ -429,7 +593,10 @@ export function WorkflowCanvas() {
   const isMobile = useIsMobile();
   const addMenu = useDisclosure();
   const insertCtxRef = useRef<InsertCtx | null>(null);
+  const reactFlowRef = useRef<ReactFlowInstance | null>(null);
+  const structureSignatureRef = useRef<string | null>(null);
   const stepCounter = useRef(1);
+  const jumpHighlightTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const { workflowId } = useParams(); // from URL :id
   const navigate = useNavigate();
 
@@ -446,8 +613,89 @@ export function WorkflowCanvas() {
     setNodes,
     setEdges,
   } = useWorkflow();
+  const { channels: rawChannels } = useChannel() as { channels: unknown };
+  const { workspaceUsers } = useWorkspace();
+  const [workspaceTags, setWorkspaceTags] = useState<WorkflowPreviewTag[]>([]);
+  const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null);
 
   const { workflow, selectedNodeId, selectedPanelType } = state;
+  const previewChannels = Array.isArray(rawChannels)
+    ? rawChannels.filter(isPreviewChannel)
+    : [];
+  const previewUsers: WorkflowPreviewUser[] = workspaceUsers ?? [];
+
+  const loadWorkspaceTags = useCallback(async () => {
+    try {
+      const response = await workspaceApi.getTags();
+      setWorkspaceTags(Array.isArray(response) ? response : []);
+    } catch {
+      setWorkspaceTags([]);
+    }
+  }, []);
+
+  const setRenderedNodeHighlight = useCallback(
+    (stepId: string, highlighted: boolean) => {
+      setRfNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === stepId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  highlightPulse: highlighted,
+                },
+              }
+            : node,
+        ),
+      );
+    },
+    [setRfNodes],
+  );
+
+  const centerStepOnCanvas = useCallback((stepId: string) => {
+    const instance = reactFlowRef.current;
+    const node = instance?.getNode(stepId);
+
+    if (!instance || !node) {
+      return;
+    }
+
+    const width = node.width ?? NODE_W;
+    const height = node.height ?? getNodeDataHeight(node.data) ?? NODE_H;
+
+    instance.setCenter(
+      node.position.x + width / 2,
+      node.position.y + height / 2,
+      { zoom: 1, duration: 520 },
+    );
+
+    setJumpHighlightId(stepId);
+    setRenderedNodeHighlight(stepId, true);
+
+    if (jumpHighlightTimerRef.current) {
+      window.clearTimeout(jumpHighlightTimerRef.current);
+    }
+
+    jumpHighlightTimerRef.current = window.setTimeout(() => {
+      setJumpHighlightId((current) => (current === stepId ? null : current));
+      setRenderedNodeHighlight(stepId, false);
+      jumpHighlightTimerRef.current = null;
+    }, 1800);
+  }, [setRenderedNodeHighlight]);
+
+  const scheduleFitView = (duration = 260) => {
+    if (typeof window === "undefined") return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        reactFlowRef.current?.fitView({
+          padding: 0.5,
+          duration,
+          maxZoom: 0.95,
+        });
+      });
+    });
+  };
 
   useEffect(() => {
     if (!workflowId) return;
@@ -456,6 +704,16 @@ export function WorkflowCanvas() {
     loadWorkflow(workflowId);
   }, [workflowId, loadWorkflow]);
 
+  useEffect(() => {
+    void loadWorkspaceTags();
+  }, [loadWorkspaceTags]);
+
+  useEffect(() => () => {
+    if (jumpHighlightTimerRef.current) {
+      window.clearTimeout(jumpHighlightTimerRef.current);
+    }
+  }, []);
+
   // build graph
   useEffect(() => {
     console.log("Building graph with steps:", workflow?.config?.steps);
@@ -463,37 +721,63 @@ export function WorkflowCanvas() {
 
     if (!workflow) return;
 
-    const { nodes, edges } = buildGraph(workflow?.config, {
-      onSelectTrigger: () => selectNode("trigger", "trigger"),
-      onSelectStep: (id: string) => selectNode(id, "step"),
-      onDeleteStep: (id: string) => deleteStep(id),
-      onDuplicateStep: (id: string) => {
-        const orig = workflow?.config?.steps?.find((s) => s.id === id);
-        if (!orig) return;
+    const graphConfig: WorkflowGraphConfig = {
+      trigger: workflow.config?.trigger ?? null,
+      steps: Array.isArray(workflow.config?.steps)
+        ? (workflow.config.steps as WorkflowCanvasStep[])
+        : [],
+    };
+    const structureSignature = getGraphStructureSignature(graphConfig);
+    const isInitialStructure = structureSignatureRef.current === null;
+    const shouldFitView =
+      isInitialStructure || structureSignatureRef.current !== structureSignature;
 
-        insertStepAfter(
-          {
-            ...orig,
-            id: `step-${Date.now()}`,
-            name: orig.name + " copy",
-            parentId: orig.parentId,
-          },
-          orig.parentId,
-        );
+    const { nodes, edges } = buildGraph(
+      graphConfig,
+      {
+        onSelectTrigger: () => selectNode("trigger", "trigger"),
+        onSelectStep: (id: string) => selectNode(id, "step"),
+        onDeleteStep: (id: string) => deleteStep(id),
+        onDuplicateStep: (id: string) => {
+          const orig = workflow?.config?.steps?.find((s) => s.id === id);
+          if (!orig) return;
+
+          insertStepAfter(
+            {
+              ...orig,
+              id: `step-${Date.now()}`,
+              name: orig.name + " copy",
+              parentId: orig.parentId,
+            },
+            orig.parentId,
+          );
+        },
+        onNavigateToStep: centerStepOnCanvas,
+        onInsert: (ctx: InsertCtx) => {
+          insertCtxRef.current = ctx;
+          addMenu.open();
+        },
       },
-      onInsert: (ctx: InsertCtx) => {
-        insertCtxRef.current = ctx;
-        addMenu.open();
+      {
+        channels: previewChannels,
+        steps: graphConfig.steps ?? [],
+        workspaceUsers: previewUsers,
+        workspaceTags,
+        highlightStepId: jumpHighlightId,
       },
-    });
+    );
 
     setRfNodes([...nodes]);
     setRfEdges([...edges]);
 
     setNodes([...nodes]);
     setEdges([...edges]);
+    structureSignatureRef.current = structureSignature;
+    if (shouldFitView) {
+      scheduleFitView(isInitialStructure ? 0 : 260);
+    }
     console.log({ nodes, edges });
-  }, [workflow]);
+  }, [workflow, rawChannels, workspaceUsers, workspaceTags, jumpHighlightId, centerStepOnCanvas]);
 
   // add step
   const handleAddStep = (type: StepType) => {
@@ -512,24 +796,30 @@ export function WorkflowCanvas() {
 
     // 🔥 HANDLE BRANCH SPECIAL CASE
     if (type === "branch" || type === "ask_question" || type === "date_time") {
-      const connectors = newStep.data.connectors;
+      const connectors =
+        "connectors" in newStep.data && Array.isArray(newStep.data.connectors)
+          ? newStep.data.connectors
+          : [];
 
       const connectorNames: Record<string, string[]> = {
-        branch: ["Branch Path", "Branch Path"],
+        branch: ["Branch 1", "Else"],
         ask_question: ["Success", "Failure"],
         date_time: ["In Range", "Out of Range"],
       };
 
       const names =
         connectorNames[type] ??
-        connectors.map((_: any, i: number) => `Branch ${i + 1}`);
+        connectors.map((_, i) => `Branch ${i + 1}`);
 
-      const connectorSteps = connectors.map((connId: string, i: number) => ({
+      const connectorSteps: StepConfig[] = connectors.map((connId, i) => ({
         id: connId,
         type: "branch_connector",
         name: names[i] ?? `Path ${i + 1}`,
         parentId: newStep.id,
-        data: { conditions: [] },
+        data:
+          type === "branch" && names[i] === "Else"
+            ? { conditions: [], isElse: true }
+            : { conditions: [] },
         position: { x: 0, y: 0 },
       }));
 
@@ -575,7 +865,18 @@ export function WorkflowCanvas() {
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            onInit={(instance) => {
+              reactFlowRef.current = instance;
+            }}
             fitView
+            fitViewOptions={{ padding: 0.5, maxZoom: 0.95 }}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            edgesFocusable={false}
+            edgesUpdatable={false}
+            selectNodesOnDrag={false}
+            deleteKeyCode={null}
+            multiSelectionKeyCode={null}
           >
             <Background variant={BackgroundVariant.Dots} />
             <Controls />

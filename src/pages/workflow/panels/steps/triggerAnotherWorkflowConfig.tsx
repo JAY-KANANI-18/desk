@@ -1,25 +1,65 @@
 
 // ─── 12. Trigger Another Workflow ─────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../../../components/ui/Button";
 import { workspaceApi } from "../../../../lib/workspaceApi";
 import { SP, TriggerAnotherWorkflowData } from "../../workflow.types";
+import { useWorkflow } from "../../WorkflowContext";
 import { Field, InfoBox, Section, Select } from "../PanelShell";
+
+interface WorkflowOptionSource {
+  id: string | number;
+  name?: string;
+}
 
 export function TriggerAnotherWorkflowConfig({ step, onChange }: SP) {
   const data = step.data as TriggerAnotherWorkflowData;
   const u = (p: Partial<TriggerAnotherWorkflowData>) => onChange({ ...data, ...p });
-const [workflowOptions, setWorkflowOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const { state } = useWorkflow();
+  const currentWorkflowId = state.workflow?.id;
+  const [workflowOptions, setWorkflowOptions] = useState<Array<{ value: string; label: string }>>([]);
 
-  const loadWorkflows = (inputValue: string) => {
-    workspaceApi.getWorkflows().then((workflows) => {
-        setWorkflowOptions(workflows.map(wf => ({ value: wf.id, label: wf.name })));
-    });
-  }
   useEffect(() => {
-    loadWorkflows('');
-  }, []);
+    let isActive = true;
+
+    workspaceApi.getWorkflows()
+      .then((response) => {
+        if (!isActive) return;
+
+        const workflows = Array.isArray(response)
+          ? (response as WorkflowOptionSource[])
+          : [];
+
+        setWorkflowOptions(
+          workflows
+            .filter((workflow) => String(workflow.id) !== String(currentWorkflowId ?? ""))
+            .map((workflow) => ({
+              value: String(workflow.id),
+              label: workflow.name || `Workflow ${workflow.id}`,
+            })),
+        );
+      })
+      .catch(() => {
+        if (isActive) {
+          setWorkflowOptions([]);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentWorkflowId]);
+
+  useEffect(() => {
+    if (
+      data.targetWorkflowId &&
+      currentWorkflowId &&
+      String(data.targetWorkflowId) === String(currentWorkflowId)
+    ) {
+      u({ targetWorkflowId: "" });
+    }
+  }, [currentWorkflowId, data.targetWorkflowId]);
 
   return (
     <Section title="Configuration">
