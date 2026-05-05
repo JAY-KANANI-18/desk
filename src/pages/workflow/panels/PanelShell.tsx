@@ -1,4 +1,6 @@
 import React, { ReactNode } from "react";
+import { X } from "@/components/ui/icons";
+import { IconButton } from "../../../components/ui/button/IconButton";
 import { DisclosureButton } from "../../../components/ui/button/DisclosureButton";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import {
@@ -8,8 +10,6 @@ import {
 import { TextareaInput } from "../../../components/ui/inputs/TextareaInput";
 import { TagInput as SharedTagInput } from "../../../components/ui/inputs/TagInput";
 import { BaseSelect } from "../../../components/ui/select/BaseSelect";
-import { useIsMobile } from "../../../hooks/useIsMobile";
-import { BackButton } from "../../../components/channels/BackButton";
 
 interface PanelShellProps {
   title: string;
@@ -26,8 +26,6 @@ export function PanelShell({
   hideHeader = false,
   children,
 }: PanelShellProps) {
-  const isMobile = useIsMobile();
-
   return (
     <div
       className={`flex h-full flex-col bg-white ${
@@ -35,16 +33,23 @@ export function PanelShell({
       }`}
     >
       {!hideHeader ? (
-        <div className="flex flex-shrink-0 items-start border-b border-gray-100 py-3">
-          {onClose ? (
-            <BackButton ariaLabel="Back" onClick={onClose} size={isMobile ? "sm" : "md"} />
-          ) : null}
-          <div>
+        <div className="flex flex-shrink-0 items-start gap-3 border-b border-gray-100 px-4 py-3">
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
             {subtitle ? (
               <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>
             ) : null}
           </div>
+          {onClose ? (
+            <IconButton
+              aria-label="Close configuration panel"
+              icon={<X size={15} />}
+              onClick={onClose}
+              variant="ghost"
+              size="xs"
+              className="flex-shrink-0"
+            />
+          ) : null}
         </div>
       ) : null}
 

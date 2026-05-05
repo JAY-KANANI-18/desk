@@ -19,7 +19,13 @@ import { TriggerPanel } from "./panels/TriggerPanel";
 import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
 import { MobileSheet } from "../../components/ui/modal";
-import { StepType, StepConfig, TriggerConfig, InsertCtx } from "./workflow.types";
+import {
+  StepType,
+  StepConfig,
+  TriggerConfig,
+  InsertCtx,
+  type BranchConnectorData,
+} from "./workflow.types";
 import { STEP_META } from "./canvas/stepTypes";
 import { useNavigate, useParams } from "react-router";
 import { useDisclosure } from "../../hooks/useDisclosure";
@@ -110,9 +116,11 @@ interface BuildGraphCallbacks {
   onSelectTrigger: () => void;
   onSelectStep: (id: string) => void;
   onDeleteStep: (id: string) => void;
-  onDuplicateStep: (id: string) => void;
+  onCopyStep: (id: string) => void;
   onNavigateToStep: (id: string) => void;
   onInsert: (ctx: InsertCtx) => void;
+  onPaste: (ctx: InsertCtx) => void;
+  copiedStepLabel?: string;
 }
 
 function getNodeDataHeight(data: unknown) {
@@ -233,6 +241,146 @@ function buildWorkflow(raw: WorkflowGraphConfig) {
   return { childrenMap };
 }
 
+type ConnectorOwnerStepType = Extract<
+  StepType,
+  "ask_question" | "branch" | "date_time"
+>;
+
+function isConnectorOwnerStepType(type: StepType): type is ConnectorOwnerStepType {
+  return type === "ask_question" || type === "branch" || type === "date_time";
+}
+
+function cloneStepData(data: StepConfig["data"]): StepConfig["data"] {
+  return JSON.parse(JSON.stringify(data)) as StepConfig["data"];
+}
+
+function getDefaultConnectorNames(type: ConnectorOwnerStepType) {
+  const connectorNames: Record<ConnectorOwnerStepType, string[]> = {
+    branch: ["Branch 1", "Else"],
+    ask_question: ["Success", "Failure"],
+    date_time: ["In Range", "Out of Range"],
+  };
+
+  return connectorNames[type];
+}
+
+function createConnectorId(prefix: string, index: number) {
+  return `conn-${prefix}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function withConnectorIds(
+  data: StepConfig["data"],
+  connectorIds: string[],
+): StepConfig["data"] {
+  return {
+    ...(cloneStepData(data) as Record<string, unknown>),
+    connectors: connectorIds,
+  } as StepConfig["data"];
+}
+
+function cloneConnectorStep(
+  connector: StepConfig,
+  parentId: string,
+  id: string,
+): StepConfig {
+  const data = cloneStepData(connector.data) as BranchConnectorData;
+
+  return {
+    ...connector,
+    id,
+    parentId,
+    data: {
+      ...data,
+      conditions: (data.conditions ?? []).map((condition, index) => ({
+        ...condition,
+        id: `cond-${id}-${index}`,
+      })),
+    },
+    position: { x: 0, y: 0 },
+  };
+}
+
+function createDefaultConnectorStep(
+  type: ConnectorOwnerStepType,
+  parentId: string,
+  id: string,
+  name: string,
+): StepConfig {
+  return {
+    id,
+    type: "branch_connector",
+    name,
+    parentId,
+    data:
+      type === "branch" && name === "Else"
+        ? { conditions: [], isElse: true }
+        : { conditions: [] },
+    position: { x: 0, y: 0 },
+  };
+}
+
+function getConnectorTemplatesForStep(
+  step: StepConfig,
+  steps: StepConfig[],
+): StepConfig[] {
+  if (!isConnectorOwnerStepType(step.type)) {
+    return [];
+  }
+
+  const connectors = steps.filter(
+    (candidate) =>
+      candidate.parentId === step.id && candidate.type === "branch_connector",
+  );
+
+  if (connectors.length > 0) {
+    return step.type === "branch" ? orderBranchConnectors(connectors) : connectors;
+  }
+
+  return getDefaultConnectorNames(step.type).map((name, index) =>
+    createDefaultConnectorStep(
+      step.type,
+      step.id,
+      createConnectorId(`${step.id}-default`, index),
+      name,
+    ),
+  );
+}
+
+function createPastedStep(
+  template: StepConfig,
+  parentId: string,
+  steps: StepConfig[],
+): { step: StepConfig; connectors: StepConfig[] } {
+  const pastedStepId = `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const connectorTemplates = getConnectorTemplatesForStep(template, steps);
+  const connectors = isConnectorOwnerStepType(template.type)
+    ? connectorTemplates.map((connector, index) =>
+        cloneConnectorStep(
+          connector,
+          pastedStepId,
+          createConnectorId(`${pastedStepId}-${connector.id}`, index),
+        ),
+      )
+    : [];
+
+  return {
+    step: {
+      ...template,
+      id: pastedStepId,
+      name: `${template.name} copy`,
+      parentId,
+      data: isConnectorOwnerStepType(template.type)
+        ? withConnectorIds(
+            template.data,
+            connectors.map((connector) => connector.id),
+          )
+        : cloneStepData(template.data),
+      position: { x: 0, y: 0 },
+    },
+    connectors,
+  };
+}
+
 /* ───────────────────────────────────────────── */
 // BUILD GRAPH
 
@@ -247,6 +395,17 @@ function buildGraph(
   const edges: Edge[] = [];
   const stepById = new Map((raw.steps ?? []).map((step) => [step.id, step]));
   const connectorColorById = new Map<string, string>();
+
+  function getAddStepNodeData(parentId: string, color: string) {
+    return {
+      color,
+      copiedStepLabel: cb.copiedStepLabel,
+      onAdd: () => cb.onInsert({ afterNodeId: parentId }),
+      onPaste: cb.copiedStepLabel
+        ? () => cb.onPaste({ afterNodeId: parentId })
+        : undefined,
+    };
+  }
 
   function getEdgeColor(sourceId: string) {
     if (sourceId === "trigger") return getWorkflowNodeColor("trigger");
@@ -305,10 +464,7 @@ function buildGraph(
       type: "addStepNode",
       position: { x: toLeftEdge(NODE_X_CENTER, "add"), y: addY },
       width: NODE_W_ADD,
-      data: {
-        color: getEdgeColor("trigger"),
-        onAdd: () => cb.onInsert({ afterNodeId: "trigger" }),
-      },
+      data: getAddStepNodeData("trigger", getEdgeColor("trigger")),
     });
 
     pushStepEdge("trigger", addId);
@@ -404,7 +560,7 @@ function buildGraph(
           highlightPulse: previewContext.highlightStepId === step.id,
           onSelect: () => cb.onSelectStep(step.id),
           onDelete: () => cb.onDeleteStep(step.id),
-          onDuplicate: () => cb.onDuplicateStep(step.id),
+          onCopy: () => cb.onCopyStep(step.id),
           onNavigateToStep: cb.onNavigateToStep,
         },
       });
@@ -465,7 +621,7 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
         type: "addStepNode",
         position: { x: toLeftEdge(cx, "add"), y: addY },
         width: NODE_W_ADD,
-        data: { color, onAdd: () => cb.onInsert({ afterNodeId: conn.id }) },
+        data: getAddStepNodeData(conn.id, color),
       });
 
       pushStepEdge(conn.id, addId, color);
@@ -489,10 +645,7 @@ if (step.type === "branch" || step.type === "ask_question" || step.type === "dat
       type: "addStepNode",
       position: { x: toLeftEdge(nodeX, "add"), y: addY },
       width: NODE_W_ADD,
-      data: {
-        color: getEdgeColor(step.id),
-        onAdd: () => cb.onInsert({ afterNodeId: step.id }),
-      },
+      data: getAddStepNodeData(step.id, getEdgeColor(step.id)),
     });
 
     pushStepEdge(step.id, addId);
@@ -629,12 +782,20 @@ export function WorkflowCanvas() {
   const { workspaceUsers } = useWorkspace();
   const [workspaceTags, setWorkspaceTags] = useState<WorkflowPreviewTag[]>([]);
   const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null);
+  const [copiedStepId, setCopiedStepId] = useState<string | null>(null);
 
   const { workflow, selectedNodeId, selectedPanelType } = state;
   const previewChannels = Array.isArray(rawChannels)
     ? rawChannels.filter(isPreviewChannel)
     : [];
   const previewUsers: WorkflowPreviewUser[] = workspaceUsers ?? [];
+  const copiedStep =
+    workflow?.config?.steps?.find(
+      (step) => step.id === copiedStepId && step.type !== "branch_connector",
+    ) ?? null;
+  const copiedStepLabel = copiedStep
+    ? STEP_META[copiedStep.type]?.label ?? copiedStep.name
+    : undefined;
 
   const loadWorkspaceTags = useCallback(async () => {
     try {
@@ -644,6 +805,38 @@ export function WorkflowCanvas() {
       setWorkspaceTags([]);
     }
   }, []);
+
+  const handleCopyStep = useCallback(
+    (stepId: string) => {
+      const step = workflow?.config?.steps?.find((candidate) => candidate.id === stepId);
+      if (!step || step.type === "branch_connector") {
+        return;
+      }
+
+      setCopiedStepId(stepId);
+    },
+    [workflow?.config?.steps],
+  );
+
+  const handlePasteStep = useCallback(
+    (ctx: InsertCtx) => {
+      if (!workflow || !copiedStep) {
+        return;
+      }
+
+      const { step, connectors } = createPastedStep(
+        copiedStep,
+        ctx.afterNodeId,
+        workflow.config?.steps ?? [],
+      );
+
+      insertStepAfter(step, ctx.afterNodeId);
+      connectors.forEach((connector) => addStep(connector));
+      selectNode(step.id, "step");
+      setCopiedStepId(null);
+    },
+    [addStep, copiedStep, insertStepAfter, selectNode, workflow],
+  );
 
   const setRenderedNodeHighlight = useCallback(
     (stepId: string, highlighted: boolean) => {
@@ -730,6 +923,12 @@ export function WorkflowCanvas() {
   }, [workflowId, loadWorkflow]);
 
   useEffect(() => {
+    if (copiedStepId && !copiedStep) {
+      setCopiedStepId(null);
+    }
+  }, [copiedStep, copiedStepId]);
+
+  useEffect(() => {
     void loadWorkspaceTags();
   }, [loadWorkspaceTags]);
 
@@ -766,25 +965,14 @@ export function WorkflowCanvas() {
         onSelectTrigger: () => selectNode("trigger", "trigger"),
         onSelectStep: (id: string) => selectNode(id, "step"),
         onDeleteStep: (id: string) => deleteStep(id),
-        onDuplicateStep: (id: string) => {
-          const orig = workflow?.config?.steps?.find((s) => s.id === id);
-          if (!orig) return;
-
-          insertStepAfter(
-            {
-              ...orig,
-              id: `step-${Date.now()}`,
-              name: orig.name + " copy",
-              parentId: orig.parentId,
-            },
-            orig.parentId,
-          );
-        },
+        onCopyStep: handleCopyStep,
         onNavigateToStep: centerStepOnCanvas,
         onInsert: (ctx: InsertCtx) => {
           insertCtxRef.current = ctx;
           addMenu.open();
         },
+        onPaste: handlePasteStep,
+        copiedStepLabel,
       },
       {
         channels: previewChannels,
@@ -805,7 +993,18 @@ export function WorkflowCanvas() {
       scheduleFitView(isInitialStructure ? 0 : 260);
     }
     console.log({ nodes, edges });
-  }, [workflow, rawChannels, workspaceUsers, workspaceTags, jumpHighlightId, centerStepOnCanvas, scheduleFitView]);
+  }, [
+    workflow,
+    rawChannels,
+    workspaceUsers,
+    workspaceTags,
+    jumpHighlightId,
+    centerStepOnCanvas,
+    scheduleFitView,
+    handleCopyStep,
+    handlePasteStep,
+    copiedStepLabel,
+  ]);
 
   // add step
   const handleAddStep = (type: StepType) => {

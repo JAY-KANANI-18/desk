@@ -76,18 +76,18 @@ function NodeActionButton({
 }
 
 function NodeActions({
-  onDuplicate,
+  onCopy,
   onDelete,
 }: {
-  onDuplicate: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onCopy: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onDelete: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <div className="pointer-events-auto absolute -top-8 right-1 z-20 flex h-8 origin-bottom-right translate-y-0 scale-100 items-start gap-0.5 opacity-100 transition-all duration-150 ease-out md:pointer-events-none md:translate-y-1 md:scale-95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:translate-y-0 md:group-hover:scale-100 md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:translate-y-0 md:group-focus-within:scale-100 md:group-focus-within:opacity-100">
       <NodeActionButton
-        label="Duplicate"
+        label="Copy"
         icon={<Copy size={12} />}
-        onClick={onDuplicate}
+        onClick={onCopy}
       />
       <NodeActionButton
         label="Delete"
@@ -519,7 +519,7 @@ export interface StepNodeData {
   validationIssue?: string;
   onSelect: () => void;
   onDelete: () => void;
-  onDuplicate: () => void;
+  onCopy: () => void;
   onNavigateToStep?: (stepId: string) => void;
   highlightPulse?: boolean;
 }
@@ -541,7 +541,7 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
       onClick={data.onSelect}
       actions={
         <NodeActions
-          onDuplicate={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+          onCopy={(e) => { e.stopPropagation(); data.onCopy(); }}
           onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
       }
@@ -566,7 +566,7 @@ export interface BranchNodeData {
   validationIssue?: string;
   onSelect: () => void;
   onDelete: () => void;
-  onDuplicate: () => void;
+  onCopy: () => void;
   onNavigateToStep?: (stepId: string) => void;
   highlightPulse?: boolean;
 }
@@ -589,7 +589,7 @@ export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) =
       onClick={data.onSelect}
       actions={
         <NodeActions
-          onDuplicate={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+          onCopy={(e) => { e.stopPropagation(); data.onCopy(); }}
           onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
       }
@@ -643,23 +643,55 @@ BranchPillNode.displayName = 'BranchPillNode';
 
 export interface AddStepNodeData {
   onAdd: () => void;
+  onPaste?: () => void;
+  copiedStepLabel?: string;
   color?: string;
 }
 
 export const AddStepNode = memo(({ data }: NodeProps<AddStepNodeData>) => {
   const c = data.color ?? '#d1d5db';
+  const canPaste = Boolean(data.onPaste && data.copiedStepLabel);
+
   return (
-    <div
-      onClick={data.onAdd}
-      className="rounded-full bg-white flex items-center justify-center cursor-pointer transition-all hover:scale-110 group shadow-sm"
-      style={{ border: `1.5px dashed ${c}`, width: NODE_W_ADD, height: NODE_W_ADD, boxShadow: `0 4px 12px ${withAlpha(c, '18')}` }}
-    >
+    <div className="relative flex items-center justify-center" style={{ width: NODE_W_ADD, height: NODE_W_ADD }}>
       <Handle
         type="target"
         position={Position.Top}
         style={{ left: '50%', transform: 'translateX(-50%)', opacity: 0, width: 4, height: 4 }}
       />
-      <Plus size={14} style={{ color: c }} className="group-hover:scale-110 transition-transform" />
+      {canPaste ? (
+        <Tooltip content={`Paste ${data.copiedStepLabel} here`}>
+          <button
+            type="button"
+            aria-label={`Paste ${data.copiedStepLabel} here`}
+            className="nodrag nopan absolute bottom-[calc(100%+4px)] left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-md border bg-white px-2 py-1 text-[10px] font-semibold leading-none shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+            style={{
+              borderColor: withAlpha(c, '55'),
+              color: c,
+              boxShadow: `0 4px 12px ${withAlpha(c, '18')}`,
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              data.onPaste?.();
+            }}
+          >
+            <Copy size={10} />
+            Paste here
+          </button>
+        </Tooltip>
+      ) : null}
+      <button
+        type="button"
+        aria-label="Add step"
+        onClick={(event) => {
+          event.stopPropagation();
+          data.onAdd();
+        }}
+        className="nodrag nopan flex items-center justify-center rounded-full bg-white cursor-pointer transition-all hover:scale-110 group shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+        style={{ border: `1.5px dashed ${c}`, width: NODE_W_ADD, height: NODE_W_ADD, boxShadow: `0 4px 12px ${withAlpha(c, '18')}` }}
+      >
+        <Plus size={14} style={{ color: c }} className="group-hover:scale-110 transition-transform" />
+      </button>
     </div>
   );
 });
