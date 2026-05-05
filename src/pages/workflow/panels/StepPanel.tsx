@@ -9,9 +9,10 @@ import { SendMessageConfig, AskQuestionConfig, AssignToConfig, BranchConfig, Upd
 
 interface StepPanelProps {
   step: StepConfig;
+  hideHeader?: boolean;
 }
 
-export function StepPanel({ step }: StepPanelProps) {
+export function StepPanel({ step, hideHeader = false }: StepPanelProps) {
   const { updateStep, selectNode } = useWorkflow();
   const meta = STEP_META[step.type];
 
@@ -69,6 +70,7 @@ export function StepPanel({ step }: StepPanelProps) {
       title={meta.label}
       subtitle={meta.description}
       onClose={() => selectNode(null, null)}
+      hideHeader={hideHeader}
     >
       {renderConfig()}
     </PanelShell>

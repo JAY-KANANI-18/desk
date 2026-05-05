@@ -16,7 +16,11 @@ import {
   TemplateSendTriggerConfig,
 } from './triggers';
 
-export function TriggerPanel() {
+interface TriggerPanelProps {
+  hideHeader?: boolean;
+}
+
+export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
   const { state, setTrigger, selectNode } = useWorkflow();
   const trigger = state.workflow?.config?.trigger ?? null;
 
@@ -57,6 +61,7 @@ export function TriggerPanel() {
       title="Trigger"
       subtitle="Choose the event that starts this workflow"
       onClose={() => selectNode(null, null)}
+      hideHeader={hideHeader}
     >
       <div className="border-b border-gray-100 px-4 py-3">
         <label className="mb-1.5 block text-xs font-medium text-gray-500">

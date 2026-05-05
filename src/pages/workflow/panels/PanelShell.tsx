@@ -1,6 +1,4 @@
 import React, { ReactNode } from "react";
-import { ArrowLeft, X } from "@/components/ui/icons";
-import { IconButton } from "../../../components/ui/button/IconButton";
 import { DisclosureButton } from "../../../components/ui/button/DisclosureButton";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import {
@@ -17,6 +15,7 @@ interface PanelShellProps {
   title: string;
   subtitle?: string;
   onClose?: () => void;
+  hideHeader?: boolean;
   children: ReactNode;
 }
 
@@ -24,26 +23,34 @@ export function PanelShell({
   title,
   subtitle,
   onClose,
+  hideHeader = false,
   children,
 }: PanelShellProps) {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white">
-      <div className="flex flex-shrink-0 items-start  border-b border-gray-100  py-3">
+    <div
+      className={`flex h-full flex-col bg-white ${
+        hideHeader ? "overflow-visible" : "overflow-hidden"
+      }`}
+    >
+      {!hideHeader ? (
+        <div className="flex flex-shrink-0 items-start border-b border-gray-100 py-3">
           {onClose ? (
             <BackButton ariaLabel="Back" onClick={onClose} size={isMobile ? "sm" : "md"} />
           ) : null}
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          {subtitle ? (
-            <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>
-          ) : null}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+            {subtitle ? (
+              <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>
+            ) : null}
+          </div>
         </div>
+      ) : null}
 
+      <div className={hideHeader ? "min-h-0 flex-1" : "flex-1 overflow-y-auto"}>
+        {children}
       </div>
-
-      <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 }

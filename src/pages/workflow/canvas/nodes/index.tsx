@@ -5,7 +5,6 @@ import { TRIGGER_META } from '../triggerTypes';
 import { STEP_META } from '../stepTypes';
 import { StepType, TriggerType } from '../../workflow.types';
 import { NODE_W, NODE_W_PILL, NODE_W_ADD } from '../../WorkflowCanvas';
-import { IconButton } from '../../../../components/ui/button/IconButton';
 import { Tooltip } from '../../../../components/ui/Tooltip';
 import { Tag as UiTag } from '../../../../components/ui/Tag';
 import type { WorkflowNodePreview, WorkflowNodePreviewToken } from '../nodeSummaries';
@@ -22,8 +21,8 @@ function getCardStyle(color: string, selected: boolean, highlighted = false): Re
   if (highlighted) {
     return {
       width: NODE_W,
-      borderColor: '#facc15',
-      boxShadow: '0 0 0 3px rgba(250, 204, 21, 0.36), 0 10px 24px rgba(202, 138, 4, 0.18)',
+      borderColor: color,
+      boxShadow: `0 0 0 3px ${withAlpha(color, '30')}, 0 10px 24px ${withAlpha(color, '20')}`,
     };
   }
 
@@ -60,22 +59,120 @@ function NodeActionButton({
 }) {
   return (
     <Tooltip content={label}>
-      <span className="inline-flex">
-        <IconButton
-          aria-label={label}
-          icon={icon}
-          size="2xs"
-          variant="secondary"
-          style={{
-            backgroundColor: '#ffffff',
-            borderColor: tone === 'danger' ? '#fecaca' : '#d1d5db',
-            color: tone === 'danger' ? '#dc2626' : '#334155',
-            boxShadow: '0 3px 10px rgba(15, 23, 42, 0.12)',
-          }}
-          onClick={onClick}
-        />
-      </span>
+      <button
+        type="button"
+        aria-label={label}
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md border bg-white shadow-sm transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+        style={{
+          borderColor: tone === 'danger' ? '#fecaca' : '#d1d5db',
+          color: tone === 'danger' ? '#dc2626' : '#334155',
+        }}
+        onClick={onClick}
+      >
+        {icon}
+      </button>
     </Tooltip>
+  );
+}
+
+function NodeActions({
+  onDuplicate,
+  onDelete,
+}: {
+  onDuplicate: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDelete: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <div className="pointer-events-auto absolute -top-8 right-1 z-20 flex h-8 origin-bottom-right translate-y-0 scale-100 items-start gap-0.5 opacity-100 transition-all duration-150 ease-out md:pointer-events-none md:translate-y-1 md:scale-95 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:translate-y-0 md:group-hover:scale-100 md:group-hover:opacity-100 md:group-focus-within:pointer-events-auto md:group-focus-within:translate-y-0 md:group-focus-within:scale-100 md:group-focus-within:opacity-100">
+      <NodeActionButton
+        label="Duplicate"
+        icon={<Copy size={12} />}
+        onClick={onDuplicate}
+      />
+      <NodeActionButton
+        label="Delete"
+        icon={<Trash2 size={12} />}
+        tone="danger"
+        onClick={onDelete}
+      />
+    </div>
+  );
+}
+
+function WorkflowNodeCard({
+  color,
+  selected,
+  highlighted = false,
+  dashed = false,
+  title,
+  icon,
+  content,
+  showWarning = false,
+  warningLabel = "Configuration required",
+  showTargetHandle = false,
+  sourceHandleId,
+  actions,
+  onClick,
+}: {
+  color: string;
+  selected: boolean;
+  highlighted?: boolean;
+  dashed?: boolean;
+  title: string;
+  icon: React.ReactNode;
+  content?: React.ReactNode;
+  showWarning?: boolean;
+  warningLabel?: string;
+  showTargetHandle?: boolean;
+  sourceHandleId?: string;
+  actions?: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{ ...getCardStyle(color, selected, highlighted), borderStyle: dashed ? 'dashed' : 'solid' }}
+      className={`${base} ${highlighted ? 'animate-pulse' : ''}`}
+    >
+      {showTargetHandle ? (
+        <Handle
+          type="target"
+          position={Position.Top}
+          style={getHandleStyle(color)}
+          className="!top-[-5px] !h-2 !w-2 !border-2"
+        />
+      ) : null}
+      {actions}
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold leading-tight text-gray-900">
+            {title}
+          </p>
+        </div>
+        {showWarning ? (
+          <Tooltip content={warningLabel}>
+            <span className="inline-flex flex-shrink-0">
+              <AlertCircle size={13} className="text-amber-400" />
+            </span>
+          </Tooltip>
+        ) : null}
+      </div>
+      {content ? (
+        <div className="border-t border-gray-200 px-2.5 py-2">
+          {content}
+        </div>
+      ) : null}
+      <Handle
+        type="source"
+        id={sourceHandleId}
+        position={Position.Bottom}
+        style={getHandleStyle(color)}
+        className="!bottom-[-5px] !h-2 !w-2 !border-2"
+      />
+    </div>
   );
 }
 
@@ -146,7 +243,7 @@ function NodePreview({
     const channelToken = preview.tokens.find((token) => token.kind === 'channel');
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <div className="flex min-w-0 items-start gap-2">
           {channelToken?.iconUrl ? (
             <img
@@ -182,7 +279,7 @@ function NodePreview({
     const QuestionTypeIcon = questionTypeVisual.Icon;
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <div className="flex min-w-0 items-center gap-2">
           <QuestionTypeIcon
             size={16}
@@ -210,7 +307,7 @@ function NodePreview({
 
   if (preview.variant === 'assignment' || preview.variant === 'branch' || preview.variant === 'plain') {
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <p
           className={`min-w-0 text-[10px] leading-[14px] ${getPreviewTextTone(preview)}`}
           style={{
@@ -230,7 +327,7 @@ function NodePreview({
     const fieldToken = preview.tokens[0];
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <p className="min-w-0 truncate text-[10px] leading-[14px] text-gray-700">
           Field: {fieldToken?.label ?? 'Select field'}
         </p>
@@ -253,7 +350,7 @@ function NodePreview({
     const statusToken = preview.tokens[0];
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         {statusToken ? (
           <p className="mb-1 min-w-0 truncate text-[10px] leading-[14px] text-gray-700">
             Category: {statusToken.label}
@@ -282,7 +379,7 @@ function NodePreview({
     const hiddenCount = preview.tokens.length - visibleTokens.length;
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <p className="min-w-0 truncate text-[10px] leading-[14px] text-gray-700">
           Action: {preview.text}
         </p>
@@ -314,7 +411,7 @@ function NodePreview({
     const targetStepId = targetToken?.value;
 
     return (
-      <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
+      <div title={getPreviewTitle(preview)}>
         <p className="text-[10px] leading-[14px] text-gray-600">Jump to</p>
         {targetStepId ? (
           <button
@@ -338,7 +435,7 @@ function NodePreview({
   }
 
   return (
-    <div className="mt-1.5 border-t border-gray-200 pt-1.5" title={getPreviewTitle(preview)}>
+    <div title={getPreviewTitle(preview)}>
       <p className="mb-1 text-[8px] font-bold uppercase leading-none tracking-wider text-gray-500">
         {preview.label}:
       </p>
@@ -370,6 +467,8 @@ export interface TriggerNodeData {
   triggerType: TriggerType | null;
   isConfigured: boolean;
   hasError: boolean;
+  validationIssue?: string;
+  highlightPulse?: boolean;
   onSelect: () => void;
 }
 
@@ -379,26 +478,17 @@ export const TriggerNode = memo(({ data, selected }: NodeProps<TriggerNodeData>)
   const EventIcon = meta?.Icon;
   const color = WORKFLOW_TRIGGER_NODE_METADATA.color;
   return (
-    <div
+    <WorkflowNodeCard
+      color={color}
+      selected={selected}
+      highlighted={data.highlightPulse}
+      dashed={data.hasError}
+      title="Trigger"
+      icon={<HeaderIcon size={16} style={{ color }} />}
+      showWarning={!data.isConfigured}
+      warningLabel="No trigger selected"
       onClick={data.onSelect}
-      style={{ ...getCardStyle(color, selected), borderStyle: data.hasError ? 'dashed' : 'solid' }}
-      className={base}
-    >
-      <div className="flex items-center gap-2 px-2.5 py-2">
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
-          <HeaderIcon
-            size={16}
-            style={{ color }}
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="truncate text-xs font-semibold leading-tight text-gray-900">
-            Trigger
-          </p>
-        </div>
-        {!data.isConfigured && <AlertCircle size={13} className="text-amber-400 flex-shrink-0" />}
-      </div>
-      <div className="border-t border-gray-200 px-2.5 py-2">
+      content={
         <div className="flex min-w-0 items-center gap-2">
           {EventIcon ? (
             <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
@@ -409,14 +499,8 @@ export const TriggerNode = memo(({ data, selected }: NodeProps<TriggerNodeData>)
             {meta?.label ?? 'No trigger selected'}
           </p>
         </div>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={getHandleStyle(color)}
-        className="!bottom-[-5px] !h-2 !w-2 !border-2"
-      />
-    </div>
+      }
+    />
   );
 });
 TriggerNode.displayName = 'TriggerNode';
@@ -432,6 +516,7 @@ export interface StepNodeData {
   height?: number;
   isConfigured: boolean;
   hasError: boolean;
+  validationIssue?: string;
   onSelect: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -444,52 +529,26 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
   const { Icon } = meta;
   const color = meta.color;
   return (
-    <div
+    <WorkflowNodeCard
+      color={color}
+      selected={selected}
+      highlighted={data.highlightPulse}
+      showTargetHandle
+      title={getStepHeading(data.label, meta.label, data.stepNumber)}
+      icon={<Icon size={15} style={{ color }} />}
+      showWarning={data.hasError}
+      warningLabel={data.validationIssue}
       onClick={data.onSelect}
-      style={getCardStyle(color, selected, data.highlightPulse)}
-      className={`${base} ${data.highlightPulse ? 'animate-pulse' : ''}`}
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={getHandleStyle(color)}
-        className="!top-[-5px] !h-2 !w-2 !border-2"
-      />
-      {/* Hover actions */}
-      <div className="absolute -top-3 right-1.5 hidden group-hover:flex items-center gap-1 z-10">
-        <NodeActionButton
-          label="Duplicate"
-          icon={<Copy size={10} />}
-          onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+      actions={
+        <NodeActions
+          onDuplicate={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+          onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
-        <NodeActionButton
-          label="Delete"
-          icon={<Trash2 size={10} />}
-          tone="danger"
-          onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
-        />
-      </div>
-      <div className="px-2.5 py-1.5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
-            <Icon size={15} style={{ color }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold leading-tight text-gray-900">
-              {getStepHeading(data.label, meta.label, data.stepNumber)}
-            </p>
-          </div>
-          {data.hasError && <AlertCircle size={13} className="text-amber-400 flex-shrink-0" />}
-        </div>
+      }
+      content={data.preview ? (
         <NodePreview preview={data.preview} onNavigateToStep={data.onNavigateToStep} />
-      </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={getHandleStyle(color)}
-        className="!bottom-[-5px] !h-2 !w-2 !border-2"
-      />
-    </div>
+      ) : null}
+    />
   );
 });
 StepNode.displayName = 'StepNode';
@@ -504,6 +563,7 @@ export interface BranchNodeData {
   height?: number;
   isConfigured: boolean;
   hasError: boolean;
+  validationIssue?: string;
   onSelect: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -516,51 +576,27 @@ export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) =
   const { Icon } = meta;
   const color = meta.color;
   return (
-    <div
+    <WorkflowNodeCard
+      color={color}
+      selected={selected}
+      highlighted={data.highlightPulse}
+      showTargetHandle
+      sourceHandleId="branch-out"
+      title={getStepHeading(data.label, 'Branch', data.stepNumber)}
+      icon={<Icon size={15} style={{ color }} />}
+      showWarning={data.hasError}
+      warningLabel={data.validationIssue}
       onClick={data.onSelect}
-      style={getCardStyle(color, selected, data.highlightPulse)}
-      className={`${base} ${data.highlightPulse ? 'animate-pulse' : ''}`}
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={getHandleStyle(color)}
-        className="!top-[-5px] !h-2 !w-2 !border-2"
-      />
-      <div className="absolute -top-3 right-1.5 hidden group-hover:flex items-center gap-1 z-10">
-        <NodeActionButton
-          label="Duplicate"
-          icon={<Copy size={10} />}
-          onClick={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+      actions={
+        <NodeActions
+          onDuplicate={(e) => { e.stopPropagation(); data.onDuplicate(); }}
+          onDelete={(e) => { e.stopPropagation(); data.onDelete(); }}
         />
-        <NodeActionButton
-          label="Delete"
-          icon={<Trash2 size={10} />}
-          tone="danger"
-          onClick={(e) => { e.stopPropagation(); data.onDelete(); }}
-        />
-      </div>
-      <div className="px-2.5 py-1.5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center">
-            <Icon size={15} style={{ color }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold leading-tight text-gray-900">
-              {getStepHeading(data.label, 'Branch', data.stepNumber)}
-            </p>
-          </div>
-        </div>
+      }
+      content={data.preview ? (
         <NodePreview preview={data.preview} onNavigateToStep={data.onNavigateToStep} />
-      </div>
-      <Handle
-        type="source"
-        id="branch-out"
-        position={Position.Bottom}
-        style={getHandleStyle(color)}
-        className="!bottom-[-5px] !h-2 !w-2 !border-2"
-      />
-    </div>
+      ) : null}
+    />
   );
 });
 BranchNode.displayName = 'BranchNode';

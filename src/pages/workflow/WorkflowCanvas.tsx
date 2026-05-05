@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -18,7 +18,9 @@ import { TopBar } from "./canvas/TopBar";
 import { TriggerPanel } from "./panels/TriggerPanel";
 import { StepPanel } from "./panels/StepPanel";
 import { AddStepMenu } from "./canvas/AddStepMenu";
+import { MobileSheet } from "../../components/ui/modal";
 import { StepType, StepConfig, TriggerConfig, InsertCtx } from "./workflow.types";
+import { STEP_META } from "./canvas/stepTypes";
 import { useNavigate, useParams } from "react-router";
 import { useDisclosure } from "../../hooks/useDisclosure";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -37,6 +39,10 @@ import {
   getBranchConnectorDisplayName,
   orderBranchConnectors,
 } from "./canvas/branchConnectors";
+import {
+  getStepValidationIssue,
+  getWorkflowValidationWarnings,
+} from "./canvas/nodeValidation";
 import { workspaceApi } from "../../lib/workspaceApi";
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -72,6 +78,8 @@ export const V_GAP_AFTER_PILL = 28; // tighter gap after a pill (pill is small)
 // ── Canvas ────────────────────────────────────────────────────────────────────
 export const NODE_X_CENTER = 400;
 export const TRIGGER_Y = 80;
+const FIT_VIEW_PADDING = 0.5;
+const FIT_VIEW_MAX_ZOOM = 0.95;
 
 // ── Y calculator ──────────────────────────────────────────────────────────────
 // Each node type has a different height, so Y depends on what came before it.
@@ -279,6 +287,7 @@ function buildGraph(
       triggerType: raw?.trigger?.type ?? null,
       isConfigured: Boolean(raw?.trigger?.type),
       hasError: false,
+      highlightPulse: previewContext.highlightStepId === "trigger",
       onSelect: cb.onSelectTrigger,
     },
   });
@@ -372,6 +381,7 @@ function buildGraph(
 
       // ── NORMAL / BRANCH NODE ──
       const nodePreview = getStepNodePreview(step, previewContext);
+      const validationIssue = getStepValidationIssue(step, previewContext.steps);
       const stepNumber = getStepNumber(step.id, previewContext.steps);
       const nodeHeight = estimateNodeHeight(nodePreview);
 
@@ -388,8 +398,9 @@ function buildGraph(
           stepNumber,
           preview: nodePreview,
           height: nodeHeight,
-          isConfigured: true,
-          hasError: false,
+          isConfigured: !validationIssue,
+          hasError: Boolean(validationIssue),
+          validationIssue,
           highlightPulse: previewContext.highlightStepId === step.id,
           onSelect: () => cb.onSelectStep(step.id),
           onDelete: () => cb.onDeleteStep(step.id),
@@ -597,6 +608,7 @@ export function WorkflowCanvas() {
   const structureSignatureRef = useRef<string | null>(null);
   const stepCounter = useRef(1);
   const jumpHighlightTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const autoFitTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const { workflowId } = useParams(); // from URL :id
   const navigate = useNavigate();
 
@@ -683,19 +695,32 @@ export function WorkflowCanvas() {
     }, 1800);
   }, [setRenderedNodeHighlight]);
 
-  const scheduleFitView = (duration = 260) => {
+  const scheduleFitView = useCallback((duration = 260) => {
     if (typeof window === "undefined") return;
+
+    const fit = () => {
+      reactFlowRef.current?.fitView({
+        padding: FIT_VIEW_PADDING,
+        duration,
+        maxZoom: FIT_VIEW_MAX_ZOOM,
+      });
+    };
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        reactFlowRef.current?.fitView({
-          padding: 0.5,
-          duration,
-          maxZoom: 0.95,
-        });
+        fit();
+
+        if (autoFitTimerRef.current) {
+          window.clearTimeout(autoFitTimerRef.current);
+        }
+
+        autoFitTimerRef.current = window.setTimeout(() => {
+          fit();
+          autoFitTimerRef.current = null;
+        }, 180);
       });
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (!workflowId) return;
@@ -711,6 +736,9 @@ export function WorkflowCanvas() {
   useEffect(() => () => {
     if (jumpHighlightTimerRef.current) {
       window.clearTimeout(jumpHighlightTimerRef.current);
+    }
+    if (autoFitTimerRef.current) {
+      window.clearTimeout(autoFitTimerRef.current);
     }
   }, []);
 
@@ -777,7 +805,7 @@ export function WorkflowCanvas() {
       scheduleFitView(isInitialStructure ? 0 : 260);
     }
     console.log({ nodes, edges });
-  }, [workflow, rawChannels, workspaceUsers, workspaceTags, jumpHighlightId, centerStepOnCanvas]);
+  }, [workflow, rawChannels, workspaceUsers, workspaceTags, jumpHighlightId, centerStepOnCanvas, scheduleFitView]);
 
   // add step
   const handleAddStep = (type: StepType) => {
@@ -845,16 +873,48 @@ export function WorkflowCanvas() {
   const selectedStep =
     workflow?.config?.steps?.find((s) => s.id === selectedNodeId) ?? null;
 
+  const validationWarnings = useMemo(
+    () =>
+      getWorkflowValidationWarnings({
+        trigger: workflow?.config?.trigger ?? null,
+        steps: workflow?.config?.steps ?? [],
+      }),
+    [workflow?.config?.trigger, workflow?.config?.steps],
+  );
+
+  const closeSelectedPanel = useCallback(() => {
+    selectNode(null, null);
+  }, [selectNode]);
+
+  const selectedPanelTitle =
+    selectedPanelType === "trigger"
+      ? {
+          eyebrow: "Workflow",
+          title: "Trigger",
+          subtitle: "Choose the event that starts this workflow",
+        }
+      : selectedPanelType === "step" && selectedStep
+        ? {
+            eyebrow: "Step configuration",
+            title: STEP_META[selectedStep.type]?.label ?? selectedStep.name,
+            subtitle: STEP_META[selectedStep.type]?.description,
+          }
+        : null;
+
   const selectedPanelContent =
     selectedPanelType === "trigger" ? (
-      <TriggerPanel />
+      <TriggerPanel hideHeader={isMobile} />
     ) : selectedPanelType === "step" && selectedStep ? (
-      <StepPanel step={selectedStep} />
+      <StepPanel step={selectedStep} hideHeader={isMobile} />
     ) : null;
 
   return (
     <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
-      <TopBar onBack={handleBack} />
+      <TopBar
+        onBack={handleBack}
+        warnings={validationWarnings}
+        onWarningClick={centerStepOnCanvas}
+      />
 
       <div className="flex min-h-0 flex-1">
         <div className="min-h-0 flex-1">
@@ -869,7 +929,7 @@ export function WorkflowCanvas() {
               reactFlowRef.current = instance;
             }}
             fitView
-            fitViewOptions={{ padding: 0.5, maxZoom: 0.95 }}
+            fitViewOptions={{ padding: FIT_VIEW_PADDING, maxZoom: FIT_VIEW_MAX_ZOOM }}
             nodesDraggable={false}
             nodesConnectable={false}
             edgesFocusable={false}
@@ -890,10 +950,29 @@ export function WorkflowCanvas() {
         )}
       </div>
 
-      {isMobile && selectedPanelContent ? (
-        <div className="fixed inset-0 z-[100] bg-white md:hidden">
+      {isMobile && selectedPanelContent && selectedPanelTitle ? (
+        <MobileSheet
+          isOpen
+          onClose={closeSelectedPanel}
+          fullScreen
+          title={
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                {selectedPanelTitle.eyebrow}
+              </p>
+              <h2 className="mt-1 truncate text-base font-semibold text-slate-900">
+                {selectedPanelTitle.title}
+              </h2>
+              {selectedPanelTitle.subtitle ? (
+                <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
+                  {selectedPanelTitle.subtitle}
+                </p>
+              ) : null}
+            </div>
+          }
+        >
           {selectedPanelContent}
-        </div>
+        </MobileSheet>
       ) : null}
 
       {addMenu.isOpen && (

@@ -121,8 +121,25 @@ export const Layout = () => {
     useState<MobileHeaderRegistration>({});
   const location = useLocation();
   const navigate = useNavigate();
+  const workflowBuilderMatch = matchPath(
+    { path: "/workflows/:workflowId", end: true },
+    location.pathname,
+  );
+  const isWorkflowBuilderRoute = Boolean(
+    workflowBuilderMatch && workflowBuilderMatch.params.workflowId !== "templates",
+  );
+  const isInboxRoute = Boolean(
+    matchPath("/inbox", location.pathname) ||
+      matchPath("/inbox/:conversationId", location.pathname),
+  );
+  const isInboxConversationRoute = Boolean(
+    matchPath("/inbox/:conversationId", location.pathname),
+  );
   const hideTopBarOnMobile = Boolean(
-    matchPath("/inbox", location.pathname) || matchPath("/inbox/:conversationId", location.pathname),
+    isInboxRoute || isWorkflowBuilderRoute,
+  );
+  const hideBottomNavOnMobile = Boolean(
+    isInboxConversationRoute || isWorkflowBuilderRoute,
   );
   const mobileRouteHeader = getMobileRouteHeader(location.pathname);
   const clearMobileHeaderRegistration = useCallback(
@@ -189,7 +206,7 @@ export const Layout = () => {
             <Outlet />
           </div>
         </main>
-        <MobileBottomNav />
+        {!hideBottomNavOnMobile ? <MobileBottomNav /> : null}
       </div>
 
       <NotificationListWrapper />
