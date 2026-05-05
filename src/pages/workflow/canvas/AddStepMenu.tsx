@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from '@/components/ui/icons';
 import { MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -148,24 +149,36 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
     );
   }
 
-  return (
-    <div
-      ref={ref}
-      className="fixed z-50 flex max-h-[520px] w-[480px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
-      style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-    >
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-        <span className="text-sm font-medium text-gray-900">Add Step</span>
-        <IconButton
-          aria-label="Close add step menu"
-          icon={<X size={14} />}
-          variant="ghost"
-          size="xs"
-          onClick={onClose}
-        />
-      </div>
+  if (typeof document === 'undefined') {
+    return null;
+  }
 
-      {content}
-    </div>
+  return createPortal(
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 'var(--z-modal)' }}>
+      <div
+        className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px]"
+        aria-hidden="true"
+        onMouseDown={onClose}
+      />
+
+      <div
+        ref={ref}
+        className="relative z-[1] flex max-h-[min(520px,calc(100vh-2rem))] w-[min(480px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <span className="text-sm font-medium text-gray-900">Add Step</span>
+          <IconButton
+            aria-label="Close add step menu"
+            icon={<X size={14} />}
+            variant="ghost"
+            size="xs"
+            onClick={onClose}
+          />
+        </div>
+
+        {content}
+      </div>
+    </div>,
+    document.body,
   );
 }

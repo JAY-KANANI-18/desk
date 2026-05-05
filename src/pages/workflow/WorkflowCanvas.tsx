@@ -1175,19 +1175,13 @@ export function WorkflowCanvas() {
       ) : null}
 
       {addMenu.isOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/10"
-            onClick={addMenu.close}
-          />
-          <AddStepMenu
-            onSelect={handleAddStep}
-            onClose={() => {
-              addMenu.close();
-              insertCtxRef.current = null;
-            }}
-          />
-        </>
+        <AddStepMenu
+          onSelect={handleAddStep}
+          onClose={() => {
+            addMenu.close();
+            insertCtxRef.current = null;
+          }}
+        />
       )}
     </div>
   );
