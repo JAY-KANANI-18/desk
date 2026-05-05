@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { AlertCircle, Trash2, Copy, Plus, Zap } from '@/components/ui/icons';
+import { AlertCircle, Trash2, Copy, Plus } from '@/components/ui/icons';
 import { TRIGGER_META } from '../triggerTypes';
 import { STEP_META } from '../stepTypes';
 import { StepType, TriggerType } from '../../workflow.types';
@@ -9,7 +9,7 @@ import { IconButton } from '../../../../components/ui/button/IconButton';
 import { Tooltip } from '../../../../components/ui/Tooltip';
 import { Tag as UiTag } from '../../../../components/ui/Tag';
 import type { WorkflowNodePreview, WorkflowNodePreviewToken } from '../nodeSummaries';
-import { getWorkflowNodeColor } from '../nodeColors';
+import { WORKFLOW_TRIGGER_NODE_METADATA } from '../../../../config/workflowMetadata';
 import { getQuestionTypeVisual } from '../../questionTypeVisuals';
 
 const base = 'relative group bg-white border rounded-md cursor-pointer select-none transition-all duration-150 hover:shadow-md';
@@ -93,6 +93,14 @@ function getStepHeading(label: string, fallbackLabel: string, stepNumber?: numbe
   return label || fallbackLabel;
 }
 
+function getPreviewTextTone(preview: WorkflowNodePreview, filledTone = 'text-gray-700') {
+  return preview.isPlaceholder ? 'text-gray-400' : filledTone;
+}
+
+function getPreviewLabelTone(preview: WorkflowNodePreview) {
+  return preview.isPlaceholder ? 'text-gray-500' : 'text-gray-600';
+}
+
 function PreviewToken({ token }: { token: WorkflowNodePreviewToken }) {
   if (token.kind === 'tag') {
     return (
@@ -148,10 +156,10 @@ function NodePreview({
             />
           ) : null}
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] leading-[14px] text-gray-600">Message:</p>
+            <p className={`text-[10px] leading-[14px] ${getPreviewLabelTone(preview)}`}>Message:</p>
             {preview.text ? (
               <p
-                className="min-w-0 text-[10px] italic leading-[14px] text-gray-700"
+                className={`min-w-0 text-[10px] italic leading-[14px] ${getPreviewTextTone(preview)}`}
                 style={{
                   display: '-webkit-box',
                   WebkitBoxOrient: 'vertical',
@@ -184,7 +192,7 @@ function NodePreview({
           />
           {preview.text ? (
             <p
-              className="min-w-0 text-[10px] italic leading-[14px] text-gray-700"
+              className={`min-w-0 text-[10px] italic leading-[14px] ${getPreviewTextTone(preview)}`}
               style={{
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
@@ -204,7 +212,7 @@ function NodePreview({
     return (
       <div className="mt-1.5 border-t border-gray-200 pt-2" title={getPreviewTitle(preview)}>
         <p
-          className="min-w-0 text-[10px] leading-[14px] text-gray-700"
+          className={`min-w-0 text-[10px] leading-[14px] ${getPreviewTextTone(preview)}`}
           style={{
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
@@ -227,7 +235,7 @@ function NodePreview({
           Field: {fieldToken?.label ?? 'Select field'}
         </p>
         <p
-          className="mt-1 min-w-0 text-[10px] leading-[14px] text-gray-700"
+          className={`mt-1 min-w-0 text-[10px] leading-[14px] ${getPreviewTextTone(preview)}`}
           style={{
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
@@ -252,7 +260,7 @@ function NodePreview({
           </p>
         ) : null}
         <p
-          className="min-w-0 text-[10px] leading-[14px] text-gray-700"
+          className={`min-w-0 text-[10px] leading-[14px] ${getPreviewTextTone(preview)}`}
           style={{
             display: '-webkit-box',
             WebkitBoxOrient: 'vertical',
@@ -340,7 +348,7 @@ function NodePreview({
         ))}
         {preview.text ? (
           <p
-            className="min-w-0 basis-full text-[10px] leading-[14px] text-gray-700"
+            className={`min-w-0 basis-full text-[10px] leading-[14px] ${getPreviewTextTone(preview)}`}
             style={{
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
@@ -367,9 +375,9 @@ export interface TriggerNodeData {
 
 export const TriggerNode = memo(({ data, selected }: NodeProps<TriggerNodeData>) => {
   const meta = data.triggerType ? TRIGGER_META[data.triggerType] : null;
-  const HeaderIcon = Zap;
+  const HeaderIcon = WORKFLOW_TRIGGER_NODE_METADATA.Icon;
   const EventIcon = meta?.Icon;
-  const color = getWorkflowNodeColor('trigger');
+  const color = WORKFLOW_TRIGGER_NODE_METADATA.color;
   return (
     <div
       onClick={data.onSelect}
@@ -384,7 +392,7 @@ export const TriggerNode = memo(({ data, selected }: NodeProps<TriggerNodeData>)
           />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`truncate text-xs font-semibold leading-tight ${data.isConfigured ? 'text-gray-900' : 'text-gray-400'}`}>
+          <p className="truncate text-xs font-semibold leading-tight text-gray-900">
             Trigger
           </p>
         </div>
@@ -434,7 +442,7 @@ export interface StepNodeData {
 export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
   const meta = STEP_META[data.stepType];
   const { Icon } = meta;
-  const color = getWorkflowNodeColor(data.stepType);
+  const color = meta.color;
   return (
     <div
       onClick={data.onSelect}
@@ -467,7 +475,7 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
             <Icon size={15} style={{ color }} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className={`truncate text-xs font-semibold leading-tight ${data.isConfigured ? 'text-gray-900' : 'text-gray-400'}`}>
+            <p className="truncate text-xs font-semibold leading-tight text-gray-900">
               {getStepHeading(data.label, meta.label, data.stepNumber)}
             </p>
           </div>
@@ -504,8 +512,9 @@ export interface BranchNodeData {
 }
 
 export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) => {
-  const { Icon } = STEP_META['branch'];
-  const color = getWorkflowNodeColor('branch');
+  const meta = STEP_META['branch'];
+  const { Icon } = meta;
+  const color = meta.color;
   return (
     <div
       onClick={data.onSelect}

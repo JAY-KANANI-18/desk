@@ -8,7 +8,6 @@ import { Button } from '../../../components/ui/Button';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { SearchInput } from '../../../components/ui/inputs';
 import { Tag } from '../../../components/ui/Tag';
-import { getWorkflowNodeColor } from './nodeColors';
 
 interface AddStepMenuProps {
   onSelect: (type: StepType) => void;
@@ -93,7 +92,7 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
         ) : (
           filtered.map((step) => {
             const { Icon } = step;
-            const color = getWorkflowNodeColor(step.type);
+            const color = step.color;
 
             return (
               <Button

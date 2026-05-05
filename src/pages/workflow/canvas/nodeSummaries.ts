@@ -74,6 +74,7 @@ export interface WorkflowNodePreview {
   text?: string;
   tokens: WorkflowNodePreviewToken[];
   variant?: "message" | "question" | "assignment" | "branch" | "tags" | "field" | "conversation" | "plain" | "jump";
+  isPlaceholder?: boolean;
 }
 
 function cleanText(value: string | null | undefined, maxLength = 90) {
@@ -145,6 +146,7 @@ function getMessageDetails(data: SendMessageData) {
           ? fileLabel ?? "attachment"
           : `${fileLabel ?? "attachment"} +${attachments.length - 1} more`,
         typeLabel: "Media",
+        isPlaceholder: false,
       };
     }
 
@@ -152,29 +154,36 @@ function getMessageDetails(data: SendMessageData) {
       return {
         text: data.defaultMessage.mediaUrl.split("/").pop() ?? "file",
         typeLabel: "Media",
+        isPlaceholder: false,
       };
     }
 
-    return { text: "Media message", typeLabel: "Media" };
+    return { text: "Media message", typeLabel: "Media", isPlaceholder: false };
   }
 
   const channelSpecificText = (data.channelResponses ?? []).find((response) =>
     cleanText(response.content.text),
   )?.content.text;
 
+  const text = cleanText(data.defaultMessage?.text || channelSpecificText);
+
   return {
-    text: cleanText(data.defaultMessage?.text || channelSpecificText) || "No message provided",
+    text: text || "No message provided",
     typeLabel: "Text",
+    isPlaceholder: !text,
   };
 }
 
 function getQuestionPreview(data: AskQuestionData) {
   const typeLabel = valueLabel(data.questionType, QUESTION_TYPES) ?? "Answer";
+  const questionText = cleanText(data.questionText);
+
   return {
     label: "Question",
-    text: cleanText(data.questionText) || "No question provided",
+    text: questionText || "No question provided",
     tokens: [{ label: typeLabel, value: data.questionType, kind: "value" as const, bgColor: "tag-blue" }],
     variant: "question",
+    isPlaceholder: !questionText,
   };
 }
 
@@ -243,6 +252,7 @@ function getBranchPreview(step: WorkflowCanvasStep, steps: WorkflowCanvasStep[])
       text: "No conditions provided",
       tokens: [],
       variant: "branch",
+      isPlaceholder: true,
     };
   }
 
@@ -251,14 +261,17 @@ function getBranchPreview(step: WorkflowCanvasStep, steps: WorkflowCanvasStep[])
     0,
   );
 
+  const hasConditions = conditionCount > 0;
+
   return {
     label: "Branch",
     text:
-      conditionCount > 0
+      hasConditions
         ? `${plural(conditionCount, "condition")} provided`
         : "No conditions provided",
     tokens: [],
     variant: "branch",
+    isPlaceholder: !hasConditions,
   };
 }
 
@@ -306,12 +319,14 @@ function getFieldPreview(data: UpdateContactFieldData) {
     data.fieldName ||
     valueLabel(data.fieldId, MOCK_FIELDS) ||
     "Select field";
+  const fieldValue = cleanText(data.value);
 
   return {
     label: "Field",
-    text: cleanText(data.value) || "No value",
+    text: fieldValue || "No value",
     tokens: [{ label: fieldLabel, kind: "value" as const, bgColor: "tag-purple" }],
     variant: "field",
+    isPlaceholder: !fieldValue,
   };
 }
 
@@ -322,6 +337,7 @@ function getCloseConversationPreview(data: CloseConversationData) {
       text: "No category or summary provided",
       tokens: [],
       variant: "conversation",
+      isPlaceholder: true,
     };
   }
 
@@ -332,9 +348,11 @@ function getCloseConversationPreview(data: CloseConversationData) {
     { value: "other", label: "Other" },
   ]);
 
+  const notes = cleanText(data.notes);
+
   return {
     label: "Close",
-    text: cleanText(data.notes) || "No summary provided",
+    text: notes || "No summary provided",
     tokens: [
       {
         label: categoryLabel ?? "Closing notes",
@@ -343,6 +361,7 @@ function getCloseConversationPreview(data: CloseConversationData) {
       },
     ],
     variant: "conversation",
+    isPlaceholder: !notes,
   };
 }
 
@@ -357,6 +376,7 @@ function getJumpPreview(data: JumpToData, steps: WorkflowCanvasStep[]) {
       ? [{ label: targetLabel, kind: "value" as const, value: data.targetStepId }]
       : [],
     variant: "jump",
+    isPlaceholder: !data.targetStepId,
   };
 }
 
@@ -377,6 +397,7 @@ function getTriggerWorkflowPreview(data: TriggerAnotherWorkflowData) {
       text: "No workflow selected",
       tokens: [],
       variant: "plain",
+      isPlaceholder: true,
     };
   }
 
@@ -399,11 +420,14 @@ function getDateTimePreview(data: DateTimeData) {
   const timezone = valueLabel(data.timezone, TIMEZONES) ?? data.timezone;
 
   if (data.mode === "date_range") {
+    const isPlaceholder = !data.dateRangeStart || !data.dateRangeEnd;
+
     return {
       label: "Schedule",
       text: `${data.dateRangeStart || "Start date"} to ${data.dateRangeEnd || "End date"} (${timezone})`,
       tokens: [],
       variant: "plain",
+      isPlaceholder,
     };
   }
 
@@ -417,6 +441,7 @@ function getDateTimePreview(data: DateTimeData) {
       text: `No business hours selected (${timezone})`,
       tokens: [],
       variant: "plain",
+      isPlaceholder: true,
     };
   }
 
@@ -440,13 +465,14 @@ function getDateTimePreview(data: DateTimeData) {
 
 function getHttpPreview(data: HttpRequestData) {
   const method = data.method || "GET";
-  const url = cleanText(data.url) || "No URL yet";
+  const url = cleanText(data.url);
 
   return {
     label: "Request",
-    text: `${method} ${url}`,
+    text: `${method} ${url || "No URL yet"}`,
     tokens: [],
     variant: "plain",
+    isPlaceholder: !url,
   };
 }
 
@@ -463,6 +489,7 @@ export function getStepNodePreview(
         text: message.text,
         tokens: [getChannelToken(data.channel, context.channels)],
         variant: "message",
+        isPlaceholder: message.isPlaceholder,
       };
     }
     case "ask_question":
@@ -488,11 +515,14 @@ export function getStepNodePreview(
     case "close_conversation":
       return getCloseConversationPreview(step.data as CloseConversationData);
     case "add_comment":
+      const commentText = cleanText((step.data as AddCommentData).comment);
+
       return {
         label: "Comment",
-        text: cleanText((step.data as AddCommentData).comment) || "No comment provided",
+        text: commentText || "No comment provided",
         tokens: [],
         variant: "plain",
+        isPlaceholder: !commentText,
       };
     case "jump_to":
       return getJumpPreview(step.data as JumpToData, context.steps);
