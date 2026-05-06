@@ -178,7 +178,7 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
       { id: "templates", label: "Templates", icon: "fileText" },
       {
         id: "private_replies",
-        label: "Private Replies",
+        label: "Comment Auto DMs",
         icon: "messageCircle",
       },
       { id: "chat_menu", label: "Chat Menu", icon: "menu" },
@@ -220,7 +220,7 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
       },
       {
         id: "private_replies",
-        label: "Private Replies",
+        label: "Comment Auto DMs",
         icon: "messageCircle",
       },
       {

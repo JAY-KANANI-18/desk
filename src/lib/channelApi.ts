@@ -139,6 +139,66 @@ export interface PrivateReplyPostMessage {
     message: string;
     target?: AutomationTarget | null;
     updatedAt?: string | null;
+    commentsReceived?: number;
+    automatedRepliesSent?: number;
+}
+
+export type EngagementActivityEventType =
+    | 'comment_received'
+    | 'automation_triggered'
+    | 'private_reply_sent'
+    | 'conversation_created';
+
+export interface EngagementActivityEvent {
+    id: string;
+    lifecycleId?: string | null;
+    commentId?: string | null;
+    type: EngagementActivityEventType;
+    workspaceId: string;
+    channelId: string;
+    channelType: 'messenger' | 'instagram' | string;
+    pageName: string;
+    pagePictureUrl?: string | null;
+    postId?: string | null;
+    postSnippet?: string | null;
+    postThumbnailUrl?: string | null;
+    postPermalink?: string | null;
+    postCreatedAt?: string | null;
+    commenterName?: string | null;
+    commentText?: string | null;
+    status: string;
+    timestamp: string;
+    commentReceivedAt?: string | null;
+    replyStatus?: 'pending' | 'sent' | 'failed' | string | null;
+    replySentAt?: string | null;
+    conversationId?: string | null;
+}
+
+export interface EngagementActivitySummary {
+    commentsReceived: number;
+    automatedRepliesSent: number;
+    activePostAutomations: number;
+    engagementEventsToday: number;
+}
+
+export interface EngagementActivityPost {
+    id: string | null;
+    pageName: string;
+    pagePictureUrl?: string | null;
+    postThumbnailUrl?: string | null;
+    postSnippet?: string | null;
+    createdAt?: string | null;
+    permalink?: string | null;
+    commentsReceived: number;
+    automatedRepliesSent: number;
+    identity: string;
+}
+
+export interface EngagementActivityState {
+    summary: EngagementActivitySummary;
+    selectedPost: EngagementActivityPost | null;
+    posts?: EngagementActivityPost[];
+    events: EngagementActivityEvent[];
 }
 
 const buildQuery = (params?: Record<string, string | undefined>) => {
@@ -270,6 +330,8 @@ export const ChannelApi = {
         api.put(`/channels/${channelId}/meta/automation/story-replies`, payload),
     listMetaAutomationTargets: (channelId: string | number) =>
         api.get(`/channels/${channelId}/meta/automation/targets`),
+    getMetaEngagementActivity: (channelId: string | number) =>
+        api.get(`/channels/${channelId}/meta/automation/engagement-activity`) as Promise<EngagementActivityState>,
 
 
     // Add inside ChannelApi object:
