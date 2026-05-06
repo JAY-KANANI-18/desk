@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   ExternalLink,
@@ -208,11 +209,14 @@ export const MessengerOAuthPopup = ({
   onError,
   disabled = false,
 }: MessengerOAuthPopupProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [pages, setPages] = useState<MessengerPageOption[]>([]);
   const [selectionId, setSelectionId] = useState<string | null>(null);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const [pagesLoading, setPagesLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const handledMobileReturnRef = useRef(false);
 
   const selectedIdSet = useMemo(
     () => new Set(selectedPageIds),
@@ -221,13 +225,13 @@ export const MessengerOAuthPopup = ({
   const allPagesSelected =
     pages.length > 0 && selectedPageIds.length === pages.length;
 
-  const resetSelection = () => {
+  const resetSelection = useCallback(() => {
     setPages([]);
     setSelectionId(null);
     setSelectedPageIds([]);
-  };
+  }, []);
 
-  const handleBrowserCallback = async (
+  const handleBrowserCallback = useCallback(async (
     payload: OAuthBrowserCallbackPayload,
   ) => {
     if (!payload.code || !payload.state) {
@@ -259,7 +263,61 @@ export const MessengerOAuthPopup = ({
     } finally {
       setPagesLoading(false);
     }
-  };
+  }, [onError, resetSelection]);
+
+  const clearOAuthReturnParams = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    [
+      'oauthProvider',
+      'oauthStatus',
+      'code',
+      'state',
+      'error',
+    ].forEach((key) => params.delete(key));
+
+    const nextSearch = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : '',
+        hash: location.hash,
+      },
+      { replace: true },
+    );
+  }, [location.hash, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    if (handledMobileReturnRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('oauthProvider') !== 'messenger') {
+      return;
+    }
+
+    handledMobileReturnRef.current = true;
+    const status = params.get('oauthStatus');
+    const code = params.get('code');
+    const state = params.get('state');
+
+    if (status === 'success' && code && state) {
+      void handleBrowserCallback({
+        type: 'OAUTH_CALLBACK',
+        providerKey: 'messenger',
+        status: 'success',
+        code,
+        state,
+      }).finally(clearOAuthReturnParams);
+      return;
+    }
+
+    const message =
+      params.get('error') ?? 'Facebook Messenger authorization failed.';
+    toast.error(message);
+    onError(message);
+    clearOAuthReturnParams();
+  }, [clearOAuthReturnParams, handleBrowserCallback, location.search, onError]);
 
   const { loading, startAuth } = useChannelOAuth({
     provider: 'messenger',
