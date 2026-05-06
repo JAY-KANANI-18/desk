@@ -26,6 +26,17 @@ type ChannelErrorPayload = {
   workspaceId: string;
 };
 
+export type OAuthBrowserCallbackPayload = {
+  type: 'OAUTH_CALLBACK';
+  provider?: string;
+  providerKey?: string;
+  status: 'success' | 'error';
+  message?: string;
+  code?: string;
+  state?: string;
+  workspaceId?: string;
+};
+
 const PROVIDER_LABELS: Record<OAuthProvider, string> = {
   instagram: 'Instagram',
   messenger: 'Facebook Messenger',
@@ -38,8 +49,9 @@ export function useChannelOAuth(options: {
   workspaceId: string;
   onSuccess: (channel: any) => void;
   onError: (message: string) => void;
+  onBrowserCallback?: (payload: OAuthBrowserCallbackPayload) => void | Promise<void>;
 }) {
-  const { provider, workspaceId, onSuccess, onError } = options;
+  const { provider, workspaceId, onSuccess, onError, onBrowserCallback } = options;
   const { socket } = useSocket();
   const { refreshChannels } = useChannel();
   const isMobile = useIsMobile();
@@ -53,12 +65,14 @@ export function useChannelOAuth(options: {
   const completionRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
+  const onBrowserCallbackRef = useRef(onBrowserCallback);
   const { user } = useAuth();
 
   useEffect(() => {
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
-  }, [onError, onSuccess]);
+    onBrowserCallbackRef.current = onBrowserCallback;
+  }, [onBrowserCallback, onError, onSuccess]);
 
   const flushPendingEvents = useCallback(() => {
     socket?.emit('oauth:pending:flush', { user });
@@ -213,34 +227,49 @@ export function useChannelOAuth(options: {
   };
 
   useEffect(() => {
-  const handler = (event: MessageEvent) => {
-    if (!event.data) return;
+    const handler = (event: MessageEvent) => {
+      if (!isOAuthBrowserCallbackPayload(event.data)) return;
 
-    if (event.data.type === "OAUTH_CALLBACK") {
+      const callbackProvider = event.data.providerKey ?? event.data.provider;
+      if (
+        callbackProvider &&
+        callbackProvider !== provider &&
+        callbackProvider !== PROVIDER_LABELS[provider]
+      ) {
+        return;
+      }
+
       completionRef.current = true;
 
       clearWatchers();
       setLoading(false);
+      popupRef.current?.close();
+      popupRef.current = null;
 
       if (event.data.status === "success") {
+        if (onBrowserCallbackRef.current) {
+          void Promise.resolve(onBrowserCallbackRef.current(event.data)).catch(
+            failAuth,
+          );
+          return;
+        }
+
         toast.success(`${PROVIDER_LABELS[provider]} connected`);
 
         // 🔥 IMPORTANT: refresh channels or trigger socket sync
         onSuccessRef.current?.(event.data);
       } else {
-        const message = `${PROVIDER_LABELS[provider]} connection failed`;
+        const message =
+          event.data.message ?? `${PROVIDER_LABELS[provider]} connection failed`;
         toast.error(message);
         onErrorRef.current(message);
       }
 
-      // close popup if still open
-      popupRef.current?.close();
-    }
-  };
+    };
 
-  window.addEventListener("message", handler);
-  return () => window.removeEventListener("message", handler);
-}, []);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [provider]);
 
   const clearWatchers = () => {
     if (timeoutRef.current) {
@@ -300,4 +329,18 @@ async function getAuthUrl(
     case 'whatsapp_coexist':
       throw new Error('WhatsApp Business App auth does not use an OAuth URL.');
   }
+}
+
+function isOAuthBrowserCallbackPayload(
+  value: unknown,
+): value is OAuthBrowserCallbackPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Record<string, unknown>;
+  return (
+    payload.type === 'OAUTH_CALLBACK' &&
+    (payload.status === 'success' || payload.status === 'error')
+  );
 }

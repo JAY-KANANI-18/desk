@@ -1,7 +1,7 @@
 import { api } from './api';
 import { buildEmailChannelPayload, type EmailChannelFormValues } from './emailChannel';
 
-interface Channel {
+export interface Channel {
     id: string;
     name: string;
     type: string;
@@ -21,6 +21,30 @@ interface ConnectWhatsAppCoexistPayload {
     wabaId: string;
     phoneNumberId: string;
     businessId?: string;
+}
+
+export interface MessengerPageOption {
+    id: string;
+    name: string;
+    category: string | null;
+    tasks: string[];
+    pictureUrl: string | null;
+}
+
+export interface MessengerPagesResponse {
+    selectionId: string;
+    expiresInSeconds: number;
+    pages: MessengerPageOption[];
+}
+
+export interface ConnectSelectedMessengerPagesPayload {
+    selectionId: string;
+    selectedPageIds: string[];
+}
+
+export interface ConnectSelectedMessengerPagesResponse {
+    success: boolean;
+    channels: Channel[];
 }
 
 export interface WaTemplate {
@@ -146,34 +170,19 @@ export const ChannelApi = {
         api.post("/channels/whatsapp/auth/coexist", payload),
     exchangeInstagramCode: (code: string, redirectUri: string) =>
         api.post("/channels/instagram/auth/callback", { code, redirectUri }),
-    exchangeMessengerCode: (code: string, redirectUri: string) =>
-        api.post("/channels/messenger/auth/callback", { code, redirectUri }),
     getWhatsAppAuthUrl: () =>
         api.get(`/channels/whatsapp/auth/url`),
     getInstagramAuthUrl: () =>
         api.get(`/channels/instagram/auth/url`),
     getMessengerAuthUrl: () =>
         api.get(`/channels/messenger/auth/url`),
-// Add these to your ChannelApi
-
-// Get pages after OAuth without connecting
-getMessengerPages: async (code: string, redirectUri: string) => 
-   api.post('/channels/messenger/auth/pages', {
-    code,
-    redirectUri,
-  })
- 
-,
-
-// Connect only selected pages
-connectSelectedPages: async (payload: {
-  workspaceId: string;
-  selectedPageIds: string[];
-  pages: any[];
-}) => 
-  api.post('/channels/messenger/auth/callback', payload)
-
-,
+    getMessengerPages: (code: string, state: string) =>
+        api.post('/channels/messenger/auth/pages', {
+            code,
+            state,
+        }) as Promise<MessengerPagesResponse>,
+    connectSelectedPages: (payload: ConnectSelectedMessengerPagesPayload) =>
+        api.post('/channels/messenger/auth/callback', payload) as Promise<ConnectSelectedMessengerPagesResponse>,
     getChannels: () => api.get('/channels'),
     listChannels: (params?: { search?: string; page?: number; limit?: number }) =>
         api.get(`/channels${buildQuery({

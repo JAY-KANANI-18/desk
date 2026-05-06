@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import {
   AlertCircle,
   ExternalLink,
   MessageSquare,
+  RefreshCw,
   ThumbsUp,
   Zap,
 } from '@/components/ui/icons';
 import { ChannelConnectActionButton } from '../../../components/channels/ChannelConnectActionButton';
 import { Button } from '../../../components/ui/button/Button';
+import { CheckboxInput } from '../../../components/ui/inputs/CheckboxInput';
 import { Tag } from '../../../components/ui/tag/Tag';
 import { getChannelIconUrl } from '../../../config/channelMetadata';
-import { useChannelOAuth } from '../../../hooks/useChannelOAuth';
+import {
+  useChannelOAuth,
+  type OAuthBrowserCallbackPayload,
+} from '../../../hooks/useChannelOAuth';
+import {
+  ChannelApi,
+  type MessengerPageOption,
+} from '../../../lib/channelApi';
 import {
   ChannelConnectPrerequisites,
   useChannelConnectPrerequisites,
@@ -68,6 +78,32 @@ const MESSENGER_PREREQUISITES: ChannelConnectPrerequisite[] = [
   //   description: 'Registration document, bank statement, or service bill works.',
   // },
 ];
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function MessengerPageLabel({ page }: { page: MessengerPageOption }) {
+  const fallbackInitial = page.name.trim().charAt(0).toUpperCase() || 'P';
+
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-500">
+        {page.pictureUrl ? (
+          <img
+            src={page.pictureUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          fallbackInitial
+        )}
+      </span>
+      <span className="min-w-0 truncate">{page.name}</span>
+    </span>
+  );
+}
 
 export const FacebookChannelSidebar = () => (
   <div className="flex h-full flex-col gap-6 p-6 pt-0">
@@ -172,19 +208,182 @@ export const MessengerOAuthPopup = ({
   onError,
   disabled = false,
 }: MessengerOAuthPopupProps) => {
+  const [pages, setPages] = useState<MessengerPageOption[]>([]);
+  const [selectionId, setSelectionId] = useState<string | null>(null);
+  const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  const [pagesLoading, setPagesLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const selectedIdSet = useMemo(
+    () => new Set(selectedPageIds),
+    [selectedPageIds],
+  );
+  const allPagesSelected =
+    pages.length > 0 && selectedPageIds.length === pages.length;
+
+  const resetSelection = () => {
+    setPages([]);
+    setSelectionId(null);
+    setSelectedPageIds([]);
+  };
+
+  const handleBrowserCallback = async (
+    payload: OAuthBrowserCallbackPayload,
+  ) => {
+    if (!payload.code || !payload.state) {
+      throw new Error('Facebook did not return a valid authorization code.');
+    }
+
+    setPagesLoading(true);
+    onError('');
+
+    try {
+      const response = await ChannelApi.getMessengerPages(
+        payload.code,
+        payload.state,
+      );
+      setPages(response.pages);
+      setSelectionId(response.selectionId);
+      setSelectedPageIds([]);
+      toast.success(
+        `Found ${response.pages.length} Facebook Page${response.pages.length === 1 ? '' : 's'}`,
+      );
+    } catch (error) {
+      resetSelection();
+      const message = getErrorMessage(
+        error,
+        'Failed to load Facebook Pages.',
+      );
+      toast.error(message);
+      onError(message);
+    } finally {
+      setPagesLoading(false);
+    }
+  };
+
   const { loading, startAuth } = useChannelOAuth({
     provider: 'messenger',
     workspaceId,
     onSuccess,
     onError,
+    onBrowserCallback: handleBrowserCallback,
   });
+
+  const togglePage = (pageId: string, checked: boolean) => {
+    setSelectedPageIds((current) => {
+      if (!checked) {
+        return current.filter((id) => id !== pageId);
+      }
+
+      return current.includes(pageId) ? current : [...current, pageId];
+    });
+  };
+
+  const toggleAllPages = (checked: boolean) => {
+    setSelectedPageIds(checked ? pages.map((page) => page.id) : []);
+  };
+
+  const connectSelectedPages = async () => {
+    if (!selectionId || !selectedPageIds.length) {
+      return;
+    }
+
+    setConnecting(true);
+    onError('');
+
+    try {
+      const result = await ChannelApi.connectSelectedPages({
+        selectionId,
+        selectedPageIds,
+      });
+      const connectedChannels = result.channels;
+      if (!connectedChannels.length) {
+        throw new Error('No Facebook Pages were connected.');
+      }
+
+      toast.success(
+        `Connected ${connectedChannels.length} Facebook Page${connectedChannels.length === 1 ? '' : 's'}`,
+      );
+      onSuccess(connectedChannels[0] as unknown as Channel);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        'Failed to connect selected Facebook Pages.',
+      );
+      toast.error(message);
+      onError(message);
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  if (pages.length) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-4 py-3">
+          <p className="text-sm font-semibold text-gray-900">
+            Choose Facebook Pages
+          </p>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {selectedPageIds.length}/{pages.length} selected
+          </p>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto p-4">
+          <CheckboxInput
+            checked={allPagesSelected}
+            onChange={toggleAllPages}
+            label="Select all Pages"
+            size="sm"
+            className="mb-3 w-full rounded-lg border border-gray-100 bg-gray-50 p-3"
+          />
+
+          <div className="space-y-2">
+            {pages.map((page) => (
+              <CheckboxInput
+                key={page.id}
+                checked={selectedIdSet.has(page.id)}
+                onChange={(checked) => togglePage(page.id, checked)}
+                label={<MessengerPageLabel page={page} />}
+                description={page.category ?? 'Facebook Page'}
+                size="sm"
+                className="w-full rounded-lg border border-gray-100 p-3 transition-colors hover:border-gray-200"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<RefreshCw size={13} />}
+            onClick={resetSelection}
+            disabled={connecting}
+          >
+            Start over
+          </Button>
+          <Button
+            onClick={() => void connectSelectedPages()}
+            disabled={!selectedPageIds.length || connecting}
+            loading={connecting}
+            loadingMode="inline"
+            loadingLabel="Connecting..."
+            size="sm"
+          >
+            Connect selected Pages
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ChannelConnectActionButton
       onClick={() => {
         void startAuth();
       }}
-      disabled={disabled || loading}
+      disabled={disabled || loading || pagesLoading}
       fullWidth
       leftIcon={
         !loading ? (
@@ -195,9 +394,9 @@ export const MessengerOAuthPopup = ({
           />
         ) : undefined
       }
-      loading={loading}
+      loading={loading || pagesLoading}
       loadingMode="inline"
-      loadingLabel="Waiting for Facebook..."
+      loadingLabel={pagesLoading ? "Loading Pages..." : "Waiting for Facebook..."}
     >
       Connect with Facebook
     </ChannelConnectActionButton>
