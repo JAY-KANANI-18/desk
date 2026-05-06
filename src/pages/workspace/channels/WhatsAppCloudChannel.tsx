@@ -1,4 +1,6 @@
-import { useState, type ComponentType } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   BarChart3,
@@ -23,6 +25,7 @@ import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { PasswordInput } from "../../../components/ui/inputs/PasswordInput";
 import { Tag } from "../../../components/ui/tag/Tag";
 import { getChannelIconUrl } from "../../../config/channelMetadata";
+import { useChannel } from "../../../context/ChannelContext";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
 import {
   ChannelConnectPrerequisites,
@@ -234,6 +237,10 @@ export const WhatsAppCloudChannel = ({
   onDisconnect,
   workspaceId,
 }: Props) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { refreshChannels } = useChannel();
+  const handledMobileReturnRef = useRef(false);
   const [tab] = useState<"credentials" | "meta">("meta");
   const [form, setForm] = useState<WhatsAppConfig>({
     phoneNumberId: "",
@@ -255,6 +262,56 @@ export const WhatsAppCloudChannel = ({
     onSuccess: onConnect,
     onError: setError,
   });
+
+  const clearOAuthReturnParams = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    ["oauthProvider", "oauthStatus", "error"].forEach((key) =>
+      params.delete(key),
+    );
+
+    const nextSearch = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : "",
+        hash: location.hash,
+      },
+      { replace: true },
+    );
+  }, [location.hash, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    if (handledMobileReturnRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("oauthProvider") !== "whatsapp") {
+      return;
+    }
+
+    handledMobileReturnRef.current = true;
+    const status = params.get("oauthStatus");
+
+    if (status === "success") {
+      toast.success("WhatsApp connected");
+      void refreshChannels(true).finally(() => {
+        clearOAuthReturnParams();
+        navigate("/channels", { replace: true });
+      });
+      return;
+    }
+
+    const message = params.get("error") ?? "WhatsApp authorization failed.";
+    toast.error(message);
+    setError(message);
+    clearOAuthReturnParams();
+  }, [
+    clearOAuthReturnParams,
+    location.search,
+    navigate,
+    refreshChannels,
+  ]);
 
   const handleCredentialsConnect = async () => {
     if (CRED_FIELDS.some((field) => !form[field.key])) {
