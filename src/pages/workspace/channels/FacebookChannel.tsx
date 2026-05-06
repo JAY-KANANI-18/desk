@@ -446,7 +446,7 @@ export const MessengerOAuthPopup = ({
       leftIcon={
         !loading ? (
           <img
-            src={getChannelIconUrl('facebook', 'ffffff')}
+            src={getChannelIconUrl('messenger', 'ffffff')}
             className="h-3 w-3"
             alt=""
           />
@@ -456,7 +456,7 @@ export const MessengerOAuthPopup = ({
       loadingMode="inline"
       loadingLabel={pagesLoading ? "Loading Pages..." : "Waiting for Facebook..."}
     >
-      Connect with Facebook
+      Connect with Facebook Messenger
     </ChannelConnectActionButton>
   );
 };
