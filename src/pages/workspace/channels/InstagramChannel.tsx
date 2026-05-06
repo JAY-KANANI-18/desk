@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   BarChart3,
@@ -12,6 +14,7 @@ import { ChannelConnectActionButton } from "../../../components/channels/Channel
 import { Button } from "../../../components/ui/button/Button";
 import { getChannelIconUrl } from "../../../config/channelMetadata";
 import { useChannelOAuth } from "../../../hooks/useChannelOAuth";
+import { useChannel } from "../../../context/ChannelContext";
 import {
   ChannelConnectPrerequisites,
   useChannelConnectPrerequisites,
@@ -158,12 +161,68 @@ export const InstagramOAuthPopup = ({
   onError,
   disabled = false,
 }: InstagramOAuthPopupProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { refreshChannels } = useChannel();
+  const handledMobileReturnRef = useRef(false);
   const { loading, startAuth } = useChannelOAuth({
     provider: "instagram",
     workspaceId,
     onSuccess,
     onError,
   });
+
+  const clearOAuthReturnParams = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    ["oauthProvider", "oauthStatus", "error"].forEach((key) =>
+      params.delete(key),
+    );
+
+    const nextSearch = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : "",
+        hash: location.hash,
+      },
+      { replace: true },
+    );
+  }, [location.hash, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    if (handledMobileReturnRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("oauthProvider") !== "instagram") {
+      return;
+    }
+
+    handledMobileReturnRef.current = true;
+    const status = params.get("oauthStatus");
+
+    if (status === "success") {
+      toast.success("Instagram connected");
+      void refreshChannels(true).finally(() => {
+        clearOAuthReturnParams();
+        navigate("/channels", { replace: true });
+      });
+      return;
+    }
+
+    const message =
+      params.get("error") ?? "Instagram authorization failed.";
+    toast.error(message);
+    onError(message);
+    clearOAuthReturnParams();
+  }, [
+    clearOAuthReturnParams,
+    location.search,
+    navigate,
+    onError,
+    refreshChannels,
+  ]);
 
   const stepLabel = loading ? "Waiting for login..." : "Connect with Instagram";
 
