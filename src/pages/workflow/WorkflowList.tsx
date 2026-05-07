@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState, useEffect, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef, type ChangeEvent, type DragEvent, type ReactNode } from 'react';
 import {
   Plus, Play, Square, Pencil,
   Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight, Calendar, User,
 } from '@/components/ui/icons';
-import { Workflow, WorkflowStatus } from './workflow.types';
+import type { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
 import { useNavigate } from 'react-router-dom';
 import { ListPagination } from '../../components/ui/ListPagination';
@@ -17,7 +17,7 @@ import { SearchInput } from '../../components/ui/inputs';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { ConfirmDeleteModal } from '../../components/ui/modal';
+import { ConfirmDeleteModal, ResponsiveModal } from '../../components/ui/modal';
 import { useWorkspace } from '../../context/WorkspaceContext';
 
 type FilterStatus = 'all' | WorkflowStatus;
@@ -42,6 +42,34 @@ const formatDate = (iso?: string | null) => {
   if (Number.isNaN(date.getTime())) return null;
   return dateFormatter.format(date);
 };
+
+const MAX_WORKFLOW_IMPORT_BYTES = 2 * 1024 * 1024;
+
+function sanitizeDownloadFileName(value: string) {
+  const sanitized = value
+    .replace(/[<>:"/\\|?*\u0000-\u001F]+/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 90);
+
+  return sanitized || 'workflow';
+}
+
+function downloadJsonFile(fileName: string, payload: unknown) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
 
 const getWorkflowAuthor = (
   workflow: Workflow,
@@ -128,6 +156,8 @@ function WorkflowMetaCell({
 export function WorkflowList() {
   const isMobile = useIsMobile();
   const { workspaceUsers } = useWorkspace();
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const importDragDepthRef = useRef(0);
   const [workflows, setWorkflows]     = useState<Workflow[]>([]);
   const [loading, setLoading]         = useState(true);
   const [filter, setFilter]           = useState<FilterStatus>('all');
@@ -146,6 +176,11 @@ export function WorkflowList() {
   const [renameId, setRenameId]       = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importDragActive, setImportDragActive] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [sortField, setSortField] = useState<WorkflowSortField>('name');
   const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
@@ -227,6 +262,125 @@ export function WorkflowList() {
   const handleCreateNew = useCallback(() => {
     navigate('/workflows/templates');
   }, [navigate]);
+
+  const handleExportWorkflow = async (workflow: Workflow) => {
+    setActionLoading(workflow.id);
+    try {
+      const latestWorkflow = await workspaceApi.getWorkflow(workflow.id);
+      downloadJsonFile(`${sanitizeDownloadFileName(latestWorkflow.name)}.json`, latestWorkflow);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to export workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleImportClick = () => {
+    setImportError(null);
+    setSelectedImportFile(null);
+    setImportModalOpen(true);
+  };
+
+  const handleImportModalClose = () => {
+    if (importing) return;
+    setImportModalOpen(false);
+    setImportDragActive(false);
+    setImportError(null);
+    setSelectedImportFile(null);
+  };
+
+  const handleBrowseImportFile = () => {
+    importInputRef.current?.click();
+  };
+
+  const selectImportFile = (file: File | undefined) => {
+    if (!file) return;
+
+    const isJsonFile =
+      file.name.toLowerCase().endsWith('.json') ||
+      file.type === 'application/json' ||
+      file.type === 'application/ld+json';
+
+    if (!isJsonFile) {
+      setImportError('Choose a workflow JSON file.');
+      setSelectedImportFile(null);
+      return;
+    }
+
+    if (file.size > MAX_WORKFLOW_IMPORT_BYTES) {
+      setImportError('Workflow import files must be 2 MB or smaller.');
+      setSelectedImportFile(null);
+      return;
+    }
+
+    setImportError(null);
+    setSelectedImportFile(file);
+  };
+
+  const handleCreateImportedWorkflow = async () => {
+    if (!selectedImportFile) {
+      setImportError('Choose a workflow JSON file first.');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const payload = JSON.parse(await selectedImportFile.text()) as Partial<Workflow>;
+
+      if (!payload || typeof payload.name !== 'string' || !payload.name.trim()) {
+        throw new Error('Import file must be a workflow JSON response with a name.');
+      }
+
+      const created = await workspaceApi.createWorkflow({
+        name: payload.name.trim(),
+        description: payload.description,
+        config: payload.config,
+      });
+
+      setImportModalOpen(false);
+      setSelectedImportFile(null);
+      navigate(`/workflows/${created.id}`);
+    } catch (error: unknown) {
+      setImportError(error instanceof Error ? error.message : 'Failed to import workflow');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    selectImportFile(file);
+  };
+
+  const handleImportDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (importing) return;
+    importDragDepthRef.current += 1;
+    setImportDragActive(true);
+  };
+
+  const handleImportDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (importing) return;
+    event.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleImportDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    importDragDepthRef.current = Math.max(0, importDragDepthRef.current - 1);
+    if (importDragDepthRef.current === 0) {
+      setImportDragActive(false);
+    }
+  };
+
+  const handleImportDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    importDragDepthRef.current = 0;
+    setImportDragActive(false);
+    if (importing) return;
+    selectImportFile(event.dataTransfer.files[0]);
+  };
 
   useMobileHeaderActions(
     isMobile
@@ -461,7 +615,9 @@ export function WorkflowList() {
         label: 'Export',
         icon: <Download size={13} />,
         disabled,
-        onClick: () => undefined,
+        onClick: () => {
+          void handleExportWorkflow(wf);
+        },
       },
       {
         id: 'delete',
@@ -482,12 +638,15 @@ export function WorkflowList() {
 
   const desktopActions = isMobile ? undefined : (
     <div className="flex items-center gap-2">
-      <Tooltip content="Import workflows">
+      <Tooltip content={importing ? 'Importing workflow JSON...' : 'Import workflow JSON'}>
         <span className="inline-flex">
           <IconButton
-            aria-label="Import workflows"
+            aria-label="Import workflow JSON"
             icon={<Upload size={14} />}
             variant="secondary"
+            loading={importing}
+            disabled={importing}
+            onClick={handleImportClick}
           />
         </span>
       </Tooltip>
@@ -496,6 +655,26 @@ export function WorkflowList() {
         leftIcon={<Plus size={14} />}
       >
         New Workflow
+      </Button>
+    </div>
+  );
+
+  const importModalFooter = (
+    <div className="flex w-full flex-wrap items-center justify-end gap-2">
+      <Button
+        variant="secondary"
+        onClick={handleImportModalClose}
+        disabled={importing}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleCreateImportedWorkflow}
+        loading={importing}
+        loadingMode="inline"
+        disabled={!selectedImportFile || importing}
+      >
+        Create workflow
       </Button>
     </div>
   );
@@ -721,6 +900,86 @@ export function WorkflowList() {
         onCancel={closeDeleteWorkflow}
         onConfirm={handleConfirmDelete}
       />
+
+      <ResponsiveModal
+        isOpen={importModalOpen}
+        onClose={handleImportModalClose}
+        title="Import workflow"
+        size="md"
+        footer={importModalFooter}
+        closeOnOverlayClick={!importing}
+      >
+        <div className="space-y-3">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={handleImportFile}
+          />
+          <div
+            aria-disabled={importing}
+            onDragEnter={handleImportDragEnter}
+            onDragOver={handleImportDragOver}
+            onDragLeave={handleImportDragLeave}
+            onDrop={handleImportDrop}
+            className={`flex min-h-[220px] w-full flex-col items-center justify-center rounded-lg border border-dashed px-6 py-7 text-center transition-colors ${
+              importDragActive
+                ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                : 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100'
+            } ${importing ? 'cursor-wait opacity-70' : ''}`}
+          >
+            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-primary)] shadow-sm">
+              <Upload size={18} />
+            </span>
+            <span className="text-sm font-semibold text-slate-900">
+              Drop JSON file here or{' '}
+              <button
+                type="button"
+                onClick={handleBrowseImportFile}
+                disabled={importing}
+                className="font-semibold text-[var(--color-primary)] underline underline-offset-2 transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
+              >
+                click here
+              </button>
+            </span>
+            <span className="mt-1 text-xs text-slate-500">
+              Max 2 MB
+            </span>
+
+            {selectedImportFile ? (
+              <div className="mt-5 flex w-full max-w-md items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left shadow-sm">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {selectedImportFile.name}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {(selectedImportFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedImportFile(null);
+                    setImportError(null);
+                  }}
+                  disabled={importing}
+                  leftIcon={<Trash2 size={13} />}
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          {importError ? (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+              {importError}
+            </p>
+          ) : null}
+        </div>
+      </ResponsiveModal>
     </PageLayout>
   );
 }

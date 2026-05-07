@@ -39,7 +39,10 @@ export type ActivityEventType =
   | "label_added"
   | "label_removed"
   | "priority_changed"
-  | "sla_breached";
+  | "sla_breached"
+  | "workflow_started"
+  | "workflow_ended"
+  | "workflow_failed";
 
 export interface ActivityResponse {
   id: string;

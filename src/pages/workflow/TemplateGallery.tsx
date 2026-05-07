@@ -140,7 +140,7 @@ export function TemplateGallery() {
     <PageLayout
       eyebrow="Workflows"
       title="Workflow Templates"
-      subtitle="Preview a starter flow, then create it as a draft workflow."
+      // subtitle="Preview a starter flow, then create it as a draft workflow."
       leading={<BackButton onClick={handleBack} ariaLabel="Back to workflows" />}
       actions={
         <Button

@@ -1,4 +1,4 @@
-import { type ElementType } from "react";
+import { type ElementType, type ReactNode } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -38,7 +38,7 @@ const ACTIVITY_CONFIG: Record<
   {
     icon: ElementType;
     pill: string;
-    label?: (a: ActivityResponse, currentUser: any) => string;
+    label?: (a: ActivityResponse, currentUser: any) => ReactNode;
     noteCard?: boolean;
   }
 > = {
@@ -150,6 +150,33 @@ const ACTIVITY_CONFIG: Record<
     pill: "text-[var(--color-primary)] bg-[var(--color-primary-light)] border-[var(--color-primary-light)]",
     label: (a) => `Bot handoff`,
   },
+  workflow_started: {
+    icon: Workflow,
+    pill: "text-slate-600 bg-slate-50 border-slate-200",
+    label: (a) => (
+      <>
+        Workflow <span className="font-semibold">{String(a.metadata?.workflowName ?? "Workflow")}</span> started
+      </>
+    ),
+  },
+  workflow_ended: {
+    icon: Workflow,
+    pill: "text-slate-600 bg-slate-50 border-slate-200",
+    label: (a) => (
+      <>
+        Workflow <span className="font-semibold">{String(a.metadata?.workflowName ?? "Workflow")}</span> ended
+      </>
+    ),
+  },
+  workflow_failed: {
+    icon: Workflow,
+    pill: "text-red-700 bg-red-50 border-red-200",
+    label: (a) => (
+      <>
+        Workflow <span className="font-semibold">{String(a.metadata?.workflowName ?? "Workflow")}</span> failed
+      </>
+    ),
+  },
 };
 
 export function ActivityRow({
@@ -237,7 +264,7 @@ export function ActivityRow({
   const generatedDescription =
     cfg.label?.(activity, currentUser) ?? activity.description;
 
-  const descNode = searchTerm
+  const descNode = searchTerm && typeof generatedDescription === "string"
     ? highlightText(generatedDescription, searchTerm)
     : generatedDescription;
 

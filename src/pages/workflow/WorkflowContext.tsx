@@ -97,6 +97,99 @@ function normalizeWorkflow(workflow: Workflow): Workflow {
   };
 }
 
+const CONNECTOR_OWNER_STEP_TYPES = new Set<StepConfig["type"]>([
+  "branch",
+  "ask_question",
+  "date_time",
+]);
+
+function isConnectorOwnerStep(step: StepConfig) {
+  return CONNECTOR_OWNER_STEP_TYPES.has(step.type);
+}
+
+function collectDescendantStepIds(steps: StepConfig[], parentId: string): Set<string> {
+  const descendantIds = new Set<string>();
+  const stack = steps
+    .filter((candidate) => candidate.parentId === parentId)
+    .map((candidate) => candidate.id);
+
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    if (!currentId || descendantIds.has(currentId)) continue;
+
+    descendantIds.add(currentId);
+    steps
+      .filter((candidate) => candidate.parentId === currentId)
+      .forEach((candidate) => stack.push(candidate.id));
+  }
+
+  return descendantIds;
+}
+
+function insertWorkflowStepAfter(
+  steps: StepConfig[],
+  step: StepConfig,
+  afterId: string,
+): StepConfig[] {
+  const insertedStep: StepConfig = {
+    ...step,
+    parentId: afterId,
+  };
+
+  if (isConnectorOwnerStep(insertedStep) || insertedStep.type === "branch_connector") {
+    return [...steps, insertedStep];
+  }
+
+  const directLinearChildIds = new Set(
+    steps
+      .filter(
+        (candidate) =>
+          candidate.parentId === afterId && candidate.type !== "branch_connector",
+      )
+      .map((candidate) => candidate.id),
+  );
+
+  return [
+    ...steps.map((candidate) =>
+      directLinearChildIds.has(candidate.id)
+        ? { ...candidate, parentId: insertedStep.id }
+        : candidate,
+    ),
+    insertedStep,
+  ];
+}
+
+function deleteWorkflowStep(steps: StepConfig[], stepId: string): StepConfig[] {
+  const step = steps.find((candidate) => candidate.id === stepId);
+  if (!step) return steps;
+
+  const parentId = step.parentId ?? "trigger";
+
+  if (step.type === "branch_connector" || isConnectorOwnerStep(step)) {
+    const idsToDelete = collectDescendantStepIds(steps, step.id);
+    idsToDelete.add(step.id);
+
+    return steps.filter((candidate) => !idsToDelete.has(candidate.id));
+  }
+
+  const directChildIds = new Set(
+    steps
+      .filter(
+        (candidate) =>
+          candidate.parentId === step.id && candidate.type !== "branch_connector",
+      )
+      .map((candidate) => candidate.id),
+  );
+
+  return steps
+    .filter((candidate) => candidate.id !== step.id)
+    .map((candidate) =>
+      directChildIds.has(candidate.id)
+        ? { ...candidate, parentId }
+        : candidate,
+    );
+}
+
 type Action =
   | { type: "LOAD_WORKFLOW"; payload: Workflow }
   | { type: "SET_NODES"; payload: Node[] }
@@ -185,52 +278,42 @@ function reducer(
       };
     }
 
-   case 'INSERT_STEP_AFTER': {
-  if (!state.workflow) return state;
+    case "INSERT_STEP_AFTER": {
+      if (!state.workflow) return state;
 
-  const { step, afterId } = action.payload;
+      const { step, afterId } = action.payload;
+      const steps = state.workflow?.config?.steps ?? [];
 
-  const steps = state.workflow?.config?.steps?.map((s) => {
-    // 🔥 If inserting after a node
-    if (s.id === afterId) {
-      return s;
+      return {
+        ...state,
+        isDirty: true,
+        workflow: {
+          ...state.workflow,
+          config: {
+            ...state.workflow?.config,
+            steps: insertWorkflowStepAfter(steps, step, afterId),
+          },
+        },
+      };
     }
 
-    return s || [];
-  });
+    case "DELETE_STEP": {
+      if (!state.workflow) return state;
 
-  // ✅ Set parentId properly
-  step.parentId = afterId;
+      const stepId = action.payload;
 
-  return {
-    ...state,
-    isDirty: true,
-    workflow: {
-      ...state.workflow,
-      config: {
-        ...state.workflow?.config,
-        steps:  [...( steps || []), step],
-      },
+      return {
+        ...state,
+        isDirty: true,
+        workflow: {
+          ...state.workflow,
+          config: {
+            ...state.workflow?.config,
+            steps: deleteWorkflowStep(state.workflow?.config?.steps ?? [], stepId),
+          },
         },
-  };
-}
-case 'DELETE_STEP': {
-  if (!state.workflow) return state;
-
-  const stepId = action.payload;
-
-  return {
-    ...state,
-    isDirty: true,
-    workflow: {
-      ...state.workflow,
-      config: {
-        ...state.workflow?.config,
-        steps: state.workflow?.config?.steps?.filter((s) => s.id !== stepId),
-      },
-    },
-  };
-}
+      };
+    }
 
     case "SELECT_NODE":
       return {

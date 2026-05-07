@@ -1,6 +1,6 @@
 import type { Workspace } from "../context/WorkspaceContext";
 import { api } from "../lib/api";
-import { StepConfig, TriggerConfig, WorkflowSettings } from "../pages/workflow/workflow.types";
+import type { Workflow } from "../pages/workflow/workflow.types";
 
 /* =========================================================
    Types
@@ -15,6 +15,11 @@ export interface WorkspaceTagInput {
 
 type WorkspaceCreatePayload = Pick<Workspace, "name" | "organizationId">;
 type WorkspaceUpdatePayload = Partial<Workspace> & { logoUrl?: string };
+type WorkflowCreatePayload = Pick<Workflow, "name"> &
+  Partial<Pick<Workflow, "description" | "config">>;
+type WorkflowSavePayload = Partial<Pick<Workflow, "name" | "description">> & {
+  config: Workflow["config"];
+};
 
 
 /* =========================================================
@@ -370,11 +375,11 @@ export const workspaceApi = {
     const query = searchParams.toString();
     return api.get(`/workflows${query ? `?${query}` : ''}`);
   },
-  getWorkflow: (id: string) =>
+  getWorkflow: (id: string): Promise<Workflow> =>
     api.get(`/workflows/${id}`),
-  createWorkflow: (payload: { name: string; description?: string }) =>
+  createWorkflow: (payload: WorkflowCreatePayload): Promise<Workflow> =>
     api.post(`/workflows`, payload),
-  saveWorkflow: (id: string, payload: { name?: string; description?: string; config: { trigger?: TriggerConfig | null; steps?: StepConfig[]; settings?: WorkflowSettings } }) =>
+  saveWorkflow: (id: string, payload: WorkflowSavePayload): Promise<Workflow> =>
     api.patch(`/workflows/${id}`, payload),
   publishWorkflow: (id: string) =>
     api.patch(`/workflows/${id}/publish`),
