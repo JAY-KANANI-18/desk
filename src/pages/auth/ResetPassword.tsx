@@ -101,17 +101,7 @@ export const ResetPassword = () => {
 
   return (
     <div className="w-full max-w-2xl space-y-5">
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Account security
-        </p>
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Change password
-        </h2>
-        <p className="text-sm leading-6 text-slate-500">
-          Choose a password you have not used before.
-        </p>
-      </div>
+
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {success ? (

@@ -176,7 +176,7 @@ export const userSettingsConfig: SettingsModuleConfig = {
         },
         {
           id: "user-security",
-          label: "Security",
+          label: "Change Password",
           icon: <Key size={22} />,
           permission: { ws: "ws:profile:manage" },
           to: "/user/settings/security",
