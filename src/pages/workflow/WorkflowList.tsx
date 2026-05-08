@@ -185,6 +185,9 @@ export function WorkflowList() {
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [mobileCreateMenuOpen, setMobileCreateMenuOpen] = useState(false);
   const [desktopCreateMenuOpen, setDesktopCreateMenuOpen] = useState(false);
+  const [scratchNameModalOpen, setScratchNameModalOpen] = useState(false);
+  const [scratchWorkflowName, setScratchWorkflowName] = useState('');
+  const [scratchNameError, setScratchNameError] = useState('');
   const [creatingScratchWorkflow, setCreatingScratchWorkflow] = useState(false);
   const [sortField, setSortField] = useState<WorkflowSortField>('name');
   const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
@@ -269,19 +272,42 @@ export function WorkflowList() {
     navigate('/workflows/templates');
   }, [navigate]);
 
-  const handleCreateFromScratch = useCallback(async () => {
+  const handleRequestCreateFromScratch = useCallback(() => {
     setMobileCreateMenuOpen(false);
     setDesktopCreateMenuOpen(false);
+    setScratchWorkflowName('Untitled Workflow');
+    setScratchNameError('');
+    setScratchNameModalOpen(true);
+  }, []);
+
+  const handleCloseScratchNameModal = useCallback(() => {
+    if (creatingScratchWorkflow) return;
+    setScratchNameModalOpen(false);
+    setScratchNameError('');
+  }, [creatingScratchWorkflow]);
+
+  const handleCreateFromScratch = useCallback(async () => {
+    const trimmedName = scratchWorkflowName.trim();
+
+    if (!trimmedName) {
+      setScratchNameError('Enter a workflow name.');
+      return;
+    }
+
     setCreatingScratchWorkflow(true);
     try {
-      const workflow = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
+      const workflow = await workspaceApi.createWorkflow({ name: trimmedName });
+      setScratchNameModalOpen(false);
+      setScratchNameError('');
       navigate(`/workflows/${workflow.id}`);
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : 'Failed to create workflow');
+      setScratchNameError(
+        error instanceof Error ? error.message : 'Failed to create workflow',
+      );
     } finally {
       setCreatingScratchWorkflow(false);
     }
-  }, [navigate]);
+  }, [navigate, scratchWorkflowName]);
 
   const handleExportWorkflow = async (workflow: Workflow) => {
     setActionLoading(workflow.id);
@@ -724,7 +750,7 @@ export function WorkflowList() {
             type="button"
             role="menuitem"
             disabled={creatingScratchWorkflow}
-            onClick={() => void handleCreateFromScratch()}
+            onClick={handleRequestCreateFromScratch}
             className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] disabled:cursor-wait disabled:opacity-70"
           >
             <Pencil size={16} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
@@ -739,6 +765,30 @@ export function WorkflowList() {
           </button>
         </div>
       </div>
+    </div>
+  );
+
+  const scratchNameFormId = 'scratch-workflow-name-form';
+  const scratchNameModalFooter = (
+    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={handleCloseScratchNameModal}
+        disabled={creatingScratchWorkflow}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form={scratchNameFormId}
+        loading={creatingScratchWorkflow}
+        loadingMode="inline"
+        disabled={!scratchWorkflowName.trim() || creatingScratchWorkflow}
+        leftIcon={!creatingScratchWorkflow ? <Pencil size={15} /> : undefined}
+      >
+        Create workflow
+      </Button>
     </div>
   );
 
@@ -1004,7 +1054,7 @@ export function WorkflowList() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleCreateFromScratch()}
+                onClick={handleRequestCreateFromScratch}
                 disabled={creatingScratchWorkflow}
                 className={`relative flex min-h-12 min-w-[11rem] items-center gap-3 rounded-full border border-white/80 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_18px_42px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5 transition-all duration-200 ease-out active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${
                   mobileCreateMenuOpen
@@ -1054,6 +1104,42 @@ export function WorkflowList() {
           onClick={() => setMobileCreateMenuOpen((open) => !open)}
         />
       </div>
+
+      <ResponsiveModal
+        isOpen={scratchNameModalOpen}
+        onClose={handleCloseScratchNameModal}
+        title="Name workflow"
+        size="sm"
+        footer={scratchNameModalFooter}
+        mobileFooter={scratchNameModalFooter}
+        mobileBodyClassName="px-5 py-4"
+        closeOnOverlayClick={!creatingScratchWorkflow}
+        mobileCloseOnOverlayClick={!creatingScratchWorkflow}
+      >
+        <form
+          id={scratchNameFormId}
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleCreateFromScratch();
+          }}
+        >
+          <p className="text-sm leading-6 text-slate-500">
+            Give this workflow a clear name before opening the builder.
+          </p>
+          <BaseInput
+            autoFocus
+            label="Workflow name"
+            value={scratchWorkflowName}
+            onChange={(event) => {
+              setScratchWorkflowName(event.target.value);
+              setScratchNameError('');
+            }}
+            placeholder="Workflow name"
+            error={scratchNameError || undefined}
+          />
+        </form>
+      </ResponsiveModal>
 
       <ConfirmDeleteModal
         open={Boolean(deleteWorkflow)}

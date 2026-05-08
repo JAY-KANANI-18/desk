@@ -16,6 +16,7 @@ import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { PageLayout } from '../../components/ui/PageLayout';
 import { Button } from '../../components/ui/Button';
 import { SearchInput } from '../../components/ui/inputs';
+import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { BackButton } from '../../components/channels/BackButton';
 import { ResponsiveModal } from '../../components/ui/modal';
 import { WorkflowCanvasPreview } from './WorkflowCanvas';
@@ -40,6 +41,9 @@ export function TemplateGallery() {
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<WorkflowTemplate | null>(null);
+  const [namingTemplate, setNamingTemplate] = useState<WorkflowTemplate | null>(null);
+  const [workflowName, setWorkflowName] = useState('');
+  const [workflowNameError, setWorkflowNameError] = useState('');
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
@@ -59,11 +63,11 @@ export function TemplateGallery() {
     navigate(`/workflows/${workflowId}`);
   };
 
-  const handleUseTemplate = async (template: WorkflowTemplate) => {
+  const handleUseTemplate = async (template: WorkflowTemplate, name: string) => {
     setCreating(template.id);
     try {
       const workflow = await workspaceApi.createWorkflow({
-        name: template.name,
+        name,
         description: template.description,
       });
       const templateConfig = template.defaultWorkflow?.config;
@@ -78,12 +82,42 @@ export function TemplateGallery() {
         });
       }
 
+      setNamingTemplate(null);
+      setPreviewTemplate(null);
+      setWorkflowNameError('');
       handleOpen(workflow.id);
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      setWorkflowNameError(
+        error instanceof Error ? error.message : 'Failed to create workflow',
+      );
     } finally {
       setCreating(null);
     }
+  };
+
+  const handleRequestUseTemplate = (template: WorkflowTemplate) => {
+    setWorkflowName(template.name);
+    setWorkflowNameError('');
+    setNamingTemplate(template);
+  };
+
+  const handleCloseNameModal = () => {
+    if (creating) return;
+    setNamingTemplate(null);
+    setWorkflowNameError('');
+  };
+
+  const handleConfirmUseTemplate = async () => {
+    if (!namingTemplate) return;
+
+    const trimmedName = workflowName.trim();
+
+    if (!trimmedName) {
+      setWorkflowNameError('Enter a workflow name.');
+      return;
+    }
+
+    await handleUseTemplate(namingTemplate, trimmedName);
   };
 
   const handleBack = () => {
@@ -135,16 +169,16 @@ export function TemplateGallery() {
       <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
         <div className="flex-1 overflow-y-auto p-4 pb-8 md:p-6">
           <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-            <div>
+            {/* <div>
               <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
                 {search
                   ? `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`
                   : 'Templates'}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Preview a starter flow, then use it as a draft workflow.
+Select a template to start creating a workflow
               </p>
-            </div>
+            </div> */}
             <span className="text-xs text-slate-400">
               {TEMPLATES.length} templates available
             </span>
@@ -175,7 +209,20 @@ export function TemplateGallery() {
         template={previewTemplate}
         creating={previewTemplate ? creating === previewTemplate.id : false}
         onClose={() => setPreviewTemplate(null)}
-        onUse={(template) => void handleUseTemplate(template)}
+        onUse={handleRequestUseTemplate}
+      />
+
+      <TemplateNameModal
+        template={namingTemplate}
+        name={workflowName}
+        error={workflowNameError}
+        creating={Boolean(namingTemplate && creating === namingTemplate.id)}
+        onNameChange={(value) => {
+          setWorkflowName(value);
+          setWorkflowNameError('');
+        }}
+        onClose={handleCloseNameModal}
+        onCreate={() => void handleConfirmUseTemplate()}
       />
     </PageLayout>
   );
@@ -204,13 +251,13 @@ function TemplateCard({
       <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">{template.description}</p>
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-        <span className="text-xs text-slate-400">Preview, then use</span>
+        <span className="text-xs text-slate-400"></span>
         <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[var(--color-primary)]">
           {isCreating ? (
             <Loader2 size={13} className="animate-spin" />
           ) : (
             <>
-              Preview template
+              Use template
               <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
             </>
           )}
@@ -348,6 +395,84 @@ function TemplatePreviewModal({
           </div>
         </div>
       ) : null}
+    </ResponsiveModal>
+  );
+}
+
+function TemplateNameModal({
+  template,
+  name,
+  error,
+  creating,
+  onNameChange,
+  onClose,
+  onCreate,
+}: {
+  template: WorkflowTemplate | null;
+  name: string;
+  error: string;
+  creating: boolean;
+  onNameChange: (value: string) => void;
+  onClose: () => void;
+  onCreate: () => void;
+}) {
+  const formId = 'template-workflow-name-form';
+  const trimmedName = name.trim();
+  const footer = (
+    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={onClose}
+        disabled={creating}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form={formId}
+        loading={creating}
+        loadingMode="inline"
+        disabled={!trimmedName || creating}
+        leftIcon={!creating ? <Sparkles size={15} /> : undefined}
+      >
+        Create workflow
+      </Button>
+    </div>
+  );
+
+  return (
+    <ResponsiveModal
+      isOpen={Boolean(template)}
+      onClose={onClose}
+      title="Name workflow"
+      size="sm"
+      footer={footer}
+      mobileFooter={footer}
+      mobileBodyClassName="px-5 py-4"
+      closeOnOverlayClick={!creating}
+      mobileCloseOnOverlayClick={!creating}
+    >
+      <form
+        id={formId}
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onCreate();
+        }}
+      >
+        <p className="text-sm leading-6 text-slate-500">
+          Give this workflow a clear name before creating it from the template.
+        </p>
+        <BaseInput
+          autoFocus
+          label="Workflow name"
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder={template?.name ?? 'Workflow name'}
+          error={error || undefined}
+        />
+      </form>
     </ResponsiveModal>
   );
 }
