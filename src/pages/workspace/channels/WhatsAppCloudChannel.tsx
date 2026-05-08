@@ -167,7 +167,7 @@ export const WhatsAppSidebarInfo = ({ channel }: { channel: Channel }) => (
         "End-to-end encryption",
         "Automated workflows & bots",
         "Real-time delivery receipts",
-        "Broadcast to opted-in contacts",
+        "Broadcast  for opted-in contacts",
       ].map((benefit) => (
         <li key={benefit} className="flex items-start gap-1.5 text-[11px] text-emerald-700">
           <CheckCircle size={11} className="mt-0.5 shrink-0 text-emerald-500" />

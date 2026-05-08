@@ -15,7 +15,9 @@ import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastDraftState } from "./types";
 import {
   canMutateBroadcast,
+  contentModeLabel,
   formatDateTime,
+  statusLabel,
 } from "./utils";
 
 type BroadcastDetailsDrawerProps = {
@@ -82,17 +84,17 @@ export function BroadcastDetailsDrawer({
   const content = (
     <div className="space-y-4 px-5 py-4 text-sm">
       <div>
-        <p className="text-[11px] font-medium text-gray-500">Name</p>
+        <p className="text-[11px] font-medium text-gray-500">Broadcast name</p>
         <p className="font-medium text-gray-900">{selectedRun.name}</p>
       </div>
       <div>
-        <p className="text-[11px] font-medium text-gray-500">Status</p>
+        <p className="text-[11px] font-medium text-gray-500">Progress</p>
         <div className="mt-1">
           <BroadcastStatusTag status={selectedRun.status} />
         </div>
       </div>
       <div>
-        <p className="text-[11px] font-medium text-gray-500">Channel</p>
+        <p className="text-[11px] font-medium text-gray-500">Send from</p>
         <p className="mt-1 text-gray-900">
           {selectedRun.channel?.name ?? "-"}{" "}
           <span className="text-gray-400">
@@ -111,7 +113,7 @@ export function BroadcastDetailsDrawer({
          
           fullWidth
         >
-          Edit
+          Rename
         </Button>
         <Button
           disabled={
@@ -121,7 +123,7 @@ export function BroadcastDetailsDrawer({
           variant="secondary"
           fullWidth
         >
-          Reschedule
+          Change time
         </Button>
         <Button
           disabled={
@@ -137,8 +139,7 @@ export function BroadcastDetailsDrawer({
 
       {!canMutateBroadcast(selectedRun.status) ? (
         <p className="text-xs text-gray-500">
-          Running, sent, and failed broadcasts are locked to preserve
-          delivery audit history.
+          Once a broadcast starts sending, it is locked so the delivery history stays clear.
         </p>
       ) : null}
 
@@ -146,8 +147,8 @@ export function BroadcastDetailsDrawer({
         <div className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
           <p className="text-xs font-semibold text-gray-700">
             {broadcastAction === "edit"
-              ? "Edit scheduled broadcast"
-              : "Reschedule broadcast"}
+              ? "Rename broadcast"
+              : "Change send time"}
           </p>
           {broadcastAction === "edit" ? (
             <Input
@@ -163,7 +164,7 @@ export function BroadcastDetailsDrawer({
             />
           ) : null}
           <Input
-            label="Schedule time"
+            label="When to send"
             type="datetime-local"
             inputSize="sm"
             value={broadcastDraft.scheduledAt}
@@ -198,25 +199,25 @@ export function BroadcastDetailsDrawer({
 
       <div className="grid grid-cols-2 gap-3">
         <StatItem
-          label="Scheduled"
+          label="Send time"
           value={formatDateTime(selectedRun.scheduledAt)}
         />
         <StatItem
-          label="Completed"
+          label="Finished"
           value={formatDateTime(selectedRun.completedAt)}
         />
-        <StatItem label="Audience" value={selectedRun.totalAudience} />
-        <StatItem label="Queued" value={selectedRun.queuedCount} />
+        <StatItem label="People" value={selectedRun.totalAudience} />
+        <StatItem label="Started" value={selectedRun.queuedCount} />
         <StatItem
-          label="Enqueue failed"
+          label="Needs help"
           value={selectedRun.failedEnqueue}
         />
-        <StatItem label="Mode" value={selectedRun.contentMode} />
+        <StatItem label="Message type" value={contentModeLabel(selectedRun.contentMode)} />
       </div>
 
       {selectedRun.templateName || selectedRun.textPreview ? (
         <div>
-          <p className="text-[11px] font-medium text-gray-500">Content</p>
+          <p className="text-[11px] font-medium text-gray-500">Message</p>
           <p className="mt-1 text-gray-800">
             {selectedRun.templateName
               ? `${selectedRun.templateName} (${selectedRun.templateLanguage})`
@@ -228,7 +229,7 @@ export function BroadcastDetailsDrawer({
       <div className="border-t border-gray-100 pt-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[11px] font-medium text-gray-500">
-            Delivery analytics
+            Delivery summary
           </p>
           <Button
             type="button"
@@ -247,7 +248,7 @@ export function BroadcastDetailsDrawer({
         ) : analytics ? (
           <div className="space-y-2">
             <p className="text-gray-700">
-              Total tracked recipients:{" "}
+              People with updates:{" "}
               <span className="font-semibold">
                 {analytics.totalRecipients ?? analytics.totalMessages}
               </span>
@@ -255,7 +256,7 @@ export function BroadcastDetailsDrawer({
             <ul className="space-y-1">
               {Object.entries(analytics.byStatus).map(([status, count]) => (
                 <li key={status} className="flex justify-between text-gray-700">
-                  <span className="capitalize">{status}</span>
+                  <span>{statusLabel(status)}</span>
                   <span className="font-medium">{count}</span>
                 </li>
               ))}
@@ -264,7 +265,7 @@ export function BroadcastDetailsDrawer({
             Object.keys(analytics.byQueueStatus).length > 0 ? (
               <div className="pt-2">
                 <p className="mb-1 text-[11px] font-medium text-gray-500">
-                  Queue
+                  Sending progress
                 </p>
                 <ul className="space-y-1">
                   {Object.entries(analytics.byQueueStatus).map(
@@ -273,7 +274,7 @@ export function BroadcastDetailsDrawer({
                         key={status}
                         className="flex justify-between text-gray-700"
                       >
-                        <span className="capitalize">{status}</span>
+                        <span>{statusLabel(status)}</span>
                         <span className="font-medium">{count}</span>
                       </li>
                     ),
@@ -286,14 +287,14 @@ export function BroadcastDetailsDrawer({
             </p>
           </div>
         ) : (
-          <p className="text-xs text-gray-500">No analytics yet.</p>
+          <p className="text-xs text-gray-500">No delivery summary yet.</p>
         )}
       </div>
 
       <div className="border-t border-gray-100 pt-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[11px] font-medium text-gray-500">
-            Recipient trace
+            Recipients
           </p>
           <Button
             type="button"
@@ -301,13 +302,13 @@ export function BroadcastDetailsDrawer({
             size="sm"
             onClick={onRefreshTrace}
           >
-            Refresh trace
+            Refresh list
           </Button>
         </div>
         {traceLoading ? (
           <div className="flex items-center gap-2 py-4 text-gray-500">
             <Loader2 size={18} className="animate-spin" />
-            Loading trace...
+            Loading recipients...
           </div>
         ) : trace && trace.rows.length > 0 ? (
           <div className="space-y-2">
@@ -328,20 +329,20 @@ export function BroadcastDetailsDrawer({
                   <BroadcastStatusTag status={row.messageStatus} />
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-gray-600">
-                  <p>Created: {formatDateTime(row.createdAt)}</p>
+                  <p>Prepared: {formatDateTime(row.createdAt)}</p>
                   <p>Sent: {formatDateTime(row.sentAt)}</p>
                   {row.deliveredAt ? (
                     <p>Delivered: {formatDateTime(row.deliveredAt)}</p>
                   ) : null}
                   {row.readAt ? <p>Read: {formatDateTime(row.readAt)}</p> : null}
-                  {row.queueStatus ? <p>Queue: {row.queueStatus}</p> : null}
+                  {row.queueStatus ? <p>Progress: {statusLabel(row.queueStatus)}</p> : null}
                   {row.attempts > 0 ? (
                     <p>
-                      Attempts: {row.attempts}/{row.maxRetries}
+                      Tried {row.attempts} of {row.maxRetries} times
                     </p>
                   ) : null}
                   {row.lastError ? (
-                    <p className="text-red-600">Error: {row.lastError}</p>
+                    <p className="text-red-600">Problem: {row.lastError}</p>
                   ) : null}
                 </div>
               </div>
@@ -349,7 +350,7 @@ export function BroadcastDetailsDrawer({
           </div>
         ) : (
           <p className="text-xs text-gray-500">
-            No recipient trace yet.
+            No recipients to show yet.
           </p>
         )}
       </div>
@@ -385,14 +386,14 @@ export function BroadcastDetailsDrawer({
         <div className="relative flex h-full w-full flex-col overflow-hidden border-l border-[var(--color-gray-200)] bg-white">
           <div className="border-b border-[var(--color-gray-200)] py-4 pl-16 pr-4">
             <div className="absolute left-3 top-3 z-20">
-              <Tooltip content="Collapse broadcast details">
+              <Tooltip content="Hide broadcast details">
                 <span className="inline-flex">
                   <IconButton
                     type="button"
                     onClick={onClose}
                     variant="ghost"
                     size="sm"
-                    aria-label="Collapse broadcast details"
+                    aria-label="Hide broadcast details"
                     icon={<PanelLeftOpen size={18} />}
                   />
                 </span>

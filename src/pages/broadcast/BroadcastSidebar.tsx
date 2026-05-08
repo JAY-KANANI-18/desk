@@ -48,8 +48,7 @@ export function BroadcastSidebar({
           isMobile ? "" : "border border-gray-200"
         }`}
       >
-        WhatsApp broadcasts use approved templates only. Runs stay traceable after delivery starts, so scheduled
-        changes are locked once a broadcast begins.
+        WhatsApp broadcasts need an approved template. Once sending starts, the broadcast is locked so the delivery history stays clear.
       </div>
     </>
   );

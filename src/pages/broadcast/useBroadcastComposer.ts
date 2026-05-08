@@ -9,7 +9,7 @@ import type {
   LifecycleRow,
   TagRow,
 } from "./types";
-import { formatDateTime, templateVariableKeys } from "./utils";
+import { formatDateTime, templateFieldLabel, templateVariableKeys } from "./utils";
 
 const INITIAL_FORM: BroadcastFormState = {
   name: "",
@@ -117,7 +117,7 @@ export function useBroadcastComposer({
 
   const runAudiencePreview = useCallback(async () => {
     if (!form.channelId) {
-      toast.error("Select a channel");
+      toast.error("Choose where to send from");
       return;
     }
     setPreviewLoading(true);
@@ -133,9 +133,9 @@ export function useBroadcastComposer({
         totalMatching: result.totalMatching,
         sample: result.sample ?? [],
       });
-      toast.success(`Audience: ${result.totalMatching} contact(s) on this channel`);
+      toast.success(`${result.totalMatching} people can receive this broadcast`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Preview failed");
+      toast.error(error instanceof Error ? error.message : "Could not check recipients");
     } finally {
       setPreviewLoading(false);
     }
@@ -143,32 +143,32 @@ export function useBroadcastComposer({
 
   const handleSend = useCallback(async () => {
     if (!form.name.trim()) {
-      toast.error("Name this broadcast");
+      toast.error("Give this broadcast a name");
       return;
     }
     if (!form.channelId) {
-      toast.error("Select a channel");
+      toast.error("Choose where to send from");
       return;
     }
     if (isWhatsApp) {
       if (!selectedTemplate) {
-        toast.error("Choose an approved WhatsApp template");
+        toast.error("Choose an approved WhatsApp message");
         return;
       }
       for (const key of templateVariableKeys(selectedTemplate.variables)) {
         if (!(templateVars[key] ?? "").trim()) {
-          toast.error(`Fill template variable {{${key}}}`);
+          toast.error(`Fill in ${templateFieldLabel(key)}`);
           return;
         }
       }
     } else if (!form.text.trim()) {
-      toast.error("Enter message text");
+      toast.error("Write your message");
       return;
     }
 
     if (form.scheduleMode === "later") {
       if (!form.scheduledAt) {
-        toast.error("Choose a schedule time");
+        toast.error("Choose when to send");
         return;
       }
       if (new Date(form.scheduledAt).getTime() <= Date.now() + 30_000) {
@@ -205,18 +205,18 @@ export function useBroadcastComposer({
       setLastSendResult(result);
       toast.success(
         result.status === "scheduled"
-          ? `Scheduled ${result.totalAudience} recipient(s) for ${formatDateTime(result.scheduledAt)}`
-          : `Queued ${result.queued} message(s)${result.failed ? `, ${result.failed} failed to enqueue` : ""}`,
+          ? `Scheduled for ${result.totalAudience} people on ${formatDateTime(result.scheduledAt)}`
+          : `Started sending to ${result.queued} people${result.failed ? `, ${result.failed} need attention` : ""}`,
       );
       if (result.whatsAppComplianceNote) {
-        toast(result.whatsAppComplianceNote, { icon: "i" });
+        toast("WhatsApp will only send approved messages to people who can receive them.", { icon: "i" });
       }
       setShowComposer(false);
       setForm(INITIAL_FORM);
       setAudiencePreview(null);
       await reloadRuns();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Send failed");
+      toast.error(error instanceof Error ? error.message : "Could not start broadcast");
     } finally {
       setSending(false);
     }

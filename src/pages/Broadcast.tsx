@@ -59,7 +59,7 @@ export const Broadcast = () => {
 
   return (
     <PageLayout
-      title="Broadcasts"
+      title="Message broadcasts"
       toolbar={desktopToolbar}
       aside={isMobile ? undefined : broadcastDetailsDrawer}
       asideOpen={Boolean(page.selectedRun)}
@@ -122,14 +122,14 @@ export const Broadcast = () => {
 
           {page.lastSendResult && (
             <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-3 text-sm text-gray-600">
-              Last run:{" "}
+              Last broadcast:{" "}
               <span className="font-medium text-gray-900">
                 {page.lastSendResult.status === "scheduled"
                   ? `scheduled for ${formatDateTime(page.lastSendResult.scheduledAt)}`
-                  : `${page.lastSendResult.queued} queued`}
+                  : `${page.lastSendResult.queued} people started`}
               </span>
               {page.lastSendResult.failed > 0 && (
-                <span className="ml-2 text-red-600">{page.lastSendResult.failed} enqueue errors</span>
+                <span className="ml-2 text-red-600">{page.lastSendResult.failed} need attention</span>
               )}
               <Button
                 type="button"
@@ -138,7 +138,7 @@ export const Broadcast = () => {
                 className="ml-2"
                 onClick={() => void page.openLastRun()}
               >
-                View run
+                View details
               </Button>
             </div>
           )}

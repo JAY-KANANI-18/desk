@@ -42,7 +42,7 @@ export function useBroadcastDetails({
       setAnalytics(analyticsResponse);
       setTrace(traceResponse);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load broadcast details");
+      toast.error(error instanceof Error ? error.message : "Could not load broadcast details");
     } finally {
       setAnalyticsLoading(false);
       setTraceLoading(false);
@@ -66,7 +66,7 @@ export function useBroadcastDetails({
   const openBroadcastAction = useCallback((action: "edit" | "reschedule") => {
     if (!selectedRun) return;
     if (!canMutateBroadcast(selectedRun.status)) {
-      toast.error("This broadcast is already running or completed, so it is locked.");
+      toast.error("This broadcast is already sending or finished.");
       return;
     }
     setBroadcastDraft({ name: selectedRun.name, scheduledAt: toDateTimeLocal(selectedRun.scheduledAt) });
@@ -84,7 +84,7 @@ export function useBroadcastDetails({
       return;
     }
     if (!broadcastDraft.scheduledAt) {
-      toast.error("Choose a schedule time");
+      toast.error("Choose when to send");
       return;
     }
     if (new Date(broadcastDraft.scheduledAt).getTime() <= Date.now() + 30_000) {
@@ -101,7 +101,7 @@ export function useBroadcastDetails({
       setSelectedRun(updated);
       await refreshSelectedBroadcast(updated.id);
       setBroadcastAction(null);
-      toast.success(broadcastAction === "edit" ? "Broadcast updated" : "Broadcast rescheduled");
+      toast.success(broadcastAction === "edit" ? "Broadcast updated" : "Send time changed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update broadcast");
     } finally {
@@ -116,10 +116,10 @@ export function useBroadcastDetails({
       return;
     }
     if (broadcastAction) {
-      toast.error("Save or cancel the current edit before sending now.");
+      toast.error("Save or cancel the current change before sending now.");
       return;
     }
-    if (!window.confirm("Send this scheduled broadcast now? This cannot be edited after it starts.")) {
+    if (!window.confirm("Send this scheduled broadcast now? You cannot edit it after it starts.")) {
       return;
     }
 
@@ -143,7 +143,7 @@ export function useBroadcastDetails({
     try {
       setAnalytics(await broadcastApi.analytics(selectedRun.id));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Refresh failed");
+      toast.error(error instanceof Error ? error.message : "Could not refresh delivery summary");
     } finally {
       setAnalyticsLoading(false);
     }
@@ -155,7 +155,7 @@ export function useBroadcastDetails({
     try {
       setTrace(await broadcastApi.trace(selectedRun.id));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Trace refresh failed");
+      toast.error(error instanceof Error ? error.message : "Could not refresh recipients");
     } finally {
       setTraceLoading(false);
     }

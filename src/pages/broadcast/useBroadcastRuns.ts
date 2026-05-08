@@ -55,7 +55,7 @@ export function useBroadcastRuns() {
       setRunsTotal(typeof result?.total === "number" ? result.total : rows.length);
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to load broadcasts");
+      toast.error(error instanceof Error ? error.message : "Could not load broadcasts");
       if (replace) {
         setRuns([]);
         setRunsTotal(0);
@@ -101,7 +101,7 @@ export function useBroadcastRuns() {
   const todayKey = formatDateKey(new Date());
   const activeRunLabel = debouncedSearchQuery
     ? `${runsTotal} result${runsTotal === 1 ? "" : "s"}`
-    : `${runs.length} loaded${runsTotal > runs.length ? ` of ${runsTotal}` : ""}`;
+    : `${runs.length} broadcast${runs.length === 1 ? "" : "s"}${runsTotal > runs.length ? ` of ${runsTotal}` : ""}`;
 
   const toggleSort = useCallback((field: BroadcastSortableField) => {
     const nextOrder = sortBy === field && sortOrder === "asc" ? "desc" : "asc";

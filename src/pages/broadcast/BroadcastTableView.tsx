@@ -8,7 +8,7 @@ import type { BroadcastRunRow } from "../../lib/broadcastApi";
 import { channelConfig } from "../inbox/data";
 import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastSortableField } from "./types";
-import { formatDateTime } from "./utils";
+import { contentModeLabel, formatDateTime } from "./utils";
 
 type BroadcastTableViewProps = {
   runs: BroadcastRunRow[];
@@ -42,7 +42,7 @@ export function BroadcastTableView({
   const columns: Array<DataTableColumn<BroadcastRunRow, BroadcastSortableField>> = [
     {
       id: "status",
-      header: "Status",
+      header: "Progress",
       sortable: true,
       sortField: "status",
       cell: (run) => <BroadcastStatusTag status={run.status} />,
@@ -50,7 +50,7 @@ export function BroadcastTableView({
     },
     {
       id: "scheduledAt",
-      header: "Schedule",
+      header: "Send time",
       sortable: true,
       sortField: "scheduledAt",
       cell: (run) =>
@@ -60,7 +60,7 @@ export function BroadcastTableView({
     },
     {
       id: "name",
-      header: "Name",
+      header: "Broadcast name",
       sortable: true,
       sortField: "name",
       cell: (run) => <span className="font-medium text-gray-900">{run.name}</span>,
@@ -68,7 +68,7 @@ export function BroadcastTableView({
     },
     {
       id: "channel",
-      header: "Channel",
+      header: "Send from",
       cell: (run) => (
         <span className="text-gray-700">
           {run.channel?.name ?? "-"}{" "}
@@ -79,25 +79,25 @@ export function BroadcastTableView({
     },
     {
       id: "contentMode",
-      header: "Mode",
-      cell: (run) => <span className="capitalize">{run.contentMode}</span>,
+      header: "Message type",
+      cell: (run) => <span>{contentModeLabel(run.contentMode)}</span>,
       mobile: "detail",
     },
     {
       id: "totalAudience",
-      header: "Audience",
+      header: "People",
       cell: (run) => run.totalAudience,
       mobile: "detail",
     },
     {
       id: "queuedCount",
-      header: "Queued",
+      header: "Started",
       cell: (run) => run.queuedCount,
       mobile: "detail",
     },
     {
       id: "failedEnqueue",
-      header: "Failed",
+      header: "Needs help",
       cell: (run) => run.failedEnqueue,
       mobile: "detail",
     },
@@ -114,7 +114,7 @@ export function BroadcastTableView({
           loadingMode="inline"
           variant="secondary"
         >
-          Load more broadcasts
+          Show more broadcasts
         </Button>
       </div>
     ) : null;
@@ -129,13 +129,13 @@ export function BroadcastTableView({
       loadingLabel="Loading broadcasts..."
       emptyTitle={
         debouncedSearchQuery || selectedStatus !== "All"
-          ? "No broadcasts matched this search or filter."
+          ? "No broadcasts match this search or filter."
           : "No broadcasts yet."
       }
       emptyDescription={
         debouncedSearchQuery || selectedStatus !== "All"
-          ? "Try another search or status."
-          : "Create one to reach opted-in contacts on a connected channel."
+          ? "Try another search or choose a different status."
+          : "Create one to message people on a connected channel."
       }
       sort={{
         field: sortBy,
@@ -215,7 +215,7 @@ export function BroadcastTableView({
 
               <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Schedule
+                  Send time
                 </span>
                 <span className="min-w-0 truncate text-right text-sm font-semibold text-slate-800">
                   {scheduleTime}

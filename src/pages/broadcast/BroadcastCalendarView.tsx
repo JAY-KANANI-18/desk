@@ -43,7 +43,7 @@ function BroadcastCalendarEventButton({
             </p>
           </div>
           <span className={`shrink-0 opacity-70 ${compact ? "text-[11px]" : "text-xs"}`}>
-            {event.totalAudience}
+            {event.totalAudience} people
           </span>
         </div>
       </div>
@@ -120,7 +120,7 @@ export function BroadcastCalendarView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold text-gray-900">{monthLabel}</h3>
-              <p className="text-xs text-gray-500">Scheduled broadcasts by send date</p>
+              <p className="text-xs text-gray-500">Broadcasts planned by send date</p>
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="soft"  onClick={onToday}>
@@ -242,7 +242,7 @@ export function BroadcastCalendarView({
               </div>
             ) : (
               <div className="rounded-3xl bg-slate-50 px-6 py-8 text-center text-sm text-slate-500">
-                No scheduled broadcasts for this day.
+                No broadcasts planned for this day.
               </div>
             )}
           </section>
@@ -259,7 +259,7 @@ export function BroadcastCalendarView({
               loadingMode="inline"
               loadingLabel="Loading more broadcasts"
             >
-              Load more broadcasts
+              Show more broadcasts
             </Button>
           </div>
         )}
@@ -273,7 +273,7 @@ export function BroadcastCalendarView({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-4">
           <div>
             <h3 className="text-base font-semibold text-gray-900">{monthLabel}</h3>
-            <p className="text-xs text-gray-500">Scheduled broadcasts by send date</p>
+            <p className="text-xs text-gray-500">Broadcasts planned by send date</p>
           </div>
           <div className="flex items-center gap-2">
             <Button type="button" variant="secondary"  onClick={onToday}>
@@ -381,7 +381,7 @@ export function BroadcastCalendarView({
             loadingMode="inline"
             loadingLabel="Loading more broadcasts"
           >
-            Load more broadcasts
+            Show more broadcasts
           </Button>
         </div>
       )}

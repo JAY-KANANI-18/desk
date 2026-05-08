@@ -101,7 +101,7 @@ const PAGES: PageEntry[] = [
   {
     id: 'broadcast',
     title: 'Broadcast',
-    description: 'Send mass messages to segmented contact lists across multiple channels with scheduling and template support.',
+    description: 'Send messages to selected groups of contacts, either now or at a planned time.',
     url: '/broadcast',
     category: 'core',
     icon: <Radio size={22} />,
@@ -109,12 +109,12 @@ const PAGES: PageEntry[] = [
     textColor: 'text-orange-600',
     borderColor: 'border-orange-500',
     features: [
-      'Create broadcast campaigns',
-      'Audience segmentation',
-      'Multi-channel delivery',
-      'Schedule for later',
-      'Template message support',
-      'Campaign status tracking',
+      'Create message broadcasts',
+      'Choose contacts by tags or stage',
+      'Send from connected channels',
+      'Send now or schedule for later',
+      'Approved WhatsApp messages',
+      'Delivery progress tracking',
     ],
   },
   {

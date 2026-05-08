@@ -11,7 +11,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { ResponsiveModal } from "../../components/ui/modal";
 import { BroadcastTagPicker } from "./BroadcastTagPicker";
 
-import { templateVariableKeys } from "./utils";
+import { templateFieldLabel, templateVariableKeys } from "./utils";
 import type {
   BroadcastAudiencePreviewState,
   BroadcastFormState,
@@ -66,7 +66,7 @@ export function BroadcastComposerModal({
   onSend,
 }: BroadcastComposerModalProps) {
   const templateOptions = [
-    { value: "", label: "Select template" },
+    { value: "", label: "Choose approved message" },
     ...waTemplates.map((template) => ({
       value: template.id,
       label: `${template.name} (${template.language}) - ${template.category}`,
@@ -76,8 +76,8 @@ export function BroadcastComposerModal({
   const content = (
     <div className="space-y-4 px-4 py-5 md:px-6">
       <Input
-        label="Internal name"
-        placeholder="Q1 promo - WhatsApp"
+        label="Broadcast name"
+        placeholder="June offer for customers"
         value={form.name}
         onChange={(event) =>
           onFormChange({ ...form, name: event.target.value })
@@ -85,20 +85,20 @@ export function BroadcastComposerModal({
       />
 
       <ChannelSelectMenu
-        label="Channel"
+        label="Send from"
         value={form.channelId}
         channels={channels}
         onChange={(channelId) =>
           onFormChange({ ...form, channelId })
         }
-        placeholder="Select channel"
+        placeholder="Choose a connected channel"
         groupLabel="Connected channels"
         channelFilter={(channel) => channel.status === "connected" || !channel.status}
         searchable
       />
 
       <LifecycleSelectMenu
-        label="Lifecycle"
+        label="Customer stage"
         value={form.lifecycleId}
         stages={lifecycles}
         onChange={(stageId) =>
@@ -108,8 +108,8 @@ export function BroadcastComposerModal({
       />
 
       <BroadcastTagPicker
-        label="Tags (any match)"
-        hint="Recipients match if they have at least one selected tag."
+        label="Send to people with these tags"
+        hint="Leave empty to include everyone on the selected channel."
         tags={tags}
         value={form.tagIds}
         onChange={(tagIds) => onFormChange({ ...form, tagIds })}
@@ -128,13 +128,12 @@ export function BroadcastComposerModal({
           label={
             <span className="flex items-center gap-1 text-sm font-medium text-gray-700">
               <ShieldCheck size={14} className="text-emerald-600" />
-              Exclude marketing opt-outs
+              Do not message people who opted out
             </span>
           }
           description={
             <span className="text-xs text-gray-500">
-              Recommended for promotional campaigns. Contacts with marketing
-              opt-out are skipped.
+              Recommended for promotions. People who opted out will be skipped.
             </span>
           }
         />
@@ -150,11 +149,11 @@ export function BroadcastComposerModal({
           variant="secondary"
           
         >
-          Preview audience
+          Check recipients
         </Button>
         {audiencePreview ? (
           <span className="text-sm text-gray-600">
-            ~{audiencePreview.totalMatching} recipients
+            {audiencePreview.totalMatching} people found
           </span>
         ) : null}
       </div>
@@ -172,11 +171,11 @@ export function BroadcastComposerModal({
       {isWhatsApp ? (
         <div className="space-y-2 border-t border-gray-100 pt-4">
           <p className="text-sm font-medium text-gray-800">
-            WhatsApp template
+            Approved WhatsApp message
           </p>
           <p className="text-xs text-gray-500">
-            Meta requires an approved template for most outbound
-            WhatsApp broadcasts.
+            WhatsApp requires an approved message before you can contact
+            people first.
           </p>
           <Select
             value={selectedTemplateId}
@@ -189,7 +188,7 @@ export function BroadcastComposerModal({
             ? templateVariableKeys(selectedTemplate.variables).map((key) => (
                 <Input
                   key={key}
-                  label={`{{${key}}}`}
+                  label={templateFieldLabel(key)}
                   inputSize="sm"
                   value={templateVars[key] ?? ""}
                   onChange={(event) =>
@@ -215,7 +214,7 @@ export function BroadcastComposerModal({
       )}
 
       <div className="space-y-3 border-t border-gray-100 pt-4">
-        <p className="text-sm font-medium text-gray-800">Send time</p>
+        <p className="text-sm font-medium text-gray-800">When should it go?</p>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
@@ -243,7 +242,7 @@ export function BroadcastComposerModal({
               onFormChange({ ...form, scheduleMode: "later" })
             }
           >
-            Schedule
+            Pick a time
           </Button>
         </div>
         {form.scheduleMode === "later" ? (
@@ -257,13 +256,13 @@ export function BroadcastComposerModal({
                 scheduledAt: event.target.value,
               })
             }
-            helperText="The server will pick it up when the scheduled time is due."
+            helperText="We will start sending at this time."
           />
         ) : null}
       </div>
 
       <Input
-        label="Batch limit"
+        label="People to send to"
         type="number"
         min={1}
         max={500}
@@ -274,7 +273,7 @@ export function BroadcastComposerModal({
             limit: parseInt(event.target.value, 10) || 200,
           })
         }
-        helperText="Max 500 per run. Larger campaigns should be split."
+        helperText="Maximum 500 people in one broadcast."
       />
     </div>
   );
@@ -305,7 +304,7 @@ export function BroadcastComposerModal({
     <ResponsiveModal
       isOpen={open}
       onClose={onClose}
-      title="New broadcast"
+      title="New message broadcast"
       mobileTitle={
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -313,7 +312,7 @@ export function BroadcastComposerModal({
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
             <Users size={18} />
-            New broadcast
+            New message broadcast
           </h2>
         </div>
       }

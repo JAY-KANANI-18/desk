@@ -16,14 +16,38 @@ export function templateVariableKeys(raw: unknown): string[] {
 }
 
 export function statusLabel(status: string) {
-  if (status === "partial_failure") return "Partial failure";
-  if (status === "dead_letter") return "Dead letter";
-  if (status === "completed") return "Completed";
+  if (status === "partial_failure") return "Needs attention";
+  if (status === "dead_letter") return "Needs manual review";
+  if (status === "completed") return "Sent";
   if (status === "scheduled") return "Scheduled";
-  if (status === "running") return "Running";
+  if (status === "running") return "Sending";
+  if (status === "sending") return "Sending";
+  if (status === "queued") return "Ready to send";
+  if (status === "pending") return "Waiting";
+  if (status === "sent") return "Sent";
+  if (status === "delivered") return "Delivered";
+  if (status === "read") return "Read";
+  if (status === "failed") return "Could not send";
   if (status === "unsubscribed") return "Unsubscribed";
-  if (status === "bounced") return "Bounced";
+  if (status === "bounced") return "Could not deliver";
   return status;
+}
+
+export function contentModeLabel(mode?: string | null) {
+  if (mode === "template") return "Approved template";
+  if (mode === "text") return "Text message";
+  return mode || "-";
+}
+
+export function templateFieldLabel(key: string) {
+  const normalized = key.trim();
+  if (!normalized) return "Template field";
+  if (/^\d+$/.test(normalized)) return `Field ${normalized}`;
+
+  return normalized
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^./, (first) => first.toUpperCase());
 }
 
 export function statusBadgeClass(status: string) {
@@ -84,7 +108,7 @@ export function calendarEventClass(status: string) {
 
 export function calendarStatusLabel(status: string) {
   if (status === "completed") return "Sent";
-  if (status === "partial_failure") return "Failed";
+  if (status === "partial_failure") return "Needs attention";
   return statusLabel(status);
 }
 
@@ -94,8 +118,8 @@ export function canMutateBroadcast(status?: string) {
 
 export function statusFilterToApiStatus(value: string): BroadcastRunStatus | undefined {
   if (value === "Scheduled") return "scheduled";
-  if (value === "Running") return "running";
-  if (value === "Completed") return "completed";
-  if (value === "Partial failure") return "partial_failure";
+  if (value === "Sending") return "running";
+  if (value === "Sent") return "completed";
+  if (value === "Needs attention") return "partial_failure";
   return undefined;
 }

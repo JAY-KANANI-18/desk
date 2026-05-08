@@ -1,4 +1,4 @@
-import { Calendar, List, ListFilter, Plus, RefreshCw, Table } from "@/components/ui/icons";
+import { Calendar, List, ListFilter, Plus, RefreshCw } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
 import { SearchInput } from "../../components/ui/inputs";
@@ -119,22 +119,20 @@ export function BroadcastToolbar({
           <div className="flex flex-shrink-0 items-center rounded-xl bg-slate-100 p-0.5">
             <Button
               type="button"
-                            leftIcon={<List size={14} />}
-
+              iconOnly
+              aria-label="List view"
+              leftIcon={<List size={14} />}
               variant={viewMode === "table" ? "secondary" : "ghost"}
               onClick={() => onViewModeChange("table")}
-            >
-              
-            </Button>
+            />
             <Button
               type="button"
-            
+              iconOnly
+              aria-label="Calendar view"
               variant={viewMode === "calendar" ? "secondary" : "ghost"}
               leftIcon={<Calendar size={14} />}
               onClick={() => onViewModeChange("calendar")}
-            >
-              
-            </Button>
+            />
           </div>
         </div>
       ) : (
@@ -194,12 +192,11 @@ export function BroadcastToolbar({
             <div className="flex  min-w-0 flex-1 flex-shrink-0 items-center gap-2 md:justify-end rounded-xl  p-0.5">
             <Button
               type="button"
-                            leftIcon={<Table size={14} />}
-
+              leftIcon={<List size={14} />}
               variant={viewMode === "table" ? "secondary" : "ghost"}
               onClick={() => onViewModeChange("table")}
             >
-              Table
+              List
             </Button>
             <Button
               type="button"
