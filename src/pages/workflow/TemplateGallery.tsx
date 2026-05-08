@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   Loader2,
-  Plus,
   Search,
   Sparkles,
 } from '@/components/ui/icons';
@@ -87,18 +86,6 @@ export function TemplateGallery() {
     }
   };
 
-  const handleScratch = async () => {
-    setCreating('scratch');
-    try {
-      const workflow = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
-      handleOpen(workflow.id);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setCreating(null);
-    }
-  };
-
   const handleBack = () => {
     navigate('/workflows');
   };
@@ -140,20 +127,7 @@ export function TemplateGallery() {
     <PageLayout
       eyebrow="Workflows"
       title="Workflow Templates"
-      // subtitle="Preview a starter flow, then create it as a draft workflow."
       leading={<BackButton onClick={handleBack} ariaLabel="Back to workflows" />}
-      actions={
-        <Button
-          onClick={() => void handleScratch()}
-          disabled={creating === 'scratch'}
-          loading={creating === 'scratch'}
-          loadingMode="inline"
-          leftIcon={<Plus size={16} />}
-          className="hidden md:inline-flex"
-        >
-          Start from scratch
-        </Button>
-      }
       toolbar={desktopToolbar}
       className="bg-white"
       contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
@@ -168,30 +142,12 @@ export function TemplateGallery() {
                   : 'Templates'}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Preview a starter flow first, or start with an empty workflow.
+                Preview a starter flow, then use it as a draft workflow.
               </p>
             </div>
             <span className="text-xs text-slate-400">
               {TEMPLATES.length} templates available
             </span>
-          </div>
-
-          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 md:hidden">
-            <p className="text-sm font-semibold text-slate-950">Start from scratch</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Open a blank draft and add your own trigger, steps, and paths.
-            </p>
-            <Button
-              fullWidth
-              className="mt-3"
-              onClick={() => void handleScratch()}
-              disabled={creating === 'scratch'}
-              loading={creating === 'scratch'}
-              loadingMode="inline"
-              leftIcon={<Plus size={16} />}
-            >
-              Create blank workflow
-            </Button>
           </div>
 
           {filtered.length === 0 ? (

@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState, useEffect, useRef, type ChangeEvent, type DragEvent, type ReactNode } from 'react';
 import {
-  Plus, Play, Square, Pencil,
+  Blocks, Plus, Play, Square, Pencil,
   Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight, Calendar, User,
+  X,
 } from '@/components/ui/icons';
 import type { Workflow, WorkflowStatus } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
@@ -182,6 +183,8 @@ export function WorkflowList() {
   const [importError, setImportError] = useState<string | null>(null);
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
+  const [mobileCreateMenuOpen, setMobileCreateMenuOpen] = useState(false);
+  const [creatingScratchWorkflow, setCreatingScratchWorkflow] = useState(false);
   const [sortField, setSortField] = useState<WorkflowSortField>('name');
   const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
   const navigate = useNavigate();
@@ -260,7 +263,21 @@ export function WorkflowList() {
   };
 
   const handleCreateNew = useCallback(() => {
+    setMobileCreateMenuOpen(false);
     navigate('/workflows/templates');
+  }, [navigate]);
+
+  const handleCreateFromScratch = useCallback(async () => {
+    setMobileCreateMenuOpen(false);
+    setCreatingScratchWorkflow(true);
+    try {
+      const workflow = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
+      navigate(`/workflows/${workflow.id}`);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Failed to create workflow');
+    } finally {
+      setCreatingScratchWorkflow(false);
+    }
   }, [navigate]);
 
   const handleExportWorkflow = async (workflow: Workflow) => {
@@ -882,10 +899,93 @@ export function WorkflowList() {
           />
         </div>
 
+        {isMobile ? (
+          <>
+            <div
+              className={`fixed inset-0 z-[68] bg-slate-950/0 opacity-0 backdrop-blur-0 transition-all duration-200 md:hidden ${
+                mobileCreateMenuOpen
+                  ? 'pointer-events-auto bg-slate-950/10 opacity-100 backdrop-blur-[1px]'
+                  : 'pointer-events-none'
+              }`}
+              onClick={() => setMobileCreateMenuOpen(false)}
+            />
+            <div
+              className={`fixed right-6 z-[71] flex flex-col items-end gap-2 md:hidden ${
+                mobileCreateMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'
+              }`}
+              style={{ bottom: 'calc(9.75rem + env(safe-area-inset-bottom))' }}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute -inset-x-5 -inset-y-3 rounded-[2rem] bg-[var(--color-primary-light)] blur-2xl transition-opacity duration-300 ${
+                  mobileCreateMenuOpen ? 'opacity-90' : 'opacity-0'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={handleCreateNew}
+                className={`relative flex min-h-12 min-w-[11rem] items-center gap-3 rounded-full border border-white/80 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_18px_42px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5 transition-all duration-200 ease-out active:scale-[0.98] ${
+                  mobileCreateMenuOpen
+                    ? 'translate-y-0 scale-100 opacity-100'
+                    : 'translate-y-6 scale-95 opacity-0'
+                }`}
+                style={{ transitionDelay: mobileCreateMenuOpen ? '70ms' : '0ms' }}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-emerald-600">
+                  <Blocks size={16} />
+                </span>
+                Use template
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateFromScratch()}
+                disabled={creatingScratchWorkflow}
+                className={`relative flex min-h-12 min-w-[11rem] items-center gap-3 rounded-full border border-white/80 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_18px_42px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5 transition-all duration-200 ease-out active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${
+                  mobileCreateMenuOpen
+                    ? 'translate-y-0 scale-100 opacity-100'
+                    : 'translate-y-4 scale-95 opacity-0'
+                }`}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[var(--color-primary)]">
+                  <Pencil size={15} />
+                </span>
+                {creatingScratchWorkflow ? 'Creating...' : 'From scratch'}
+              </button>
+            </div>
+          </>
+        ) : null}
+
         <FloatingActionButton
-          label="New workflow"
-          icon={<Plus size={24} />}
-          onClick={handleCreateNew}
+          label={mobileCreateMenuOpen ? 'Close workflow options' : 'New workflow'}
+          icon={
+            <span className="relative block h-6 w-6">
+              <Plus
+                size={24}
+                className={`absolute left-1/2 top-1/2 transition-all duration-200 ease-out ${
+                  mobileCreateMenuOpen
+                    ? '-translate-x-1/2 -translate-y-1/2 rotate-90 scale-50 opacity-0'
+                    : '-translate-x-1/2 -translate-y-1/2 rotate-0 scale-100 opacity-100'
+                }`}
+              />
+              <X
+                size={22}
+                className={`absolute left-1/2 top-1/2 transition-all duration-200 ease-out ${
+                  mobileCreateMenuOpen
+                    ? '-translate-x-1/2 -translate-y-1/2 rotate-0 scale-100 opacity-100'
+                    : '-translate-x-1/2 -translate-y-1/2 -rotate-90 scale-50 opacity-0'
+                }`}
+              />
+            </span>
+          }
+          className="z-[72] transition-transform duration-200 active:scale-95"
+          style={{
+            backgroundColor: 'var(--color-primary)',
+            backgroundImage: 'none',
+            borderColor: 'transparent',
+            boxShadow: '0 16px 36px rgba(79,70,229,0.28)',
+          }}
+          aria-expanded={mobileCreateMenuOpen}
+          onClick={() => setMobileCreateMenuOpen((open) => !open)}
         />
       </div>
 
