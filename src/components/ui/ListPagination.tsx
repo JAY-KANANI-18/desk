@@ -111,7 +111,7 @@ export function ListPagination({
           disabled={page === 1}
           className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
-          {"<-"} Prev
+         Prev
         </button>
         {items.map((item, index) =>
           item === "..." ? (
@@ -135,7 +135,7 @@ export function ListPagination({
           disabled={page === totalPages}
           className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40 md:border md:border-gray-300 md:bg-white md:hover:bg-gray-50"
         >
-          Next {"->"}
+          Next 
         </button>
       </div>
     </div>

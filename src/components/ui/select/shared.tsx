@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -267,6 +268,16 @@ export function useSelectController<T>({
 
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [shouldScrollHighlightedIndex, setShouldScrollHighlightedIndex] = useState(false);
+  const didInitializeHighlightRef = useRef(false);
+
+  const updateHighlightedIndex = useCallback(
+    (index: number, opts: { scroll?: boolean } = {}) => {
+      setShouldScrollHighlightedIndex(Boolean(opts.scroll));
+      setHighlightedIndex(index);
+    },
+    [],
+  );
 
   const focusTrigger = () => {
     window.requestAnimationFrame(() => {
@@ -276,6 +287,7 @@ export function useSelectController<T>({
 
   const close = (focusAfterClose = false) => {
     setIsOpen(false);
+    setShouldScrollHighlightedIndex(false);
 
     if (focusAfterClose) {
       focusTrigger();
@@ -305,7 +317,7 @@ export function useSelectController<T>({
     );
 
     if (nextIndex >= 0) {
-      setHighlightedIndex(nextIndex);
+      updateHighlightedIndex(nextIndex, { scroll: true });
     }
   };
 
@@ -316,7 +328,7 @@ export function useSelectController<T>({
       return;
     }
 
-    setHighlightedIndex(index);
+    updateHighlightedIndex(index);
     onSelect(option, index);
 
     if (closeOnSelect) {
@@ -397,12 +409,16 @@ export function useSelectController<T>({
         break;
       case "Home":
         event.preventDefault();
-        setHighlightedIndex(findEnabledIndex(options, isOptionDisabled, -1, 1));
+        updateHighlightedIndex(
+          findEnabledIndex(options, isOptionDisabled, -1, 1),
+          { scroll: true },
+        );
         break;
       case "End":
         event.preventDefault();
-        setHighlightedIndex(
+        updateHighlightedIndex(
           findEnabledIndex(options, isOptionDisabled, 0, -1),
+          { scroll: true },
         );
         break;
       default:
@@ -414,7 +430,17 @@ export function useSelectController<T>({
 
   useEffect(() => {
     if (!isOpen) {
-      setHighlightedIndex(-1);
+      updateHighlightedIndex(-1);
+      didInitializeHighlightRef.current = false;
+      return;
+    }
+
+    if (didInitializeHighlightRef.current) {
+      return;
+    }
+
+    if (options.length === 0) {
+      updateHighlightedIndex(-1);
       return;
     }
 
@@ -425,8 +451,9 @@ export function useSelectController<T>({
       !isOptionDisabled(initialOption)
         ? initialHighlightedIndex
         : findEnabledIndex(options, isOptionDisabled, -1, 1);
-    setHighlightedIndex(nextIndex);
-  }, [initialHighlightedIndex, isOpen, options, isOptionDisabled]);
+    updateHighlightedIndex(nextIndex, { scroll: true });
+    didInitializeHighlightRef.current = true;
+  }, [initialHighlightedIndex, isOpen, options, isOptionDisabled, updateHighlightedIndex]);
 
   return {
     containerRef,
@@ -434,7 +461,8 @@ export function useSelectController<T>({
     listId,
     isOpen,
     highlightedIndex,
-    setHighlightedIndex,
+    shouldScrollHighlightedIndex,
+    setHighlightedIndex: updateHighlightedIndex,
     open,
     close,
     toggle,
@@ -768,6 +796,7 @@ export function SelectOptionRow({
   id,
   selected,
   highlighted,
+  scrollOnHighlight = true,
   disabled = false,
   onSelect,
   onMouseDown,
@@ -781,6 +810,7 @@ export function SelectOptionRow({
   id: string;
   selected: boolean;
   highlighted: boolean;
+  scrollOnHighlight?: boolean;
   disabled?: boolean;
   onSelect: () => void;
   onMouseDown?: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -806,7 +836,7 @@ export function SelectOptionRow({
         : "text-[var(--color-primary)]";
 
   useLayoutEffect(() => {
-    if (!highlighted) {
+    if (!highlighted || !scrollOnHighlight) {
       return undefined;
     }
 
@@ -819,7 +849,7 @@ export function SelectOptionRow({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [highlighted]);
+  }, [highlighted, scrollOnHighlight]);
 
   return (
     <button

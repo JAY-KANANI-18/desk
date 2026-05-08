@@ -97,6 +97,7 @@ export function SelectWithIconLabel({
                   id={getSelectOptionId(controller.listId, index)}
                   selected={option.value === value}
                   highlighted={controller.highlightedIndex === index}
+                  scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                   disabled={option.disabled}
                   onSelect={() => controller.selectByIndex(index)}
                   onMouseEnter={() => controller.setHighlightedIndex(index)}

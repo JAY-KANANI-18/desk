@@ -8,6 +8,7 @@ import {
   Square,
   Check,
   Pencil,
+  Sparkles,
 } from '@/components/ui/icons';
 import { useWorkflow } from '../WorkflowContext';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -20,9 +21,10 @@ interface TopBarProps {
   onBack: () => void;
   warnings?: WorkflowValidationWarning[];
   onWarningClick?: (nodeId: string) => void;
+  onOpenAiBuilder?: () => void;
 }
 
-export function TopBar({ onBack, warnings = [], onWarningClick }: TopBarProps) {
+export function TopBar({ onBack, warnings = [], onWarningClick, onOpenAiBuilder }: TopBarProps) {
   const isMobile = useIsMobile();
   const {
     state,
@@ -166,6 +168,21 @@ export function TopBar({ onBack, warnings = [], onWarningClick }: TopBarProps) {
     </Button>
   );
 
+  const aiBuilderButton = onOpenAiBuilder ? (
+    <Button
+      onClick={onOpenAiBuilder}
+      variant="secondary"
+      size="xs"
+      leftIcon={<Sparkles size={13} />}
+      style={{
+        borderColor: "color-mix(in srgb, var(--color-primary) 22%, white)",
+        color: "var(--color-primary)",
+      }}
+    >
+      {isMobile ? 'AI' : 'Build with AI'}
+    </Button>
+  ) : null;
+
   const publishButton = isPublished ? (
     <Button
       onClick={stopWorkflow}
@@ -196,6 +213,7 @@ export function TopBar({ onBack, warnings = [], onWarningClick }: TopBarProps) {
         {warningButton}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        {aiBuilderButton}
         {saveButton}
         {publishButton}
       </div>
@@ -204,6 +222,7 @@ export function TopBar({ onBack, warnings = [], onWarningClick }: TopBarProps) {
     <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap">
       {settingsButton}
       {warningButton}
+      {aiBuilderButton}
       {saveButton}
       {publishButton}
     </div>

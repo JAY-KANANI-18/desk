@@ -21,6 +21,47 @@ type WorkflowSavePayload = Partial<Pick<Workflow, "name" | "description">> & {
   config: Workflow["config"];
 };
 
+export interface WorkflowAiBuilderChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface WorkflowAiBuilderPatchOperation {
+  op: "add" | "replace" | "remove";
+  path: string;
+  value?: unknown;
+}
+
+export interface WorkflowAiBuilderDraft {
+  name?: string;
+  description?: string;
+  config?: Workflow["config"];
+}
+
+export interface WorkflowAiBuilderChatRequest {
+  message: string;
+  history?: WorkflowAiBuilderChatMessage[];
+  currentConfig?: Workflow["config"];
+  workspaceFacts?: Record<string, unknown>;
+}
+
+export interface WorkflowAiBuilderChatResponse {
+  mode: "answer" | "draft" | "patch" | "clarify";
+  assistantMessage: string;
+  questions: string[];
+  draft?: WorkflowAiBuilderDraft;
+  patch?: WorkflowAiBuilderPatchOperation[];
+  suggestions: string[];
+  warnings: string[];
+  confidence: number;
+  contextVersion: string;
+  model?: {
+    provider: string;
+    name: string;
+    latencyMs: number;
+  };
+}
+
 
 /* =========================================================
    Workspace API
@@ -98,7 +139,7 @@ export const workspaceApi = {
   ========================================================= */
 
   getTeams: () =>
-    api.get(`/workspaces/teams`),
+    api.get(`/teams`),
 
   createTeam: ({
     name,
@@ -391,6 +432,13 @@ export const workspaceApi = {
     api.delete(`/workflows/${id}`),
   renameWorkflow: (id: string, name: string) =>
     api.patch(`/workflows/${id}/rename`, { name }),
+  getWorkflowAiBuilderContext: () =>
+    api.get(`/workflows/ai-builder/context`),
+  chatWorkflowAiBuilder: (
+    id: string,
+    payload: WorkflowAiBuilderChatRequest,
+  ): Promise<WorkflowAiBuilderChatResponse> =>
+    api.post(`/workflows/${id}/ai-builder/chat`, payload),
 
 
   getBilling: () =>

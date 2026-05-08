@@ -122,6 +122,7 @@ export function MultiSelect({
                   id={getSelectOptionId(controller.listId, index)}
                   selected={value.includes(option.value)}
                   highlighted={controller.highlightedIndex === index}
+                  scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                   disabled={option.disabled}
                   onSelect={() => controller.selectByIndex(index)}
                   onMouseEnter={() => controller.setHighlightedIndex(index)}

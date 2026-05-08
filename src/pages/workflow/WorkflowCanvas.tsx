@@ -53,6 +53,13 @@ import {
   getWorkflowValidationWarnings,
 } from "./canvas/nodeValidation";
 import { workspaceApi } from "../../lib/workspaceApi";
+import { featureFlags } from "../../config/featureFlags";
+
+const WorkflowAiBuilderPanel = React.lazy(() =>
+  import("./WorkflowAiBuilderPanel").then((module) => ({
+    default: module.WorkflowAiBuilderPanel,
+  })),
+);
 
 /* ───────────────────────────────────────────────────────────────────────────
    layout.constants.ts
@@ -257,11 +264,19 @@ function buildWorkflow(raw: WorkflowGraphConfig) {
 
 type ConnectorOwnerStepType = Extract<
   StepType,
-  "ask_question" | "branch" | "date_time"
+  "ask_question" | "branch" | "date_time" | "send_message"
 >;
 
 function isConnectorOwnerStepType(type: StepType): type is ConnectorOwnerStepType {
-  return type === "ask_question" || type === "branch" || type === "date_time";
+  return type === "ask_question" || type === "branch" || type === "date_time" || type === "send_message";
+}
+
+function isConnectorOwnerStep(step: Pick<StepConfig, "type" | "data">): step is StepConfig & { type: ConnectorOwnerStepType } {
+  if (step.type === "send_message") {
+    return Boolean((step.data as { addMessageFailureBranch?: boolean }).addMessageFailureBranch);
+  }
+
+  return isConnectorOwnerStepType(step.type);
 }
 
 function cloneStepData(data: StepConfig["data"]): StepConfig["data"] {
@@ -273,6 +288,7 @@ function getDefaultConnectorNames(type: ConnectorOwnerStepType) {
     branch: ["Branch 1", "Else"],
     ask_question: ["Success", "Failure"],
     date_time: ["In Range", "Out of Range"],
+    send_message: ["Success", "Failure"],
   };
 
   return connectorNames[type];
@@ -337,7 +353,7 @@ function getConnectorTemplatesForStep(
   step: StepConfig,
   steps: StepConfig[],
 ): StepConfig[] {
-  if (!isConnectorOwnerStepType(step.type)) {
+  if (!isConnectorOwnerStep(step)) {
     return [];
   }
 
@@ -367,7 +383,7 @@ function createPastedStep(
 ): { step: StepConfig; connectors: StepConfig[] } {
   const pastedStepId = `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const connectorTemplates = getConnectorTemplatesForStep(template, steps);
-  const connectors = isConnectorOwnerStepType(template.type)
+  const connectors = isConnectorOwnerStep(template)
     ? connectorTemplates.map((connector, index) =>
         cloneConnectorStep(
           connector,
@@ -383,7 +399,7 @@ function createPastedStep(
       id: pastedStepId,
       name: `${template.name} copy`,
       parentId,
-      data: isConnectorOwnerStepType(template.type)
+      data: isConnectorOwnerStep(template)
         ? withConnectorIds(
             template.data,
             connectors.map((connector) => connector.id),
@@ -699,8 +715,10 @@ export function buildGraph(
 // Replace the existing "BRANCH HANDLING" block with this expanded version:
 
 // ── BRANCH / ASK_QUESTION / DATE_TIME: render named connectors ──
-if (step.type === "branch" || step.type === "ask_question" || step.type === "date_time") {
-  const rawConnectors = childrenMap.get(step.id) || [];
+if (isConnectorOwnerStep(step)) {
+  const rawConnectors = (childrenMap.get(step.id) || []).filter(
+    (candidate) => candidate.type === "branch_connector",
+  );
   const connectors =
     step.type === "branch"
       ? orderBranchConnectors(rawConnectors)
@@ -932,7 +950,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
       };
     case "assign_to":
       return {
-        action: "user_in_team",
+        action: "",
         assignmentLogic: "round_robin",
         onlyOnlineUsers: false,
         addTimeoutBranch: false,
@@ -1026,6 +1044,7 @@ export function WorkflowCanvas() {
   const { channels: rawChannels } = useChannel() as { channels: unknown };
   const { workspaceUsers } = useWorkspace();
   const [workspaceTags, setWorkspaceTags] = useState<WorkflowPreviewTag[]>([]);
+  const [isAiBuilderOpen, setIsAiBuilderOpen] = useState(false);
   const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null);
   const [copiedStepId, setCopiedStepId] = useState<string | null>(null);
   const [pendingNavigation, setPendingNavigation] =
@@ -1033,6 +1052,7 @@ export function WorkflowCanvas() {
   const [isSavingBeforeLeave, setIsSavingBeforeLeave] = useState(false);
 
   const { workflow, selectedNodeId, selectedPanelType, isDirty } = state;
+  const isWorkflowAiBuilderEnabled = featureFlags.workflowAiBuilder;
   const previewChannels = Array.isArray(rawChannels)
     ? rawChannels.filter(isPreviewChannel)
     : [];
@@ -1521,12 +1541,42 @@ export function WorkflowCanvas() {
       <StepPanel step={selectedStep} hideHeader={isMobile} />
     ) : null;
 
+  const aiBuilderFacts = useMemo(
+    () => ({
+      channels: previewChannels.map((channel) => ({
+        id: channel.id,
+        type: channel.type,
+        name: channel.name,
+        status: channel.status,
+      })),
+      tags: workspaceTags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+        emoji: tag.emoji,
+      })),
+      users: previewUsers.map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ").trim(),
+        email: user.email,
+      })),
+      selectedNodeId,
+      validationWarnings,
+    }),
+    [previewChannels, previewUsers, selectedNodeId, validationWarnings, workspaceTags],
+  );
+
   return (
     <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
       <TopBar
         onBack={handleBack}
         warnings={validationWarnings}
         onWarningClick={centerStepOnCanvas}
+        onOpenAiBuilder={
+          isWorkflowAiBuilderEnabled
+            ? () => setIsAiBuilderOpen(true)
+            : undefined
+        }
       />
 
       <div className="flex min-h-0 flex-1">
@@ -1597,6 +1647,19 @@ export function WorkflowCanvas() {
           }}
         />
       )}
+
+      {isWorkflowAiBuilderEnabled ? (
+        <React.Suspense fallback={null}>
+          <WorkflowAiBuilderPanel
+            isOpen={isAiBuilderOpen}
+            isMobile={isMobile}
+            workflow={workflow}
+            selectedStep={selectedStep}
+            workspaceFacts={aiBuilderFacts}
+            onClose={() => setIsAiBuilderOpen(false)}
+          />
+        </React.Suspense>
+      ) : null}
 
       <UnsavedChangesModal
         open={Boolean(pendingNavigation)}

@@ -241,6 +241,7 @@ export const Channels = () => {
   const isMobile = useIsMobile();
   const [channels, setChannels] = useState<ConnectedChannel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -266,7 +267,13 @@ export const Channels = () => {
     let active = true;
 
     async function loadChannels() {
-      setLoading(true);
+      const append = isMobile && page > 1;
+      if (append) {
+        setMobileLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       try {
         const response = await ChannelApi.listChannels({
           page,
@@ -275,10 +282,18 @@ export const Channels = () => {
         });
         if (!active) return;
 
-        setChannels(Array.isArray(response?.items) ? response.items : []);
+        const items = Array.isArray(response?.items) ? response.items : [];
+        setChannels((current) => {
+          if (!append) return items;
+          const seen = new Set(current.map((channel) => String(channel.id)));
+          return [
+            ...current,
+            ...items.filter((channel) => !seen.has(String(channel.id))),
+          ];
+        });
         setPagination(
           response?.pagination ?? {
-            total: Array.isArray(response?.items) ? response.items.length : 0,
+            total: items.length,
             page,
             limit: pagination.limit,
             totalPages: 1,
@@ -288,7 +303,11 @@ export const Channels = () => {
         );
       } finally {
         if (active) {
-          setLoading(false);
+          if (append) {
+            setMobileLoadingMore(false);
+          } else {
+            setLoading(false);
+          }
         }
       }
     }
@@ -298,7 +317,12 @@ export const Channels = () => {
     return () => {
       active = false;
     };
-  }, [page, search]);
+  }, [isMobile, page, pagination.limit, search]);
+
+  const handlePageChange = (nextPage: number) => {
+    if (mobileLoadingMore) return;
+    setPage(nextPage);
+  };
 
   const desktopToolbar = isMobile ? undefined : (
     <div className="flex flex-wrap items-center gap-3">
@@ -338,7 +362,7 @@ export const Channels = () => {
         search={searchDraft}
         onSearchChange={setSearchDraft}
         pagination={pagination}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
         onConnectNew={() => navigate("/channels/connect")}
         showDesktopChrome={false}
       />

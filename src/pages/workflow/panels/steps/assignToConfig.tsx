@@ -1,6 +1,3 @@
-
-// ─── 3. Assign To ─────────────────────────────────────────────────────────────
-
 import { useWorkspace } from "../../../../context/WorkspaceContext";
 import { AssigneeSelectMenu } from "../../../../components/ui/select";
 import { SP, AssignToData } from "../../workflow.types";
@@ -9,19 +6,38 @@ import { Field, Select, ToggleRow, TextInput, DurationInput, Section } from "../
 export function AssignToConfig({ step, onChange }: SP) {
   const data = step.data as AssignToData;
   const u = (p: Partial<AssignToData>) => onChange({ ...data, ...p });
-  const showLogic = data.action === 'user_in_team' || data.action === 'user_in_workspace';
+  const showWorkspaceRouting = data.action === "user_in_workspace";
+  const { workspaceUsers } = useWorkspace();
 
-  const {workspaceUsers} = useWorkspace();
+  const updateAction = (action: AssignToData["action"]) => {
+    u({
+      action,
+      userId: action === "specific_user" ? data.userId : undefined,
+      teamId: undefined,
+      assignmentLogic: action === "user_in_workspace" ? data.assignmentLogic || "round_robin" : "round_robin",
+      onlyOnlineUsers: action === "user_in_workspace" ? Boolean(data.onlyOnlineUsers) : false,
+      maxOpenContacts: action === "user_in_workspace" ? data.maxOpenContacts : undefined,
+      addTimeoutBranch: action === "user_in_workspace" ? Boolean(data.addTimeoutBranch) : false,
+    });
+  };
+
   return (
     <>
       <Section title="Assignment">
         <Field label="Assign To" required>
-          <Select value={data.action} onChange={(v) => u({ action: v as AssignToData['action'] })}
-            options={[{ value: 'specific_user', label: 'A Specific User' }, 
-            // { value: 'user_in_team', label: 'A User in a Team' }, { value: 'user_in_workspace', label: 'A User in the Workspace' }, 
-            { value: 'unassign', label: 'Unassign Contact' }]} />
+          <Select
+            value={data.action}
+            onChange={(v) => updateAction(v as AssignToData["action"])}
+            placeholder="Select an option"
+            options={[
+              { value: "specific_user", label: "Specific User" },
+              { value: "user_in_workspace", label: "User in Workspace" },
+              { value: "unassign", label: "Unassign" },
+            ]}
+          />
         </Field>
-        {data.action === 'specific_user' && (
+
+        {data.action === "specific_user" && (
           <Field label="User" required>
             <AssigneeSelectMenu
               value={data.userId ?? null}
@@ -33,29 +49,64 @@ export function AssignToConfig({ step, onChange }: SP) {
             />
           </Field>
         )}
-        {/* {data.action === 'user_in_team'  && <Field label="Team" required><Select value={data.teamId ?? ''} onChange={(v) => u({ teamId: v })} placeholder="Select team..." options={MOCK_TEAMS} /></Field>} */}
-        {showLogic && (
+
+        {showWorkspaceRouting && (
           <Field label="Logic" required>
-            <Select value={data.assignmentLogic} onChange={(v) => u({ assignmentLogic: v as AssignToData['assignmentLogic'] })}
-              options={[{ value: 'round_robin', label: 'Round Robin — distribute equally' }, { value: 'least_open_contacts', label: 'Least Open Contacts — assign to least busy' }]} />
+            <Select
+              value={data.assignmentLogic}
+              onChange={(v) => u({ assignmentLogic: v as AssignToData["assignmentLogic"] })}
+              options={[
+                { value: "round_robin", label: "Round Robin - distribute equally" },
+                { value: "least_open_contacts", label: "Least Open Contacts - assign to least busy" },
+              ]}
+            />
           </Field>
         )}
       </Section>
-      {showLogic && (
+
+      {showWorkspaceRouting && (
         <Section title="Advanced" collapsible defaultOpen={false}>
-          <ToggleRow label="Online users only" checked={data.onlyOnlineUsers} onChange={(v) => u({ onlyOnlineUsers: v })} />
+          <ToggleRow
+            label="Online users only"
+            checked={Boolean(data.onlyOnlineUsers)}
+            onChange={(v) => u({ onlyOnlineUsers: v })}
+          />
           <div className="mt-2">
-            <ToggleRow label="Limit by open contact count" checked={!!data.maxOpenContacts} onChange={(v) => u({ maxOpenContacts: v ? 10 : undefined })} />
+            <ToggleRow
+              label="Limit by open contact count"
+              checked={Boolean(data.maxOpenContacts)}
+              onChange={(v) => u({ maxOpenContacts: v ? 10 : undefined })}
+            />
             {data.maxOpenContacts !== undefined && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-gray-500 flex-shrink-0">Max open contacts:</span>
-                <TextInput type="number" value={String(data.maxOpenContacts)} onChange={(v) => u({ maxOpenContacts: Number(v) })} className="w-24" />
+                <TextInput
+                  type="number"
+                  value={String(data.maxOpenContacts)}
+                  onChange={(v) => u({ maxOpenContacts: Number(v) })}
+                  className="w-24"
+                />
               </div>
             )}
           </div>
           <div className="mt-2">
-            <ToggleRow label="Timeout Branch" description="If no assignee found within set time" checked={data.addTimeoutBranch} onChange={(v) => u({ addTimeoutBranch: v })} />
-            {data.addTimeoutBranch && <div className="mt-2"><DurationInput value={data.timeoutValue} unit={data.timeoutUnit} onValueChange={(v) => u({ timeoutValue: v })} onUnitChange={(u2) => u({ timeoutUnit: u2 })} max={7} /></div>}
+            <ToggleRow
+              label="Timeout Branch"
+              description="If no assignee found within set time"
+              checked={Boolean(data.addTimeoutBranch)}
+              onChange={(v) => u({ addTimeoutBranch: v })}
+            />
+            {data.addTimeoutBranch && (
+              <div className="mt-2">
+                <DurationInput
+                  value={data.timeoutValue}
+                  unit={data.timeoutUnit}
+                  onValueChange={(v) => u({ timeoutValue: v })}
+                  onUnitChange={(u2) => u({ timeoutUnit: u2 })}
+                  max={7}
+                />
+              </div>
+            )}
           </div>
         </Section>
       )}

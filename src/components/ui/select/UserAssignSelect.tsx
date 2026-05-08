@@ -141,6 +141,7 @@ export function UserAssignSelect({
                       isUnassignedOption ? !value : option.value === value
                     }
                     highlighted={controller.highlightedIndex === index}
+                    scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                     disabled={option.disabled}
                     onSelect={() => controller.selectByIndex(index)}
                     onMouseEnter={() => controller.setHighlightedIndex(index)}

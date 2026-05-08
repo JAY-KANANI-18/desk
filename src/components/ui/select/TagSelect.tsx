@@ -135,6 +135,7 @@ export function TagSelect({
                         id={getSelectOptionId(controller.listId, currentIndex)}
                         selected={value.includes(option.value)}
                         highlighted={controller.highlightedIndex === currentIndex}
+                        scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                         disabled={option.disabled}
                         onSelect={() => controller.selectByIndex(currentIndex)}
                         onMouseEnter={() =>

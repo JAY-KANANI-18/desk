@@ -147,6 +147,7 @@ export function CompactSelectMenu({
   const isMobile = useIsMobile();
   const shouldUseMobileSheet = mobileSheet && isMobile;
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const didSyncOpenHighlightRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const selectedOption = useMemo(
@@ -234,6 +235,11 @@ export function CompactSelectMenu({
 
   useEffect(() => {
     if (!controller.isOpen) {
+      didSyncOpenHighlightRef.current = false;
+      return;
+    }
+
+    if (didSyncOpenHighlightRef.current) {
       return;
     }
 
@@ -242,7 +248,8 @@ export function CompactSelectMenu({
       filteredOptions[0]?.index ??
       -1;
 
-    controller.setHighlightedIndex(nextHighlightedIndex);
+    controller.setHighlightedIndex(nextHighlightedIndex, { scroll: true });
+    didSyncOpenHighlightRef.current = true;
   }, [controller.isOpen, controller.setHighlightedIndex, filteredOptions, value]);
 
   const resolvedHasValue = hasValue ?? Boolean(selectedOption);
@@ -276,6 +283,7 @@ export function CompactSelectMenu({
                 id={getSelectOptionId(controller.listId, option.index)}
                 selected={isSelected}
                 highlighted={controller.highlightedIndex === option.index}
+                scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                 onSelect={() => controller.selectByIndex(option.index)}
                 onMouseEnter={() => controller.setHighlightedIndex(option.index)}
                 tone={option.tone}

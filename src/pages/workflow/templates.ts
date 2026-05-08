@@ -1164,7 +1164,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
           {
             "id": "step-1774685850646",
             "data": {
-              "action": "user_in_team",
+              "action": "user_in_workspace",
               "timeoutUnit": "days",
               "timeoutValue": 7,
               "assignmentLogic": "least_open_contacts",
@@ -1209,7 +1209,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
             "type": "assign_to",
             "name": "assign_to 1",
             "data": {
-              "action": "user_in_team",
+              "action": "user_in_workspace",
               "assignmentLogic": "round_robin",
               "onlyOnlineUsers": false,
               "addTimeoutBranch": false,
@@ -1250,7 +1250,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
           {
             "id": "step-1774685850646",
             "data": {
-              "action": "user_in_team",
+              "action": "user_in_workspace",
               "timeoutUnit": "days",
               "timeoutValue": 7,
               "assignmentLogic": "round_robin",

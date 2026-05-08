@@ -39,6 +39,12 @@ export interface Workflow {
   updatedAt?: string;
 }
 
+export interface WorkflowBuilderUpdate {
+  name?: string;
+  description?: string | null;
+  config?: Workflow["config"];
+}
+
 export interface WorkflowSettings {
   allowStopForContact: boolean;
   exitOnOutgoingMessage: boolean;
@@ -278,6 +284,7 @@ export interface SendMessageData {
   channel: MessageChannel;
   defaultMessage: MessageContent;
   channelResponses: ChannelResponse[];
+  connectors?: string[];
   addMessageFailureBranch: boolean;
     attachments?: MessageAttachment[]; // ← add this
 
@@ -318,6 +325,7 @@ export interface AskQuestionData {
 }
 
 export type AssignAction =
+  | ''
   | 'specific_user'
   | 'user_in_team'
   | 'user_in_workspace'
@@ -606,11 +614,9 @@ export const OPERATORS_BY_CAT: Record<BranchCategory, ConditionOperator[]> = {
   ],
   time_since_last_incoming: [
     'is_greater_than_time','is_less_than_time','is_between_time',
-    'is_timestamp_after','is_timestamp_before','is_timestamp_between',
   ],
   time_since_last_outgoing: [
     'is_greater_than_time','is_less_than_time','is_between_time',
-    'is_timestamp_after','is_timestamp_before','is_timestamp_between',
   ],
 };
 
@@ -627,7 +633,32 @@ export const TIME_UNITS = [
   { value: 'days',    label: 'Days' },
 ];
 
-export const MOCK_FIELDS  = [{ value: 'first_name', label: 'First Name' }, { value: 'last_name', label: 'Last Name' }, { value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }, { value: 'language', label: 'Language' }, { value: 'bot_status', label: 'Bot Status' }, { value: 'custom_1', label: 'Custom Field 1' }];
+export const WORKFLOW_WRITABLE_CONTACT_FIELD_OPTIONS = [
+  { value: 'first_name', label: 'First Name' },
+  { value: 'last_name', label: 'Last Name' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'company', label: 'Company' },
+  { value: 'status', label: 'Contact Status' },
+] as const;
+
+export const WORKFLOW_BRANCH_CONTACT_FIELD_OPTIONS = [
+  ...WORKFLOW_WRITABLE_CONTACT_FIELD_OPTIONS,
+  { value: 'lifecycle_id', label: 'Lifecycle Stage' },
+  { value: 'assignee_id', label: 'Assignee' },
+  { value: 'team_id', label: 'Team' },
+  { value: 'created_at', label: 'Created At' },
+  { value: 'updated_at', label: 'Updated At' },
+] as const;
+
+export const CONTACT_STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
+] as const;
+
+export const MOCK_FIELDS = [...WORKFLOW_WRITABLE_CONTACT_FIELD_OPTIONS];
 
 // ── Categories ─────────────────────────────────────────────────────────────
 
@@ -646,15 +677,7 @@ export const BRANCH_CATS: { value: BranchCategory; label: string }[] = [
 
 // Sub-fields per category
 export const SUB_FIELDS: Partial<Record<BranchCategory, { value: string; label: string }[]>> = {
-  contact_field: [
-    { value: 'first_name', label: 'First Name' },
-    { value: 'last_name',  label: 'Last Name' },
-    { value: 'email',      label: 'Email Address' },
-    { value: 'phone',      label: 'Phone Number' },
-    { value: 'city',       label: 'City' },
-    { value: 'country',    label: 'Country' },
-    { value: 'language',   label: 'Language' },
-  ],
+  contact_field: [...WORKFLOW_BRANCH_CONTACT_FIELD_OPTIONS],
   variable: [
     { value: 'conversation_id',  label: 'conversation_id' },
     { value: 'conversation_at',  label: 'conversation_at' },
@@ -674,8 +697,9 @@ export interface Tag {
 // ── Assignee status options ────────────────────────────────────────────────
 export const ASSIGNEE_STATUS_OPTIONS = [
   { value: 'online',  label: 'Online' },
+  { value: 'away', label: 'Away' },
+  { value: 'busy', label: 'Busy' },
   { value: 'offline', label: 'Offline' },
-  { value: 'pending', label: 'Pending' },
 ];
 
 // ── Last outgoing message source options ───────────────────────────────────

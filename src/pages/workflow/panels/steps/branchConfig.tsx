@@ -15,12 +15,22 @@ import {
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
 import { BaseInput } from "../../../../components/ui/inputs/BaseInput";
-import { BaseSelect, WorkspaceTagManager } from "../../../../components/ui/select";
+import {
+  BaseSelect,
+  ChannelSelectMenu,
+  LifecycleSelectMenu,
+  WorkspaceTagManager,
+  type ChannelSelectMenuChannel,
+  type LifecycleSelectStage,
+} from "../../../../components/ui/select";
 import { Tooltip } from "../../../../components/ui/Tooltip";
+import { useChannel } from "../../../../context/ChannelContext";
+import { useWorkspace } from "../../../../context/WorkspaceContext";
 import {
   ALL_OPERATORS,
   ASSIGNEE_STATUS_OPTIONS,
   BRANCH_CATS,
+  CONTACT_STATUS_OPTIONS,
   NO_VALUE_OPS,
   OPERATORS_BY_CAT,
   OUTGOING_SOURCE_OPTIONS,
@@ -46,9 +56,56 @@ type BranchConnectorStep = StepConfig & {
   };
 };
 
+type SelectOption = { value: string; label: string; color?: string; emoji?: string };
+type WorkspaceUserOptionSource = {
+  id?: string | number;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+};
+type WorkflowMetadataItem = {
+  id?: string | number;
+  name?: string | null;
+  label?: string | null;
+  color?: string | null;
+  emoji?: string | null;
+  type?: string | null;
+};
+
 function getConnectorIds(step: StepConfig, connectors: BranchConnectorStep[]) {
   const data = step.data as { connectors?: string[] };
   return data.connectors ?? connectors.map((connector) => connector.id);
+}
+
+function itemToOption(item: WorkflowMetadataItem): SelectOption | null {
+  if (item.id === undefined || item.id === null) return null;
+  const label = item.name ?? item.label ?? String(item.id);
+  return {
+    value: String(item.id),
+    label,
+    color: item.color ?? undefined,
+    emoji: item.emoji ?? undefined,
+  };
+}
+
+function itemToLifecycleStage(item: WorkflowMetadataItem): LifecycleSelectStage | null {
+  if (item.id === undefined || item.id === null) return null;
+  const name = item.name ?? item.label ?? String(item.id);
+  return {
+    id: item.id,
+    name,
+    emoji: item.emoji,
+    type: item.type,
+  };
+}
+
+function userToOption(user: WorkspaceUserOptionSource): SelectOption | null {
+  if (!user.id) return null;
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return {
+    value: String(user.id),
+    label: fullName || user.email || String(user.id),
+  };
 }
 
 function Select<T extends string>({
@@ -59,7 +116,7 @@ function Select<T extends string>({
   className = "",
 }: {
   value: T | "";
-  options: { value: T; label: string }[];
+  options: ReadonlyArray<{ value: T; label: string }>;
   onChange: (v: T) => void;
   placeholder?: string;
   className?: string;
@@ -92,7 +149,7 @@ function TagSelect({
 }) {
   const options = useMemo(() => {
     const mapped = tags.map((tag) => ({
-      value: tag.id,
+      value: String(tag.id),
       label: tag.name,
       color: tag.color,
     }));
@@ -150,18 +207,28 @@ function DateTimeInput({
 function ValueInput({
   operator,
   category,
+  field,
   value,
   onChange,
   tags,
   tagsLoading,
+  channels,
+  lifecycleStages,
+  workspaceUsers,
+  teams,
   flushTop = false,
 }: {
   operator: ConditionOperator;
   category: BranchCategory;
+  field?: string;
   value: string | string[] | number;
   onChange: (v: string | string[] | number) => void;
   tags: Tag[];
   tagsLoading: boolean;
+  channels: ChannelSelectMenuChannel[];
+  lifecycleStages: LifecycleSelectStage[];
+  workspaceUsers: SelectOption[];
+  teams: SelectOption[];
   flushTop?: boolean;
 }) {
   const [touched, setTouched] = useState(false);
@@ -172,8 +239,11 @@ function ValueInput({
   }
 
   const strVal = String(value ?? "");
-  const isEmpty = strVal.trim() === "" && !Array.isArray(value);
-  const showError = touched && isEmpty && !Array.isArray(value);
+  const isArrayValue = Array.isArray(value);
+  const isEmpty = isArrayValue
+    ? value.length === 0
+    : strVal.trim() === "";
+  const showError = touched && isEmpty && !isArrayValue;
 
   if (category === "contact_tags") {
     return (
@@ -187,6 +257,48 @@ function ValueInput({
     );
   }
 
+  if (
+    category === "contact_field" &&
+    ["is_equal_to", "is_not_equal_to"].includes(operator)
+  ) {
+    if (field === "lifecycle_id") {
+      return (
+        <div className={fieldClassName}>
+          <LifecycleSelectMenu
+            stages={lifecycleStages}
+            value={strVal || null}
+            onChange={(stageId) => onChange(stageId ?? "")}
+            variant="field"
+            placeholder="Select lifecycle"
+            allowEmpty={false}
+            searchable
+            fullWidth
+          />
+        </div>
+      );
+    }
+
+    const optionSets: Record<string, SelectOption[]> = {
+      status: [...CONTACT_STATUS_OPTIONS],
+      assignee_id: workspaceUsers,
+      team_id: teams,
+    };
+    const fieldOptions = field ? optionSets[field] : undefined;
+
+    if (fieldOptions?.length) {
+      return (
+        <div className={fieldClassName}>
+          <Select
+            value={strVal as any}
+            options={fieldOptions as any}
+            onChange={onChange as any}
+            placeholder="Select value..."
+          />
+        </div>
+      );
+    }
+  }
+
   if (category === "assignee_status") {
     return (
       <div className={fieldClassName}>
@@ -195,6 +307,23 @@ function ValueInput({
           options={ASSIGNEE_STATUS_OPTIONS as any}
           onChange={onChange as any}
           placeholder="Select status..."
+        />
+      </div>
+    );
+  }
+
+  if (category === "last_interacted_channel" && channels.length > 0) {
+    return (
+      <div className={fieldClassName}>
+        <ChannelSelectMenu
+          channels={channels}
+          value={strVal}
+          onChange={(channel) => onChange(channel)}
+          variant="panel"
+          placeholder="Select channel"
+          groupLabel="Channels"
+          searchable
+          fullWidth
         />
       </div>
     );
@@ -370,6 +499,40 @@ function useTags() {
   return { tags, loading };
 }
 
+function useBranchMetadata() {
+  const [lifecycleStages, setLifecycleStages] = useState<LifecycleSelectStage[]>([]);
+  const [teams, setTeams] = useState<SelectOption[]>([]);
+
+  const load = useCallback(async () => {
+    try {
+      const [stageResponse, teamResponse] = await Promise.all([
+        workspaceApi.getLifecycleStages(),
+        workspaceApi.getTeams(),
+      ]);
+
+      setLifecycleStages(
+        (Array.isArray(stageResponse) ? stageResponse : [])
+          .map((item) => itemToLifecycleStage(item))
+          .filter((item): item is LifecycleSelectStage => Boolean(item)),
+      );
+      setTeams(
+        (Array.isArray(teamResponse) ? teamResponse : [])
+          .map((item) => itemToOption(item))
+          .filter((item): item is SelectOption => Boolean(item)),
+      );
+    } catch {
+      setLifecycleStages([]);
+      setTeams([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { lifecycleStages, teams };
+}
+
 function ConditionRow({
   cond,
   showLogic,
@@ -377,6 +540,10 @@ function ConditionRow({
   onRemove,
   tags,
   tagsLoading,
+  channels,
+  lifecycleStages,
+  workspaceUsers,
+  teams,
 }: {
   cond: BranchCondition;
   showLogic: boolean;
@@ -384,6 +551,10 @@ function ConditionRow({
   onRemove: () => void;
   tags: Tag[];
   tagsLoading: boolean;
+  channels: ChannelSelectMenuChannel[];
+  lifecycleStages: LifecycleSelectStage[];
+  workspaceUsers: SelectOption[];
+  teams: SelectOption[];
 }) {
   const { state } = useWorkflow();
   const variables =
@@ -395,7 +566,7 @@ function ConditionRow({
       ) ?? [];
 
   const subFields =
-    variables.length > 0
+    cond.category === "variable"
       ? variables.map((value) => ({ value, label: value }))
       : SUB_FIELDS[cond.category];
 
@@ -415,7 +586,7 @@ function ConditionRow({
       category,
       field: "",
       operator: nextOps[0]?.value ?? "is_equal_to",
-      value: "",
+      value: category === "contact_tags" ? [] : "",
     });
   };
 
@@ -466,7 +637,7 @@ function ConditionRow({
             <Select
               value={(cond.field ?? "") as string}
               options={subFields as any}
-              onChange={(field) => onUpdate({ field })}
+              onChange={(field) => onUpdate({ field, value: "" })}
               placeholder="Field..."
               className="w-full"
             />
@@ -477,7 +648,9 @@ function ConditionRow({
           <Select
             value={cond.operator}
             options={operators}
-            onChange={(operator) => onUpdate({ operator, value: "" })}
+            onChange={(operator) =>
+              onUpdate({ operator, value: cond.category === "contact_tags" ? [] : "" })
+            }
             placeholder="Operator"
             className="w-full"
           />
@@ -487,10 +660,15 @@ function ConditionRow({
           <ValueInput
             operator={cond.operator}
             category={cond.category}
+            field={cond.field}
             value={cond.value}
             onChange={(nextValue) => onUpdate({ value: nextValue })}
             tags={tags}
             tagsLoading={tagsLoading}
+            channels={channels}
+            lifecycleStages={lifecycleStages}
+            workspaceUsers={workspaceUsers}
+            teams={teams}
             flushTop
           />
         </div>
@@ -510,6 +688,10 @@ function BranchCard({
   onRemoveCondition,
   tags,
   tagsLoading,
+  channels,
+  lifecycleStages,
+  workspaceUsers,
+  teams,
 }: {
   conn: BranchConnectorStep;
   canClone: boolean;
@@ -521,6 +703,10 @@ function BranchCard({
   onRemoveCondition: (id: string) => void;
   tags: Tag[];
   tagsLoading: boolean;
+  channels: ChannelSelectMenuChannel[];
+  lifecycleStages: LifecycleSelectStage[];
+  workspaceUsers: SelectOption[];
+  teams: SelectOption[];
 }) {
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -628,6 +814,10 @@ function BranchCard({
               onRemove={() => onRemoveCondition(cond.id)}
               tags={tags}
               tagsLoading={tagsLoading}
+              channels={channels}
+              lifecycleStages={lifecycleStages}
+              workspaceUsers={workspaceUsers}
+              teams={teams}
             />
           ))}
 
@@ -650,6 +840,33 @@ function BranchCard({
 export function BranchConfig({ step, onChange }: SP) {
   const { state, addStep, deleteStep, updateStep } = useWorkflow();
   const { tags, loading: tagsLoading } = useTags();
+  const { lifecycleStages, teams } = useBranchMetadata();
+  const { channels } = useChannel();
+  const { workspaceUsers } = useWorkspace();
+
+  const branchChannels = useMemo<ChannelSelectMenuChannel[]>(
+    () =>
+      (Array.isArray(channels) ? channels : [])
+        .map((channel: ChannelSelectMenuChannel) => {
+          if (!channel.id) return null;
+          return {
+            value: String(channel.id),
+            ...channel,
+            id: channel.id,
+            name: channel.name,
+            type: channel.type,
+          };
+        })
+        .filter((option): option is ChannelSelectMenuChannel => Boolean(option)),
+    [channels],
+  );
+  const userOptions = useMemo<SelectOption[]>(
+    () =>
+      (workspaceUsers ?? [])
+        .map((user) => userToOption(user))
+        .filter((option): option is SelectOption => Boolean(option)),
+    [workspaceUsers],
+  );
 
   const connectors = (state.workflow?.config?.steps ?? []).filter(
     (candidate) =>
@@ -879,6 +1096,10 @@ export function BranchConfig({ step, onChange }: SP) {
             onRemoveCondition={(cid) => removeCondition(conn.id, cid)}
             tags={tags}
             tagsLoading={tagsLoading}
+            channels={branchChannels}
+            lifecycleStages={lifecycleStages}
+            workspaceUsers={userOptions}
+            teams={teams}
           />
         ))}
 

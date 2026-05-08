@@ -12,6 +12,7 @@ import {
   StepConfig,
   StepType,
   WorkflowSettings,
+  WorkflowBuilderUpdate,
   ValidationError,
 } from "./workflow.types";
 import { workspaceApi } from "../../lib/workspaceApi";
@@ -81,16 +82,26 @@ function normalizeWorkflow(workflow: Workflow): Workflow {
     config?.settings ??
     runtimeWorkflow.settings ??
     defaultWorkflowSettings;
+  const rawSteps = Array.isArray(config?.steps)
+    ? config.steps
+    : Array.isArray(runtimeWorkflow.steps)
+      ? runtimeWorkflow.steps
+      : [];
+  const steps = rawSteps.reduce(
+    (currentSteps, step) =>
+      step.type === "ask_question"
+        ? syncAskQuestionBranches(currentSteps, step)
+        : isSendMessageFailureBranchStep(step)
+        ? syncSendMessageFailureBranch(currentSteps, step)
+        : currentSteps,
+    rawSteps,
+  );
 
   return {
     ...workflow,
     config: {
       trigger: config?.trigger ?? runtimeWorkflow.trigger ?? null,
-      steps: Array.isArray(config?.steps)
-        ? config.steps
-        : Array.isArray(runtimeWorkflow.steps)
-          ? runtimeWorkflow.steps
-          : [],
+      steps,
       settings,
     },
     settings,
@@ -103,8 +114,15 @@ const CONNECTOR_OWNER_STEP_TYPES = new Set<StepConfig["type"]>([
   "date_time",
 ]);
 
+function isSendMessageFailureBranchStep(step: StepConfig) {
+  return (
+    step.type === "send_message" &&
+    Boolean((step.data as { addMessageFailureBranch?: boolean })?.addMessageFailureBranch)
+  );
+}
+
 function isConnectorOwnerStep(step: StepConfig) {
-  return CONNECTOR_OWNER_STEP_TYPES.has(step.type);
+  return CONNECTOR_OWNER_STEP_TYPES.has(step.type) || isSendMessageFailureBranchStep(step);
 }
 
 function collectDescendantStepIds(steps: StepConfig[], parentId: string): Set<string> {
@@ -124,6 +142,204 @@ function collectDescendantStepIds(steps: StepConfig[], parentId: string): Set<st
   }
 
   return descendantIds;
+}
+
+function createSendMessageConnector(parentId: string, name: "Success" | "Failure"): StepConfig {
+  return {
+    id: `conn-${name.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type: "branch_connector",
+    name,
+    parentId,
+    data: { conditions: [] },
+    position: { x: 0, y: 0 },
+  };
+}
+
+function findSendMessageConnector(
+  steps: StepConfig[],
+  parentId: string,
+  name: "Success" | "Failure",
+) {
+  return steps.find(
+    (candidate) =>
+      candidate.parentId === parentId &&
+      candidate.type === "branch_connector" &&
+      candidate.name === name,
+  );
+}
+
+type AskQuestionConnectorName = "Success" | "Failure" | "Timeout" | "Message Failure";
+
+const ASK_QUESTION_BASE_CONNECTORS: AskQuestionConnectorName[] = ["Success", "Failure"];
+
+function createAskQuestionConnector(parentId: string, name: AskQuestionConnectorName): StepConfig {
+  return {
+    id: `conn-${name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type: "branch_connector",
+    name,
+    parentId,
+    data: { conditions: [] },
+    position: { x: 0, y: 0 },
+  };
+}
+
+function findAskQuestionConnector(
+  steps: StepConfig[],
+  parentId: string,
+  name: AskQuestionConnectorName,
+) {
+  return steps.find(
+    (candidate) =>
+      candidate.parentId === parentId &&
+      candidate.type === "branch_connector" &&
+      candidate.name === name,
+  );
+}
+
+function syncAskQuestionBranches(
+  steps: StepConfig[],
+  updatedStep: StepConfig,
+): StepConfig[] {
+  if (updatedStep.type !== "ask_question") return steps;
+
+  const data = (updatedStep.data ?? {}) as {
+    addTimeoutBranch?: boolean;
+    addMessageFailureBranch?: boolean;
+  };
+  const enabledNames: AskQuestionConnectorName[] = [
+    ...ASK_QUESTION_BASE_CONNECTORS,
+    ...(data.addTimeoutBranch ? (["Timeout"] as const) : []),
+    ...(data.addMessageFailureBranch ? (["Message Failure"] as const) : []),
+  ];
+  const disabledNames: AskQuestionConnectorName[] = [
+    ...(data.addTimeoutBranch ? [] : (["Timeout"] as const)),
+    ...(data.addMessageFailureBranch ? [] : (["Message Failure"] as const)),
+  ];
+
+  const resolvedConnectors = enabledNames.map(
+    (name) => findAskQuestionConnector(steps, updatedStep.id, name) ?? createAskQuestionConnector(updatedStep.id, name),
+  );
+  const resolvedIds = new Set(resolvedConnectors.map((connector) => connector.id));
+  const disabledConnectors = disabledNames
+    .map((name) => findAskQuestionConnector(steps, updatedStep.id, name))
+    .filter(Boolean) as StepConfig[];
+  const disabledIds = new Set(disabledConnectors.map((connector) => connector.id));
+  const disabledDescendantIds = new Set<string>();
+  disabledConnectors.forEach((connector) => {
+    collectDescendantStepIds(steps, connector.id).forEach((id) => disabledDescendantIds.add(id));
+  });
+
+  const withUpdatedStep = steps
+    .filter((candidate) => !disabledIds.has(candidate.id) && !disabledDescendantIds.has(candidate.id))
+    .map((candidate) => {
+      if (candidate.id === updatedStep.id) {
+        return {
+          ...candidate,
+          data: {
+            ...((candidate.data ?? {}) as Record<string, unknown>),
+            connectors: resolvedConnectors.map((connector) => connector.id),
+          } as StepConfig["data"],
+        };
+      }
+
+      if (candidate.parentId === updatedStep.id && candidate.type !== "branch_connector") {
+        return { ...candidate, parentId: resolvedConnectors[0].id };
+      }
+
+      return candidate;
+    });
+
+  return [
+    ...withUpdatedStep,
+    ...resolvedConnectors.filter(
+      (connector) =>
+        !steps.some((candidate) => candidate.id === connector.id) && resolvedIds.has(connector.id),
+    ),
+  ];
+}
+
+function syncSendMessageFailureBranch(
+  steps: StepConfig[],
+  updatedStep: StepConfig,
+): StepConfig[] {
+  if (updatedStep.type !== "send_message") return steps;
+
+  const data = (updatedStep.data ?? {}) as { addMessageFailureBranch?: boolean };
+  const enabled = Boolean(data.addMessageFailureBranch);
+  const successConnector = findSendMessageConnector(steps, updatedStep.id, "Success");
+  const failureConnector = findSendMessageConnector(steps, updatedStep.id, "Failure");
+
+  if (enabled) {
+    const resolvedSuccess = successConnector ?? createSendMessageConnector(updatedStep.id, "Success");
+    const resolvedFailure = failureConnector ?? createSendMessageConnector(updatedStep.id, "Failure");
+    const connectorIds = new Set([resolvedSuccess.id, resolvedFailure.id]);
+
+    const withConnectors = steps.map((candidate) => {
+      if (candidate.id === updatedStep.id) {
+        return {
+          ...candidate,
+          data: {
+            ...((candidate.data ?? {}) as Record<string, unknown>),
+            connectors: [resolvedSuccess.id, resolvedFailure.id],
+          } as StepConfig["data"],
+        };
+      }
+
+      if (candidate.parentId === updatedStep.id && candidate.type !== "branch_connector") {
+        return { ...candidate, parentId: resolvedSuccess.id };
+      }
+
+      return candidate;
+    });
+
+    return [
+      ...withConnectors,
+      ...[resolvedSuccess, resolvedFailure].filter(
+        (connector) => !steps.some((candidate) => candidate.id === connector.id) && connectorIds.has(connector.id),
+      ),
+    ];
+  }
+
+  const connectorIds = new Set(
+    [successConnector?.id, failureConnector?.id].filter(Boolean) as string[],
+  );
+  if (connectorIds.size === 0) {
+    return steps.map((candidate) =>
+      candidate.id === updatedStep.id
+        ? {
+            ...candidate,
+            data: {
+              ...((candidate.data ?? {}) as Record<string, unknown>),
+              connectors: [],
+            } as StepConfig["data"],
+          }
+        : candidate,
+    );
+  }
+
+  const failureDescendantIds = failureConnector
+    ? collectDescendantStepIds(steps, failureConnector.id)
+    : new Set<string>();
+
+  return steps
+    .filter((candidate) => !connectorIds.has(candidate.id) && !failureDescendantIds.has(candidate.id))
+    .map((candidate) => {
+      if (candidate.id === updatedStep.id) {
+        return {
+          ...candidate,
+          data: {
+            ...((candidate.data ?? {}) as Record<string, unknown>),
+            connectors: [],
+          } as StepConfig["data"],
+        };
+      }
+
+      if (successConnector && candidate.parentId === successConnector.id) {
+        return { ...candidate, parentId: updatedStep.id };
+      }
+
+      return candidate;
+    });
 }
 
 function insertWorkflowStepAfter(
@@ -212,6 +428,7 @@ type Action =
   | { type: "SET_ERRORS"; payload: ValidationError[] }
   | { type: "UPDATE_NAME"; payload: string }
   | { type: "UPDATE_SETTINGS"; payload: Partial<WorkflowSettings> }
+  | { type: "APPLY_BUILDER_UPDATE"; payload: WorkflowBuilderUpdate }
   | { type: "TOGGLE_SETTINGS" }
   | { type: "MARK_DIRTY" };
 
@@ -249,11 +466,14 @@ function reducer(
 
     case "UPDATE_STEP": {
       if (!state.workflow) return state;
-      const steps = state.workflow?.config?.steps?.map((s) =>
-  s.id === action.payload.id
-    ? { ...action.payload, data: { ...action.payload.data } }
-    : s
-);
+      const updatedStep = { ...action.payload, data: { ...action.payload.data } } as StepConfig;
+      const updatedSteps = (state.workflow.config.steps ?? []).map((s) =>
+        s.id === action.payload.id ? updatedStep : s,
+      );
+      const steps = syncAskQuestionBranches(
+        syncSendMessageFailureBranch(updatedSteps, updatedStep),
+        updatedStep,
+      );
       return {
         ...state,
         isDirty: true,
@@ -353,6 +573,39 @@ function reducer(
         },
       };
 
+    case "APPLY_BUILDER_UPDATE": {
+      if (!state.workflow) return state;
+      const nextWorkflow = normalizeWorkflow({
+        ...state.workflow,
+        ...(typeof action.payload.name === "string" && action.payload.name.trim()
+          ? { name: action.payload.name.trim() }
+          : {}),
+        ...(action.payload.description !== undefined
+          ? { description: action.payload.description ?? undefined }
+          : {}),
+        ...(action.payload.config
+          ? {
+              config: action.payload.config,
+              settings: action.payload.config.settings,
+            }
+          : {}),
+      });
+      const nextStepIds = new Set(
+        (nextWorkflow.config?.steps ?? []).map((step) => step.id),
+      );
+      const keepSelection =
+        state.selectedNodeId === "trigger" ||
+        (state.selectedNodeId ? nextStepIds.has(state.selectedNodeId) : false);
+
+      return {
+        ...state,
+        isDirty: true,
+        workflow: nextWorkflow,
+        selectedNodeId: keepSelection ? state.selectedNodeId : null,
+        selectedPanelType: keepSelection ? state.selectedPanelType : null,
+      };
+    }
+
     case "TOGGLE_SETTINGS":
       return { ...state, showSettings: !state.showSettings };
 
@@ -377,6 +630,7 @@ interface WorkflowContextValue {
   publishWorkflow: () => Promise<void>;
   stopWorkflow: () => Promise<void>;
   updateName: (name: string) => void;
+  applyBuilderUpdate: (update: WorkflowBuilderUpdate) => void;
   updateSettings: (settings: Partial<WorkflowSettings>) => void;
   toggleSettings: () => void;
 
@@ -472,6 +726,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const updateName = useCallback((name: string) => {
     dispatch({ type: "UPDATE_NAME", payload: name });
+  }, []);
+
+  const applyBuilderUpdate = useCallback((update: WorkflowBuilderUpdate) => {
+    dispatch({ type: "APPLY_BUILDER_UPDATE", payload: update });
   }, []);
 
   const updateSettings = useCallback((settings: Partial<WorkflowSettings>) => {
@@ -584,6 +842,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         publishWorkflow,
         stopWorkflow,
         updateName,
+        applyBuilderUpdate,
         updateSettings,
         toggleSettings,
         setTrigger,

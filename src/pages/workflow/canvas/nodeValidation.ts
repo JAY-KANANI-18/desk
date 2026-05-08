@@ -110,12 +110,20 @@ function getAskQuestionIssue(data: AskQuestionData) {
 }
 
 function getAssignToIssue(data: AssignToData) {
+  if (!hasText(data.action)) {
+    return "Choose an assignment target";
+  }
+
   if (data.action === "specific_user" && !hasText(data.userId)) {
     return "Choose a user";
   }
 
   if (data.action === "user_in_team" && !hasText(data.teamId)) {
     return "Choose a team";
+  }
+
+  if (data.action === "user_in_workspace" && !hasText(data.assignmentLogic)) {
+    return "Choose assignment logic";
   }
 
   if (data.addTimeoutBranch && !hasPositiveNumber(data.timeoutValue)) {
@@ -140,7 +148,14 @@ function hasConditionValue(condition: BranchCondition) {
 function hasCompleteBranchCondition(condition: BranchCondition) {
   if (!condition.category || !condition.operator) return false;
 
-  const operatorsWithoutValue = ["exists", "does_not_exist", "has_none_of"];
+  if (
+    ["contact_field", "variable"].includes(condition.category) &&
+    !hasText(condition.field)
+  ) {
+    return false;
+  }
+
+  const operatorsWithoutValue = ["exists", "does_not_exist"];
   if (operatorsWithoutValue.includes(condition.operator)) return true;
 
   return hasConditionValue(condition);

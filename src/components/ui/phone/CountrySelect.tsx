@@ -111,6 +111,7 @@ export function CountrySelect({
   const generatedId = useId();
   const fieldId = id ?? `phone-country-${generatedId}`;
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const didSyncOpenHighlightRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const selectedOption = getPhoneCountryOption(value);
 
@@ -150,6 +151,11 @@ export function CountrySelect({
 
   useEffect(() => {
     if (!controller.isOpen) {
+      didSyncOpenHighlightRef.current = false;
+      return;
+    }
+
+    if (didSyncOpenHighlightRef.current) {
       return;
     }
 
@@ -157,7 +163,8 @@ export function CountrySelect({
       visibleOptions.find((option) => option.code === selectedOption.code)?.index ??
       visibleOptions[0]?.index ??
       -1;
-    controller.setHighlightedIndex(selectedIndex);
+    controller.setHighlightedIndex(selectedIndex, { scroll: true });
+    didSyncOpenHighlightRef.current = true;
   }, [
     controller.isOpen,
     controller.setHighlightedIndex,
@@ -221,6 +228,7 @@ export function CountrySelect({
                 id={getSelectOptionId(controller.listId, option.index)}
                 selected={option.code === selectedOption.code}
                 highlighted={controller.highlightedIndex === option.index}
+                scrollOnHighlight={controller.shouldScrollHighlightedIndex}
                 onSelect={() => controller.selectByIndex(option.index)}
                 onMouseEnter={() => controller.setHighlightedIndex(option.index)}
                 surface={optionSurface}

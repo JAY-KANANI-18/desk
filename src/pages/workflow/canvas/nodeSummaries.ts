@@ -202,6 +202,16 @@ function getAssignmentPreview(data: AssignToData, users: WorkflowPreviewUser[]) 
       ? "least open contacts"
       : "round robin";
 
+  if (!data.action) {
+    return {
+      label: "Assignment",
+      text: "Select assignment target",
+      tokens: [],
+      variant: "assignment",
+      isPlaceholder: true,
+    };
+  }
+
   if (data.action === "unassign") {
     return {
       label: "Assignment",
@@ -223,7 +233,7 @@ function getAssignmentPreview(data: AssignToData, users: WorkflowPreviewUser[]) 
   if (data.action === "user_in_team") {
     return {
       label: "Assignment",
-      text: `Assign to users ${logic}`,
+      text: `Assign to team users ${logic}`,
       tokens: [],
       variant: "assignment",
     };
