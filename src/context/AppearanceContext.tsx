@@ -159,19 +159,19 @@ export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
   direction: "ltr",
   density: "comfortable",
   navigation: "integrated",
-  iconLibrary: "lucide",
+  iconLibrary: "phosphor",
   colorPreset: "axodesk",
   fontFamily: "roboto",
   fontSize: 16,
 };
 
-const LEGACY_PHOSPHOR_DEFAULT_SETTINGS: AppearanceSettings = {
+const LEGACY_LUCIDE_DEFAULT_SETTINGS: AppearanceSettings = {
   ...DEFAULT_APPEARANCE_SETTINGS,
-  iconLibrary: "phosphor",
+  iconLibrary: "lucide",
 };
 
 const LEGACY_GENERATED_DEFAULT_SETTINGS: AppearanceSettings = {
-  ...DEFAULT_APPEARANCE_SETTINGS,
+  ...LEGACY_LUCIDE_DEFAULT_SETTINGS,
   colorPreset: "blue",
   fontFamily: "public-sans",
 };
@@ -269,7 +269,7 @@ function readStoredSettings(): AppearanceSettings {
 
     if (
       isSameAppearanceSettings(normalized, LEGACY_GENERATED_DEFAULT_SETTINGS) ||
-      isSameAppearanceSettings(normalized, LEGACY_PHOSPHOR_DEFAULT_SETTINGS)
+      isSameAppearanceSettings(normalized, LEGACY_LUCIDE_DEFAULT_SETTINGS)
     ) {
       return DEFAULT_APPEARANCE_SETTINGS;
     }

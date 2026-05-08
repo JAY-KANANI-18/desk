@@ -47,7 +47,7 @@ function createIcon(
         const lucideProps: LucideProps = {
           ...props,
           absoluteStrokeWidth,
-          strokeWidth: strokeWidth ?? (weight === "fill" ? 2.6 : undefined),
+          strokeWidth,
         };
 
         return <LucideIcon ref={ref} {...lucideProps} />;
