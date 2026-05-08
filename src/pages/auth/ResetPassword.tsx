@@ -1,14 +1,11 @@
-// LEGACY - still mounted from WorkspaceRouter for authenticated reset flows.
+// Signed-in password change page. Public reset links use ResetPasswordPremium.
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Lock, ShieldAlert } from "@/components/ui/icons";
 import { useAuth } from "../../context/AuthContext";
 import {
   AuthNotice,
   AuthPasswordField,
   AuthPrimaryButton,
-  AuthSecondaryButton,
-  AuthShell,
 } from "./components/AuthShell";
 
 const parseHashParams = (): Record<string, string> => {
@@ -17,7 +14,6 @@ const parseHashParams = (): Record<string, string> => {
 };
 
 export const ResetPassword = () => {
-  const navigate = useNavigate();
   const { resetPassword } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -66,6 +62,8 @@ export const ResetPassword = () => {
     setLoading(false);
 
     if (result.success) {
+      setPassword("");
+      setConfirmPassword("");
       setSuccess(true);
       return;
     }
@@ -77,51 +75,51 @@ export const ResetPassword = () => {
     const isExpired = hashParams.error_code === "otp_expired";
 
     return (
-      <AuthShell
-        eyebrow="Access issue"
-        title={isExpired ? "Invitation link expired" : "Access denied"}
-        subtitle={
-          isExpired
-            ? "This invitation link is no longer valid. It may have already been used or expired."
-            : `${hashParams.error_description?.replace(/\+/g, " ") ?? "Please contact your administrator if you believe this is a mistake."}`
-        }
-        backHref="/auth/login"
-        backLabel="Back to sign in"
-        headerAlign="center"
-      >
-        <div className="space-y-4">
-          <AuthNotice tone="warning" className="flex items-start gap-3">
-            <ShieldAlert size={18} className="mt-0.5 shrink-0" />
-            <span>
-              Please contact your administrator to request a new invitation.
-            </span>
-          </AuthNotice>
-
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => navigate("/auth/login", { replace: true })}
-          >
-            Back to sign in
-          </AuthSecondaryButton>
+      <div className="w-full max-w-2xl space-y-5">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Account security
+          </p>
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+            {isExpired ? "Reset link expired" : "Access denied"}
+          </h2>
+          <p className="text-sm leading-6 text-slate-500">
+            {isExpired
+              ? "This link is no longer valid. You can start again from your profile."
+              : hashParams.error_description?.replace(/\+/g, " ") ||
+                "Please contact your administrator if you believe this is a mistake."}
+          </p>
         </div>
-      </AuthShell>
+
+        <AuthNotice tone="warning" className="flex items-start gap-3">
+          <ShieldAlert size={18} className="mt-0.5 shrink-0" />
+          <span>Please request a fresh password reset before trying again.</span>
+        </AuthNotice>
+      </div>
     );
   }
 
-  if (success) {
-    navigate("/inbox");
-  }
-
   return (
-    <AuthShell
-      eyebrow="Account security"
-      title="Set new password"
-      subtitle="Must be different from your previous password."
-      backHref="/auth/login"
-      backLabel="Back to sign in"
-      headerAlign="center"
-    >
+    <div className="w-full max-w-2xl space-y-5">
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Account security
+        </p>
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+          Change password
+        </h2>
+        <p className="text-sm leading-6 text-slate-500">
+          Choose a password you have not used before.
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {success ? (
+          <AuthNotice tone="success">
+            Password updated.
+          </AuthNotice>
+        ) : null}
+
         <div className="space-y-2">
           <AuthPasswordField
             label="New password"
@@ -130,6 +128,7 @@ export const ResetPassword = () => {
             onChange={(event) => {
               setPassword(event.target.value);
               setError("");
+              setSuccess(false);
             }}
             placeholder="Enter new password"
             autoComplete="new-password"
@@ -180,6 +179,7 @@ export const ResetPassword = () => {
           onChange={(event) => {
             setConfirmPassword(event.target.value);
             setError("");
+            setSuccess(false);
           }}
           placeholder="Repeat new password"
           autoComplete="new-password"
@@ -188,16 +188,18 @@ export const ResetPassword = () => {
 
         {error ? <AuthNotice tone="danger">{error}</AuthNotice> : null}
 
-        <AuthPrimaryButton
-          type="submit"
-          disabled={loading}
-          loading={loading}
-          loadingLabel="Resetting..."
-          rightIcon={!loading ? <ArrowRight size={15} /> : undefined}
-        >
-          Reset password
-        </AuthPrimaryButton>
+        <div className="w-full sm:w-auto">
+          <AuthPrimaryButton
+            type="submit"
+            disabled={loading}
+            loading={loading}
+            loadingLabel="Updating..."
+            rightIcon={!loading ? <ArrowRight size={15} /> : undefined}
+          >
+            Update password
+          </AuthPrimaryButton>
+        </div>
       </form>
-    </AuthShell>
+    </div>
   );
 };

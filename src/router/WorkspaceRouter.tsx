@@ -329,8 +329,12 @@ export const WorkspaceRouter = () => {
           />
           <Route path="profile" element={<UserSettings />} />
           <Route path="notifications" element={<NotificationPreferences />} />
+          <Route path="security" element={<ResetPassword />} />
         </Route>
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/auth/reset-password"
+          element={<Navigate to="/user/settings/security" replace />}
+        />
 
         {/* Org routes — requires org permissions */}
         <Route

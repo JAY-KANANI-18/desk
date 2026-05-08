@@ -111,8 +111,8 @@ export function UserMenu({
       />
       <ProfileAction
         icon={<Key size={16} className="text-gray-400" />}
-        label="Reset Password"
-        onClick={() => onNavigate("/auth/reset-password")}
+        label="Change password"
+        onClick={() => onNavigate("/user/settings/security")}
       />
     </>
   );
@@ -133,52 +133,49 @@ export function UserMenu({
         }
         onClose={onClose}
       >
-        <div className="space-y-4 p-4">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center gap-3">
-              <Avatar
-                src={user?.avatarUrl ?? undefined}
-                name={userLabel}
-                size="md"
-                fallbackTone="primary"
-                alt={userLabel}
-              />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-slate-900">
-                  {userDisplayName}
-                </div>
-                <div className="truncate text-sm text-slate-500">
-                  {user?.email ?? ""}
-                </div>
+        <div className="p-5">
+          <div className="flex items-center gap-3 px-1 pb-4">
+            <Avatar
+              src={user?.avatarUrl ?? undefined}
+              name={userLabel}
+              size="md"
+              fallbackTone="primary"
+              alt={userLabel}
+            />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-slate-900">
+                {userDisplayName}
               </div>
-            </div>
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3">
-              <CompactSelectMenu
-                value={activityStatus?.key}
-                groups={statusGroups}
-                onChange={handleStatusChange}
-                triggerAppearance="inline"
-                fullWidth
-                dropdownWidth="trigger"
-                triggerClassName="w-full !text-slate-700 hover:!text-slate-700"
-                triggerContent={
-                  <span className="flex w-full items-center gap-2 text-left">
-                    <span
-                      aria-hidden="true"
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        activityStatus?.color ?? "bg-slate-300"
-                      }`}
-                    />
-                    <span className="flex-1 text-sm font-medium text-slate-700">
-                      {activityStatus?.label ?? "Availability"}
-                    </span>
-                  </span>
-                }
-              />
+              <div className="truncate text-sm text-slate-500">
+                {user?.email ?? ""}
+              </div>
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white p-2">
+          <CompactSelectMenu
+            value={activityStatus?.key}
+            groups={statusGroups}
+            onChange={handleStatusChange}
+            triggerAppearance="inline"
+            fullWidth
+            dropdownWidth="trigger"
+            triggerClassName="w-full rounded-xl px-3 py-3 !text-slate-700 hover:bg-slate-50 hover:!text-slate-700"
+            triggerContent={
+              <span className="flex w-full items-center gap-3 text-left">
+                <span
+                  aria-hidden="true"
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    activityStatus?.color ?? "bg-slate-300"
+                  }`}
+                />
+                <span className="flex-1 text-sm font-medium text-slate-700">
+                  {activityStatus?.label ?? "Availability"}
+                </span>
+              </span>
+            }
+          />
+
+          <div className="mt-4 border-t border-slate-100 pt-3">
             {profileActions}
             <div className="my-2 border-t border-gray-100" />
             <Button
