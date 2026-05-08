@@ -33,6 +33,7 @@ export interface BaseModalProps {
   allowBackgroundInteraction?: boolean;
   lockBodyScroll?: boolean;
   showCloseButton?: boolean;
+  showDividers?: boolean;
   bodyPadding?: ModalBodyPadding;
   children: ReactNode;
 }
@@ -267,6 +268,7 @@ export function ModalHeader({
   onBack,
   headerActions,
   showCloseButton = true,
+  showDivider = true,
   onClose,
 }: {
   titleId: string;
@@ -276,10 +278,16 @@ export function ModalHeader({
   onBack?: () => void;
   headerActions?: ReactNode;
   showCloseButton?: boolean;
+  showDivider?: boolean;
   onClose: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-[1] flex items-start justify-between gap-[var(--spacing-md)] border-b border-[var(--color-gray-200)] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]">
+    <div
+      className={cx(
+        "sticky top-0 z-[1] flex items-start justify-between gap-[var(--spacing-md)] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]",
+        showDivider && "border-b border-[var(--color-gray-200)]",
+      )}
+    >
       <div className="flex min-w-0 flex-1 items-start gap-[var(--spacing-sm)]">
         {onBack ? (
           <IconButton
@@ -361,15 +369,22 @@ export function ModalFooter({
   footerMeta,
   secondaryAction,
   primaryAction,
+  showDivider = true,
 }: {
   footer?: ReactNode;
   footerMeta?: ReactNode;
   secondaryAction?: ReactNode;
   primaryAction?: ReactNode;
+  showDivider?: boolean;
 }) {
   if (footer) {
     return (
-      <div className="sticky bottom-0 z-[1] border-t border-[var(--color-gray-200)] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]">
+      <div
+        className={cx(
+          "sticky bottom-0 z-[1] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]",
+          showDivider && "border-t border-[var(--color-gray-200)]",
+        )}
+      >
         {footer}
       </div>
     );
@@ -380,7 +395,12 @@ export function ModalFooter({
   }
 
   return (
-    <div className="sticky bottom-0 z-[1] border-t border-[var(--color-gray-200)] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]">
+    <div
+      className={cx(
+        "sticky bottom-0 z-[1] bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]",
+        showDivider && "border-t border-[var(--color-gray-200)]",
+      )}
+    >
       <div className="flex flex-col gap-[var(--spacing-md)] sm:flex-row sm:items-center">
         {footerMeta ? (
           <div className="min-w-0 flex-1">

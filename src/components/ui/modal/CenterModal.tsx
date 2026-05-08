@@ -36,6 +36,7 @@ export function CenterModal({
   allowBackgroundInteraction = false,
   lockBodyScroll = true,
   showCloseButton = true,
+  showDividers = true,
   bodyPadding = "md",
   children,
 }: CenterModalProps) {
@@ -84,6 +85,7 @@ export function CenterModal({
             onBack={onBack}
             headerActions={headerActions}
             showCloseButton={showCloseButton}
+            showDivider={showDividers}
             onClose={onClose}
           />
           <ModalBody padding={bodyPadding}>{children}</ModalBody>
@@ -92,6 +94,7 @@ export function CenterModal({
             footerMeta={footerMeta}
             secondaryAction={secondaryAction}
             primaryAction={primaryAction}
+            showDivider={showDividers}
           />
         </div>
       </ModalFrame>

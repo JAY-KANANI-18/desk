@@ -1111,7 +1111,9 @@ export function WorkflowList() {
         title="Name workflow"
         size="sm"
         footer={scratchNameModalFooter}
+        showDividers={false}
         mobileFooter={scratchNameModalFooter}
+        mobileBorderless
         mobileBodyClassName="px-5 py-4"
         closeOnOverlayClick={!creatingScratchWorkflow}
         mobileCloseOnOverlayClick={!creatingScratchWorkflow}

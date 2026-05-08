@@ -448,7 +448,9 @@ function TemplateNameModal({
       title="Name workflow"
       size="sm"
       footer={footer}
+      showDividers={false}
       mobileFooter={footer}
+      mobileBorderless
       mobileBodyClassName="px-5 py-4"
       closeOnOverlayClick={!creating}
       mobileCloseOnOverlayClick={!creating}
