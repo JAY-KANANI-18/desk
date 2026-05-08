@@ -101,7 +101,7 @@ export function useBroadcastDetails({
       setSelectedRun(updated);
       await refreshSelectedBroadcast(updated.id);
       setBroadcastAction(null);
-      toast.success(broadcastAction === "edit" ? "Broadcast updated" : "Send time changed");
+      toast.success(broadcastAction === "edit" ? "Broadcast updated" : "Schedule time changed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update broadcast");
     } finally {

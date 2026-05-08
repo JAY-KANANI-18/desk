@@ -54,6 +54,12 @@ export interface ChannelOnboardingDefinition {
   iconUrl: string;
 }
 
+export interface ChannelBroadcastMetadata {
+  supported: true;
+  messageMode: "approved_template" | "text";
+  helperText: string;
+}
+
 export interface ChannelMetadata {
   key: ChannelKey;
   aliases?: string[];
@@ -80,6 +86,7 @@ export interface ChannelMetadata {
   manageNavItems?: ManageChannelNavItemDefinition[];
   additionalResources?: ChannelResourceLink[];
   onboarding?: ChannelOnboardingDefinition;
+  broadcast?: ChannelBroadcastMetadata;
 }
 
 export interface ChannelCatalogItem {
@@ -129,6 +136,11 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
     badgeGlow: "from-[#25d366] to-[#128c7e]",
     badgeShadow: "rgba(37,211,102,0.45)",
     avatarBadgeType: "whatsapp",
+    broadcast: {
+      supported: true,
+      messageMode: "approved_template",
+      helperText: "Use an approved WhatsApp message template.",
+    },
     manageNavItems: [
       { id: "configuration", label: "Configuration", icon: "settings" },
       { id: "templates", label: "Templates", icon: "fileText" },
@@ -261,6 +273,11 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
     // badge: "Popular",
     badgeColor: "bg-green-100 text-green-700",
     avatarBadgeType: "email",
+    broadcast: {
+      supported: true,
+      messageMode: "text",
+      helperText: "Send email broadcasts with unsubscribe handling.",
+    },
     manageNavItems: [
       { id: "configuration", label: "Configuration", icon: "settings" },
       { id: "troubleshoot", label: "Troubleshoot", icon: "wrench" },
@@ -440,6 +457,18 @@ export function normalizeChannelKey(value: string | number | null | undefined) {
 export function getChannelMetadata(value: string | number | null | undefined) {
   const key = normalizeChannelKey(value);
   return CHANNEL_METADATA_BY_KEY[key] ?? null;
+}
+
+export function getChannelBroadcastMetadata(
+  value: string | number | null | undefined,
+) {
+  return getChannelMetadata(value)?.broadcast ?? null;
+}
+
+export function channelSupportsBroadcast(
+  value: string | number | null | undefined,
+) {
+  return Boolean(getChannelBroadcastMetadata(value)?.supported);
 }
 
 export function getChannelIconUrl(

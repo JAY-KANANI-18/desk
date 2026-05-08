@@ -941,15 +941,23 @@ export function SelectSearchInput({
   onChange,
   onKeyDown,
   placeholder = "Search...",
+  surface = "default",
 }: {
   inputRef: RefObject<HTMLInputElement>;
   value: string;
   onChange: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
+  surface?: "default" | "plain";
 }) {
   return (
-    <div className="border-b border-[var(--color-gray-200)] p-[var(--spacing-sm)]">
+    <div
+      className={
+        surface === "plain"
+          ? ""
+          : "border-b border-[var(--color-gray-200)] p-[var(--spacing-sm)]"
+      }
+    >
       <SearchInput
         ref={inputRef}
         value={value}

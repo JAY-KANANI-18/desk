@@ -134,22 +134,6 @@ export function addMonths(date: Date, amount: number) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1);
 }
 
-export function calendarEventClass(status: string) {
-  if (status === "completed" || status === "sent") {
-    return "border-l-emerald-500 bg-emerald-50 text-emerald-900 hover:bg-emerald-100";
-  }
-  if (status === "partial_failure" || status === "failed") {
-    return "border-l-red-500 bg-red-50 text-red-900 hover:bg-red-100";
-  }
-  if (status === "scheduled") {
-    return "border-l-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary-light)]";
-  }
-  if (status === "running") {
-    return "border-l-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary-light)]";
-  }
-  return "border-l-gray-400 bg-gray-50 text-gray-800 hover:bg-gray-100";
-}
-
 export function calendarStatusLabel(status: string) {
   if (status === "completed") return "Sent";
   if (status === "partial_failure") return "Needs attention";

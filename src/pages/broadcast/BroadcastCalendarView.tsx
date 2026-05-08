@@ -6,13 +6,59 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
 import { CALENDAR_WEEK_DAYS } from "./constants";
 import {
-  calendarEventClass,
   calendarStatusLabel,
   formatDate,
   formatDateKey,
   formatTime,
   formatWeekday,
 } from "./utils";
+
+function getEventTone(status: string) {
+  if (status === "completed" || status === "sent") {
+    return {
+      card: "border-emerald-100 bg-emerald-50 text-emerald-950 hover:bg-emerald-100",
+      dot: "bg-emerald-500",
+      meta: "text-emerald-700",
+    };
+  }
+  if (status === "partial_failure" || status === "failed") {
+    return {
+      card: "border-red-100 bg-red-50 text-red-950 hover:bg-red-100",
+      dot: "bg-red-500",
+      meta: "text-red-700",
+    };
+  }
+  if (status === "scheduled" || status === "running") {
+    return {
+      card: "border-indigo-100 bg-indigo-50 text-indigo-950 hover:bg-indigo-100",
+      dot: "bg-[var(--color-primary)]",
+      meta: "text-indigo-700",
+    };
+  }
+
+  return {
+    card: "border-slate-100 bg-slate-50 text-slate-950 hover:bg-slate-100",
+    dot: "bg-slate-400",
+    meta: "text-slate-600",
+  };
+}
+
+function peopleLabel(count: number) {
+  return `${count} ${count === 1 ? "person" : "people"}`;
+}
+
+function getMobileEventClass(status: string) {
+  if (status === "completed" || status === "sent") {
+    return "border-l-emerald-500 bg-emerald-50 text-emerald-900 hover:bg-emerald-100";
+  }
+  if (status === "partial_failure" || status === "failed") {
+    return "border-l-red-500 bg-red-50 text-red-900 hover:bg-red-100";
+  }
+  if (status === "scheduled" || status === "running") {
+    return "border-l-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)] hover:bg-[var(--color-primary-light)]";
+  }
+  return "border-l-gray-400 bg-gray-50 text-gray-800 hover:bg-gray-100";
+}
 
 function BroadcastCalendarEventButton({
   event,
@@ -23,29 +69,72 @@ function BroadcastCalendarEventButton({
   onOpenDetail: (run: BroadcastRunRow) => void;
   compact?: boolean;
 }) {
+  const tone = getEventTone(event.status);
+
   return (
     <Button
       type="button"
       variant="unstyled"
       fullWidth
       contentAlign="start"
-      size={compact ? "xs" : "md"}
-      radius={compact ? "default" : "lg"}
+      preserveChildLayout
       onClick={() => onOpenDetail(event)}
-      className={`items-start whitespace-normal border border-l-2 text-left ${calendarEventClass(
+      className={`group block min-w-0 overflow-hidden rounded-xl border px-2 py-1.5 text-left transition-colors ${tone.card} ${
+        compact ? "min-h-[3rem]" : "min-h-[3.5rem]"
+      }`}
+    >
+      <div className="w-full min-w-0">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone.dot}`} />
+          <p className="min-w-0 truncate text-xs font-semibold leading-5">
+            {event.name}
+          </p>
+        </div>
+        <div
+          className={`mt-0.5 flex min-w-0 items-center justify-between gap-2 text-[11px] leading-4 ${tone.meta}`}
+        >
+          <span className="min-w-0 truncate">
+            {formatTime(event.scheduledAt)} | {calendarStatusLabel(event.status)}
+          </span>
+          <span className="shrink-0 font-medium">
+            {peopleLabel(event.totalAudience)}
+          </span>
+        </div>
+      </div>
+    </Button>
+  );
+}
+
+function BroadcastCalendarMobileEventButton({
+  event,
+  onOpenDetail,
+}: {
+  event: BroadcastRunRow;
+  onOpenDetail: (run: BroadcastRunRow) => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="unstyled"
+      fullWidth
+      contentAlign="start"
+      size="md"
+      radius="lg"
+      onClick={() => onOpenDetail(event)}
+      className={`items-start whitespace-normal border border-l-2 text-left ${getMobileEventClass(
         event.status,
-      )} ${compact ? "rounded-md" : "rounded-2xl"}`}
+      )} rounded-2xl`}
     >
       <div className="w-full min-w-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{event.name}</p>
-            <p className={`mt-1 opacity-80 ${compact ? "text-[11px]" : "text-xs"}`}>
+            <p className="mt-1 text-xs opacity-80">
               {formatTime(event.scheduledAt)} | {calendarStatusLabel(event.status)}
             </p>
           </div>
-          <span className={`shrink-0 opacity-70 ${compact ? "text-[11px]" : "text-xs"}`}>
-            {event.totalAudience} people
+          <span className="shrink-0 text-xs opacity-70">
+            {peopleLabel(event.totalAudience)}
           </span>
         </div>
       </div>
@@ -171,7 +260,6 @@ export function BroadcastCalendarView({
                     key={key}
                     type="button"
                     fullWidth
-                  
                     variant={
                       isSelected
                         ? "primary"
@@ -179,9 +267,13 @@ export function BroadcastCalendarView({
                           ? "secondary"
                           : "ghost"
                     }
+                    aria-label={`${formatDate(day)}${
+                      events.length ? `, ${events.length} broadcasts` : ""
+                    }`}
+                    className="h-14 min-h-14 overflow-hidden"
                     onClick={() => setSelectedDateKey(key)}
                   >
-                    <div className="flex flex-col items-center text-center">
+                    <div className="flex h-full flex-col items-center justify-center text-center">
                       <span
                         className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-semibold ${
                           isSelected
@@ -203,7 +295,7 @@ export function BroadcastCalendarView({
                               : "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
                           }`}
                         >
-                          {events.length}
+                          {events.length > 9 ? "9+" : events.length}
                         </span>
                       ) : null}
                     </div>
@@ -229,9 +321,9 @@ export function BroadcastCalendarView({
             </div>
 
             {selectedDay && selectedDay.events.length > 0 ? (
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 {selectedDay.events.map((event) => (
-                  <BroadcastCalendarEventButton
+                  <BroadcastCalendarMobileEventButton
                     key={event.id}
                     event={event}
                     onOpenDetail={onOpenDetail}

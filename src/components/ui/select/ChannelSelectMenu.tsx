@@ -250,6 +250,8 @@ export function ChannelSelectMenu<TChannel extends ChannelSelectMenuChannel>({
       mobileSheet={mobileSheet}
       mobileSheetTitle={mobileSheetTitle ?? label ?? "Select channel"}
       mobileSheetSubtitle={mobileSheetSubtitle}
+      mobileSheetListVariant="plain"
+      mobileSheetOptionSize="lg"
       placeholder={placeholder}
       triggerClassName={triggerClassName}
       triggerContent={triggerContent}

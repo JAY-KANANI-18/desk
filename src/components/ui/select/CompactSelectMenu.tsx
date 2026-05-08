@@ -420,6 +420,7 @@ export function CompactSelectMenu({
                   onChange={setSearchTerm}
                   onKeyDown={controller.handleListKeyDown}
                   placeholder={searchPlaceholder}
+                  surface={plainMobileList ? "plain" : "default"}
                 />
               </div>
             ) : null}

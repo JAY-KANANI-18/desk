@@ -1,3 +1,4 @@
+import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import { ShieldCheck, Users } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -86,14 +87,19 @@ export function BroadcastComposerModal({
 
       <ChannelSelectMenu
         label="Send from"
+        hint="Broadcasts are available for WhatsApp and Email."
         value={form.channelId}
         channels={channels}
         onChange={(channelId) =>
           onFormChange({ ...form, channelId })
         }
         placeholder="Choose a connected channel"
-        groupLabel="Connected channels"
-        channelFilter={(channel) => channel.status === "connected" || !channel.status}
+        groupLabel="Broadcast-ready channels"
+        emptyMessage="Connect WhatsApp or Email to send broadcasts."
+        channelFilter={(channel) =>
+          (channel.status === "connected" || !channel.status) &&
+          channelSupportsBroadcast(channel.type)
+        }
         searchable
       />
 

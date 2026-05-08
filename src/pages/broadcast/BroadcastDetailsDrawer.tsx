@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import {
   AlertCircle,
   BarChart3,
@@ -340,6 +341,9 @@ export function BroadcastDetailsDrawer({
     countStatuses(analytics, ["failed", "bounced", "dead_letter"]);
   const deliveryEntries = analytics ? orderedStatusEntries(analytics.byStatus) : [];
   const canDownloadReport = selectedRun.status !== "scheduled";
+  const selectedChannelSupportsBroadcast = channelSupportsBroadcast(
+    selectedRun.channel?.type,
+  );
   const deliveredValue =
     selectedRun.status === "scheduled" ? 0 : analytics ? deliveredCount : "-";
   const readValue =
@@ -399,7 +403,7 @@ export function BroadcastDetailsDrawer({
           <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
             <Calendar size={14} className="shrink-0" />
             <span className="shrink-0">
-              {selectedRun.status === "scheduled" ? "Scheduled for" : "Send time"}
+              {selectedRun.status === "scheduled" ? "Schedule time" : "Send time"}
             </span>
             <span className="min-w-0 truncate font-medium text-slate-700">
               {formatDateTime(selectedRun.scheduledAt)}
@@ -454,7 +458,10 @@ export function BroadcastDetailsDrawer({
         </Button>
         <Button
           disabled={
-            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving || actionOpen
+            !selectedChannelSupportsBroadcast ||
+            !canMutateBroadcast(selectedRun.status) ||
+            broadcastActionSaving ||
+            actionOpen
           }
           onClick={onSendNow}
           variant="secondary"
@@ -464,7 +471,12 @@ export function BroadcastDetailsDrawer({
         </Button>
       </div>
 
-      {!canMutateBroadcast(selectedRun.status) ? (
+      {!selectedChannelSupportsBroadcast ? (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-700">
+          This channel cannot send broadcasts. Use WhatsApp or Email for
+          broadcasts.
+        </p>
+      ) : !canMutateBroadcast(selectedRun.status) ? (
         <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
           This broadcast has started, so editing is locked to keep delivery
           history clear.

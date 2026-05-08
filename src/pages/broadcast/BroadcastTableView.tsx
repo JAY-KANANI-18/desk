@@ -204,7 +204,7 @@ export function BroadcastTableView({
 
               <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Send time
+                  {run.status === "scheduled" ? "Schedule time" : "Send time"}
                 </span>
                 <span className="min-w-0 truncate text-right text-sm font-semibold text-slate-800">
                   {scheduleTime}

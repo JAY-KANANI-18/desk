@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import { broadcastApi, type BroadcastSendResult } from "../../lib/broadcastApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import type {
@@ -9,7 +10,11 @@ import type {
   LifecycleRow,
   TagRow,
 } from "./types";
-import { formatDateTime, templateFieldLabel, templateVariableKeys } from "./utils";
+import {
+  formatDateTime,
+  templateFieldLabel,
+  templateVariableKeys,
+} from "./utils";
 
 const INITIAL_FORM: BroadcastFormState = {
   name: "",
@@ -70,6 +75,12 @@ export function useBroadcastComposer({
   const isWhatsApp = selectedChannel?.type === "whatsapp";
 
   useEffect(() => {
+    if (!form.channelId || !selectedChannel) return;
+    if (channelSupportsBroadcast(selectedChannel.type)) return;
+    setForm((prev) => ({ ...prev, channelId: "" }));
+  }, [form.channelId, selectedChannel]);
+
+  useEffect(() => {
     setAudiencePreview(null);
     setSelectedTemplateId("");
     setTemplateVars({});
@@ -120,6 +131,10 @@ export function useBroadcastComposer({
       toast.error("Choose where to send from");
       return;
     }
+    if (!selectedChannel || !channelSupportsBroadcast(selectedChannel.type)) {
+      toast.error("Broadcasts are available for WhatsApp and Email only");
+      return;
+    }
     setPreviewLoading(true);
     try {
       const result = await broadcastApi.audiencePreview({
@@ -139,7 +154,7 @@ export function useBroadcastComposer({
     } finally {
       setPreviewLoading(false);
     }
-  }, [form]);
+  }, [form, selectedChannel]);
 
   const handleSend = useCallback(async () => {
     if (!form.name.trim()) {
@@ -148,6 +163,10 @@ export function useBroadcastComposer({
     }
     if (!form.channelId) {
       toast.error("Choose where to send from");
+      return;
+    }
+    if (!selectedChannel || !channelSupportsBroadcast(selectedChannel.type)) {
+      toast.error("Broadcasts are available for WhatsApp and Email only");
       return;
     }
     if (isWhatsApp) {
@@ -220,7 +239,7 @@ export function useBroadcastComposer({
     } finally {
       setSending(false);
     }
-  }, [form, isWhatsApp, reloadRuns, selectedTemplate, templateVars]);
+  }, [form, isWhatsApp, reloadRuns, selectedChannel, selectedTemplate, templateVars]);
 
   return {
     tags,
