@@ -416,7 +416,9 @@ export const NotificationPreferences = () => {
 
     setError(null);
     setSaved(false);
-    setPrefs({ ...preset.value });
+    setPrefs({ ...preset.value
+      
+     });
   }, []);
 
   if (loading) {
