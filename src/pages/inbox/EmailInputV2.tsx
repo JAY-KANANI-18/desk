@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
   AtSign,
   Bold,
@@ -27,7 +27,9 @@ import {
   AiComposerInlineStatus,
   AiPromptMenu,
   ComposerAttachmentPreviewStrip,
+  SnippetSuggestionMenu,
   useInboxAiComposer,
+  useWorkspaceSnippets,
 } from './composerShared';
 import { extractMentionIds } from './utils';
 import { normalizeEmailChannelConfig } from '../../lib/emailChannel';
@@ -44,8 +46,19 @@ import {
 } from '../../components/ui/Select';
 import { workspaceUserLabel } from './contact-sidebar/utils';
 import type { WorkspaceUserLike } from './contact-sidebar/types';
+import {
+  filterSnippets,
+  getSnippetTriggerQuery,
+  replaceSnippetTrigger,
+  type SnippetAttachment,
+} from '../../lib/snippets';
 
-type AttachedFile = { file: File; type: AttachmentType; url: string; previewUrl: string };
+type AttachedFile = {
+  file: { name: string; type: string };
+  type: AttachmentType;
+  url: string;
+  previewUrl?: string;
+};
 type SelectedMention = { id: string; label: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
 
@@ -74,6 +87,18 @@ function getAttachmentType(file: File): AttachmentType {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'doc';
+}
+
+function snippetAttachmentToAttachedFile(attachment: SnippetAttachment): AttachedFile {
+  return {
+    file: {
+      name: attachment.name,
+      type: attachment.mimeType ?? '',
+    },
+    type: attachment.type,
+    url: attachment.url,
+    previewUrl: attachment.type === 'image' ? attachment.url : undefined,
+  };
 }
 
 function escapeHtml(text: string) {
@@ -114,6 +139,8 @@ export function EmailInput({
   const [selectedMentions, setSelectedMentions] = useState<SelectedMention[]>([]);
   const [trigger, setTrigger] = useState<TriggerState>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
+  const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
   const emojiMenu = useDisclosure();
   const aiMenu = useDisclosure();
 
@@ -174,6 +201,7 @@ export function EmailInput({
     switchToNote: () => onInputModeChange('note'),
   });
   const isAiBusy = aiComposer.aiLoadingAction !== null;
+  const { snippets, snippetsLoading } = useWorkspaceSnippets();
 
   const filteredVariableTriggerItems = useMemo(() => {
     if (trigger?.type !== 'variable') return [];
@@ -212,6 +240,16 @@ export function EmailInput({
       : trigger?.type === 'mention'
         ? filteredMentionUsers.length
         : 0;
+  const snippetQuery = getSnippetTriggerQuery(draftText);
+  const snippetMenuOpen =
+    !isNote &&
+    !isAiBusy &&
+    snippetQuery !== null &&
+    dismissedSnippetDraft !== draftText;
+  const snippetOptions = useMemo(
+    () => (snippetQuery === null ? [] : filterSnippets(snippets, snippetQuery)),
+    [snippetQuery, snippets],
+  );
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -248,6 +286,7 @@ export function EmailInput({
     setAttachedFiles([]);
     setTrigger(null);
     setSelectedMentions([]);
+    setDismissedSnippetDraft(null);
     setDraftText('');
     if (editorRef.current) editorRef.current.innerHTML = '';
     onClearReplyContext?.();
@@ -262,7 +301,11 @@ export function EmailInput({
   const updateDraftState = useCallback(() => {
     aiComposer.clearAiComposerNotice();
     const text = editorRef.current?.innerText?.replace(/\n{3,}/g, '\n\n') ?? '';
-    setDraftText(text.trimEnd());
+    const nextText = text.trimEnd();
+    setDraftText(nextText);
+    if (nextText !== draftText) {
+      setDismissedSnippetDraft(null);
+    }
     setSelectedMentions((prev) =>
       prev.filter((mention) => text.includes(`@${mention.label}`)),
     );
@@ -293,7 +336,7 @@ export function EmailInput({
       return;
     }
     setTrigger(null);
-  }, [aiComposer, isNote]);
+  }, [aiComposer, draftText, isNote]);
 
   const insertAtSelection = useCallback((replacement: string, pattern: RegExp) => {
     const selection = window.getSelection();
@@ -323,6 +366,62 @@ export function EmailInput({
     updateDraftState();
     editorRef.current?.focus();
   }, [updateDraftState]);
+
+  useEffect(() => {
+    setSnippetHighlightIndex(0);
+  }, [snippetQuery, snippetOptions.length]);
+
+  const handleSelectSnippet = useCallback((snippet: (typeof snippets)[number]) => {
+    const nextDraft = replaceSnippetTrigger(draftText, snippet.content);
+    setDraftText(nextDraft);
+    setDismissedSnippetDraft(null);
+    setTrigger(null);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = plainTextToHtml(nextDraft);
+    }
+    if (snippet.attachments?.length) {
+      setAttachedFiles((current) => [
+        ...current,
+        ...snippet.attachments.map(snippetAttachmentToAttachedFile),
+      ]);
+    }
+    requestAnimationFrame(() => {
+      editorRef.current?.focus();
+    });
+  }, [draftText]);
+
+  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (!snippetMenuOpen) return false;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setDismissedSnippetDraft(draftText);
+      return true;
+    }
+
+    if (snippetOptions.length === 0) return false;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.min(index + 1, snippetOptions.length - 1));
+      return true;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.max(index - 1, 0));
+      return true;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const snippet = snippetOptions[snippetHighlightIndex];
+      if (snippet) handleSelectSnippet(snippet);
+      return true;
+    }
+
+    return false;
+  }, [draftText, handleSelectSnippet, snippetHighlightIndex, snippetMenuOpen, snippetOptions]);
 
   const insertVariable = useCallback((variable: typeof variables[number]) => {
     insertAtSelection(`{{${variable.key}}}`, /\$(\w*)$/);
@@ -382,6 +481,7 @@ export function EmailInput({
       const attachments: MediaAttachment[] = attachedFiles.map((file) => ({
         type: file.type,
         filename: file.file.name,
+        name: file.file.name,
         url: file.url,
         mimeType: file.file.type,
       }));
@@ -585,86 +685,98 @@ export function EmailInput({
           </div>
         )}
 
-        <div className={`relative min-h-[80px] max-h-[220px] overflow-y-auto ${activeBg}`}>
-          {trigger?.type === 'variable' ? (
-            <VariableSuggestionMenu
+        <div className="relative">
+          <SnippetSuggestionMenu
+            open={snippetMenuOpen}
+            query={snippetQuery ?? ''}
+            options={snippetOptions}
+            highlightedIndex={snippetHighlightIndex}
+            onHighlightChange={setSnippetHighlightIndex}
+            onSelect={handleSelectSnippet}
+            loading={snippetsLoading}
+          />
+          <div className={`relative min-h-[80px] max-h-[220px] overflow-y-auto ${activeBg}`}>
+            {trigger?.type === 'variable' ? (
+              <VariableSuggestionMenu
+                ref={triggerMenuRef}
+                isOpen
+                query={trigger.query}
+                options={filteredVariableTriggerItems}
+                highlightedIndex={highlightIndex}
+                onHighlightChange={setHighlightIndex}
+                onSelect={insertVariable}
+                showEmptyState={Boolean(trigger.query)}
+                className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-[320px]"
+              />
+            ) : null}
+            <MentionSuggestionMenu
               ref={triggerMenuRef}
-              isOpen
-              query={trigger.query}
-              options={filteredVariableTriggerItems}
+              isOpen={trigger?.type === 'mention'}
+              query={trigger?.type === 'mention' ? trigger.query : ""}
+              title="Mention teammate"
+              options={mentionOptions}
               highlightedIndex={highlightIndex}
               onHighlightChange={setHighlightIndex}
-              onSelect={insertVariable}
-              showEmptyState={Boolean(trigger.query)}
-              className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-[320px]"
+              onSelect={(option) => {
+                const user = filteredMentionUsers.find((item) => String(item.id) === option.id);
+                if (user) {
+                  insertMention(user);
+                }
+              }}
+              showEmptyState={trigger?.type === 'mention' && Boolean(trigger.query)}
+              className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-80"
             />
-          ) : null}
-          <MentionSuggestionMenu
-            ref={triggerMenuRef}
-            isOpen={trigger?.type === 'mention'}
-            query={trigger?.type === 'mention' ? trigger.query : ""}
-            title="Mention teammate"
-            options={mentionOptions}
-            highlightedIndex={highlightIndex}
-            onHighlightChange={setHighlightIndex}
-            onSelect={(option) => {
-              const user = filteredMentionUsers.find((item) => String(item.id) === option.id);
-              if (user) {
-                insertMention(user);
-              }
-            }}
-            showEmptyState={trigger?.type === 'mention' && Boolean(trigger.query)}
-            className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-80"
-          />
 
-          <AiComposerInlineStatus
-            loadingAction={aiComposer.aiLoadingAction}
-            notice={aiComposer.aiComposerNotice}
-          />
+            <AiComposerInlineStatus
+              loadingAction={aiComposer.aiLoadingAction}
+              notice={aiComposer.aiComposerNotice}
+            />
 
-          {!draftText && !aiComposer.aiLoadingAction && !aiComposer.aiComposerNotice && (
-            <div className={`absolute left-3 top-3 pr-3 text-[13px] pointer-events-none select-none sm:left-4 sm:text-sm ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
-              {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-[var(--color-primary)]">$</span> for variables</>}
-            </div>
-          )}
+            {!draftText && !aiComposer.aiLoadingAction && !aiComposer.aiComposerNotice && (
+              <div className={`absolute left-3 top-3 pr-3 text-[13px] pointer-events-none select-none sm:left-4 sm:text-sm ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
+                {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-[var(--color-primary)]">$</span> for variables</>}
+              </div>
+            )}
 
-          <div
-            ref={editorRef}
-            contentEditable={!isAiBusy}
-            suppressContentEditableWarning
-            onInput={updateDraftState}
-            onKeyUp={updateDraftState}
-            onMouseUp={updateDraftState}
-            onKeyDown={(e) => {
-              if (isAiBusy) {
-                e.preventDefault();
-                return;
-              }
-              if (trigger && triggerOptionCount > 0) {
-                if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIndex((value) => Math.min(value + 1, triggerOptionCount - 1)); return; }
-                if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIndex((value) => Math.max(value - 1, 0)); return; }
-                if (e.key === 'Enter') {
+            <div
+              ref={editorRef}
+              contentEditable={!isAiBusy}
+              suppressContentEditableWarning
+              onInput={updateDraftState}
+              onKeyUp={updateDraftState}
+              onMouseUp={updateDraftState}
+              onKeyDown={(e) => {
+                if (isAiBusy) {
                   e.preventDefault();
-                  if (trigger.type === 'variable') {
-                    const item = filteredVariableTriggerItems[highlightIndex];
-                    if (item) insertVariable(item);
-                  } else {
-                    const item = filteredMentionUsers[highlightIndex];
-                    if (item) insertMention(item);
-                  }
                   return;
                 }
-                if (e.key === 'Escape') { setTrigger(null); return; }
-              }
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            aria-busy={isAiBusy}
-            className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-[var(--color-primary)] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
-            style={{ wordBreak: 'break-word' }}
-          />
+                if (handleSnippetKeyDown(e)) return;
+                if (trigger && triggerOptionCount > 0) {
+                  if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIndex((value) => Math.min(value + 1, triggerOptionCount - 1)); return; }
+                  if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIndex((value) => Math.max(value - 1, 0)); return; }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (trigger.type === 'variable') {
+                      const item = filteredVariableTriggerItems[highlightIndex];
+                      if (item) insertVariable(item);
+                    } else {
+                      const item = filteredMentionUsers[highlightIndex];
+                      if (item) insertMention(item);
+                    }
+                    return;
+                  }
+                  if (e.key === 'Escape') { setTrigger(null); return; }
+                }
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              aria-busy={isAiBusy}
+              className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-[var(--color-primary)] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
+              style={{ wordBreak: 'break-word' }}
+            />
+          </div>
         </div>
 
         <ComposerAttachmentPreviewStrip

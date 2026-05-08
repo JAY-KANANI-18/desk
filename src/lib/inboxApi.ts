@@ -261,6 +261,7 @@ export interface AiTextResult {
 
 export type PresignedUploadType =
   | "message-attachment"
+  | "snippet-attachment"
   | "user-avatar"
   | "static-avatar";
 

@@ -18,6 +18,11 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useDisclosure } from '../../hooks/useDisclosure';
 import { Button } from '../../components/ui/Button';
 
+export {
+  SnippetSuggestionMenu,
+  useWorkspaceSnippets,
+} from '../../components/snippets/SnippetSuggestionMenu';
+
 export type AiLoadingAction = 'rewrite' | 'assist' | 'summarize';
 export type AiComposerNotice = {
   tone: 'warning' | 'error';

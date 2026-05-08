@@ -1,6 +1,12 @@
 import type { Workspace } from "../context/WorkspaceContext";
 import { api } from "../lib/api";
 import type { Workflow } from "../pages/workflow/workflow.types";
+import type {
+  PaginatedSnippetResponse,
+  Snippet,
+  SnippetListParams,
+  SnippetUpsertPayload,
+} from "./snippets";
 
 /* =========================================================
    Types
@@ -278,16 +284,29 @@ export const workspaceApi = {
      Snippets
   ========================================================= */
 
-  getSnippets: () =>
+  getSnippets: (): Promise<Snippet[]> =>
     api.get(`/workspaces/snippets`),
 
-  addSnippet: (snippet: any) =>
+  listSnippets: (params?: SnippetListParams): Promise<PaginatedSnippetResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search?.trim()) searchParams.set('search', params.search.trim());
+    if (params?.topic?.trim() && params.topic !== 'all') searchParams.set('topic', params.topic.trim());
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    return api.get(`/workspaces/snippets${query ? `?${query}` : ''}`);
+  },
+
+  addSnippet: (snippet: SnippetUpsertPayload): Promise<Snippet> =>
     api.post(`/workspaces/snippets`, snippet),
 
-  updateSnippet: (snippetId: number, updates: any) =>
-    api.put(`/workspaces/snippets/${snippetId}`, updates),
+  updateSnippet: (
+    snippetId: string,
+    updates: Partial<SnippetUpsertPayload>,
+  ): Promise<Snippet> =>
+    api.patch(`/workspaces/snippets/${snippetId}`, updates),
 
-  deleteSnippet: (snippetId: number) =>
+  deleteSnippet: (snippetId: string): Promise<{ deleted: true }> =>
     api.delete(`/workspaces/snippets/${snippetId}`),
 
 

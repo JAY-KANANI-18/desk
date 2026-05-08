@@ -55,6 +55,7 @@ export interface VariableTextEditorProps {
   placeholderClassName?: string;
   menuPlacement?: VariableSuggestionMenuPlacement;
   onSubmit?: () => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   "aria-label"?: string;
 }
 
@@ -153,6 +154,7 @@ export const VariableTextEditor = forwardRef<
       placeholderClassName,
       menuPlacement = "top",
       onSubmit,
+      onKeyDown: onKeyDownProp,
       "aria-label": ariaLabel = "Message editor",
     },
     ref,
@@ -371,6 +373,11 @@ export const VariableTextEditor = forwardRef<
     );
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(event);
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (readOnly || disabled) {
         event.preventDefault();
         return;

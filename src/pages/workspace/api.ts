@@ -109,10 +109,10 @@ export const MOCK_DATA = {
   } as ClosingNoteSettings,
 
   snippets: [
-    { id: 1, shortcut: '/greeting', title: 'Greeting', content: 'Hi {{contact.firstName}}! Thanks for reaching out. How can I help you today?' },
-    { id: 2, shortcut: '/thanks', title: 'Thank you', content: 'Thank you for contacting us! Is there anything else I can help you with?' },
-    { id: 3, shortcut: '/hours', title: 'Business hours', content: 'Our support team is available Monday–Friday, 9am–6pm EST.' },
-    { id: 4, shortcut: '/escalate', title: 'Escalation', content: "I'm going to escalate this to our specialist team. You'll hear back within 2 business hours." },
+    { id: '1', shortcut: '/greeting', name: 'Greeting', title: 'Greeting', content: 'Hi {{contact_name}}! Thanks for reaching out. How can I help you today?', topic: 'Support', attachments: [] },
+    { id: '2', shortcut: '/thanks', name: 'Thank you', title: 'Thank you', content: 'Thank you for contacting us! Is there anything else I can help you with?', topic: 'Support', attachments: [] },
+    { id: '3', shortcut: '/hours', name: 'Business hours', title: 'Business hours', content: 'Our support team is available Monday-Friday, 9am-6pm EST.', topic: 'Support', attachments: [] },
+    { id: '4', shortcut: '/escalate', name: 'Escalation', title: 'Escalation', content: "I'm going to escalate this to our specialist team. You'll hear back within 2 business hours.", topic: 'Escalation', attachments: [] },
   ] as Snippet[],
 
   tags: [

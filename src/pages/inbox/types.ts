@@ -15,6 +15,7 @@ export type AttachmentType = 'image' | 'audio' | 'video' | 'doc';
 export type MediaAttachment = {
   type: AttachmentType;
   filename: string;
+  name?: string;
   url: string;
   mimeType?: string;
   size?: number;

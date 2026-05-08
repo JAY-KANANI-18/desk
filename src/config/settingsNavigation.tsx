@@ -1,4 +1,5 @@
 import {
+  AlignLeft,
   BarChart3,
   Bell,
   Building,
@@ -63,6 +64,13 @@ export const workspaceSettingsConfig: SettingsModuleConfig = {
           icon: <Tag size={22} />,
           permission: { ws: "ws:settings:view" },
           to: "/workspace/settings/tags",
+        },
+        {
+          id: "workspace-snippets",
+          label: "Snippets",
+          icon: <AlignLeft size={22} />,
+          permission: { ws: "ws:shortcuts:manage" },
+          to: "/workspace/settings/snippets",
         },
         {
           id: "workspace-integrations",

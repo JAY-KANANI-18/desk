@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import { ShieldCheck, Users } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
@@ -10,9 +11,18 @@ import {
 } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { ResponsiveModal } from "../../components/ui/modal";
+import {
+  SnippetSuggestionMenu,
+  useWorkspaceSnippets,
+} from "../../components/snippets/SnippetSuggestionMenu";
 import { BroadcastTagPicker } from "./BroadcastTagPicker";
 
 import { templateFieldLabel, templateVariableKeys } from "./utils";
+import {
+  filterSnippets,
+  getSnippetTriggerQuery,
+  replaceSnippetTrigger,
+} from "../../lib/snippets";
 import type {
   BroadcastAudiencePreviewState,
   BroadcastFormState,
@@ -66,6 +76,9 @@ export function BroadcastComposerModal({
   onClose,
   onSend,
 }: BroadcastComposerModalProps) {
+  const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
+  const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
+  const { snippets, snippetsLoading } = useWorkspaceSnippets();
   const templateOptions = [
     { value: "", label: "Choose approved message" },
     ...waTemplates.map((template) => ({
@@ -73,6 +86,64 @@ export function BroadcastComposerModal({
       label: `${template.name} (${template.language}) - ${template.category}`,
     })),
   ];
+  const snippetQuery = getSnippetTriggerQuery(form.text);
+  const snippetMenuOpen =
+    !isWhatsApp &&
+    snippetQuery !== null &&
+    dismissedSnippetDraft !== form.text;
+  const snippetOptions = useMemo(
+    () => (snippetQuery === null ? [] : filterSnippets(snippets, snippetQuery)),
+    [snippetQuery, snippets],
+  );
+
+  useEffect(() => {
+    setSnippetHighlightIndex(0);
+  }, [snippetQuery, snippetOptions.length]);
+
+  const updateBroadcastText = useCallback((text: string) => {
+    if (text !== form.text) {
+      setDismissedSnippetDraft(null);
+    }
+    onFormChange({ ...form, text });
+  }, [form, onFormChange]);
+
+  const handleSelectSnippet = useCallback((snippet: (typeof snippets)[number]) => {
+    setDismissedSnippetDraft(null);
+    onFormChange({
+      ...form,
+      text: replaceSnippetTrigger(form.text, snippet.content),
+    });
+  }, [form, onFormChange]);
+
+  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!snippetMenuOpen) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setDismissedSnippetDraft(form.text);
+      return;
+    }
+
+    if (snippetOptions.length === 0) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.min(index + 1, snippetOptions.length - 1));
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.max(index - 1, 0));
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const snippet = snippetOptions[snippetHighlightIndex];
+      if (snippet) handleSelectSnippet(snippet);
+    }
+  }, [form.text, handleSelectSnippet, snippetHighlightIndex, snippetMenuOpen, snippetOptions]);
 
   const content = (
     <div className="space-y-4 px-4 py-5 md:px-6">
@@ -206,15 +277,25 @@ export function BroadcastComposerModal({
             : null}
         </div>
       ) : (
-        <Textarea
-          label="Message"
-          value={form.text}
-          onChange={(event) =>
-            onFormChange({ ...form, text: event.target.value })
-          }
-          rows={4}
-          placeholder="Write the message for this channel..."
-        />
+        <div className="relative">
+          <SnippetSuggestionMenu
+            open={snippetMenuOpen}
+            query={snippetQuery ?? ""}
+            options={snippetOptions}
+            highlightedIndex={snippetHighlightIndex}
+            onHighlightChange={setSnippetHighlightIndex}
+            onSelect={handleSelectSnippet}
+            loading={snippetsLoading}
+          />
+          <Textarea
+            label="Message"
+            value={form.text}
+            onChange={(event) => updateBroadcastText(event.target.value)}
+            onKeyDown={handleSnippetKeyDown}
+            rows={4}
+            placeholder="Write the message for this channel..."
+          />
+        </div>
       )}
 
       <div className="space-y-3 border-t border-gray-100 pt-4">

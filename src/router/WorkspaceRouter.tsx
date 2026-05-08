@@ -44,6 +44,7 @@ import { NotificationPreferences } from "../pages/user/sections/NotificationPref
 import { WorkspaceUsers } from "../pages/workspace/sections/WorkspaceUsers";
 import Lifecycle from "../pages/workspace/sections/Lifecycle";
 import { Tags } from "../pages/workspace/sections/Tags";
+import { Snippets } from "../pages/workspace/sections/Snippets";
 import { Integrations } from "../pages/workspace/sections/Integrations";
 import { WorkspaceGeneralInfo } from "../pages/workspace/sections/GeneralInfo";
 import { AIAssist } from "../pages/workspace/sections/AIAssist";
@@ -308,6 +309,14 @@ export const WorkspaceRouter = () => {
           />
           <Route path="lifecycle" element={<Lifecycle />} />
           <Route path="tags" element={<Tags />} />
+          <Route
+            path="snippets"
+            element={
+              <ProtectedRoute ws="ws:shortcuts:manage">
+                <Snippets />
+              </ProtectedRoute>
+            }
+          />
           <Route path="ai-assist" element={<AIAssist />} />
           <Route path="ai-prompts" element={<AIPrompts />} />
           <Route

@@ -11,7 +11,7 @@
  * 5. Note mode turns the composer background amber; send builds type:"comment"
  */
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type KeyboardEvent } from 'react';
 import {
   Send, Paperclip, Smile, X,
   LayoutTemplate,
@@ -41,7 +41,9 @@ import {
   AiComposerInlineStatus,
   AiPromptMenu,
   ComposerAttachmentPreviewStrip,
+  SnippetSuggestionMenu,
   useInboxAiComposer,
+  useWorkspaceSnippets,
 } from './composerShared';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -49,10 +51,21 @@ import { useDisclosure } from '../../hooks/useDisclosure';
 import { findMatchingContactChannel, getContactScopedChannels, isSameChannel } from './channelUtils';
 import { workspaceUserLabel } from './contact-sidebar/utils';
 import type { WorkspaceUserLike } from './contact-sidebar/types';
+import {
+  filterSnippets,
+  getSnippetTriggerQuery,
+  replaceSnippetTrigger,
+  type SnippetAttachment,
+} from '../../lib/snippets';
 
 /* ─── types ─────────────────────────────────────────────────────────────────── */
 
-type AttachedFile = { file: globalThis.File; type: AttachmentType; url: string; previewUrl?: string };
+type AttachedFile = {
+  file: { name: string; type: string };
+  type: AttachmentType;
+  url: string;
+  previewUrl?: string;
+};
 
 const WINDOW_RESTRICTED_CHANNELS = new Set(['whatsapp', 'messenger', 'instagram']);
 const FIRST_MESSAGE_RESTRICTED_CHANNELS = new Set(['messenger', 'instagram']);
@@ -82,6 +95,18 @@ function getAttachmentType(file: globalThis.File): AttachmentType {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('video/')) return 'video';
   return 'doc';
+}
+
+function snippetAttachmentToAttachedFile(attachment: SnippetAttachment): AttachedFile {
+  return {
+    file: {
+      name: attachment.name,
+      type: attachment.mimeType ?? '',
+    },
+    type: attachment.type,
+    url: attachment.url,
+    previewUrl: attachment.type === 'image' ? attachment.url : undefined,
+  };
 }
 
 function parseTimestamp(value: string | number | null | undefined): number | null {
@@ -177,6 +202,8 @@ export function ReplyInput({
   const emojiMenu = useDisclosure();
   const [showRecorder, setShowRecorder] = useState(false);
   const templateModal = useDisclosure();
+  const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
+  const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
 
   const composerEditorRef = useRef<VariableTextEditorHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -187,6 +214,7 @@ export function ReplyInput({
 
   const { uploadFile,selectedChannel,channels,selectedConversation, selectedContact } = useInbox();
   const { workspaceUsers } = useWorkspace();
+  const { snippets, snippetsLoading } = useWorkspaceSnippets();
   const aiComposer = useInboxAiComposer({
     conversationId: selectedConversation?.id ? String(selectedConversation.id) : undefined,
     getDraft: () => message,
@@ -270,6 +298,16 @@ export function ReplyInput({
   const canSendFreeFormReply = !isFreeFormReplyBlocked;
   const showWindowRestrictionWarning = !isNote && hasValidatedSelectedContactChannel && isFreeFormReplyBlocked;
   const isReplyComposerLocked = !isNote && hasValidatedSelectedContactChannel && isFreeFormReplyBlocked;
+  const snippetQuery = getSnippetTriggerQuery(message);
+  const snippetMenuOpen =
+    !isNote &&
+    !isReplyComposerLocked &&
+    snippetQuery !== null &&
+    dismissedSnippetDraft !== message;
+  const snippetOptions = useMemo(
+    () => (snippetQuery === null ? [] : filterSnippets(snippets, snippetQuery)),
+    [snippetQuery, snippets],
+  );
   const formattedWindowExpiry = formatWindowExpiry(messageWindowExpiry);
   const restrictionCopy = isChannelInitiationBlocked
     ? normalizedChannelType === 'instagram'
@@ -330,6 +368,10 @@ export function ReplyInput({
     onChannelChange(availableReplyChannels[0]);
   }, [availableReplyChannels, isNote, onChannelChange, selectedChannel]);
 
+  useEffect(() => {
+    setSnippetHighlightIndex(0);
+  }, [snippetQuery, snippetOptions.length]);
+
   const addFiles = async (files: FileList | null) => {
     if (isReplyComposerLocked) return;
     if (!files || !selectedConversation?.id) return;
@@ -349,7 +391,7 @@ export function ReplyInput({
   const handleSend = () => {
     if (!canSend) return;
     const attachments: MediaAttachment[] = attachedFiles.map(af => ({
-      type: af.type, filename: af.file.name, url: af.url, mimeType: af.file.type,
+      type: af.type, filename: af.file.name, name: af.file.name, url: af.url, mimeType: af.file.type,
     }));
 
     if (!isNote) {
@@ -387,6 +429,50 @@ export function ReplyInput({
     setAttachedFiles([]);
     onClearReplyContext?.();
   };
+
+  const handleSelectSnippet = useCallback((snippet: (typeof snippets)[number]) => {
+    setMessage((current) => replaceSnippetTrigger(current, snippet.content));
+    setDismissedSnippetDraft(null);
+    if (snippet.attachments?.length) {
+      setAttachedFiles((current) => [
+        ...current,
+        ...snippet.attachments.map(snippetAttachmentToAttachedFile),
+      ]);
+    }
+    requestAnimationFrame(() => {
+      composerEditorRef.current?.focus();
+    });
+  }, []);
+
+  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (!snippetMenuOpen) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setDismissedSnippetDraft(message);
+      return;
+    }
+
+    if (snippetOptions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.min(index + 1, snippetOptions.length - 1));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.max(index - 1, 0));
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const snippet = snippetOptions[snippetHighlightIndex];
+      if (snippet) handleSelectSnippet(snippet);
+    }
+  }, [handleSelectSnippet, message, snippetHighlightIndex, snippetMenuOpen, snippetOptions]);
 
   const handleAudioSend = async (audioBlob: Blob) => {
     if (isReplyComposerLocked) return;
@@ -494,12 +580,22 @@ export function ReplyInput({
               loadingAction={aiComposer.aiLoadingAction}
               notice={aiComposer.aiComposerNotice}
             />
+            <SnippetSuggestionMenu
+              open={snippetMenuOpen}
+              query={snippetQuery ?? ''}
+              options={snippetOptions}
+              highlightedIndex={snippetHighlightIndex}
+              onHighlightChange={setSnippetHighlightIndex}
+              onSelect={handleSelectSnippet}
+              loading={snippetsLoading}
+            />
             {!isReplyComposerLocked ? (
               <VariableTextEditor
                 ref={composerEditorRef}
                 value={message}
                 onChange={(nextMessage) => {
                   aiComposer.clearAiComposerNotice();
+                  setDismissedSnippetDraft(null);
                   setMessage(nextMessage);
                 }}
                 variables={variables}
@@ -511,6 +607,7 @@ export function ReplyInput({
                 appearance={isNote ? 'composer-note' : 'composer'}
                 aria-label={isNote ? "Internal note" : "Reply message"}
                 onSubmit={handleSend}
+                onKeyDown={handleSnippetKeyDown}
                 editorClassName="min-h-[40px] max-h-[132px] overflow-y-auto !py-2 sm:max-h-[180px] sm:!py-2"
               />
             ) : null}

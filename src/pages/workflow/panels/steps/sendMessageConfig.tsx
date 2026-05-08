@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, ToggleRow } from "../PanelShell";
 import { Upload, X } from "@/components/ui/icons";
@@ -9,6 +9,16 @@ import { IconButton } from "../../../../components/ui/button/IconButton";
 import { ChannelSelectMenu } from "../../../../components/ui/Select";
 import { VariableTextEditor } from "../../../../components/ui/variable-editor";
 import type { VariableSuggestionOption } from "../../../../components/ui/Select";
+import {
+  SnippetSuggestionMenu,
+  useWorkspaceSnippets,
+} from "../../../../components/snippets/SnippetSuggestionMenu";
+import {
+  filterSnippets,
+  getSnippetTriggerQuery,
+  replaceSnippetTrigger,
+  type SnippetAttachment,
+} from "../../../../lib/snippets";
 
 
 
@@ -17,6 +27,16 @@ function getAttachmentType(mimeType: string): MessageAttachment['type'] {
   if (mimeType.startsWith('video/')) return 'video';
   if (mimeType.startsWith('audio/')) return 'audio';
   return 'document';
+}
+
+function snippetAttachmentToMessageAttachment(attachment: SnippetAttachment): MessageAttachment {
+  return {
+    url: attachment.url,
+    type: attachment.type === 'doc' ? 'document' : attachment.type,
+    filename: attachment.name,
+    mimeType: attachment.mimeType,
+    size: attachment.size,
+  };
 }
 
 function formatBytes(bytes: number): string {
@@ -42,8 +62,87 @@ export function SendMessageConfig({ step, onChange }: SP) {
   const u = (p: Partial<SendMessageData>) => onChange({ ...data, ...p });
 
   const [uploading, setUploading] = useState(false);
+  const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
+  const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
   const { uploadFile } = useWorkflow();
   const { channels } = useChannel();
+  const { snippets, snippetsLoading } = useWorkspaceSnippets();
+  const messageText = data.defaultMessage.text ?? "";
+  const snippetQuery = getSnippetTriggerQuery(messageText);
+  const snippetMenuOpen =
+    data.defaultMessage.type === "text" &&
+    snippetQuery !== null &&
+    dismissedSnippetDraft !== messageText;
+  const snippetOptions = useMemo(
+    () => (snippetQuery === null ? [] : filterSnippets(snippets, snippetQuery)),
+    [snippetQuery, snippets],
+  );
+
+  useEffect(() => {
+    setSnippetHighlightIndex(0);
+  }, [snippetQuery, snippetOptions.length]);
+
+  const updateMessageText = useCallback((text: string) => {
+    if (text !== messageText) {
+      setDismissedSnippetDraft(null);
+    }
+    u({
+      defaultMessage: {
+        ...data.defaultMessage,
+        text,
+      },
+    });
+  }, [data.defaultMessage, messageText, u]);
+
+  const handleSelectSnippet = useCallback((snippet: (typeof snippets)[number]) => {
+    const snippetAttachments = snippet.attachments ?? [];
+    setDismissedSnippetDraft(null);
+    u({
+      defaultMessage: {
+        ...data.defaultMessage,
+        type: "text",
+        text: replaceSnippetTrigger(messageText, snippet.content),
+      },
+      ...(snippetAttachments.length
+        ? {
+            attachments: [
+              ...(data.attachments ?? []),
+              ...snippetAttachments.map(snippetAttachmentToMessageAttachment),
+            ],
+          }
+        : {}),
+    });
+  }, [data.attachments, data.defaultMessage, messageText, u]);
+
+  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    if (!snippetMenuOpen) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setDismissedSnippetDraft(messageText);
+      return;
+    }
+
+    if (snippetOptions.length === 0) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.min(index + 1, snippetOptions.length - 1));
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSnippetHighlightIndex((index) => Math.max(index - 1, 0));
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const snippet = snippetOptions[snippetHighlightIndex];
+      if (snippet) handleSelectSnippet(snippet);
+    }
+  }, [handleSelectSnippet, messageText, snippetHighlightIndex, snippetMenuOpen, snippetOptions]);
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,23 +236,46 @@ export function SendMessageConfig({ step, onChange }: SP) {
             hint="Type $ to insert variables. Example: {{contact.first_name}}"
           >
             <div className="relative">
+              <SnippetSuggestionMenu
+                open={snippetMenuOpen}
+                query={snippetQuery ?? ""}
+                options={snippetOptions}
+                highlightedIndex={snippetHighlightIndex}
+                onHighlightChange={setSnippetHighlightIndex}
+                onSelect={handleSelectSnippet}
+                loading={snippetsLoading}
+                placement="bottom"
+              />
               <VariableTextEditor
-                value={data.defaultMessage.text ?? ""}
-                onChange={(v) =>
-                  u({
-                    defaultMessage: {
-                      ...data.defaultMessage,
-                      text: v,
-                    },
-                  })
-                }
+                value={messageText}
+                onChange={updateMessageText}
                 variables={workflowVariableOptions}
                 placeholder="Type your message..."
                 menuPlacement="bottom"
+                onKeyDown={handleSnippetKeyDown}
                 editorClassName="min-h-[110px] w-full rounded-xl border border-[var(--color-gray-300)] px-3 py-2 text-sm text-[var(--color-gray-700)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
               />
 
             </div>
+            {(data.attachments ?? []).length > 0 ? (
+              <div className="mt-2 space-y-1.5">
+                {(data.attachments ?? []).map((att, i) => (
+                  <div key={`${att.url}-${i}`} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <AttachmentIcon type={att.type} />
+                    <span className="min-w-0 flex-1 truncate text-xs text-gray-700">
+                      {att.filename ?? att.url.split('/').pop()}
+                    </span>
+                    <IconButton
+                      aria-label="Remove attachment"
+                      icon={<X size={13} />}
+                      variant="danger-ghost"
+                      size="xs"
+                      onClick={() => removeAttachment(i)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </Field>
         ) : (
      <Field label="File" required>

@@ -106,12 +106,7 @@ export interface ClosingNoteSettings {
   templates: ClosingNoteTemplate[];
 }
 
-export interface Snippet {
-  id: number;
-  shortcut: string;
-  title: string;
-  content: string;
-}
+export type { Snippet, SnippetAttachment } from '../../lib/snippets';
 
 export interface ConversationTag {
   id: string | number;
