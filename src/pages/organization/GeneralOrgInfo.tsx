@@ -57,7 +57,6 @@ export const GeneralOrgInfo = () => {
 
       setInitialForm(form);
     } catch (error) {
-      console.error("Failed to update organization:", error);
     } finally {
       setSaving(false);
     }

@@ -23,7 +23,6 @@ export const OnboardingOptionCard = ({
   const Icon = option.icon;
   const isPill = variant === "pill";
   const [iconFailed, setIconFailed] = useState(false);
-  console.log({ option, selected,showIcon,url:option.iconUrl || option.emoji || Icon, });
   
   const leading =
     showIcon && (option.iconUrl || option.emoji || Icon) ? (

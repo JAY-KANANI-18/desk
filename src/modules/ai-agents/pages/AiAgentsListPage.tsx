@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -14,11 +14,11 @@ import {
 import { Button } from "../../../components/ui/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { SearchInput } from "../../../components/ui/inputs";
+import { ActionMenu, type ActionMenuEntry } from "../../../components/ui/menu";
 import { CompactSelectMenu, type CompactSelectMenuGroup } from "../../../components/ui/Select";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { useSocket } from "../../../socket/socket-provider";
 import { useAuthorization } from "../../../context/AuthorizationContext";
-import { useDisclosure } from "../../../hooks/useDisclosure";
 import type { AiAgentListItem, AiAgentStatus, AiAgentType } from "../types";
 import {
   AiPageLayout,
@@ -45,7 +45,6 @@ export function AiAgentsListPage() {
   const [type, setType] = useState<"all" | AiAgentType>("all");
   const [channel, setChannel] = useState("all");
   const [menuId, setMenuId] = useState<string | null>(null);
-  const agentActionsMenu = useDisclosure();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const canManage = canWs("ws:ai-agents:manage");
@@ -96,17 +95,15 @@ export function AiAgentsListPage() {
 
   const closeAgentMenu = () => {
     setMenuId(null);
-    agentActionsMenu.close();
   };
 
   const toggleAgentMenu = (agentId: string) => {
-    if (agentActionsMenu.isOpen && menuId === agentId) {
+    if (menuId === agentId) {
       closeAgentMenu();
       return;
     }
 
     setMenuId(agentId);
-    agentActionsMenu.open();
   };
 
   const doAction = async (agent: AiAgentListItem, action: () => Promise<unknown>, success: string) => {
@@ -275,20 +272,20 @@ export function AiAgentsListPage() {
                         disabled={busyId === agent.id}
                         onClick={() => toggleAgentMenu(agent.id)}
                       />
-                      {agentActionsMenu.isOpen && menuId === agent.id ? (
-                        <div className="absolute right-0 top-9 z-20 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
-                          <MenuAction icon={<Pencil size={14} />} label="Edit" onClick={() => navigate(`/ai-agents/${agent.id}`)} />
-                          <MenuAction icon={<BarChart3 size={14} />} label="View analytics" onClick={() => navigate(`/ai-agents/${agent.id}?tab=analytics`)} />
-                          {canManage ? (
-                            <>
-                              <MenuAction icon={<Rocket size={14} />} label="Publish new version" onClick={() => navigate(`/ai-agents/${agent.id}?tab=versions`)} />
-                              <MenuAction icon={<Copy size={14} />} label="Duplicate" onClick={() => duplicateAgent(agent)} />
-                              <MenuAction icon={<Pause size={14} />} label="Pause" onClick={() => doAction(agent, () => aiAgentsApi.pause(agent.id), "Agent paused")} />
-                              <MenuAction icon={<Trash2 size={14} />} label="Delete" danger onClick={() => doAction(agent, () => aiAgentsApi.archive(agent.id), "Agent archived")} />
-                            </>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      <ActionMenu
+                        isOpen={menuId === agent.id}
+                        onClose={closeAgentMenu}
+                        width="md"
+                        align="end"
+                        ariaLabel={`Actions for ${agent.name}`}
+                        items={getAgentActionItems({
+                          agent,
+                          canManage,
+                          navigate,
+                          duplicateAgent,
+                          doAction,
+                        })}
+                      />
                     </div>
                   </div>
                 ))}
@@ -336,36 +333,78 @@ function FilterSelect({
   );
 }
 
-function MenuAction({
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <Button
-      type="button"
-      variant={danger ? "danger-ghost" : "ghost"}
-      size="sm"
-      fullWidth
-      contentAlign="start"
-      leftIcon={icon}
-      onClick={onClick}
-    >
-      {label}
-    </Button>
-  );
-}
-
 function formatOption(value: string) {
   if (value === "all") return "All";
   if (value in agentTypeLabels) return agentTypeLabels[value as AiAgentType];
   return channelLabels[value] || value.replace(/_/g, " ");
+}
+
+function getAgentActionItems({
+  agent,
+  canManage,
+  navigate,
+  duplicateAgent,
+  doAction,
+}: {
+  agent: AiAgentListItem;
+  canManage: boolean;
+  navigate: ReturnType<typeof useNavigate>;
+  duplicateAgent: (agent: AiAgentListItem) => Promise<void>;
+  doAction: (
+    agent: AiAgentListItem,
+    action: () => Promise<unknown>,
+    success: string,
+  ) => Promise<void>;
+}): ActionMenuEntry[] {
+  const items: ActionMenuEntry[] = [
+    {
+      id: "edit",
+      label: "Edit",
+      icon: <Pencil size={14} />,
+      onSelect: () => navigate(`/ai-agents/${agent.id}`),
+    },
+    {
+      id: "analytics",
+      label: "View analytics",
+      icon: <BarChart3 size={14} />,
+      onSelect: () => navigate(`/ai-agents/${agent.id}?tab=analytics`),
+    },
+  ];
+
+  if (!canManage) {
+    return items;
+  }
+
+  return [
+    ...items,
+    {
+      id: "versions",
+      label: "Publish new version",
+      icon: <Rocket size={14} />,
+      onSelect: () => navigate(`/ai-agents/${agent.id}?tab=versions`),
+    },
+    {
+      id: "duplicate",
+      label: "Duplicate",
+      icon: <Copy size={14} />,
+      onSelect: () => duplicateAgent(agent),
+    },
+    {
+      id: "pause",
+      label: "Pause",
+      icon: <Pause size={14} />,
+      onSelect: () =>
+        doAction(agent, () => aiAgentsApi.pause(agent.id), "Agent paused"),
+    },
+    {
+      id: "delete",
+      label: "Delete",
+      icon: <Trash2 size={14} />,
+      tone: "danger",
+      onSelect: () =>
+        doAction(agent, () => aiAgentsApi.archive(agent.id), "Agent archived"),
+    },
+  ];
 }
 
 function formatDate(value?: string) {

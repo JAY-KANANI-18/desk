@@ -69,7 +69,6 @@ export const ChannelContextProvider: React.FC<{
       setChannels(channelData);
       return result;
     } catch (error) {
-      console.error("Failed to refresh channels:", error);
       return null;
     } finally {
       setLoading(false);

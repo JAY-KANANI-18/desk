@@ -1,7 +1,7 @@
 import type { LifecycleStage } from "../../workspace/types";
 import {
+  AssigneeSelectMenu,
   LifecycleSelectMenu,
-  Select,
   WorkspaceTagManager,
 } from "../../../components/ui/Select";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
@@ -109,21 +109,14 @@ export function ContactFormFields<TForm extends ContactFormState>({
       />
 
       {includeAssignee ? (
-        <Select
+        <AssigneeSelectMenu
           label="Assign Contact"
-          appearance={fieldAppearance}
-          labelVariant={labelVariant}
           value={value.assigneeId}
-          onChange={(event) => update({ assigneeId: event.target.value })}
-          options={[
-            { value: "", label: "Unassigned" },
-            ...((workspaceUsers ?? []).map((user) => ({
-              value: user.id,
-              label:
-                [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-                user.email,
-            }))),
-          ]}
+          users={workspaceUsers ?? []}
+          onChange={(userId) => update({ assigneeId: userId ?? "" })}
+          variant={variant === "sidebar" ? "sidebar" : "field"}
+          unassignedLabel="Unassigned"
+          dropdownWidth="trigger"
         />
       ) : null}
     </div>

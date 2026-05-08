@@ -30,11 +30,9 @@ export function PwaLifecycle() {
       }
 
       if (import.meta.env.DEV) {
-        console.info("[PWA] Registered service worker:", swUrl);
       }
     },
     onRegisterError(error) {
-      console.error("[PWA] Service worker registration failed", error);
     },
   });
 

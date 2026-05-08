@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from
 import { Check, Copy, Loader2, X } from '@/components/ui/icons';
 import { validatePhoneNumberForForm } from '@/lib/phoneNumber';
 import { Input } from '../../../components/ui/Input';
-import { Select } from '../../../components/ui/Select';
+import { BaseSelect } from '../../../components/ui/Select';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { IconButton } from '../../../components/ui/button/IconButton';
 import { PhoneField } from '../../../components/ui/phone';
@@ -680,12 +680,10 @@ export function SelectRow({
         <div className="space-y-1.5 pb-1">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <Select
+              <BaseSelect
                 value={draft}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={setDraft}
                 options={options}
-                aria-label={label}
-                appearance="sidebar"
                 size="sm"
               />
             </div>

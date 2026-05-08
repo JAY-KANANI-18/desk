@@ -178,10 +178,8 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [convSearch, setConvSearch] = useState("");
 
   const setFilters = useCallback((partial: Partial<InboxFilters>) => {
-    console.log({ partial });
 
     _setFilters((prev) => {
-      console.log({ prev });
       return { ...prev, ...partial, cursor: undefined };
     });
   }, []);
@@ -248,7 +246,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [wsId]);
 
   useEffect(() => {
-    console.log({ convList });
 
     setSelectedConversation((prev) => {
       if (prev) {
@@ -295,7 +292,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         setHasMoreConvs(!!result.nextCursor);
       } catch (err) {
         if (controller.signal.aborted) return;
-        console.error("[InboxContext] fetchConversations:", err);
       } finally {
         if (requestId === conversationRequestIdRef.current) {
           conversationLoadingRef.current = false;
@@ -334,7 +330,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       return result.data;
     } catch (err) {
       if (controller.signal.aborted) return [];
-      console.error("[InboxContext] refreshConversations:", err);
       return [];
     } finally {
       if (requestId === conversationRequestIdRef.current) {
@@ -423,7 +418,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         const result = await inboxApi.getTimeline(wsId, convId, { limit: 30 });
         applyTimelineWindow(result, "replace");
       } catch (err) {
-        console.error("[InboxContext] fetchLatestTimeline:", err);
       } finally {
         setTimelineLoading(false);
       }
@@ -444,7 +438,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         applyTimelineWindow(result, "replace");
       } catch (err) {
-        console.error("[InboxContext] fetchTimelineAroundMessage:", err);
       } finally {
         setTimelineLoading(false);
       }
@@ -480,7 +473,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           });
           applyTimelineWindow(result, "prepend");
         } catch (err) {
-          console.error("[InboxContext] loadOlderTimeline:", err);
         } finally {
           setLoadingOlderTimeline(false);
         }
@@ -497,7 +489,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       applyTimelineWindow(result, "prepend");
     } catch (err) {
-      console.error("[InboxContext] loadOlderTimeline:", err);
     } finally {
       setLoadingOlderTimeline(false);
     }
@@ -527,7 +518,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       applyTimelineWindow(result, "append");
     } catch (err) {
-      console.error("[InboxContext] loadNewerTimeline:", err);
     } finally {
       setLoadingNewerTimeline(false);
     }
@@ -616,7 +606,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const onMessage = (msg: ApiMessage & { conversationId: string }) => {
       // Append to timeline if this conv is open
-      console.log({ msg });
       let message = msg;
       if (message.conversationId === selectedConvIdRef.current) {
         setTimeline((prev) => upsertTimelineMessage(prev, message));
@@ -702,7 +691,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     const onConversation = (conv: ApiConversation) => {
       setConvList((prev) => {
         const exists = prev.find((c) => c.id === conv.id);
-        console.log({ exists });
         if (!exists) return [conv, ...prev];
 
         return prev.map((c) => (c.id === conv.id ? mergeConversation(c, conv) : c));
@@ -828,7 +816,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
     };
-    console.log("listening socket");
 
     socket.on("message.upsert", onMessage);
     socket.on("message.status_updated", onStatusUpdate);
@@ -878,7 +865,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           template: msg.template,
         };
       }
-      console.log({ payload, selectedConversation });
 
       const message = await inboxApi.sendMessage(
         selectedConversation?.id!,
@@ -910,7 +896,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
-      console.log({ message });
     },
     [selectedChannel?.id, selectedConversation, user?.id, workspaceUsers],
   );
@@ -958,7 +943,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   //         )
   //       );
   //     } catch (err) {
-  //       console.error("[InboxContext] sendMessage:", err);
   //       // Mark failed
   //       setTimeline((prev) =>
   //         prev.map((item) =>
@@ -994,7 +978,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         };
         setTimeline((prev) => [...prev, item]);
       } catch (err) {
-        console.error("[InboxContext] sendNote:", err);
       }
     },
     [wsId, selectedConversation],
@@ -1131,7 +1114,6 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         setMsgSearchOpen(false);
       }
       setInputMode("reply");
-      console.log({ ApiConversation: conv });
 
       const inferredType =
         (conv as any)?.lastMessage?.channel?.type ??

@@ -36,7 +36,6 @@ export function JumpToConfig({ step, onChange }: SP) {
     }
   }, [data.targetStepId, selectedTargetIsAllowed]);
 
-  console.log({ data });
 
   return (
     <Section title="Configuration">

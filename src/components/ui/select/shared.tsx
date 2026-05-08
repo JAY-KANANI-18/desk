@@ -11,7 +11,15 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronDown, X } from "@/components/ui/icons";
+import {
+  getFloatingMenuGeometry,
+  getFloatingMenuMeasuredWidth,
+  getFloatingMenuTransformOrigin,
+  getHiddenFloatingMenuMotionState,
+  type FloatingMenuGeometry,
+} from "../menu/floatingMenuGeometry";
 import { SearchInput } from "../inputs/SearchInput";
 import {
   FieldShell,
@@ -134,114 +142,6 @@ function useOutsideDismiss(
       document.removeEventListener("touchstart", handlePointerDown);
     };
   }, [containerRef, enabled, onDismiss]);
-}
-
-function useDropdownPresence(isOpen: boolean) {
-  const [isMounted, setIsMounted] = useState(isOpen);
-  const [isVisible, setIsVisible] = useState(isOpen);
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsMounted(true);
-
-      const frame = window.requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
-
-      return () => {
-        window.cancelAnimationFrame(frame);
-      };
-    }
-
-    setIsVisible(false);
-
-    const timeout = window.setTimeout(() => {
-      setIsMounted(false);
-    }, 150);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [isOpen]);
-
-  return { isMounted, isVisible };
-}
-
-interface DropdownGeometry {
-  left: number;
-  top: number;
-  width: number;
-  placement: "top" | "bottom";
-}
-
-const dropdownWidthBySize = {
-  sm: 240,
-  md: 280,
-  lg: 320,
-} satisfies Record<"sm" | "md" | "lg", number>;
-
-function getDropdownWidth(
-  width: "trigger" | "sm" | "md" | "lg",
-  anchorRect: DOMRect,
-) {
-  const viewportPadding = 16;
-  const maxWidth = window.innerWidth - viewportPadding * 2;
-
-  return Math.min(
-    width === "trigger" ? anchorRect.width : dropdownWidthBySize[width],
-    maxWidth,
-  );
-}
-
-function getDropdownGeometry({
-  align,
-  anchor,
-  dropdown,
-  placement,
-  width,
-}: {
-  align: "start" | "end";
-  anchor: HTMLElement;
-  dropdown: HTMLElement;
-  placement: "top" | "bottom";
-  width: "trigger" | "sm" | "md" | "lg";
-}): DropdownGeometry {
-  const gap = 8;
-  const viewportPadding = 8;
-  const anchorRect = anchor.getBoundingClientRect();
-  const dropdownRect = dropdown.getBoundingClientRect();
-  const dropdownWidth = getDropdownWidth(width, anchorRect);
-  const spaceAbove = anchorRect.top - viewportPadding - gap;
-  const spaceBelow = window.innerHeight - anchorRect.bottom - viewportPadding - gap;
-  const resolvedPlacement =
-    placement === "bottom" && dropdownRect.height > spaceBelow && spaceAbove > spaceBelow
-      ? "top"
-      : placement === "top" && dropdownRect.height > spaceAbove && spaceBelow > spaceAbove
-        ? "bottom"
-        : placement;
-  const unclampedLeft =
-    width === "trigger" || align === "start"
-      ? anchorRect.left
-      : anchorRect.right - dropdownWidth;
-  const left = Math.min(
-    Math.max(viewportPadding, unclampedLeft),
-    Math.max(viewportPadding, window.innerWidth - dropdownWidth - viewportPadding),
-  );
-  const unclampedTop =
-    resolvedPlacement === "top"
-      ? anchorRect.top - dropdownRect.height - gap
-      : anchorRect.bottom + gap;
-  const top = Math.min(
-    Math.max(viewportPadding, unclampedTop),
-    Math.max(viewportPadding, window.innerHeight - dropdownRect.height - viewportPadding),
-  );
-
-  return {
-    left,
-    top,
-    width: dropdownWidth,
-    placement: resolvedPlacement,
-  };
 }
 
 export function useSelectController<T>({
@@ -676,13 +576,13 @@ export function SelectDropdown({
   width?: "trigger" | "sm" | "md" | "lg";
   children: ReactNode;
 }) {
-  const { isMounted, isVisible } = useDropdownPresence(isOpen);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [geometry, setGeometry] = useState<DropdownGeometry | null>(null);
+  const [geometry, setGeometry] = useState<FloatingMenuGeometry | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useLayoutEffect(() => {
-    if (!isMounted || !isOpen) {
+    if (!isOpen) {
       setGeometry(null);
       return undefined;
     }
@@ -696,12 +596,13 @@ export function SelectDropdown({
 
     const updateGeometry = () => {
       setGeometry(
-        getDropdownGeometry({
+        getFloatingMenuGeometry({
           align,
           anchor,
           dropdown,
           placement,
           width,
+          allowedPlacements: ["top", "bottom"],
         }),
       );
     };
@@ -714,13 +615,13 @@ export function SelectDropdown({
       window.removeEventListener("resize", updateGeometry);
       window.removeEventListener("scroll", updateGeometry, true);
     };
-  }, [align, children, isMounted, isOpen, placement, width]);
+  }, [align, children, isOpen, placement, width]);
 
-  if (!isMounted) {
-    return <span ref={anchorRef} className="hidden" />;
-  }
-
-  const renderedDropdown = (
+  const hiddenState = getHiddenFloatingMenuMotionState(
+    geometry?.placement,
+    Boolean(shouldReduceMotion),
+  );
+  const measuringDropdown = isOpen && !geometry ? (
     <div
       ref={dropdownRef}
       data-select-dropdown="true"
@@ -728,28 +629,65 @@ export function SelectDropdown({
       onTouchStart={(event) => event.stopPropagation()}
       className={cx(
         "fixed overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md",
-        !geometry && "pointer-events-none invisible",
+        "pointer-events-none invisible",
       )}
       style={{
-        left: geometry?.left,
-        top: geometry?.top,
-        width: geometry?.width,
+        left: -9999,
+        top: -9999,
         zIndex: "calc(var(--z-modal) + 10)",
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible
-          ? "translateY(0) scale(1)"
-          : geometry?.placement === "top"
-            ? "translateY(4px) scale(0.98)"
-            : "translateY(-4px) scale(0.98)",
-        transformOrigin:
-          geometry?.placement === "top" ? "bottom center" : "top center",
-        transition:
-          "opacity var(--transition-fast), transform var(--transition-fast)",
-        pointerEvents: isVisible && geometry ? "auto" : "none",
+        width: getFloatingMenuMeasuredWidth(width),
       }}
     >
       {children}
     </div>
+  ) : null;
+  const renderedDropdown = (
+    <>
+      {measuringDropdown}
+      <AnimatePresence>
+        {isOpen && geometry ? (
+          <motion.div
+            key="select-dropdown"
+            ref={dropdownRef}
+            data-select-dropdown="true"
+            onMouseDown={(event) => event.stopPropagation()}
+            onTouchStart={(event) => event.stopPropagation()}
+            className="fixed overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md"
+            initial={{ opacity: 0, ...hiddenState }}
+            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+            exit={{ opacity: 0, ...hiddenState }}
+            transition={{
+              opacity: {
+                duration: shouldReduceMotion ? 0.001 : 0.11,
+                ease: "easeOut",
+              },
+              x: {
+                duration: shouldReduceMotion ? 0.001 : 0.18,
+                ease: [0.16, 1, 0.3, 1],
+              },
+              y: {
+                duration: shouldReduceMotion ? 0.001 : 0.18,
+                ease: [0.16, 1, 0.3, 1],
+              },
+              scale: {
+                duration: shouldReduceMotion ? 0.001 : 0.18,
+                ease: [0.16, 1, 0.3, 1],
+              },
+            }}
+            style={{
+              left: geometry.left,
+              top: geometry.top,
+              width: geometry.width,
+              zIndex: "calc(var(--z-modal) + 10)",
+              transformOrigin: getFloatingMenuTransformOrigin(geometry.placement, align),
+              pointerEvents: "auto",
+            }}
+          >
+            {children}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 
   return (

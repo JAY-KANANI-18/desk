@@ -97,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserOnce(backendUser);
 
       } catch (e) {
-        console.error('Auth init failed', e);
         setUser(null);
         setPasswordSet(false);
       } finally {

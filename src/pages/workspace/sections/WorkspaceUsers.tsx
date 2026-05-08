@@ -114,7 +114,6 @@ const InviteUserModal = ({
       });
       onClose();
     } catch (error) {
-      console.error("Invite failed:", error);
     } finally {
       setLoading(false);
     }
@@ -277,7 +276,6 @@ const EditWorkspaceUserModal = ({
       });
       onClose();
     } catch (error) {
-      console.error("Update failed:", error);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Save } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 import { useNotifications } from "../../../context/NotificationContext";
 import { workspaceApi } from "../../../lib/workspaceApi";
 
@@ -126,14 +126,15 @@ function PreferenceSelectRow<T extends string>({
         <p className="mt-1 text-sm text-slate-500">{description}</p>
       </div>
 
-      <Select
+      <BaseSelect
         value={value}
-        onChange={(event) => onChange(event.target.value as T)}
+        onChange={(nextValue) => onChange(nextValue as T)}
         options={options.map((option) => ({
           value: option.value,
           label: option.label,
         }))}
-        helperText={selectedOption.description}
+        hint={selectedOption.description}
+        size="md"
       />
     </div>
   );

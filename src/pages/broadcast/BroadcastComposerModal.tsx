@@ -4,9 +4,9 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { CheckboxInput } from "../../components/ui/inputs";
 import {
+  BaseSelect,
   ChannelSelectMenu,
   LifecycleSelectMenu,
-  Select,
 } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import { ResponsiveModal } from "../../components/ui/modal";
@@ -183,11 +183,9 @@ export function BroadcastComposerModal({
             WhatsApp requires an approved message before you can contact
             people first.
           </p>
-          <Select
+          <BaseSelect
             value={selectedTemplateId}
-            onChange={(event) =>
-              onSelectedTemplateIdChange(event.target.value)
-            }
+            onChange={onSelectedTemplateIdChange}
             options={templateOptions}
           />
           {selectedTemplate

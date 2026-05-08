@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BookCheck, Settings, type AppIcon } from "@/components/ui/icons";
 import { useAuthorization } from "../context/AuthorizationContext";
@@ -6,7 +7,7 @@ import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useSettingsLinks } from "./settingsLinks";
-import { Button } from "./ui/Button";
+import { PanelMenu } from "./ui/menu";
 
 interface AppSidebarProps {
   onNavigate?: () => void;
@@ -18,6 +19,7 @@ export const AppSidebar = ({
   variant = "desktop",
 }: AppSidebarProps) => {
   const settingsMenu = useDisclosure();
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const { canWs } = useAuthorization();
   const { dismissed, isComplete } = useGetStarted();
   const { flags } = useFeatureFlags();
@@ -141,6 +143,7 @@ export const AppSidebar = ({
           {!isExpanded && (
             <div className="relative flex w-full justify-center">
               <button
+                ref={settingsButtonRef}
                 type="button"
                 aria-expanded={settingsMenu.isOpen}
                 aria-haspopup="menu"
@@ -157,53 +160,52 @@ export const AppSidebar = ({
                 </span>
               </button>
 
-              {settingsMenu.isOpen && (
-                <>
-                  <Button
-                    type="button"
-                    variant="unstyled"
-                    aria-label="Close settings menu"
-                    className="fixed inset-0 z-10"
-                    onClick={settingsMenu.close}
-                  />
-                  <div className="absolute bottom-0 left-full z-20 ml-3 w-72 rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
-                    {settingsLinks.map((link) => {
-                      const LinkIcon = link.icon;
+              <PanelMenu
+                isOpen={settingsMenu.isOpen}
+                onClose={settingsMenu.close}
+                anchorRef={settingsButtonRef}
+                placement="right"
+                align="end"
+                width="md"
+                ariaLabel="Settings menu"
+                className="rounded-3xl shadow-[0_24px_80px_rgba(15,23,42,0.16)]"
+                bodyClassName="p-2"
+              >
+                {settingsLinks.map((link) => {
+                  const LinkIcon = link.icon;
 
-                      return (
-                        <NavLink
-                          key={link.path}
-                          to={link.path}
-                          onClick={handleNavClick}
-                          className={({ isActive }) =>
-                            `flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-slate-50 ${
-                              isActive ? "text-[var(--color-primary)]" : "text-slate-700"
-                            }`
-                          }
-                        >
-                          {({ isActive }) => (
-                            <>
-                              <LinkIcon
-                                size={20}
-                                weight={isActive ? "fill" : "regular"}
-                                className="flex-shrink-0"
-                              />
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-normal">
-                                  {link.title}
-                                </p>
-                                <p className="truncate text-xs text-slate-400">
-                                  {link.subtitle}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                  return (
+                    <NavLink
+                      key={link.path}
+                      to={link.path}
+                      onClick={handleNavClick}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-slate-50 ${
+                          isActive ? "text-[var(--color-primary)]" : "text-slate-700"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <LinkIcon
+                            size={20}
+                            weight={isActive ? "fill" : "regular"}
+                            className="flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-normal">
+                              {link.title}
+                            </p>
+                            <p className="truncate text-xs text-slate-400">
+                              {link.subtitle}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </PanelMenu>
             </div>
           )}
         </nav>

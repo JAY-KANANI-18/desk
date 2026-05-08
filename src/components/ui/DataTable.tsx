@@ -11,12 +11,11 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
   type WheelEvent as ReactWheelEvent,
 } from "react";
-import { createPortal } from "react-dom";
+import { ActionMenu, type ActionMenuEntry } from "./menu";
 
 type RowKey = string | number;
 type Align = "left" | "center" | "right";
@@ -131,53 +130,14 @@ function RowActions<T>({
 }) {
   const isOpen = openActionKey === rowKey;
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
-
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      setMenuStyle(null);
-      return;
-    }
-
-    const updatePosition = () => {
-      const button = buttonRef.current;
-      if (!button) return;
-
-      const rect = button.getBoundingClientRect();
-      const margin = 8;
-      const gap = 6;
-      const menuWidth = menuRef.current?.offsetWidth || 192;
-      const menuHeight = menuRef.current?.offsetHeight || Math.min(320, actions.length * 38 + 8);
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-
-      const top =
-        spaceBelow >= menuHeight + gap || spaceBelow >= spaceAbove
-          ? Math.min(rect.bottom + gap, viewportHeight - menuHeight - margin)
-          : Math.max(margin, rect.top - menuHeight - gap);
-      const left = Math.min(
-        Math.max(margin, rect.right - menuWidth),
-        viewportWidth - menuWidth - margin,
-      );
-
-      setMenuStyle({
-        left,
-        top: Math.max(margin, top),
-        maxHeight: Math.max(120, viewportHeight - margin * 2),
-      });
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [actions.length, isOpen]);
+  const menuItems: ActionMenuEntry[] = actions.map((action) => ({
+    id: action.id,
+    label: action.label,
+    icon: action.icon,
+    tone: action.tone,
+    disabled: action.disabled,
+    onSelect: () => action.onClick(row),
+  }));
 
   if (actions.length === 0) return null;
 
@@ -197,50 +157,15 @@ function RowActions<T>({
         <MoreHorizontal size={16} />
       </button>
 
-      {isOpen && typeof document !== "undefined"
-        ? createPortal(
-            <>
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={(event) => {
-              event.stopPropagation();
-              setOpenActionKey(null);
-            }}
-          />
-          <div
-            ref={menuRef}
-            style={menuStyle ?? { left: -9999, top: -9999 }}
-            className="fixed z-[9999] w-48 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl ring-1 ring-black/5"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {actions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                disabled={action.disabled}
-                onClick={() => {
-                  setOpenActionKey(null);
-                  void action.onClick(row);
-                }}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  action.tone === "danger"
-                    ? "text-red-500 hover:bg-red-50"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {action.icon ? (
-                  <span className="flex h-4 w-4 items-center justify-center">
-                    {action.icon}
-                  </span>
-                ) : null}
-                <span className="truncate">{action.label}</span>
-              </button>
-            ))}
-          </div>
-            </>,
-            document.body,
-          )
-        : null}
+      <ActionMenu
+        isOpen={isOpen}
+        onClose={() => setOpenActionKey(null)}
+        anchorRef={buttonRef}
+        items={menuItems}
+        width="sm"
+        align="end"
+        ariaLabel="Row actions"
+      />
     </div>
   );
 }
@@ -377,7 +302,6 @@ export function DataTable<T, SortField extends string = string>({
 
     if (nextScrollTop !== previousScrollTop) {
       container.scrollTop = nextScrollTop;
-      event.preventDefault();
     }
   };
 

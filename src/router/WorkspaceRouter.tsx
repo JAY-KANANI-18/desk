@@ -66,7 +66,6 @@ import { AiUsagePage } from "../modules/ai-agents/pages/AiUsagePage";
 export const WorkspaceRouter = () => {
   const { steps, dismiss, complete } = useGetStarted();
   const { user } = useAuth();
-  console.log("user");
   
 
  

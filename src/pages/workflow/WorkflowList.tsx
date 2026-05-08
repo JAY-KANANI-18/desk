@@ -15,6 +15,7 @@ import { FloatingActionButton } from '../../components/ui/FloatingActionButton';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { SearchInput } from '../../components/ui/inputs';
+import { ActionMenu, type ActionMenuEntry } from '../../components/ui/menu';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { useMobileHeaderActions } from '../../components/mobileHeaderActions';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -158,6 +159,7 @@ export function WorkflowList() {
   const isMobile = useIsMobile();
   const { workspaceUsers } = useWorkspace();
   const importInputRef = useRef<HTMLInputElement>(null);
+  const desktopCreateButtonRef = useRef<HTMLButtonElement>(null);
   const importDragDepthRef = useRef(0);
   const [workflows, setWorkflows]     = useState<Workflow[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -683,6 +685,24 @@ export function WorkflowList() {
     ];
   };
 
+  const workflowCreateItems: ActionMenuEntry[] = [
+    {
+      id: 'template',
+      label: 'Use template',
+      description: 'Pick a ready workflow and customize it.',
+      icon: <Blocks size={17} className="text-emerald-600" />,
+      onSelect: handleCreateNew,
+    },
+    {
+      id: 'scratch',
+      label: 'Create from scratch',
+      description: 'Start with a blank workflow.',
+      icon: <Pencil size={16} className="text-[var(--color-primary)]" />,
+      disabled: creatingScratchWorkflow,
+      onSelect: handleRequestCreateFromScratch,
+    },
+  ];
+
   const desktopActions = isMobile ? undefined : (
     <div className="flex items-center gap-2">
       <Tooltip content={importing ? 'Importing workflow JSON...' : 'Import workflow JSON'}>
@@ -698,15 +718,8 @@ export function WorkflowList() {
         </span>
       </Tooltip>
       <div className="relative z-[62]">
-        {desktopCreateMenuOpen ? (
-          <button
-            type="button"
-            aria-label="Close workflow create options"
-            className="fixed inset-0 z-[60] cursor-default bg-transparent"
-            onClick={() => setDesktopCreateMenuOpen(false)}
-          />
-        ) : null}
         <Button
+          ref={desktopCreateButtonRef}
           onClick={() => setDesktopCreateMenuOpen((open) => !open)}
           leftIcon={<Plus size={14} />}
           rightIcon={
@@ -722,48 +735,16 @@ export function WorkflowList() {
         >
           New Workflow
         </Button>
-        <div
-          role="menu"
-          className={`absolute right-0 top-[calc(100%+0.5rem)] z-[61] w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_46px_rgba(15,23,42,0.14)] transition-all duration-150 ${
-            desktopCreateMenuOpen
-              ? 'translate-y-0 scale-100 opacity-100'
-              : 'pointer-events-none -translate-y-1 scale-[0.98] opacity-0'
-          }`}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={handleCreateNew}
-            className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)]"
-          >
-            <Blocks size={17} className="mt-0.5 shrink-0 text-emerald-600" />
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-950">
-                Use template
-              </span>
-              <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                Pick a ready workflow and customize it.
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={creatingScratchWorkflow}
-            onClick={handleRequestCreateFromScratch}
-            className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] disabled:cursor-wait disabled:opacity-70"
-          >
-            <Pencil size={16} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-950">
-               Create from scratch
-              </span>
-              <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                Start with a blank workflow.
-              </span>
-            </span>
-          </button>
-        </div>
+        <ActionMenu
+          isOpen={desktopCreateMenuOpen}
+          onClose={() => setDesktopCreateMenuOpen(false)}
+          anchorRef={desktopCreateButtonRef}
+          items={workflowCreateItems}
+          width="md"
+          align="end"
+          ariaLabel="Workflow create options"
+          className="p-1.5"
+        />
       </div>
     </div>
   );

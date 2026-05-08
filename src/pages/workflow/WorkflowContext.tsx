@@ -436,7 +436,6 @@ function reducer(
   state: WorkflowBuilderState,
   action: Action,
 ): WorkflowBuilderState {
-        console.log({action});
 
   switch (action.type) {
     case "LOAD_WORKFLOW":
@@ -671,7 +670,6 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const loadWorkflow = useCallback(async (workflowId: string) => {
     const wf = await workspaceApi.getWorkflow(workflowId);
-    console.log({wf});
     
     dispatch({ type: "LOAD_WORKFLOW", payload: wf });
     // Build initial nodes/edges from wf.steps
@@ -753,7 +751,6 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateStep = useCallback((step: StepConfig) => {
-    console.log("step",step);
     
     dispatch({ type: "UPDATE_STEP", payload: step });
   }, []);

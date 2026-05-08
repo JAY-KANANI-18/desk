@@ -4,7 +4,7 @@ import { Button } from "../../../components/ui/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { CenterModal } from "../../../components/ui/modal/CenterModal";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 import { Tag } from "../../../components/ui/Tag";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { workspaceApi } from "../../../lib/workspaceApi";
@@ -201,10 +201,10 @@ export const ContactFields = () => {
             onChange={(event) => setNewField({ ...newField, name: event.target.value })}
             placeholder="e.g. Customer tier"
           />
-          <Select
+          <BaseSelect
             label="Field type"
             value={newField.type}
-            onChange={(event) => setNewField({ ...newField, type: event.target.value })}
+            onChange={(type) => setNewField({ ...newField, type })}
             options={FIELD_TYPES.map((type) => ({ value: type, label: type }))}
           />
           <div className="flex items-center justify-between gap-4">

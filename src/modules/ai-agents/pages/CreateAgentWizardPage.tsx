@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { BaseInput, TextareaInput } from "../../../components/ui/inputs";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
 import { AiPageLayout } from "../components/AiAgentPrimitives";
@@ -382,12 +382,10 @@ export function CreateAgentWizardPage() {
                       rows={4}
                     />
                   </div>
-                  <Select
+                  <BaseSelect
                     label="Language"
                     value={form.defaultLanguage}
-                    onChange={(event) =>
-                      update({ defaultLanguage: event.target.value })
-                    }
+                    onChange={(defaultLanguage) => update({ defaultLanguage })}
                     options={languageOptions.map((language) => ({
                       value: language,
                       label: language,
@@ -496,12 +494,10 @@ export function CreateAgentWizardPage() {
                 <div className="mt-5 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
                   <LockKeyhole size={18} className="mt-7 text-slate-500" />
                   <div className="min-w-0 flex-1">
-                    <Select
+                    <BaseSelect
                       label="Needs approval for actions"
                       value={form.approvalMode}
-                      onChange={(event) =>
-                        update({ approvalMode: event.target.value })
-                      }
+                      onChange={(approvalMode) => update({ approvalMode })}
                       options={approvalModeOptions}
                     />
                   </div>

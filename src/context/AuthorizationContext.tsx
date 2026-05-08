@@ -111,7 +111,6 @@ export const AuthorizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const { activeOrganization } = useOrganization();
   const { activeWorkspace } = useWorkspace();
   const {user} = useAuth()
-  console.log({activeWorkspace,activeOrganization});
 
   // Expect activeOrganization to carry myRole, e.g. activeOrganization.myRole
   const orgRole = (activeOrganization?.role ?? null) as OrgRole | null;

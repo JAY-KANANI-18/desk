@@ -110,7 +110,6 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
     setOrgLoading(true);
     const result = await organizationApi.me();
 
-    console.log({ resulttttttttt:result });
     setOrganizations(result);
     setOrgLoading(false);
 
@@ -149,7 +148,6 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshOrganizationsUsers = useCallback(async () => {
     const result = await organizationApi.getusers(activeOrganization?.id);
     setOrgUsers(result);
-    console.log({ orgUsers });
   }, [activeOrganization]);
 
   const updateOrganization = async (id: string, payload: any) => {
@@ -167,7 +165,6 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    // console.log({ organizations });
   }, [organizations]);
   return (
     <OrganizationContext.Provider

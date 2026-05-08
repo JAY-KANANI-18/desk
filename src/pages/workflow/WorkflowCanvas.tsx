@@ -1180,7 +1180,6 @@ export function WorkflowCanvas() {
       await saveWorkflow();
       proceedWithPendingNavigation(pendingNavigation);
     } catch (error) {
-      console.error("Failed to save workflow before leaving", error);
     } finally {
       setIsSavingBeforeLeave(false);
     }
@@ -1351,7 +1350,6 @@ export function WorkflowCanvas() {
 
   useEffect(() => {
     if (!workflowId) return;
-    console.log("Loading workflow with ID:", workflowId);
 
     loadWorkflow(workflowId);
   }, [workflowId, loadWorkflow]);
@@ -1377,8 +1375,6 @@ export function WorkflowCanvas() {
 
   // build graph
   useEffect(() => {
-    console.log("Building graph with steps:", workflow?.config?.steps);
-    console.log({ workflow });
 
     if (!workflow) return;
 
@@ -1426,7 +1422,6 @@ export function WorkflowCanvas() {
     if (shouldFitView) {
       scheduleFitView(isInitialStructure ? 0 : 260);
     }
-    console.log({ nodes, edges });
   }, [
     workflow,
     rawChannels,
@@ -1453,7 +1448,6 @@ export function WorkflowCanvas() {
       parentId: ctx?.afterNodeId || "trigger",
       position: { x: 0, y: 0 },
     };
-    console.log({ ctx });
 
     // 🔥 HANDLE BRANCH SPECIAL CASE
     if (type === "branch" || type === "ask_question" || type === "date_time") {

@@ -69,7 +69,6 @@ export function SendMessageConfig({ step, onChange }: SP) {
 
         u({ attachments: [...(data.attachments ?? []), ...uploaded] });
       } catch (err) {
-        console.error('Upload failed', err);
       } finally {
         setUploading(false);
         e.target.value = '';

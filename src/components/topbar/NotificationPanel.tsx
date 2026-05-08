@@ -16,6 +16,7 @@ import { getNotificationPath } from "../../lib/notificationLink";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { MobileSheet } from "../ui/modal";
+import { PanelMenu } from "../ui/menu";
 import { relativeTime } from "./utils";
 
 interface NotificationPanelProps {
@@ -196,10 +197,6 @@ export function NotificationPanel({
   onNavigateToInbox,
   onOpenPreferences,
 }: NotificationPanelProps) {
-  if (!open && !isMobile) {
-    return null;
-  }
-
   const {
     activeTab,
     center,
@@ -216,10 +213,14 @@ export function NotificationPanel({
   const items = centerState.items;
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
+
     if (!centerState.loaded && !centerState.loading && !centerState.error) {
       void loadTab(activeTab, true);
     }
-  }, [activeTab, centerState.error, centerState.loaded, centerState.loading, loadTab]);
+  }, [activeTab, centerState.error, centerState.loaded, centerState.loading, loadTab, open]);
 
   const headerActions = (
     <>
@@ -535,14 +536,16 @@ export function NotificationPanel({
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div
-        className="absolute right-0 top-full z-20 mt-2 flex w-[min(26rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
-        style={{ maxHeight: "480px" }}
-      >
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-2">
+    <PanelMenu
+      isOpen={open}
+      onClose={onClose}
+      align="end"
+      width={416}
+      ariaLabel="Notifications"
+      className="flex max-h-[480px] flex-col"
+      bodyClassName="flex min-h-0 flex-1 flex-col"
+      title={
+        <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-800">
               Notifications
             </span>
@@ -551,27 +554,29 @@ export function NotificationPanel({
                 {items.length}
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-1">
-            {headerActions}
-            <Tooltip content="Close">
-              <Button
-                type="button"
-                variant="unstyled"
-                onClick={onClose}
-                aria-label="Close notifications"
-                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                style={classDrivenButtonStyle}
-                preserveChildLayout
-              >
-                <X size={14} />
-              </Button>
-            </Tooltip>
-          </div>
         </div>
-        {panelBody}
-        <div className="border-t border-gray-100 px-4 py-2.5">{footer}</div>
-      </div>
-    </>
+      }
+      headerActions={
+        <>
+          {headerActions}
+          <Tooltip content="Close">
+            <Button
+              type="button"
+              variant="unstyled"
+              onClick={onClose}
+              aria-label="Close notifications"
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              style={classDrivenButtonStyle}
+              preserveChildLayout
+            >
+              <X size={14} />
+            </Button>
+          </Tooltip>
+        </>
+      }
+      footer={footer}
+    >
+      {panelBody}
+    </PanelMenu>
   );
 }

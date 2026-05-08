@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CheckboxInput } from "../../../components/ui/inputs";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 import { WorkspaceTagManager } from "../../../components/ui/select";
 
 type TagOption = {
@@ -70,32 +70,32 @@ export function ImportConfigPanel({
     <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex flex-wrap items-start gap-6">
         <div className="min-w-[160px] flex-1">
-          <Select
+          <BaseSelect
             id="import-mode"
             label="Import Mode"
             value={importMode}
-            onChange={(event) =>
+            onChange={(value) =>
               onChange({
-                importMode: event.target.value as Props["importMode"],
+                importMode: value as Props["importMode"],
               })
             }
             options={importModeOptions}
-            helperText={modeDescriptions[importMode]}
+            hint={modeDescriptions[importMode]}
           />
         </div>
 
         <div className="min-w-[140px] flex-1">
-          <Select
+          <BaseSelect
             id="match-by"
             label="Match By"
             value={matchBy}
-            onChange={(event) =>
+            onChange={(value) =>
               onChange({
-                matchBy: event.target.value as Props["matchBy"],
+                matchBy: value as Props["matchBy"],
               })
             }
             options={matchByOptions}
-            helperText="Field used to match existing contacts."
+            hint="Field used to match existing contacts."
           />
         </div>
 

@@ -182,12 +182,11 @@ export const TopBar = ({ onOpenSidebar: _onOpenSidebar }: TopBarProps) => {
               <HelpCircle size={20} />
             </Button>
           </Tooltip>
-          {showHelp && (
-            <HelpPanel
-              isMobile={isMobile}
-              onClose={() => setShowHelp(false)}
-            />
-          )}
+          <HelpPanel
+            open={showHelp}
+            isMobile={isMobile}
+            onClose={() => setShowHelp(false)}
+          />
         </div>
 
         <div className="relative">

@@ -20,20 +20,9 @@ declare let self: ServiceWorkerGlobalScope & {
 };
 
 const logServiceWorker = (event: string, details?: unknown) => {
-  console.info(`[PushSW] ${event}`, details ?? "");
 };
 
 const logServiceWorkerError = (event: string, error: unknown, details?: unknown) => {
-  console.error(`[PushSW] ${event}`, {
-    error:
-      error instanceof Error
-        ? {
-            message: error.message,
-            stack: error.stack,
-          }
-        : error,
-    details,
-  });
 };
 
 clientsClaim();

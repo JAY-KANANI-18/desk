@@ -36,7 +36,7 @@ import {
   SearchInput,
   TextareaInput,
 } from "../../../components/ui/inputs";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 import { Tag } from "../../../components/ui/Tag";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
@@ -504,10 +504,10 @@ function KnowledgeTab({
         </p>
         <div className="mt-5 space-y-3">
           <Field label="Source name" value={name} onChange={setName} />
-          <Select
+          <BaseSelect
             label="Type"
             value={sourceType}
-            onChange={(event) => setSourceType(event.target.value)}
+            onChange={setSourceType}
             options={sourceTypeOptions}
           />
           <Field

@@ -11,6 +11,7 @@ import { IconButton } from "../../../components/ui/button/IconButton";
 import { CountBadge } from "../../../components/ui/CountBadge";
 import { Tag } from "../../../components/ui/Tag";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
+import { ActionMenu, type ActionMenuEntry } from "../../../components/ui/menu";
 import { ToggleSwitch } from "../../../components/ui/toggle/ToggleSwitch";
 import { useDisclosure } from "../../../hooks/useDisclosure";
 
@@ -149,11 +150,9 @@ const StageRow = ({
   dragHandleProps, isDragging, isDragOver, dragOverPosition,
 }: RowProps) => {
   const stageMenu = useDisclosure();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
-
-  useOutsideClick(menuRef as React.RefObject<HTMLElement>, stageMenu.close);
 
   // Auto-focus new stage name input
   useEffect(() => {
@@ -166,6 +165,35 @@ const StageRow = ({
   }, [stage.id, stage._isNew, onChange, onBlurSave]);
 
   const dragButtonProps = dragHandleProps as React.HTMLAttributes<HTMLButtonElement>;
+  const stageMenuItems: ActionMenuEntry[] = [
+    ...(!stage.isDefault
+      ? [
+          {
+            id: "set-default",
+            label: "Set as Default stage",
+            onSelect: () => onMenuAction(stage.id, "setDefault"),
+          } satisfies ActionMenuEntry,
+        ]
+      : []),
+    ...(!stage.isWon && stage.type === "lifecycle"
+      ? [
+          {
+            id: "set-won",
+            label: "Set as Won stage",
+            onSelect: () => onMenuAction(stage.id, "setWon"),
+          } satisfies ActionMenuEntry,
+        ]
+      : []),
+    ...(!stage.isDefault || (!stage.isWon && stage.type === "lifecycle")
+      ? [{ id: "stage-actions-separator", type: "separator" } satisfies ActionMenuEntry]
+      : []),
+    {
+      id: "delete",
+      label: "Delete",
+      tone: "danger",
+      onSelect: () => onDelete(stage.id),
+    },
+  ];
 
   return (
     <div
@@ -258,8 +286,9 @@ const StageRow = ({
           </div>
         ) : (
           /* 3-dot menu */
-          <div className="relative ml-auto shrink-0" ref={menuRef}>
+          <div className="relative ml-auto shrink-0">
             <IconButton
+              ref={menuButtonRef}
               onClick={stageMenu.toggle}
               icon={<MoreHorizontal size={16} />}
               variant="ghost"
@@ -268,44 +297,15 @@ const StageRow = ({
               aria-label="More options"
             />
 
-            {stageMenu.isOpen && (
-              <div className="absolute right-0 top-9 z-50 w-52 rounded-xl border border-gray-100 bg-white py-1 text-sm shadow-xl">
-                {!stage.isDefault && (
-                  <Button
-                    onClick={() => { stageMenu.close(); onMenuAction(stage.id, "setDefault"); }}
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    contentAlign="start"
-                  >
-                    Set as Default stage
-                  </Button>
-                )}
-                {!stage.isWon && stage.type === "lifecycle" && (
-                  <Button
-                    onClick={() => { stageMenu.close(); onMenuAction(stage.id, "setWon"); }}
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    contentAlign="start"
-                  >
-                    Set as Won stage
-                  </Button>
-                )}
-                {(stage.isDefault || stage.isWon || stage.type === "lifecycle") && (
-                  <div className="my-1 border-t border-gray-100" />
-                )}
-                <Button
-                  onClick={() => { stageMenu.close(); onDelete(stage.id); }}
-                  variant="danger-ghost"
-                  size="sm"
-                  fullWidth
-                  contentAlign="start"
-                >
-                  Delete
-                </Button>
-              </div>
-            )}
+            <ActionMenu
+              isOpen={stageMenu.isOpen}
+              onClose={stageMenu.close}
+              anchorRef={menuButtonRef}
+              items={stageMenuItems}
+              width="sm"
+              align="end"
+              ariaLabel={`Actions for ${stage.name || "stage"}`}
+            />
           </div>
         )}
       </div>

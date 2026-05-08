@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Phone,
-  ChevronDown,
-  ChevronLeft,
   CheckCircle2,
   LockOpen,
   MoreVertical,
@@ -22,6 +20,7 @@ import {
 } from "../../components/ui/select";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { IconButton } from "../../components/ui/button/IconButton";
+import { ActionMenu, type ActionMenuEntry } from "../../components/ui/menu";
 import { AiConversationBadges } from "../../modules/ai-agents/components/AiConversationBadges";
 import { BackButton } from "../../components/channels/BackButton";
 
@@ -41,78 +40,6 @@ export type ConvStatus = "open" | "closed";
 export type ConvPriority = "low" | "normal" | "high" | "urgent";
 export type Direction = "incoming" | "outgoing";
 
-function ActionListButton({
-  selected,
-  tone = "primary",
-  onClick,
-  leading,
-  title,
-  subtitle,
-  subtitleTone = "default",
-  trailing,
-}: {
-  selected: boolean;
-  tone?: "primary" | "warning" | "neutral";
-  onClick: () => void;
-  leading?: ReactNode;
-  title: ReactNode;
-  subtitle?: ReactNode;
-  subtitleTone?: "default" | "muted" | "success" | "warning";
-  trailing?: ReactNode;
-}) {
-  const selectedVariant =
-    tone === "warning"
-      ? "soft-warning"
-      : tone === "neutral"
-        ? "soft"
-        : "soft-primary";
-
-  return (
-    <Button
-      type="button"
-      onClick={onClick}
-      variant={selected ? selectedVariant : "ghost"}
-      fullWidth
-      contentAlign="start"
-    >
-      <div className="flex w-full items-center gap-3 text-left">
-        {leading ? <span className="shrink-0">{leading}</span> : null}
-        <div className="min-w-0 flex-1">
-          <div
-            className={`truncate text-sm font-medium ${
-              selected
-                ? tone === "warning"
-                  ? "text-[#c2410c]"
-                  : tone === "neutral"
-                    ? "text-gray-700"
-                    : "text-[var(--color-primary)]"
-                : "text-gray-800"
-            }`}
-          >
-            {title}
-          </div>
-          {subtitle ? (
-            <div
-              className={`mt-0.5 truncate text-xs ${
-                subtitleTone === "success"
-                  ? "text-green-600"
-                  : subtitleTone === "warning"
-                    ? "text-[#c2410c]"
-                    : subtitleTone === "muted"
-                      ? "text-gray-400"
-                      : "text-gray-500"
-              }`}
-            >
-              {subtitle}
-            </div>
-          ) : null}
-        </div>
-        {trailing ? <span className="shrink-0">{trailing}</span> : null}
-      </div>
-    </Button>
-  );
-}
-
 export function ChatHeader({
   selectedConversation,
   msgSearchOpen,
@@ -123,7 +50,7 @@ export function ChatHeader({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatStatus, setChatStatus] = useState<"open" | "closed" | null>(null);
 
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   const { workspaceUsers } = useWorkspace();
   const {
@@ -140,20 +67,6 @@ export function ChatHeader({
   useEffect(() => {
     fetchLifecycles();
   }, [fetchLifecycles]);
-
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node)
-      ) {
-        setMobileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   useEffect(() => {
     if (!selectedConversation) {
@@ -198,11 +111,6 @@ export function ChatHeader({
     contactName.length > 20 ? `${contactName.slice(0, 7)}...` : contactName;
   const fallbackLifecycleName =
     selectedConversation?.contact?.lifecycleStage?.trim() || "";
-  const mobileLifecycleLabel = currentLifecycle
-    ? `${currentLifecycle.emoji} ${currentLifecycle.name}`
-    : fallbackLifecycleName
-      ? `Lifecycle: ${fallbackLifecycleName}`
-      : "Lifecycle details";
   const mobileStatusLabel =
     chatStatus === "closed" ? "Open conversation" : "Close conversation";
   const desktopSearchButtonVariant = msgSearchOpen ? "soft-primary" : "ghost";
@@ -259,6 +167,26 @@ export function ChatHeader({
       },
     });
   };
+  const mobileActionItems: ActionMenuEntry[] = [
+    {
+      id: "search-messages",
+      label: "Search messages",
+      icon: <Search size={16} />,
+      onSelect: onToggleMsgSearch,
+    },
+    ...(selectedChannel?.type === "exotel_call"
+      ? [
+          {
+            id: "start-call",
+            label: "Start call",
+            icon: <Phone size={16} />,
+            onSelect: () => {
+              void handleStartCall();
+            },
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="flex min-h-[4.25rem] shrink-0 flex-col gap-0.5 border-b border-gray-200 bg-white px-2 py-1 sm:px-4 md:min-h-[3.75rem] md:flex-row md:flex-wrap md:items-center md:gap-2 md:px-6 md:py-2.5">
@@ -454,8 +382,9 @@ export function ChatHeader({
             )}
           </div>
 
-          <div className="relative md:hidden" ref={mobileMenuRef}>
+          <div className="relative md:hidden">
             <IconButton
+              ref={mobileMenuButtonRef}
               type="button"
               onClick={() => setMobileMenuOpen((open) => !open)}
               variant={mobileMenuButtonVariant}
@@ -464,42 +393,15 @@ export function ChatHeader({
               icon={<MoreVertical size={16} />}
             />
 
-            {mobileMenuOpen ? (
-              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white p-1.5 shadow-lg">
-                <div className="space-y-0.5">
-                  <ActionListButton
-                    selected={msgSearchOpen}
-                    onClick={() => {
-                      onToggleMsgSearch();
-                      setMobileMenuOpen(false);
-                    }}
-                    leading={<Search size={16} />}
-                    title="Search messages"
-                  />
-
-                  {selectedChannel?.type === "exotel_call" ? (
-                    <ActionListButton
-                      selected={false}
-                      onClick={handleStartCall}
-                      leading={<Phone size={16} />}
-                      title="Start call"
-                    />
-                  ) : null}
-{/* 
-                  {onOpenContactDetails ? (
-                    <ActionListButton
-                      selected={false}
-                      onClick={() => {
-                        onOpenContactDetails();
-                        setMobileMenuOpen(false);
-                      }}
-                      leading={<ChevronDown size={16} />}
-                      title={mobileLifecycleLabel}
-                    />
-                  ) : null} */}
-                </div>
-              </div>
-            ) : null}
+            <ActionMenu
+              isOpen={mobileMenuOpen}
+              onClose={() => setMobileMenuOpen(false)}
+              anchorRef={mobileMenuButtonRef}
+              items={mobileActionItems}
+              align="end"
+              width="sm"
+              ariaLabel="Conversation actions"
+            />
           </div>
         </div>
       </div>

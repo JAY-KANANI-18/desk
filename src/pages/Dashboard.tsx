@@ -334,7 +334,6 @@ export const Dashboard = () => {
       const res = await workspaceApi.getDashboardLifecycle();
       setLifecycle(res);
     } catch (e) {
-      console.error(e);
     }
   }, []);
 
@@ -352,7 +351,6 @@ export const Dashboard = () => {
         setContactNextCursor(res.nextCursor);
         setContactCursor(cursor);
       } catch (e) {
-        console.error(e);
       } finally {
         setContactLoading(false);
       }
@@ -371,7 +369,6 @@ export const Dashboard = () => {
       setMembers(res.data);
       setMemberTotalPages(res.totalPages);
     } catch (e) {
-      console.error(e);
     } finally {
       setMemberLoading(false);
     }
@@ -382,7 +379,6 @@ export const Dashboard = () => {
       const res = await workspaceApi.getDashboardMergeSuggestions();
       setSuggestions(res);
     } catch (e) {
-      console.error(e);
     }
   }, []);
 
@@ -459,7 +455,6 @@ export const Dashboard = () => {
       await workspaceApi.mergeContacts(s.contact1.id, s.contact2.id);
       setSuggestions((p) => p.filter((x) => x.contact1.id !== s.contact1.id));
     } catch (e) {
-      console.error(e);
     }
   };
 

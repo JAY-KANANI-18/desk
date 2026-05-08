@@ -1,7 +1,7 @@
 import { X } from "@/components/ui/icons";
 import { Button } from "../../../components/ui/Button";
 import { SearchInput } from "../../../components/ui/inputs";
-import { Select } from "../../../components/ui/Select";
+import { BaseSelect } from "../../../components/ui/Select";
 
 const FIELD_OPTIONS = [
   { value: "do_not_import", label: "Do not import" },
@@ -134,11 +134,9 @@ export function MappingStep({
                     </span>
                   ) : null}
                 </div>
-                <Select
+                <BaseSelect
                   value={mappedValue}
-                  onChange={(event) =>
-                    onMappingChange(header, event.target.value)
-                  }
+                  onChange={(value) => onMappingChange(header, value)}
                   options={availableOptions}
                   size="sm"
                 />

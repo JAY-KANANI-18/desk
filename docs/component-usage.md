@@ -1111,6 +1111,84 @@ It accepts the same grouped options and dropdown/search/mobile-sheet props as `C
 />
 ```
 
+## MenuDropdown
+
+Import path: `src/components/ui/menu`.
+
+Use it as the low-level shell for custom menus that need shared portal positioning, outside dismiss, Escape close, viewport clamping, reduced-motion handling, and trigger-origin open/close animation.
+
+Do not use it directly for normal action lists or topbar panels; use `ActionMenu` or `PanelMenu`.
+
+Props:
+
+- `isOpen: boolean`; required; controls mounted/visible state.
+- `onClose: () => void`; required; closes the menu from Escape or outside click.
+- `children: React.ReactNode`; required; menu content.
+- `anchorRef?: RefObject<HTMLElement>`; preferred trigger anchor.
+- `placement?: "top" | "bottom" | "left" | "right"`; default `"bottom"`.
+- `align?: "start" | "end"`; default `"start"`.
+- `width?: "trigger" | "sm" | "md" | "lg" | number`; default `"trigger"`.
+- `className?`, `role?`, `ariaLabel?`; optional shell metadata.
+
+Migration note: replaces hand-rolled fixed/absolute dropdown shells and page-local outside-click listeners.
+
+## ActionMenu
+
+Import path: `src/components/ui/menu`.
+
+Use it for three-dot menus, row actions, create menus, and command lists where clicking an item performs an action.
+
+Do not use it for selecting a persistent value; use `CompactSelectMenu` or a domain select wrapper.
+
+Props:
+
+- `isOpen`, `onClose`, `anchorRef`, `placement`, `align`, `width`, `ariaLabel`, `className`.
+- `items: ActionMenuEntry[]`; action items or separators.
+- Item props: `id`, `label`, `description?`, `icon?`, `tone?: "default" | "danger"`, `disabled?`, `loading?`, `onSelect`.
+- Separator props: `{ id: string; type: "separator" }`.
+
+Minimal:
+
+```tsx
+<ActionMenu
+  isOpen={open}
+  onClose={close}
+  anchorRef={buttonRef}
+  items={[
+    { id: "edit", label: "Edit", icon: <Pencil size={14} />, onSelect: edit },
+    { id: "delete", label: "Delete", tone: "danger", onSelect: remove },
+  ]}
+/>
+```
+
+Migration note: replaces page-local three-dot menus, custom action popovers, and custom `DataTable`-style action lists.
+
+## PanelMenu
+
+Import path: `src/components/ui/menu`.
+
+Use it for richer menu panels such as workspace switchers, topbar help/profile/notification panels, sidebar flyouts, and compact filter panels.
+
+Do not use it for simple action-only menus; use `ActionMenu`.
+
+Props:
+
+- `isOpen`, `onClose`, `anchorRef`, `placement`, `align`, `width`, `ariaLabel`.
+- `isMobile?: boolean`; default `false`; renders `MobileSheet` on mobile.
+- `title?`, `mobileTitle?`, `headerActions?`, `footer?`.
+- `className?`, `bodyClassName?`, `mobileBodyClassName?`.
+- `fullScreenMobile?`, `borderlessMobile?`.
+
+Minimal:
+
+```tsx
+<PanelMenu isOpen={open} onClose={close} title="Filters" width="md" align="end">
+  <FilterControls />
+</PanelMenu>
+```
+
+Migration note: replaces topbar panel dropdowns, custom filter popovers, sidebar flyouts, and paired desktop/mobile panel branches.
+
 ## VariableSuggestionMenu
 
 Import path: `src/components/ui/select`.

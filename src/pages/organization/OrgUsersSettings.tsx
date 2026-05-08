@@ -225,7 +225,6 @@ const InviteEditUserModal = ({
 
       onClose();
     } catch (error) {
-      console.error(activeEditUser ? "Update failed:" : "Invite failed:", error);
     } finally {
       setLoading(false);
     }

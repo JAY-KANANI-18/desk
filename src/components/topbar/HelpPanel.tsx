@@ -1,10 +1,12 @@
 import { BookOpen, CheckSquare, ExternalLink, MessageSquare } from "@/components/ui/icons";
-import { MobileSheet } from "../ui/modal";
+import { PanelMenu } from "../ui/menu";
 
 export function HelpPanel({
+  open,
   isMobile = false,
   onClose,
 }: {
+  open: boolean;
   isMobile?: boolean;
   onClose: () => void;
 }) {
@@ -40,11 +42,13 @@ export function HelpPanel({
     </>
   );
 
-  if (isMobile) {
-    return (
-      <MobileSheet
-        isOpen
-        title={
+  return (
+    <PanelMenu
+      isOpen={open}
+      isMobile={isMobile}
+      onClose={onClose}
+      title="Help & Resources"
+      mobileTitle={
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
               Support
@@ -53,29 +57,20 @@ export function HelpPanel({
               Help & Resources
             </h2>
           </div>
-        }
-        onClose={onClose}
-      >
-        <div className="p-4">
-          <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
-            {panelContent}
-          </div>
+      }
+      width="md"
+      align="end"
+      ariaLabel="Help and resources"
+      mobileBodyClassName="p-4"
+      bodyClassName=""
+    >
+      {isMobile ? (
+        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+          {panelContent}
         </div>
-      </MobileSheet>
-    );
-  }
-
-  return (
-    <>
-      <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div className="absolute right-0 top-full z-20 mt-2 w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
-        <div className="border-b border-gray-100 px-4 py-3">
-          <span className="text-sm font-semibold text-gray-800">
-            Help & Resources
-          </span>
-        </div>
-        {panelContent}
-      </div>
-    </>
+      ) : (
+        panelContent
+      )}
+    </PanelMenu>
   );
 }

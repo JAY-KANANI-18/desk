@@ -5,6 +5,7 @@ import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 import { IconButton } from "../../../components/ui/button/IconButton";
 import { SearchInput } from "../../../components/ui/inputs";
+import { ActionMenu, type ActionMenuEntry } from "../../../components/ui/menu";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { ContactsToast, SortOption } from "../types";
 
@@ -50,6 +51,23 @@ export function ContactsHeader({
   const isMobile = useIsMobile();
 
   const closeActionsMenu = () => setShowActionsMenu(false);
+  const actionMenuItems: ActionMenuEntry[] = [
+    {
+      id: "import",
+      label: "Import",
+      onSelect: onOpenImport,
+    },
+    {
+      id: "export",
+      label: "Export",
+      onSelect: onExport,
+    },
+    {
+      id: "import-process",
+      label: "Import Process",
+      onSelect: onOpenImportJobs,
+    },
+  ];
 
   const actionItems = (
     <>
@@ -186,11 +204,16 @@ export function ContactsHeader({
               aria-label="Open contact actions"
             />
 
-            {!isMobile && showActionsMenu && (
-              <div className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-                {actionItems}
-              </div>
-            )}
+            {!isMobile ? (
+              <ActionMenu
+                isOpen={showActionsMenu}
+                onClose={closeActionsMenu}
+                items={actionMenuItems}
+                width="sm"
+                align="end"
+                ariaLabel="Contact actions"
+              />
+            ) : null}
           </div>
         </div>
       </div>

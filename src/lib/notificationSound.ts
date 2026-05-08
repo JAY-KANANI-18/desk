@@ -73,6 +73,5 @@ export function playNotificationSound(type: NotificationSoundType): void {
     }
   } catch (e) {
     // Silently fail — audio may be blocked before first user gesture
-    console.warn('[notificationSound] Audio playback skipped:', e);
   }
 }

@@ -84,7 +84,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   const {socket} = useSocket();
 
   useEffect(() => {
-    console.log("socket emit",socket,activeWorkspace);
   if (!socket || !activeWorkspace) return;
     
   socket.emit("workspace:join", {
@@ -94,7 +93,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
 }, [socket, activeWorkspace?.id]);
   useEffect(() => {
-    console.log("socket emit",socket,user);
   if (!socket || !user) return;
     
   socket.emit("user:join", {
@@ -123,7 +121,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const users = await workspaceApi.users();
         const activityStatus = await workspaceApi.getAvailability();
-        console.log({users,activityStatus});
         
         // create lookup map for faster access
         const statusMap = new Map(
@@ -137,7 +134,6 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setWorkspaceUsers(usersWithStatus);
       } catch (err) {
-        console.error("Failed to load workspace users", err);
       }
     };
 

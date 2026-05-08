@@ -449,7 +449,6 @@ export const Billing = () => {
       setBilling(billingRes);
       setInvoices(invoicesRes?.data || []);
     } catch (err: any) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -505,7 +504,6 @@ export const Billing = () => {
     try {
       setSavingAddon(true);
       const res = await workspaceApi.addAddon({ type, quantity });
-      console.log({res});
       
       setAddonModal(null);
       if (res.razorpayOrderId) {
@@ -513,7 +511,6 @@ export const Billing = () => {
         new RZ({ key: res.key, order_id: res.razorpayOrderId, name: 'AxoDesk', description: res.description, handler: () => load(), theme: { color: '#2563eb' } }).open();
       } else { await load(); }
     } catch (err: any) {
-        console.log({err});
         
       alert(err?.response?.data?.message || 'Failed to add addon'); }
     finally { setSavingAddon(false); }

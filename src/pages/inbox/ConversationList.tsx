@@ -14,7 +14,8 @@ import {
 import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/button/IconButton";
 import { SearchInput } from "../../components/ui/inputs";
-import { Select } from "../../components/ui/Select";
+import { PanelMenu } from "../../components/ui/menu";
+import { BaseSelect } from "../../components/ui/Select";
 import { Tag } from "../../components/ui/Tag";
 import { Toggle } from "../../components/ui/Toggle";
 import { TruncatedText } from "../../components/ui/TruncatedText";
@@ -153,7 +154,6 @@ export function ConversationList({
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchInput, setSearchInput] = useState(convSearch);
 
-  const filterRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchDebounce = useRef<ReturnType<typeof setTimeout>>();
 
@@ -186,17 +186,6 @@ useEffect(() => {
     }, 350);
     return () => clearTimeout(searchDebounce.current);
   }, [searchInput, setConvSearch]);
-
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setFilterOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   // const handleScroll = useCallback(() => {
   //   if (!listRef.current || convLoading || !hasMoreConvs) return;
@@ -308,7 +297,7 @@ useEffect(() => {
             size="sm"
             aria-label={searchOpen ? "Close conversation search" : "Search conversations"}
           />
-          <div className="relative" ref={filterRef}>
+          <div className="relative">
             <IconButton
               onClick={() => setFilterOpen((open) => !open)}
               icon={<Filter size={18} />}
@@ -322,16 +311,24 @@ useEffect(() => {
               </span>
             ) : null}
 
-            {filterOpen ? (
-              <div className="absolute right-0 top-full z-50 mt-1.5 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
-                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-                  <span className="text-xs font-bold uppercase tracking-wide text-gray-700">Filters</span>
-                  <Button onClick={resetFilters} variant="link" size="xs">
-                    Reset all
-                  </Button>
-                </div>
-
-                <div className="space-y-3 p-3">
+            <PanelMenu
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              title={
+                <span className="text-xs font-bold uppercase tracking-wide text-gray-700">
+                  Filters
+                </span>
+              }
+              headerActions={
+                <Button onClick={resetFilters} variant="link" size="xs">
+                  Reset all
+                </Button>
+              }
+              width="md"
+              align="end"
+              ariaLabel="Conversation filters"
+              bodyClassName="space-y-3 p-3"
+            >
                   <div>
                     <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                       Status
@@ -378,11 +375,10 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  <Select
+                  <BaseSelect
                     label="Assigned to"
-                    labelVariant="sidebar"
                     value={filters.assigneeId ?? ""}
-                    onChange={(event) => setFilters({ assigneeId: event.target.value || undefined })}
+                    onChange={(value) => setFilters({ assigneeId: value || undefined })}
                     options={assigneeOptions}
                     size="sm"
                   />
@@ -395,9 +391,7 @@ useEffect(() => {
                     />
                     <span className="text-xs font-medium text-gray-700">Unreplied</span>
                   </div>
-                </div>
-              </div>
-            ) : null}
+            </PanelMenu>
           </div>
         </div>
       </div>

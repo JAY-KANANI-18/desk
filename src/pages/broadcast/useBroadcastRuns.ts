@@ -60,7 +60,6 @@ export function useBroadcastRuns() {
       setHasMoreRuns(Boolean(result?.nextCursor));
       setRunsTotal(typeof result?.total === "number" ? result.total : rows.length);
     } catch (error) {
-      console.error(error);
       toast.error(error instanceof Error ? error.message : "Could not load broadcasts");
       if (replace) {
         setRuns([]);
