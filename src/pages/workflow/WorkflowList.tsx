@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef, type ChangeEvent, type DragEvent, type ReactNode } from 'react';
 import {
   Blocks, Plus, Play, Square, Pencil,
-  Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronRight, Calendar, User,
+  Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronDown, ChevronRight, Calendar, User,
   X,
 } from '@/components/ui/icons';
 import type { Workflow, WorkflowStatus } from './workflow.types';
@@ -184,6 +184,7 @@ export function WorkflowList() {
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
   const [mobileLoadingMore, setMobileLoadingMore] = useState(false);
   const [mobileCreateMenuOpen, setMobileCreateMenuOpen] = useState(false);
+  const [desktopCreateMenuOpen, setDesktopCreateMenuOpen] = useState(false);
   const [creatingScratchWorkflow, setCreatingScratchWorkflow] = useState(false);
   const [sortField, setSortField] = useState<WorkflowSortField>('name');
   const [sortDirection, setSortDirection] = useState<DataTableSortDirection>('asc');
@@ -264,11 +265,13 @@ export function WorkflowList() {
 
   const handleCreateNew = useCallback(() => {
     setMobileCreateMenuOpen(false);
+    setDesktopCreateMenuOpen(false);
     navigate('/workflows/templates');
   }, [navigate]);
 
   const handleCreateFromScratch = useCallback(async () => {
     setMobileCreateMenuOpen(false);
+    setDesktopCreateMenuOpen(false);
     setCreatingScratchWorkflow(true);
     try {
       const workflow = await workspaceApi.createWorkflow({ name: 'Untitled Workflow' });
@@ -293,6 +296,7 @@ export function WorkflowList() {
   };
 
   const handleImportClick = () => {
+    setDesktopCreateMenuOpen(false);
     setImportError(null);
     setSelectedImportFile(null);
     setImportModalOpen(true);
@@ -667,12 +671,74 @@ export function WorkflowList() {
           />
         </span>
       </Tooltip>
-      <Button
-        onClick={handleCreateNew}
-        leftIcon={<Plus size={14} />}
-      >
-        New Workflow
-      </Button>
+      <div className="relative z-[62]">
+        {desktopCreateMenuOpen ? (
+          <button
+            type="button"
+            aria-label="Close workflow create options"
+            className="fixed inset-0 z-[60] cursor-default bg-transparent"
+            onClick={() => setDesktopCreateMenuOpen(false)}
+          />
+        ) : null}
+        <Button
+          onClick={() => setDesktopCreateMenuOpen((open) => !open)}
+          leftIcon={<Plus size={14} />}
+          rightIcon={
+            <ChevronDown
+              size={14}
+              className={`transition-transform duration-150 ${
+                desktopCreateMenuOpen ? 'rotate-180' : ''
+              }`}
+            />
+          }
+          aria-haspopup="menu"
+          aria-expanded={desktopCreateMenuOpen}
+        >
+          New Workflow
+        </Button>
+        <div
+          role="menu"
+          className={`absolute right-0 top-[calc(100%+0.5rem)] z-[61] w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_46px_rgba(15,23,42,0.14)] transition-all duration-150 ${
+            desktopCreateMenuOpen
+              ? 'translate-y-0 scale-100 opacity-100'
+              : 'pointer-events-none -translate-y-1 scale-[0.98] opacity-0'
+          }`}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleCreateNew}
+            className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)]"
+          >
+            <Blocks size={17} className="mt-0.5 shrink-0 text-emerald-600" />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-950">
+                Use template
+              </span>
+              <span className="mt-0.5 block text-xs leading-5 text-slate-500">
+                Pick a ready workflow and customize it.
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={creatingScratchWorkflow}
+            onClick={() => void handleCreateFromScratch()}
+            className="flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] disabled:cursor-wait disabled:opacity-70"
+          >
+            <Pencil size={16} className="mt-0.5 shrink-0 text-[var(--color-primary)]" />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-950">
+               Create from scratch
+              </span>
+              <span className="mt-0.5 block text-xs leading-5 text-slate-500">
+                Start with a blank workflow.
+              </span>
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -949,7 +1015,7 @@ export function WorkflowList() {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center text-[var(--color-primary)]">
                   <Pencil size={15} />
                 </span>
-                {creatingScratchWorkflow ? 'Creating...' : 'From scratch'}
+                {creatingScratchWorkflow ? 'Creating...' : 'Create from scratch'}
               </button>
             </div>
           </>
