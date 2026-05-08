@@ -58,14 +58,58 @@ export function statusBadgeClass(status: string) {
   return "bg-gray-100 text-gray-700";
 }
 
-export function formatDateTime(value?: string | null) {
-  return value ? new Date(value).toLocaleString() : "-";
+type DateInput = string | number | Date | null | undefined;
+
+function toValidDate(value?: DateInput) {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatTime(value?: string | null) {
-  return value
-    ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : "";
+export function formatDate(value?: DateInput) {
+  const date = toValidDate(value);
+  if (!date) return "-";
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(value?: DateInput) {
+  const date = toValidDate(value);
+  if (!date) return "-";
+
+  return `${formatDate(date)}, ${formatTime(date)}`;
+}
+
+export function formatTime(value?: DateInput) {
+  const date = toValidDate(value);
+  if (!date) return "";
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+export function formatWeekday(value?: DateInput) {
+  const date = toValidDate(value);
+  if (!date) return "";
+
+  return date.toLocaleDateString("en-GB", { weekday: "long" });
+}
+
+export function formatMonthYear(value?: DateInput) {
+  const date = toValidDate(value);
+  if (!date) return "";
+
+  return date.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function toDateTimeLocal(value?: string | null) {

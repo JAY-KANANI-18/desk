@@ -8,8 +8,10 @@ import { CALENDAR_WEEK_DAYS } from "./constants";
 import {
   calendarEventClass,
   calendarStatusLabel,
+  formatDate,
   formatDateKey,
   formatTime,
+  formatWeekday,
 } from "./utils";
 
 function BroadcastCalendarEventButton({
@@ -215,14 +217,10 @@ export function BroadcastCalendarView({
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  {selectedDay?.day.toLocaleDateString([], { weekday: "long" })}
+                  {formatWeekday(selectedDay?.day)}
                 </p>
                 <h4 className="text-sm font-semibold text-slate-900">
-                  {selectedDay?.day.toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {formatDate(selectedDay?.day)}
                 </h4>
               </div>
               {selectedDay?.isToday ? (

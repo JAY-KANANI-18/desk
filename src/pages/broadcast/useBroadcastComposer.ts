@@ -135,7 +135,7 @@ export function useBroadcastComposer({
       });
       toast.success(`${result.totalMatching} people can receive this broadcast`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not check recipients");
+      toast.error(error instanceof Error ? error.message : "Could not check people");
     } finally {
       setPreviewLoading(false);
     }

@@ -155,7 +155,7 @@ export function useBroadcastDetails({
     try {
       setTrace(await broadcastApi.trace(selectedRun.id));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not refresh recipients");
+      toast.error(error instanceof Error ? error.message : "Could not refresh people");
     } finally {
       setTraceLoading(false);
     }

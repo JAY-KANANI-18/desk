@@ -149,7 +149,7 @@ export function BroadcastComposerModal({
           variant="secondary"
           
         >
-          Check recipients
+          Check people
         </Button>
         {audiencePreview ? (
           <span className="text-sm text-gray-600">

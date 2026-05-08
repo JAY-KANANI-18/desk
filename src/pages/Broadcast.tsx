@@ -53,7 +53,7 @@ export const Broadcast = () => {
       onRefreshAnalytics={page.refreshAnalytics}
       onRefreshTrace={page.refreshTrace}
       desktopVariant="inline"
-      desktopContainerClassName="flex h-full"
+      desktopContainerClassName="flex h-full w-full min-w-0"
     />
   );
 

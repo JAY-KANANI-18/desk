@@ -3,7 +3,13 @@ import toast from "react-hot-toast";
 import { broadcastApi, type BroadcastRunRow } from "../../lib/broadcastApi";
 import { BROADCAST_PAGE_SIZE } from "./constants";
 import type { BroadcastSortableField, BroadcastViewMode } from "./types";
-import { addMonths, formatDateKey, startOfMonth, statusFilterToApiStatus } from "./utils";
+import {
+  addMonths,
+  formatDateKey,
+  formatMonthYear,
+  startOfMonth,
+  statusFilterToApiStatus,
+} from "./utils";
 
 export function useBroadcastRuns() {
   const [runs, setRuns] = useState<BroadcastRunRow[]>([]);
@@ -97,7 +103,7 @@ export function useBroadcastRuns() {
     [runs],
   );
 
-  const monthLabel = calendarMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const monthLabel = formatMonthYear(calendarMonth);
   const todayKey = formatDateKey(new Date());
   const activeRunLabel = debouncedSearchQuery
     ? `${runsTotal} result${runsTotal === 1 ? "" : "s"}`

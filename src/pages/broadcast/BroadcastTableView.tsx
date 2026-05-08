@@ -5,7 +5,11 @@ import {
   type DataTableColumn,
 } from "../../components/ui/DataTable";
 import type { BroadcastRunRow } from "../../lib/broadcastApi";
-import { channelConfig } from "../inbox/data";
+import {
+  BroadcastChannelIcon,
+  BroadcastChannelLabel,
+  getBroadcastChannelDisplay,
+} from "./BroadcastChannelLabel";
 import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastSortableField } from "./types";
 import { contentModeLabel, formatDateTime } from "./utils";
@@ -60,7 +64,7 @@ export function BroadcastTableView({
     },
     {
       id: "name",
-      header: "Broadcast name",
+      header: "Broadcast",
       sortable: true,
       sortField: "name",
       cell: (run) => <span className="font-medium text-gray-900">{run.name}</span>,
@@ -69,12 +73,7 @@ export function BroadcastTableView({
     {
       id: "channel",
       header: "Send from",
-      cell: (run) => (
-        <span className="text-gray-700">
-          {run.channel?.name ?? "-"}{" "}
-          <span className="text-gray-400">({run.channel?.type ?? "?"})</span>
-        </span>
-      ),
+      cell: (run) => <BroadcastChannelLabel channel={run.channel} />,
       mobile: "secondary",
     },
     {
@@ -152,10 +151,7 @@ export function BroadcastTableView({
       }}
       footer={footer}
       renderMobileCard={(run) => {
-        const channelType = run.channel?.type ?? "";
-        const channelMeta = channelConfig[channelType];
-        const channelName =
-          run.channel?.name ?? channelMeta?.label ?? "Channel";
+        const channelDisplay = getBroadcastChannelDisplay(run.channel);
         const scheduleTime = run.scheduledAt
           ? formatDateTime(run.scheduledAt)
           : formatDateTime(run.createdAt);
@@ -184,23 +180,16 @@ export function BroadcastTableView({
             <div className="min-w-0 pr-6">
               <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-100">
-                    {channelMeta?.icon ? (
-                      <img
-                        src={channelMeta.icon}
-                        alt={channelMeta.label}
-                        className="h-6 w-6 object-contain"
-                      />
-                    ) : (
-                      <span className="text-xs font-semibold uppercase text-slate-500">
-                        {channelType.slice(0, 2) || "CH"}
-                      </span>
-                    )}
-                  </span>
+                  <BroadcastChannelIcon
+                    channel={run.channel}
+                    className="h-10 w-10 rounded-xl bg-slate-50 ring-1 ring-slate-100"
+                    iconClassName="h-6 w-6"
+                    fallbackClassName="text-xs font-semibold uppercase text-slate-500"
+                  />
 
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-slate-900">
-                      {channelName}
+                      {channelDisplay.name}
                     </p>
                     <p className="mt-0.5 truncate text-xs font-medium text-slate-400">
                       {run.name}
