@@ -77,6 +77,7 @@ export function BroadcastDetailsDrawer({
   const isMobile = useIsMobile();
 
   if (!selectedRun) return null;
+  const actionOpen = Boolean(broadcastAction);
 
   const content = (
     <div className="space-y-4 px-5 py-4 text-sm">
@@ -103,7 +104,7 @@ export function BroadcastDetailsDrawer({
       <div className="grid grid-cols-3 gap-2">
         <Button
           disabled={
-            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
+            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving || actionOpen
           }
           onClick={() => onOpenBroadcastAction("edit")}
           variant="secondary"
@@ -114,7 +115,7 @@ export function BroadcastDetailsDrawer({
         </Button>
         <Button
           disabled={
-            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
+            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving || actionOpen
           }
           onClick={() => onOpenBroadcastAction("reschedule")}
           variant="secondary"
@@ -124,7 +125,7 @@ export function BroadcastDetailsDrawer({
         </Button>
         <Button
           disabled={
-            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving
+            !canMutateBroadcast(selectedRun.status) || broadcastActionSaving || actionOpen
           }
           onClick={onSendNow}
           variant="secondary"
@@ -246,9 +247,9 @@ export function BroadcastDetailsDrawer({
         ) : analytics ? (
           <div className="space-y-2">
             <p className="text-gray-700">
-              Total tracked messages:{" "}
+              Total tracked recipients:{" "}
               <span className="font-semibold">
-                {analytics.totalMessages}
+                {analytics.totalRecipients ?? analytics.totalMessages}
               </span>
             </p>
             <ul className="space-y-1">
@@ -310,9 +311,9 @@ export function BroadcastDetailsDrawer({
           </div>
         ) : trace && trace.rows.length > 0 ? (
           <div className="space-y-2">
-            {trace.rows.slice(0, 12).map((row) => (
+            {trace.rows.slice(0, 12).map((row, index) => (
               <div
-                key={row.messageId}
+                key={row.recipientId ?? row.messageId ?? `${row.contactId ?? "recipient"}-${index}`}
                 className="rounded-2xl border border-gray-100 p-3"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -329,6 +330,10 @@ export function BroadcastDetailsDrawer({
                 <div className="mt-2 space-y-1 text-xs text-gray-600">
                   <p>Created: {formatDateTime(row.createdAt)}</p>
                   <p>Sent: {formatDateTime(row.sentAt)}</p>
+                  {row.deliveredAt ? (
+                    <p>Delivered: {formatDateTime(row.deliveredAt)}</p>
+                  ) : null}
+                  {row.readAt ? <p>Read: {formatDateTime(row.readAt)}</p> : null}
                   {row.queueStatus ? <p>Queue: {row.queueStatus}</p> : null}
                   {row.attempts > 0 ? (
                     <p>
@@ -344,8 +349,7 @@ export function BroadcastDetailsDrawer({
           </div>
         ) : (
           <p className="text-xs text-gray-500">
-            No recipient trace yet. Scheduled broadcasts will show rows
-            after they start.
+            No recipient trace yet.
           </p>
         )}
       </div>

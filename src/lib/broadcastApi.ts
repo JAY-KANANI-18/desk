@@ -17,6 +17,7 @@ export type BroadcastSendResult = {
   channelId: string;
   status: string;
   scheduledAt?: string;
+  audienceSnapshotStrategy?: string;
   whatsAppComplianceNote?: string;
 };
 
@@ -63,6 +64,7 @@ export type BroadcastRunListResponse = {
 
 export type BroadcastAnalytics = {
   broadcastRunId: string;
+  totalRecipients?: number;
   totalMessages: number;
   byStatus: Record<string, number>;
   byQueueStatus?: Record<string, number>;
@@ -73,7 +75,8 @@ export type BroadcastTrace = {
   broadcastRunId: string;
   limit: number;
   rows: Array<{
-    messageId: string;
+    recipientId?: string;
+    messageId: string | null;
     conversationId: string | null;
     contactId: string | null;
     recipient: string;
@@ -87,6 +90,8 @@ export type BroadcastTrace = {
     createdAt: string;
     scheduledAt: string | null;
     sentAt: string | null;
+    deliveredAt?: string | null;
+    readAt?: string | null;
     preview: string | null;
   }>;
 };

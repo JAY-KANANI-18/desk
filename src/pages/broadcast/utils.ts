@@ -17,9 +17,12 @@ export function templateVariableKeys(raw: unknown): string[] {
 
 export function statusLabel(status: string) {
   if (status === "partial_failure") return "Partial failure";
+  if (status === "dead_letter") return "Dead letter";
   if (status === "completed") return "Completed";
   if (status === "scheduled") return "Scheduled";
   if (status === "running") return "Running";
+  if (status === "unsubscribed") return "Unsubscribed";
+  if (status === "bounced") return "Bounced";
   return status;
 }
 

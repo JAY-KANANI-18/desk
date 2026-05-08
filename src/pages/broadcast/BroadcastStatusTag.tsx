@@ -5,7 +5,8 @@ function resolveStatusColor(status: string) {
   if (
     status === "completed" ||
     status === "sent" ||
-    status === "delivered"
+    status === "delivered" ||
+    status === "read"
   ) {
     return "success";
   }
@@ -14,11 +15,11 @@ function resolveStatusColor(status: string) {
     return "warning";
   }
 
-  if (status === "failed") {
+  if (status === "failed" || status === "bounced" || status === "dead_letter") {
     return "error";
   }
 
-  if (status === "running") {
+  if (status === "running" || status === "sending") {
     return "tag-purple";
   }
 
@@ -28,6 +29,10 @@ function resolveStatusColor(status: string) {
 
   if (status === "queued" || status === "pending") {
     return "info";
+  }
+
+  if (status === "unsubscribed") {
+    return "warning";
   }
 
   return "gray";

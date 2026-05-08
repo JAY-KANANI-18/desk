@@ -115,6 +115,10 @@ export function useBroadcastDetails({
       toast.error("Only scheduled broadcasts can be sent now.");
       return;
     }
+    if (broadcastAction) {
+      toast.error("Save or cancel the current edit before sending now.");
+      return;
+    }
     if (!window.confirm("Send this scheduled broadcast now? This cannot be edited after it starts.")) {
       return;
     }
@@ -131,7 +135,7 @@ export function useBroadcastDetails({
     } finally {
       setBroadcastActionSaving(false);
     }
-  }, [refreshSelectedBroadcast, selectedRun]);
+  }, [broadcastAction, refreshSelectedBroadcast, selectedRun]);
 
   const refreshAnalytics = useCallback(async () => {
     if (!selectedRun?.id) return;
