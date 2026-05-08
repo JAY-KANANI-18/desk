@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, useReducedMotion } from "framer-motion";
 import LibraryEmojiPicker, {
   EmojiClickData,
   EmojiStyle,
@@ -16,12 +15,10 @@ interface EmojiPickerProps {
 export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const shouldReduceMotion = useReducedMotion();
   const [position, setPosition] = useState({
     top: 0,
     left: 0,
     ready: false,
-    placement: "top" as "top" | "bottom",
   });
 
   const accentStyles =
@@ -51,13 +48,11 @@ export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
       const pickerRect = picker.getBoundingClientRect();
 
       let top = anchorRect.top - pickerRect.height - margin;
-      let placement: "top" | "bottom" = "top";
       if (top < margin) {
         top = Math.min(
           window.innerHeight - pickerRect.height - margin,
           anchorRect.bottom + margin,
         );
-        placement = "bottom";
       }
 
       let left = anchorRect.left;
@@ -68,7 +63,7 @@ export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
         left = margin;
       }
 
-      setPosition({ top, left, ready: true, placement });
+      setPosition({ top, left, ready: true });
     };
 
     updatePosition();
@@ -89,36 +84,13 @@ export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
     <>
       <span ref={anchorRef} className="hidden" aria-hidden="true" />
       {createPortal(
-        <motion.div
+        <div
           ref={pickerRef}
           className="fixed z-[1100] overflow-hidden rounded-xl shadow-xl"
-          initial={{
-            opacity: 0,
-            y: shouldReduceMotion ? 0 : position.placement === "top" ? 7 : -7,
-            scale: shouldReduceMotion ? 1 : 0.74,
-          }}
-          animate={{
-            opacity: position.ready ? 1 : 0,
-            y: 0,
-            scale: 1,
-          }}
-          transition={{
-            opacity: { duration: shouldReduceMotion ? 0.001 : 0.11, ease: "easeOut" },
-            y: {
-              duration: shouldReduceMotion ? 0.001 : 0.18,
-              ease: [0.16, 1, 0.3, 1],
-            },
-            scale: {
-              duration: shouldReduceMotion ? 0.001 : 0.18,
-              ease: [0.16, 1, 0.3, 1],
-            },
-          }}
           style={{
             top: position.top,
             left: position.left,
             visibility: position.ready ? "visible" : "hidden",
-            transformOrigin:
-              position.placement === "top" ? "bottom left" : "top left",
           }}
           onMouseDown={(event) => event.stopPropagation()}
         >
@@ -139,7 +111,7 @@ export function EmojiPicker({ accent, onSelect }: EmojiPickerProps) {
               backgroundColor: accentStyles.background,
             }}
           />
-        </motion.div>,
+        </div>,
         document.body,
       )}
     </>
