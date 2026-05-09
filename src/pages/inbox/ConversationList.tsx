@@ -210,12 +210,6 @@ useEffect(() => {
     !channelsLoading && channels.length === 0 && convList.length === 0;
 
   const activePills: Array<{ label: string; clear: () => void }> = [];
-  if (filters.status && filters.status !== "open" && filters.status !== "all") {
-    activePills.push({
-      label: filters.status,
-      clear: () => setFilters({ status: "open" }),
-    });
-  }
   if (filters.assigneeId) {
     activePills.push({
       label:
@@ -250,85 +244,92 @@ useEffect(() => {
 
   return (
     <div className="flex min-h-0 w-full flex-col bg-white md:w-80 md:flex-shrink-0 md:border-r md:border-gray-200">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-3 py-3 md:px-4">
-        <div className="flex min-w-0 items-center gap-2">
-          {onOpenCategories ? (
-            <Button
-              type="button"
-              onClick={onOpenCategories}
-              variant="soft"
-              size="sm"
-              radius="full"
-              preserveChildLayout
-              className="min-w-0 md:hidden"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <PanelLeftOpen size={16} className="flex-shrink-0 text-slate-500" />
-                <span className="max-w-[7.5rem] truncate text-sm font-semibold">
-                  {activeCategoryLabel}
-                </span>
-                {totalUnread > 0 ? (
-                  <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {totalUnread > 99 ? "99+" : totalUnread}
+      <div className="border-b border-gray-100 bg-white px-3 py-3 md:px-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            {onOpenCategories ? (
+              <Button
+                type="button"
+                onClick={onOpenCategories}
+                variant="soft"
+                size="sm"
+                radius="full"
+                preserveChildLayout
+                className="min-w-0 md:hidden"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <PanelLeftOpen size={16} className="flex-shrink-0 text-slate-500" />
+                  <span className="max-w-[7.5rem] truncate text-sm font-semibold">
+                    {activeCategoryLabel}
                   </span>
-                ) : null}
-              </span>
-            </Button>
-          ) : null}
-
-          <div className={`${onOpenCategories ? "hidden md:flex" : "flex"} min-w-0 items-center gap-2`}>
-            <span className="text-sm font-bold text-gray-800">Inbox</span>
-            {totalUnread > 0 ? (
-              <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-[var(--color-primary-light)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-primary)]">
-                {totalUnread > 99 ? "99+" : totalUnread}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <IconButton
-            onClick={() => {
-              setSearchOpen((open) => !open);
-              if (searchOpen) setSearchInput("");
-            }}
-            icon={<Search size={18} />}
-            variant={searchOpen ? "soft-primary" : "ghost"}
-            size="sm"
-            aria-label={searchOpen ? "Close conversation search" : "Search conversations"}
-          />
-          <div className="relative">
-            <IconButton
-              onClick={() => setFilterOpen((open) => !open)}
-              icon={<Filter size={18} />}
-              variant={activePills.length > 0 || filterOpen ? "soft-primary" : "ghost"}
-              size="sm"
-              aria-label="Open conversation filters"
-            />
-            {activePills.length > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[8px] font-bold text-white">
-                {activePills.length}
-              </span>
-            ) : null}
-
-            <PanelMenu
-              isOpen={filterOpen}
-              onClose={() => setFilterOpen(false)}
-              title={
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-700">
-                  Filters
+                  {totalUnread > 0 ? (
+                    <span className="inline-flex min-w-[1.35rem] items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  ) : null}
                 </span>
-              }
-              headerActions={
-                <Button onClick={resetFilters} variant="link" size="xs">
-                  Reset all
-                </Button>
-              }
-              width="md"
-              align="end"
-              ariaLabel="Conversation filters"
-              bodyClassName="space-y-3 p-3"
-            >
+              </Button>
+            ) : null}
+
+            <div className={`${onOpenCategories ? "hidden md:flex" : "flex"} min-w-0 flex-col`}>
+              <span className="truncate text-sm font-bold text-gray-900">
+                Conversations
+              </span>
+              {totalUnread > 0 ? (
+                <span className="mt-0.5 text-xs font-medium text-gray-500">
+                  {totalUnread > 99 ? "99+" : totalUnread} unread
+                </span>
+              ) : (
+                <span className="mt-0.5 text-xs font-medium text-gray-400">
+                  All caught up
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <IconButton
+              onClick={() => {
+                setSearchOpen((open) => !open);
+                if (searchOpen) setSearchInput("");
+              }}
+              icon={<Search size={18} />}
+              variant={searchOpen ? "soft-primary" : "ghost"}
+              size="sm"
+              aria-label={searchOpen ? "Close conversation search" : "Search conversations"}
+            />
+            <div className="relative">
+              <IconButton
+                onClick={() => setFilterOpen((open) => !open)}
+                icon={<Filter size={18} />}
+                variant={activePills.length > 0 || filterOpen ? "soft-primary" : "ghost"}
+                size="sm"
+                aria-label="Open conversation filters"
+              />
+              {activePills.length > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[8px] font-bold text-white">
+                  {activePills.length}
+                </span>
+              ) : null}
+
+              <PanelMenu
+                isOpen={filterOpen}
+                onClose={() => setFilterOpen(false)}
+                title={
+                  <span className="text-xs font-bold uppercase tracking-wide text-gray-700">
+                    Filters
+                  </span>
+                }
+                headerActions={
+                  <Button onClick={resetFilters} variant="link" size="xs">
+                    Reset all
+                  </Button>
+                }
+                width="md"
+                align="end"
+                ariaLabel="Conversation filters"
+                bodyClassName="space-y-3 p-3"
+              >
                   <div>
                     <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                       Status
@@ -391,28 +392,29 @@ useEffect(() => {
                     />
                     <span className="text-xs font-medium text-gray-700">Unreplied</span>
                   </div>
-            </PanelMenu>
+              </PanelMenu>
+            </div>
           </div>
         </div>
+
+        {searchOpen ? (
+          <div className="pt-3">
+            <SearchInput
+              autoFocus
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search by name, email, phone..."
+              size="sm"
+              appearance="toolbar"
+              searchIconSize={13}
+              onClear={() => setSearchInput("")}
+              clearAriaLabel="Clear conversation search"
+            />
+          </div>
+        ) : null}
       </div>
 
-      {searchOpen ? (
-        <div className="border-b border-gray-100 px-3 py-2">
-          <SearchInput
-            autoFocus
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by name, email, phone..."
-            size="sm"
-            appearance="toolbar"
-            searchIconSize={13}
-            onClear={() => setSearchInput("")}
-            clearAriaLabel="Clear conversation search"
-          />
-        </div>
-      ) : null}
-
-      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-gray-200 scrollbar-hide">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-gray-100 bg-white px-3 scrollbar-hide md:px-4">
         <div className="flex">
           {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => {
             const isActive = (filters.status ?? "open") === option.value;
@@ -425,7 +427,7 @@ useEffect(() => {
                 selected={isActive}
                 size="sm"
                 radius="none"
-                className="flex-shrink-0 whitespace-nowrap"
+                className="h-11 flex-shrink-0 whitespace-nowrap px-0"
               >
                 {option.label}
               </Button>
@@ -433,23 +435,23 @@ useEffect(() => {
           })}
         </div>
 
-        <div className="mx-4 flex items-center justify-between gap-2">
+        <div className="flex flex-shrink-0 items-center justify-between gap-2 rounded-full bg-gray-50 px-2.5 py-1">
           <Toggle
             checked={Boolean(filters.unreplied)}
             onChange={(value) => setFilters({ unreplied: value })}
             ariaLabel={filters.unreplied ? "Show all conversations" : "Show unreplied conversations only"}
           />
-          <span className="text-xs font-medium text-gray-700">Unreplied</span>
+          <span className="text-xs font-semibold text-gray-700">Unreplied</span>
         </div>
       </div>
 
-      {/* {activePills.length > 0 ? (
-        <div className="flex flex-wrap gap-1 border-b border-gray-100 px-3 py-2">
+      {activePills.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 border-b border-gray-100 bg-white px-3 py-2 md:px-4">
           {activePills.map((pill) => (
             <FilterPill key={pill.label} label={pill.label} onRemove={pill.clear} />
           ))}
         </div>
-      ) : null} */}
+      ) : null}
 
     <div
   ref={listRef}

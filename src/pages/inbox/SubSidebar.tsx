@@ -257,11 +257,14 @@ export function SubSidebar() {
         collapsed ? "w-14" : "w-48"
       }`}
     >
+      
       <div
-        className={`flex h-14 items-center border-b border-gray-200 ${
-          collapsed ? "justify-center" : "justify-end px-3"
+        className={`flex h-14 items-center   ${
+          collapsed ? "justify-center" : "justify-between px-5"
         }`}
       >
+          {   !collapsed &&       <span className="text-sm font-bold text-gray-800">Inbox</span>}
+
         <IconButton
           type="button"
           onClick={() => setCollapsed((value) => !value)}
@@ -273,7 +276,7 @@ export function SubSidebar() {
       </div>
 
       <div className="flex flex-col overflow-y-auto px-2 py-3">
-        {!collapsed ? <SectionLabel label="Inbox" /> : null}
+        {/* {!collapsed ? <SectionLabel label="Inbox" /> : null} */}
         {SECTIONS.map((item) => (
           <SidebarItemBtn
             key={item.id}

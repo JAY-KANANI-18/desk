@@ -215,7 +215,7 @@ export function ContactNameRow({
           }}
           aria-label="Edit contact name"
         >
-          <span className="block truncate text-[15px] font-semibold leading-tight text-[#1c2030]">
+          <span className="block truncate text-[15px] font-semibold leading-tight text-gray-950">
             {displayName}
           </span>
         </button>

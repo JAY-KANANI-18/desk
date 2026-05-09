@@ -52,15 +52,10 @@ export function ContactSidebarDesktopShell({
           width: CONTACT_SIDEBAR_WIDTH,
         }}
       >
-        {onClose ? (
-          <div className="absolute left-3 top-3 z-20">
-            {renderCloseButton()}
-          </div>
-        ) : null}
-
         {hasHeader ? (
-          <div className={`border-b border-[#edf0f8] py-4 pr-4 ${onClose ? 'pl-16' : 'px-4'}`}>
+          <div className="flex h-16 min-h-[4rem] shrink-0 items-center justify-between gap-3 border-b border-[#e7ebf3] bg-white px-5">
             <div className="min-w-0">{headerContent}</div>
+            {renderCloseButton()}
           </div>
         ) : null}
 

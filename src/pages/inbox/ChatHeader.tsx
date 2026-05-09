@@ -189,9 +189,9 @@ export function ChatHeader({
   ];
 
   return (
-    <div className="flex min-h-[4.25rem] shrink-0 flex-col gap-0.5 border-b border-gray-200 bg-white px-2 py-1 sm:px-4 md:min-h-[3.75rem] md:flex-row md:flex-wrap md:items-center md:gap-2 md:px-6 md:py-2.5">
+    <div className="flex min-h-[4.25rem] shrink-0 flex-col gap-0.5 border-b border-[#e7ebf3] bg-white px-2 py-1 sm:px-4 md:h-16 md:min-h-[4rem] md:flex-row md:flex-nowrap md:items-center md:gap-3 md:px-5 md:py-0">
       <div className="flex w-full min-w-0 items-center gap-1 sm:gap-2 md:contents">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3 md:gap-3.5">
           {onBack ? (
             <BackButton ariaLabel="Back to inbox" onClick={onBack}  size="sm"/>
           ) : null}
@@ -278,7 +278,7 @@ export function ChatHeader({
               className={`${onOpenContactDetails ? "hidden md:flex" : "flex"} min-w-0 flex-col gap-0`}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <h3 className="truncate text-[15px] font-semibold leading-tight text-gray-900 sm:text-base">
+                <h3 className="truncate text-[15px] font-semibold leading-tight text-gray-950 sm:text-base md:text-[17px]">
                   {contactName}
                 </h3>
                 <AiConversationBadges
@@ -293,14 +293,14 @@ export function ChatHeader({
                 }}
                 fallbackLabel={fallbackLifecycleName || undefined}
                 variant="inline"
-                className="mt-0.5 hidden md:block"
+                className="mt-0.5 hidden md:block text-gray-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex min-w-0 items-center gap-1 md:ml-auto md:w-auto md:flex-wrap md:justify-end md:gap-2">
-          <div className="hidden md:block">
+        <div className="flex min-w-0 items-center gap-1 md:ml-auto md:w-auto md:flex-nowrap md:justify-end md:gap-2">
+          <div className="hidden max-w-[13.5rem] md:block">
             <AssigneeSelectMenu
               value={assignee?.id ?? null}
               selectedUser={assignee}
@@ -311,6 +311,7 @@ export function ChatHeader({
               variant="toolbar"
               fullWidth
               searchable
+              triggerClassName="max-w-[13.5rem]"
             />
           </div>
 
@@ -367,6 +368,7 @@ export function ChatHeader({
                 onClick={() => void handleStatusAction("open")}
                 variant="secondary"
                 leftIcon={<LockOpen size={16} />}
+                className="border-gray-300 bg-white text-gray-700 shadow-sm"
               >
                 Open
               </Button>
@@ -376,6 +378,7 @@ export function ChatHeader({
                 onClick={() => void handleStatusAction("closed")}
                 variant="secondary"
                 leftIcon={<CheckCircle2 size={16} />}
+                className="border-gray-300 bg-white text-gray-700 shadow-sm"
               >
                 Close
               </Button>

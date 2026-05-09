@@ -520,7 +520,7 @@ export function ContactSidebarHybrid({
   const desktopHeaderContent =
     desktopEyebrow || desktopTitle ? (
       <div className="flex min-h-[26px] items-center">
-        <h2 className="truncate text-[14px] font-semibold text-[#1c2030]">
+        <h2 className="truncate text-[15px] font-semibold text-gray-950">
           {desktopTitle || desktopEyebrow}
         </h2>
       </div>
@@ -544,7 +544,7 @@ export function ContactSidebarHybrid({
 
   const loadedBody = contact ? (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-white">
-      <div className="relative px-4 pt-5 pb-4">
+      <div className="relative px-5 pb-4 pt-5">
         {flashSaved ? (
           <div className="absolute top-3 right-4 flex items-center gap-1 px-2 py-1 bg-emerald-50 border border-emerald-100 rounded-lg animate-pulse">
             <CheckCircle2 size={10} className="text-emerald-500" />
@@ -564,7 +564,7 @@ export function ContactSidebarHybrid({
             </div>
             <div className="min-w-0 flex-1">
               {isEditingName ? (
-                <p className="truncate text-[15px] font-semibold leading-tight text-[#1c2030]">
+                <p className="truncate text-[15px] font-semibold leading-tight text-gray-950">
                   {contactName(contact)}
                 </p>
               ) : (
@@ -578,7 +578,7 @@ export function ContactSidebarHybrid({
                 />
               )}
               <div className="group/row mt-0.5 flex items-center gap-1.5">
-                <p className="truncate text-[11px] text-[#4b5563]">
+                <p className="truncate text-[11px] font-medium text-gray-500">
                   ID: {contactIdentifier}
                 </p>
                 {contactIdentifier ? (
@@ -720,9 +720,9 @@ export function ContactSidebarHybrid({
         </div>
       ) : null}
 
-      <div className="mx-4 border-t border-[#eef1f6]" />
+      <div className="mx-5 border-t border-[#eef1f6]" />
 
-      <div className="px-4 py-3.5 space-y-4">
+      <div className="space-y-4 px-5 py-3.5">
         <FieldRow
           {...fieldProps}
           fieldKey="email"
@@ -760,9 +760,9 @@ export function ContactSidebarHybrid({
 
       {showWorkspaceDetails ? (
         <>
-          <div className="mx-4 border-t border-[#f0f2f8]" />
+          <div className="mx-5 border-t border-[#f0f2f8]" />
 
-          <div className="px-4 py-3.5 space-y-4">
+          <div className="space-y-4 px-5 py-3.5">
             <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[#8b95a5]"><Workflow size={10} /></span>
@@ -802,13 +802,13 @@ export function ContactSidebarHybrid({
             </div>
           </div>
 
-          <div className="mx-4 border-t border-[#f0f2f8]" />
+          <div className="mx-5 border-t border-[#f0f2f8]" />
         </>
       ) : (
-        <div className="mx-4 border-t border-[#f0f2f8]" />
+        <div className="mx-5 border-t border-[#f0f2f8]" />
       )}
 
-      <div className="px-4 py-3.5">
+      <div className="px-5 py-3.5">
         <WorkspaceTagManager
           label="Tags"
           labelAppearance="sidebar"
@@ -835,8 +835,8 @@ export function ContactSidebarHybrid({
 
       {onDelete ? (
         <>
-          <div className="mx-4 border-t border-[#f0f2f8]" />
-          <div className="px-4 py-4">
+          <div className="mx-5 border-t border-[#f0f2f8]" />
+          <div className="px-5 py-4">
             <Button
               type="button"
               onClick={onDelete}
