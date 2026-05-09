@@ -228,11 +228,13 @@ export const AIPrompts = () => {
                 <div className="settings-control-card__content min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="settings-prompt-card__title text-sm font-semibold text-gray-900">{prompt.name}</p>
+                  { !prompt.isDefault && (
                     <Tag
                       label={prompt.isDefault ? 'Default' : 'Custom'}
                       bgColor={prompt.isDefault ? 'gray' : 'primary'}
                       size="sm"
                     />
+                  )}
                   </div>
                   <p className="settings-prompt-card__description mt-1 break-words text-sm leading-5 text-gray-500">
                     {prompt.description ?? prompt.prompt}

@@ -75,7 +75,7 @@ export const workspaceSettingsConfig: SettingsModuleConfig = {
         {
           id: "workspace-integrations",
           label: "Integrations",
-          icon: <Link size={22} />,
+          icon: <Link size={22} weight="regular" />,
           permission: { ws: "ws:channels:manage" },
           to: "/workspace/settings/integrations",
         },

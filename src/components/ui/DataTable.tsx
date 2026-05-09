@@ -392,7 +392,7 @@ export function DataTable<T, SortField extends string = string>({
       ) : (
         <>
           {!isMobileLayout ? (
-            <div className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain">
+            <div className="min-h-0 min-w-0 flex-1 overflow-auto">
               <table className="w-full" style={{ minWidth: minTableWidth }}>
                 <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
                   <tr>

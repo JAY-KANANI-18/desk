@@ -773,11 +773,7 @@ export const Lifecycle = () => {
             <div className="settings-control-card__content min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-semibold text-gray-900">Show Lifecycle Stages</p>
-                <Tag
-                  label={enabled ? 'Enabled' : 'Disabled'}
-                  bgColor={enabled ? 'success' : 'gray'}
-                  size="sm"
-                />
+               
               </div>
               <p className="settings-control-card__description mt-1 text-sm leading-5 text-gray-500">
                 Display Lifecycle Stages in Inbox and Contacts. Disabling only hides the stages - your contact data remains unchanged.

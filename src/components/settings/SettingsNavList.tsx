@@ -24,8 +24,10 @@ const renderNavIcon = (icon: ReactNode, isActive: boolean) => {
     return icon;
   }
 
-  return cloneElement(icon as ReactElement<{ weight?: "fill" | "regular" }>, {
-    weight: isActive ? "fill" : "regular",
+  const iconElement = icon as ReactElement<{ weight?: "fill" | "regular" }>;
+
+  return cloneElement(iconElement, {
+    weight: iconElement.props.weight ?? (isActive ? "fill" : "regular"),
   });
 };
 
