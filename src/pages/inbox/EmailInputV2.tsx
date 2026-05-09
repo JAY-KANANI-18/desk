@@ -114,6 +114,45 @@ function plainTextToHtml(text: string) {
   return escapeHtml(text).replace(/\n/g, '<br />');
 }
 
+type EmailThreadDraft = {
+  to: string;
+  cc?: string;
+  subject: string;
+  threadId?: string;
+  messageId?: string;
+  inReplyTo?: string;
+  references?: string;
+};
+
+function ensureReplySubject(subject?: string | null) {
+  const clean = subject?.trim();
+  if (!clean) return '';
+  return /^Re:/i.test(clean) ? clean : `Re: ${clean}`;
+}
+
+function buildThreadDraftFromMessage(
+  message: { direction?: string; subject?: string; metadata?: Record<string, any> },
+  fallbackTo: string,
+): EmailThreadDraft {
+  const email = message.metadata?.email ?? {};
+  const messageId = email.messageId ?? message.metadata?.messageId;
+  const references = email.references ?? message.metadata?.references;
+  const to =
+    message.direction === 'incoming'
+      ? email.from ?? message.metadata?.from ?? fallbackTo
+      : email.to ?? message.metadata?.to ?? fallbackTo;
+
+  return {
+    to,
+    cc: email.cc ?? message.metadata?.cc,
+    subject: ensureReplySubject(email.subject ?? message.subject),
+    threadId: email.threadId,
+    messageId,
+    inReplyTo: messageId,
+    references: [references, messageId].filter(Boolean).join(' ').trim() || undefined,
+  };
+}
+
 export function EmailInput({
   onChannelChange,
   onSendMessage,
@@ -124,7 +163,7 @@ export function EmailInput({
   onClearReplyContext,
 }: SharedInputProps) {
   const isMobile = useIsMobile();
-  const { uploadFile, channels, selectedConversation, selectedChannel, selectedContact } = useInbox();
+  const { uploadFile, channels, selectedConversation, selectedChannel, selectedContact, timeline } = useInbox();
   const { workspaceUsers } = useWorkspace();
 
   const emailReply = replyContext?.type === 'email' ? replyContext.emailReply : null;
@@ -250,6 +289,33 @@ export function EmailInput({
     () => (snippetQuery === null ? [] : filterSnippets(snippets, snippetQuery)),
     [snippetQuery, snippets],
   );
+  const latestEmailThread = useMemo<EmailThreadDraft | null>(() => {
+    const fallbackTo = selectedConversation?.contact?.email ?? '';
+    const latestEmailItem = [...(timeline ?? [])]
+      .reverse()
+      .find((item) => {
+        const message = item.type === 'message' ? item.message : null;
+        return (
+          message?.channelType === 'email' ||
+          Boolean(message?.metadata?.email) ||
+          Boolean(message?.metadata?.messageId)
+        );
+      });
+
+    return latestEmailItem?.message
+      ? buildThreadDraftFromMessage(latestEmailItem.message, fallbackTo)
+      : null;
+  }, [selectedConversation?.contact?.email, timeline]);
+  const activeEmailReply = emailReply ?? latestEmailThread;
+  const activeEmailReplyKey = activeEmailReply
+    ? [
+        emailReply ? 'explicit' : 'latest',
+        activeEmailReply.to,
+        activeEmailReply.subject,
+        activeEmailReply.messageId,
+        activeEmailReply.references,
+      ].join('|')
+    : `empty:${selectedConversation?.id ?? ''}`;
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -268,21 +334,6 @@ export function EmailInput({
   }, [aiComposer, aiMenu, emojiMenu]);
 
   useEffect(() => {
-    if (emailReply) {
-      setTo(emailReply.to ?? '');
-      setCc(emailReply.cc ?? '');
-      setSubject(emailReply.subject ?? '');
-      setShowCc(Boolean(emailReply.cc));
-    }
-  }, [emailReply]);
-
-  useEffect(() => {
-    setTo(selectedConversation?.contact?.email ?? '');
-    setCc('');
-    setBcc('');
-    setSubject('');
-    setShowCc(false);
-    setShowBcc(false);
     setAttachedFiles([]);
     setTrigger(null);
     setSelectedMentions([]);
@@ -291,6 +342,15 @@ export function EmailInput({
     if (editorRef.current) editorRef.current.innerHTML = '';
     onClearReplyContext?.();
   }, [selectedConversation?.id]);
+
+  useEffect(() => {
+    setTo(activeEmailReply?.to ?? selectedConversation?.contact?.email ?? '');
+    setCc(activeEmailReply?.cc ?? '');
+    setBcc('');
+    setSubject(activeEmailReply?.subject ?? '');
+    setShowCc(Boolean(activeEmailReply?.cc));
+    setShowBcc(false);
+  }, [activeEmailReplyKey, selectedConversation?.contact?.email]);
 
   useEffect(() => {
     if (isNote || availableEmailChannels.length === 0) return;
@@ -509,10 +569,11 @@ export function EmailInput({
             bcc: bcc || undefined,
             subject,
             htmlBody,
-            ...(emailReply ? {
-              threadId: emailReply.threadId,
-              messageId: emailReply.messageId,
-              inReplyTo: emailReply.messageId,
+            ...(activeEmailReply ? {
+              threadId: activeEmailReply.threadId,
+              messageId: activeEmailReply.messageId,
+              inReplyTo: activeEmailReply.inReplyTo ?? activeEmailReply.messageId,
+              references: activeEmailReply.references,
             } : {}),
           },
         },

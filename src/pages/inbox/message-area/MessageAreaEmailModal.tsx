@@ -13,7 +13,13 @@ export function MessageAreaEmailModal({
 }: MessageAreaEmailModalProps) {
   if (!message) return null;
 
-  const email = message.metadata?.email;
+  const email = {
+    subject: message.metadata?.email?.subject ?? message.subject,
+    htmlBody: message.metadata?.email?.htmlBody ?? message.metadata?.htmlBody,
+    from: message.metadata?.email?.from ?? message.metadata?.from,
+    to: message.metadata?.email?.to ?? message.metadata?.to,
+    cc: message.metadata?.email?.cc ?? message.metadata?.cc,
+  };
   const metaRows = [
     { label: "From", value: email?.from },
     { label: "To", value: email?.to },

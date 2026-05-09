@@ -53,6 +53,7 @@ export function MessageBubble({
   isExpanded,
   onToggleExpand,
   onOpenEmailModal,
+  onReplyEmail,
   previewLength,
   searchTerm,
   displayTime,
@@ -69,6 +70,7 @@ export function MessageBubble({
   isExpanded: boolean;
   onToggleExpand: () => void;
   onOpenEmailModal: () => void;
+  onReplyEmail?: () => void;
   previewLength: number;
   searchTerm?: string;
   displayTime: string;
@@ -85,6 +87,7 @@ export function MessageBubble({
   const hasText = !!rawText.trim();
   const needsExpand = rawText.length > previewLength;
   const quoted = msg.metadata?.quotedMessage;
+  const emailSubject = msg.metadata?.email?.subject ?? msg.subject;
   const bubbleShapeClass = getBubbleShapeClass(isOutgoing, groupPosition);
   const bubbleEnterClass = animateIn
     ? `message-bubble-enter ${
@@ -333,14 +336,14 @@ export function MessageBubble({
           data-message-direction={messageDirection}
           className={`relative z-10 overflow-hidden shadow-sm ${bubbleColor} ${bubbleShapeClass} max-w-full`}
         >
-          {msg.metadata?.email?.subject && (
+          {emailSubject && (
             <div
               className={`flex items-center gap-1.5 px-3 pt-2.5 pb-1.5 border-b ${isOutgoing ? "border-white/10" : "border-gray-100"}`}
             >
               <Mail size={11} className="flex-shrink-0 opacity-50" />
               <TruncatedText
                 as="span"
-                text={msg.metadata.email.subject}
+                text={emailSubject}
                 maxLines={1}
                 className={`max-w-[240px] text-xs font-semibold ${isOutgoing ? "text-white/90" : "text-gray-700"}`}
               />
@@ -392,6 +395,7 @@ export function MessageBubble({
               iconOnly
               leftIcon={<Reply size={11} />}
               aria-label="Reply to email"
+              onClick={onReplyEmail}
             />
             <span className="ml-auto">
               {renderMeta(

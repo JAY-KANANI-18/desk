@@ -108,6 +108,7 @@ export interface Message {
     | "call_event"
     | "status";
   text?: string;
+  subject?: string;
   author?:
     | string
     | {
@@ -131,7 +132,15 @@ export interface Message {
       cc?: string;
       messageId?: string;
       threadId?: string;
+      inReplyTo?: string;
+      references?: string;
     };
+    htmlBody?: string;
+    from?: string;
+    to?: string;
+    cc?: string;
+    messageId?: string;
+    references?: string;
     whatsapp?: {
       templateName?: string;
       headerType?: "image" | "video" | "document" | "text";
@@ -181,11 +190,13 @@ export interface ReplyContext {
     attachmentType?: "image" | "video" | "audio" | "file";
     attachmentUrl?: string;
   };
-  emailReply?: {
+    emailReply?: {
     to: string;
     subject: string;
     threadId?: string;
     messageId?: string;
+    inReplyTo?: string;
+    references?: string;
     cc?: string;
   };
 }

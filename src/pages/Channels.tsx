@@ -93,8 +93,8 @@ const ConnectedChannelsView = ({
   );
 
   return (
-    <div className="mobile-borderless min-h-0 flex-1 overflow-y-auto bg-white">
-      <div className="px-4 py-4 md:px-6">
+    <div className="mobile-borderless flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
         {showDesktopChrome ? (
           <>
             <div className="hidden items-start gap-3 md:flex">
@@ -223,6 +223,18 @@ const ConnectedChannelsView = ({
           </div>
         )}
 
+        {isMobile ? (
+          <ListPagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            limit={pagination.limit}
+            itemLabel="channels"
+            onPageChange={onPageChange}
+          />
+        ) : null}
+      </div>
+      {!isMobile ? (
         <ListPagination
           page={pagination.page}
           totalPages={pagination.totalPages}
@@ -231,7 +243,7 @@ const ConnectedChannelsView = ({
           itemLabel="channels"
           onPageChange={onPageChange}
         />
-      </div>
+      ) : null}
     </div>
   );
 };
@@ -354,7 +366,7 @@ export const Channels = () => {
       title="Connected Channels"
       toolbar={desktopToolbar}
       className="bg-white"
-      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
+      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-0 py-0"
     >
       <ConnectedChannelsView
         channels={channels}

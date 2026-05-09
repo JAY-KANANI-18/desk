@@ -11,6 +11,7 @@ import { highlightText, formatMsgTime, getFailedMessageCopy } from "./helpers";
 import { LegacyEventRow } from "./LegacyEventRow";
 import { MessageBubble } from "./MessageBubble";
 import { QuickActions } from "./QuickActions";
+import { buildEmailReplyContext } from "./emailReply";
 import type {
   Message,
   MessageGroupPosition,
@@ -257,6 +258,9 @@ export function TimelineItemRow({
             }))
           }
           onOpenEmailModal={() => onOpenEmailModal(msg)}
+          onReplyEmail={
+            isEmail && onReply ? () => onReply(buildEmailReplyContext(msg)) : undefined
+          }
           previewLength={previewLength}
           searchTerm={msgSearch || undefined}
           displayTime={displayTime}

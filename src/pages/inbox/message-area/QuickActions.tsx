@@ -12,6 +12,7 @@ import {
 import { Button } from "../../../components/ui/Button";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import type { Message, ReplyContext } from "./types";
+import { buildEmailReplyContext } from "./emailReply";
 
 type ActionDef = {
   id: string;
@@ -99,18 +100,7 @@ export function QuickActions({
     }
     if (id === "reply") {
       if (channel === "email") {
-        onReply({
-          type: "email",
-          emailReply: {
-            to: msg.metadata?.email?.from ?? msg.metadata?.email?.to ?? "",
-            subject: msg.metadata?.email?.subject
-              ? `Re: ${msg.metadata.email.subject.replace(/^Re:\\s*/i, "")}`
-              : "Re:",
-            threadId: msg.metadata?.email?.threadId,
-            messageId: msg.metadata?.email?.messageId,
-            cc: msg.metadata?.email?.cc,
-          },
-        });
+        onReply(buildEmailReplyContext(msg));
       } else {
         const atts = msg.messageAttachments ?? msg.attachments ?? [];
         const firstAtt = atts[0];
