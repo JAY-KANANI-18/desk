@@ -38,7 +38,7 @@ export function PageLayout({
   const isMobile = useIsMobile();
   const hasHeaderControls = Boolean(actions) || Boolean(toolbar);
   const rootClassName = [
-    "flex h-full min-h-0 flex-col bg-[var(--color-gray-50)]",
+    "app-page-layout flex h-full min-h-0 flex-col bg-[var(--color-gray-50)]",
     className,
   ]
     .filter(Boolean)
@@ -63,8 +63,8 @@ export function PageLayout({
   }
 
   const pageMain = (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]">
+    <div className="app-page-panel flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="app-page-header bg-white px-[var(--spacing-lg)] py-[var(--spacing-md)]">
         {breadcrumbs.length > 0 ? (
           <div className="mb-[var(--spacing-md)]">
             <Breadcrumb items={breadcrumbs} />
@@ -112,7 +112,9 @@ export function PageLayout({
         ) : null}
       </div>
 
-      <div className={resolvedContentClassName}>{children}</div>
+      <div className={`app-page-content ${resolvedContentClassName}`}>
+        {children}
+      </div>
     </div>
   );
 

@@ -11,12 +11,12 @@ import { Tag } from "../ui/Tag";
 import type { SettingsNavItem, SettingsNavSection } from "./navigation";
 
 const navLinkClassName = (isActive: boolean, depth: number) =>
-  `group flex  w-full items-center justify-between rounded-2xl px-2 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
+  `group flex w-full items-center justify-between rounded-2xl px-2 py-3.5 text-[15px] transition-colors md:min-h-0 md:rounded-xl md:px-3 md:py-2.5 md:text-sm ${
     depth > 0 ? "pl-11 md:pl-10" : ""
   } ${
     isActive
-      ? "bg-slate-100 text-slate-900 "
-      : "text-slate-900 md:text-slate-700 hover:bg-slate-50 hover:text-slate-900 "
+      ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+      : "text-slate-900 md:text-slate-700 hover:bg-slate-50 hover:text-slate-900"
   }`;
 
 const renderNavIcon = (icon: ReactNode, isActive: boolean) => {
@@ -162,14 +162,14 @@ const SidebarItem = ({
             {item.icon && (
               <span
                 className={`flex h-6 w-6 items-center justify-center md:h-5 md:w-5 ${
-                  isActive ? "text-slate-900  " : "text-slate-600"
+                  isActive ? "text-[var(--color-primary)]" : "text-slate-500"
                 }`}
               >
                 {renderNavIcon(item.icon, isActive)}
               </span>
             )}
 
-            <p className={`truncate ${ isActive ? "font-black" : "font-normal"}`}>{item.label}</p>
+            <p className={`truncate ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</p>
           </div>
 
           <div className="ml-3 flex items-center gap-2">
@@ -177,7 +177,7 @@ const SidebarItem = ({
               <Tag label={item.badge} bgColor="primary" size="sm" />
             )}
             <ChevronRight
-              className={isActive ? "text-slate-600" : "text-slate-900"}
+              className={isActive ? "text-[var(--color-primary)]" : "text-slate-400"}
               size={18}
             />
           </div>

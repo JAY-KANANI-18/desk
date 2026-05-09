@@ -44,7 +44,7 @@ export function ContactSidebarDesktopShell({
   return (
     <aside className={wrapperClassName}>
       <div
-        className={`relative flex h-full flex-col overflow-hidden border-l bg-white transition-[width,box-shadow] duration-300 ease-out ${
+        className={`contact-sidebar-surface relative flex h-full flex-col overflow-hidden border-l bg-white transition-[width,box-shadow] duration-300 ease-out ${
           variant === 'floating' ? 'shadow-[-18px_0_48px_rgba(15,23,42,0.12)]' : ''
         }`}
         style={{

@@ -253,13 +253,13 @@ export function SubSidebar() {
 
   return (
     <div
-      className={`flex flex-shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white transition-all duration-200 ${
+      className={`app-secondary-sidebar inbox-sub-sidebar flex flex-shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white transition-all duration-200 ${
         collapsed ? "w-14" : "w-48"
       }`}
     >
       
       <div
-        className={`flex h-14 items-center   ${
+        className={`flex h-16 items-center border-b border-gray-100 ${
           collapsed ? "justify-center" : "justify-between px-5"
         }`}
       >

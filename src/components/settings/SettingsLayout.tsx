@@ -87,12 +87,12 @@ export const SettingsLayout = ({
   };
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-white">
+    <div className="settings-workspace flex h-full min-h-0 overflow-hidden bg-white">
       <div className="hidden md:flex md:flex-shrink-0">
         <SettingsSidebar sections={visibleSections} title={config.title} />
       </div>
 
-      <div className="relative flex min-w-0 flex-1 overflow-hidden bg-white">
+      <div className="settings-main-panel relative flex min-w-0 flex-1 overflow-hidden bg-white">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="sticky top-0 z-10 bg-white md:hidden">
             <div className="flex items-center gap-3 px-4 py-3">

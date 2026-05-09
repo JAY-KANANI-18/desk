@@ -145,11 +145,13 @@ export function InboxPage() {
     convList.length === 0;
 
   return (
-    <div className="flex h-full min-h-0 bg-slate-50 md:bg-white">
-      <div className={`${showConversationView && isMobile ? "hidden" : "flex"} min-h-0 w-full md:w-auto`}>
-        <div className="hidden md:flex">
-          <SubSidebar />
-        </div>
+    <div className="inbox-workspace flex h-full min-h-0 bg-slate-50 md:bg-white">
+      <div className="hidden md:flex md:flex-shrink-0">
+        <SubSidebar />
+      </div>
+
+      <div className="inbox-main-panel flex min-h-0 min-w-0 flex-1 overflow-hidden bg-white">
+      <div className={`inbox-conversation-panel ${showConversationView && isMobile ? "hidden" : "flex"} min-h-0 w-full md:w-auto md:flex-shrink-0`}>
         <ConversationList
           onSelectConversation={handleSelectConversation}
           onOpenCategories={() => setShowMobileCategories(true)}
@@ -157,7 +159,7 @@ export function InboxPage() {
       </div>
 
       {showConversationView ? (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50 md:bg-white">
+        <div className="inbox-chat-panel flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50 md:bg-white">
           <ChatHeader
             selectedConversation={selectedConversation as any}
             snoozedUntil={snoozedUntil}
@@ -207,7 +209,7 @@ export function InboxPage() {
 
             {!isMobile ? (
               <div
-                className="hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out xl:flex"
+                className="inbox-contact-panel-shell hidden min-h-0 flex-shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out xl:flex"
                 style={{
                   width: selectedConversation?.id && showDesktopContact ? CONTACT_SIDEBAR_WIDTH : 0,
                   opacity: selectedConversation?.id && showDesktopContact ? 1 : 0,
@@ -223,7 +225,7 @@ export function InboxPage() {
                     onSelectConversation={(conversation) => selectConversation(conversation as any)}
                     desktopTitle="Contact details"
                     onDesktopClose={() => setShowDesktopContact(false)}
-                    desktopContainerClassName="flex h-full"
+                    desktopContainerClassName="inbox-contact-sidebar flex h-full"
                   />
                 ) : null}
               </div>
@@ -247,6 +249,7 @@ export function InboxPage() {
           <p className="text-gray-500">Select a conversation to start messaging</p>
         </div>
       )}
+      </div>
 
       <MobileCategoryDrawer
         open={showMobileCategories}

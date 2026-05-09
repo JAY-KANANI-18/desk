@@ -27,15 +27,19 @@ export const SettingsSidebar = ({
   };
 
   return (
-    <aside className="flex h-full w-72 flex-col bg-white border-r border-gray-200">
+    <aside className="app-secondary-sidebar settings-sidebar flex h-full w-72 flex-col border-r border-gray-200 bg-white">
       {headerContent ? (
         <div className="border-b border-slate-100 px-4 py-5">{headerContent}</div>
-      ) : null}
+      ) : (
+        <div className="flex h-16 items-center border-b border-slate-100 px-5">
+          <h2 className="truncate text-sm font-bold text-slate-900">{title}</h2>
+        </div>
+      )}
 
       <nav
         ref={navRef}
         aria-label={title}
-        className="flex-1 overflow-y-auto px-4 py-6"
+        className="flex-1 overflow-y-auto px-3 py-4"
         onKeyDown={handleKeyNavigation}
       >
         <SettingsNavList onNavigate={onNavigate} sections={sections} />

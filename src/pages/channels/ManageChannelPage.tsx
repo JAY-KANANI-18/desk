@@ -865,10 +865,10 @@ export const ManageChannelPage = () => {
           />
         </div>
       }
-      className="bg-white"
-      contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
+      className="channel-manage-layout bg-white"
+      contentClassName="channel-manage-content min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
     >
-      <div className="mobile-borderless flex h-full min-h-0 flex-col bg-white">
+      <div className="channel-manage-workspace mobile-borderless flex h-full min-h-0 flex-col bg-white">
         {isMobile ? (
           <div className="border-b border-slate-200 bg-white px-4 py-3">
             <div className="flex items-center gap-3">
@@ -899,8 +899,8 @@ export const ManageChannelPage = () => {
           </div>
         ) : null}
 
-        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-          <div className="hidden md:block md:flex-shrink-0">
+        <div className="channel-manage-body flex min-h-0 flex-1 flex-col md:flex-row">
+          <div className="channel-manage-sidebar hidden md:block md:flex-shrink-0">
             <SettingsSidebar
               footerContent={renderSidebarFooter()}
               headerContent={renderSidebarHeader()}
@@ -909,7 +909,7 @@ export const ManageChannelPage = () => {
             />
           </div>
 
-          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+          <main className="channel-manage-main-panel min-h-0 min-w-0 flex-1 overflow-y-auto">
             <div className="flex min-h-full w-full max-w-6xl flex-col px-[var(--spacing-md)] pb-24 pt-[var(--spacing-md)] md:mx-0 md:px-[var(--spacing-lg)] md:pb-[var(--spacing-lg)] md:pt-[var(--spacing-lg)]">
               {isMobile && !sectionId ? (
                 <div className="">
