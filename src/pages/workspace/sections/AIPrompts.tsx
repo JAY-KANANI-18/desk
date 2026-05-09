@@ -195,7 +195,7 @@ export const AIPrompts = () => {
       <section className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
         <div className="settings-page-intro">
           <p className="settings-page-intro__copy">
-            Configure rewrite prompts for the inbox composer. Default prompts can be enabled or disabled, and custom prompts support full CRUD.
+            Create quick AI actions your team can use to rewrite messages in the inbox.
           </p>
           <div className="settings-page-actions">
             <Button
@@ -317,7 +317,7 @@ export const AIPrompts = () => {
           isOpen={showEditor}
           onClose={closeEditor}
           title={editPrompt ? 'Edit AI prompt' : 'New AI prompt'}
-          subtitle="Create a reusable rewrite action for the inbox composer."
+          subtitle="Create a rewrite option your team can reuse."
           size="sm"
           footer={editorFooter}
         >

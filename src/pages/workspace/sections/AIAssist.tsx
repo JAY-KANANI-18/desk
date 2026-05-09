@@ -73,7 +73,7 @@ export const AIAssist = () => {
       <section className="settings-data-header">
         <div className="settings-page-intro">
           <p className="settings-page-intro__copy">
-            Configure the AI reply action and the prompt used by the inbox composer.
+            Choose how AI helps your team write better replies in the inbox.
           </p>
         </div>
       </section>
@@ -87,7 +87,7 @@ export const AIAssist = () => {
             <div className="min-w-0">
               <h2 className="settings-section-title">Enable AI Assist</h2>
               <p className="settings-section-description settings-control-card__description">
-                Show the AI Assist reply action in the inbox composer.
+                Show an AI Assist option while your team writes replies.
               </p>
             </div>
           </div>
@@ -106,7 +106,7 @@ export const AIAssist = () => {
         <div className="mb-3">
           <p className="text-sm font-semibold text-gray-900">AI Assist Prompt</p>
           <p className="mt-1 text-sm leading-5 text-gray-500">
-            This prompt is used only for the AI Assist reply action. Summary prompt is internal and not user-editable.
+            Tell AI how it should write replies for your team.
           </p>
         </div>
         <TextareaInput

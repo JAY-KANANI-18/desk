@@ -150,12 +150,12 @@ export const Integrations = () => {
       <section className="settings-data-header">
         <div className="settings-page-intro">
           <p className="settings-page-intro__copy">
-            Integrations extend your workspace with advertising and analytics capabilities. They are separate
-            from messaging channels - use{" "}
+            Connect other tools your team uses, like ads and reporting. For WhatsApp, SMS, email, and similar,
+            go to{" "}
             <a href="/channels" className="text-[var(--color-primary)] hover:underline">
               Channels
-            </a>{" "}
-            for WhatsApp, SMS, email, and similar.
+            </a>
+            .
           </p>
         </div>
       </section>
@@ -184,8 +184,7 @@ export const Integrations = () => {
                   {API_ROOT}/api/integrations/meta-ads/webhook/{int.routingChannelId}
                 </code>
                 <p className="text-gray-500">
-                  Point Meta lead ads or Conversions API forwarding here so clicks and leads create inbox
-                  activity and workflow triggers.
+                  Use this URL in Meta so new leads can appear in AxoDesk automatically.
                 </p>
               </div>
             )}

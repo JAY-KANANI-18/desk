@@ -409,7 +409,7 @@ export const Snippets = () => {
         <div className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
           <div className="settings-page-intro">
             <p className="settings-page-intro__copy">
-              Create canned responses to use in Inbox, broadcasts, and workflows.
+              Save replies your team sends often, so they can answer faster without retyping.
             </p>
             <div className="settings-page-actions">
               <Button onClick={openCreate} leftIcon={<Plus size={16} />}>
@@ -500,7 +500,7 @@ export const Snippets = () => {
         isOpen={modalOpen}
         onClose={closeModal}
         title={editingSnippet ? 'Edit snippet' : 'Create snippet'}
-        subtitle="Snippets let you quickly send saved responses with text and files."
+        subtitle="Save a message your team can reuse later."
         size="md"
         secondaryAction={
           <Button onClick={closeModal} variant="secondary" disabled={saving || uploadingFile}>
@@ -538,7 +538,7 @@ export const Snippets = () => {
             value={form.shortcut}
             onChange={(event) => setForm((current) => ({ ...current, shortcut: event.target.value }))}
             placeholder="greeting"
-            hint='Type "/" followed by this ID in the inbox composer.'
+            hint='Type "/" followed by this ID while writing a reply.'
             required
           />
 
@@ -625,7 +625,7 @@ export const Snippets = () => {
         title="Delete snippet"
         body={
           <div className="space-y-2">
-            <p>This snippet will no longer appear in composer shortcut suggestions.</p>
+            <p>This snippet will no longer appear in reply shortcuts.</p>
             {deleteError ? <p className="font-medium text-red-600">{deleteError}</p> : null}
           </div>
         }

@@ -566,7 +566,7 @@ export const WorkspaceUsers = () => {
         <div className="settings-data-header">
           <div className="settings-page-intro">
             <p className="settings-page-intro__copy">
-              Invite teammates, update workspace roles, and manage member access.
+              Invite people to this workspace and choose what each teammate can access.
             </p>
             <div className="settings-page-actions">
               <WsGuard permission="ws:settings:manage">

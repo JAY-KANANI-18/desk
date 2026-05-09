@@ -237,7 +237,7 @@ export const Tags = () => {
       <div className="settings-data-panel">
         <div className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
           <div className="settings-page-intro">
-            <p className="settings-page-intro__copy">Organize and filter conversations with tags.</p>
+            <p className="settings-page-intro__copy">Create labels that help your team find and group conversations quickly.</p>
             <div className="settings-page-actions">
               <Button
                 onClick={openCreateTag}

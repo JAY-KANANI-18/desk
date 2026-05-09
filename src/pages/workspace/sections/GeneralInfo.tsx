@@ -68,7 +68,7 @@ export const WorkspaceGeneralInfo = () => {
       <section className="settings-data-header">
         <div className="settings-page-intro">
           <p className="settings-page-intro__copy">
-            Update your workspace identity and regional defaults.
+            Change the name your team sees and choose the right timezone for this workspace.
           </p>
           <div className="settings-page-actions">
             <Button

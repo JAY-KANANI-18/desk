@@ -762,7 +762,7 @@ export const Lifecycle = () => {
         <section className="settings-data-header">
           <div className="settings-page-intro">
             <p className="settings-page-intro__copy">
-              Control the lifecycle stages shown in Inbox and Contacts.
+              Set the stages your team uses to track each contact from new lead to closed.
             </p>
           </div>
         </section>
@@ -776,7 +776,7 @@ export const Lifecycle = () => {
                
               </div>
               <p className="settings-control-card__description mt-1 text-sm leading-5 text-gray-500">
-                Display Lifecycle Stages in Inbox and Contacts. Disabling only hides the stages - your contact data remains unchanged.
+                Show these stages in Inbox and Contacts. Turning this off only hides the stages; your contact details stay saved.
               </p>
             </div>
             <div className="settings-toggle-pill">
@@ -793,14 +793,14 @@ export const Lifecycle = () => {
 
         {/* Section heading */}
         <h2 className="settings-section-kicker">
-          Configure Stages
+          Stages
         </h2>
 
         {/* Panels */}
         <div className="settings-card-grid">
           <StagePanel
             title="Lifecycle Stages"
-            subtitle="Track Contacts through key milestones. A default inbox is created for each lifecycle stage."
+            subtitle="Track active contacts through the steps your team follows."
             icon="🟡"
             className=""
             stages={lifecycleStages}
@@ -817,7 +817,7 @@ export const Lifecycle = () => {
           />
           <StagePanel
             title="Lost Stages"
-            subtitle="Track where Contacts go after exiting the pipeline. No inbox is created for lost stages."
+            subtitle="Keep clear reasons for contacts that do not move forward."
             icon="😞"
             className=""
             stages={lostStages}
