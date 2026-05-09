@@ -140,27 +140,31 @@ export const Integrations = () => {
   if (error && items.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
-    <div className="space-y-6">
+    <div className="settings-page-stack">
       {error && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
-      <p className="text-sm text-gray-600 max-w-2xl">
-        Integrations extend your workspace with advertising and analytics capabilities. They are separate
-        from messaging channels — use{" "}
-        <a href="/channels" className="text-[var(--color-primary)] hover:underline">
-          Channels
-        </a>{" "}
-        for WhatsApp, SMS, email, and similar.
-      </p>
+      <section className="settings-data-header">
+        <div className="settings-page-intro">
+          <p className="settings-page-intro__copy">
+            Integrations extend your workspace with advertising and analytics capabilities. They are separate
+            from messaging channels - use{" "}
+            <a href="/channels" className="text-[var(--color-primary)] hover:underline">
+              Channels
+            </a>{" "}
+            for WhatsApp, SMS, email, and similar.
+          </p>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="settings-card-grid">
         {items.map((int) => (
           <div
             key={int.id}
-            className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow"
+            className="settings-row-card flex flex-col gap-4"
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl border border-gray-100 flex-shrink-0">

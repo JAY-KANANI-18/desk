@@ -561,33 +561,46 @@ export const WorkspaceUsers = () => {
     mobileActionsUser ?? displayMobileActionsUser;
 
   return (
-    <div>
-      <div className="mb-4 hidden items-center justify-between md:flex">
-        <div className="w-full max-w-xs">
-          <SearchInput
-            appearance="toolbar"
-            value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Search members..."
-            onClear={() => setSearchDraft("")}
-            clearAriaLabel="Clear member search"
-            aria-label="Search members"
-          />
+    <div className="settings-page-stack">
+      <div className="hidden md:block">
+        <div className="settings-data-header">
+          <div className="settings-page-intro">
+            <p className="settings-page-intro__copy">
+              Invite teammates, update workspace roles, and manage member access.
+            </p>
+            <div className="settings-page-actions">
+              <WsGuard permission="ws:settings:manage">
+                <Button
+                  onClick={() => setInviteOpen(true)}
+                  leftIcon={<Plus size={16} />}
+                >
+                  Invite User
+                </Button>
+              </WsGuard>
+            </div>
+          </div>
         </div>
 
-        <WsGuard permission="ws:settings:manage">
-          <Button
-            onClick={() => setInviteOpen(true)}
-            leftIcon={<Plus size={16} />}
-          >
-            Invite User
-          </Button>
-        </WsGuard>
+        <div className="settings-toolbar-row">
+          <div className="settings-filter-row">
+            <div className="settings-filter-row__search">
+              <SearchInput
+                appearance="toolbar"
+                value={searchDraft}
+                onChange={(event) => setSearchDraft(event.target.value)}
+                placeholder="Search members..."
+                onClear={() => setSearchDraft("")}
+                clearAriaLabel="Clear member search"
+                aria-label="Search members"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="settings-list-stack">
         {loading ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+          <div className="settings-empty-panel border-dashed">
             <p className="font-medium text-gray-600">Loading users...</p>
           </div>
         ) : users.length > 0 ? (
@@ -598,7 +611,7 @@ export const WorkspaceUsers = () => {
               return (
                 <article
                   key={user.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
+                  className="settings-row-card"
                 >
                   <div className="flex min-w-0 items-start gap-3">
                     <Avatar src={user.avatarUrl} name={userName} size="sm" />
@@ -640,7 +653,7 @@ export const WorkspaceUsers = () => {
             return (
               <div
                 key={user.id}
-                className="flex items-center justify-between gap-4 rounded-[24px] border border-gray-200 p-4 transition hover:bg-gray-50"
+                className="settings-row-card flex items-center justify-between gap-4"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar src={user.avatarUrl} name={userName} size="md" />
@@ -690,7 +703,7 @@ export const WorkspaceUsers = () => {
             );
           })
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+          <div className="settings-empty-panel border-dashed">
             <p className="font-medium text-gray-600">No users found</p>
             <p className="mt-1 text-sm text-gray-500">
               Invite team members to collaborate in this workspace.

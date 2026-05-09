@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, Sparkles } from '@/components/ui/icons';
+import { Plus, Trash2, Edit2 } from '@/components/ui/icons';
 
 import { SectionError } from '../components/SectionError';
 import type { AIPrompt } from '../types';
 import { workspaceApi } from '../../../lib/workspaceApi';
 import { DataLoader } from '../../Loader';
 import { Button } from '../../../components/ui/Button';
+import { IconButton } from '../../../components/ui/button/IconButton';
 import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { CenterModal } from '../../../components/ui/Modal';
 import { Tag } from '../../../components/ui/Tag';
@@ -190,37 +191,28 @@ export const AIPrompts = () => {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-light)]0 to-blue-600 sm:h-10 sm:w-10">
-              <Sparkles size={18} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-gray-900">AI Prompts</h2>
-              <p className="mt-1 text-sm leading-5 text-gray-500">
-                These prompts are used for rewrite actions in the inbox composer. Default prompts can be enabled or disabled, and custom prompts support full CRUD.
-              </p>
-            </div>
-          </div>
-
-          {!isMobile ? (
+    <div className="settings-page-stack">
+      <section className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
+        <div className="settings-page-intro">
+          <p className="settings-page-intro__copy">
+            Configure rewrite prompts for the inbox composer. Default prompts can be enabled or disabled, and custom prompts support full CRUD.
+          </p>
+          <div className="settings-page-actions">
             <Button
               onClick={openCreate}
               leftIcon={<Plus size={16} />}
             >
               Add AI prompt
             </Button>
-          ) : null}
+          </div>
         </div>
-      </div>
+      </section>
 
       {error && <SectionError message={error} onRetry={load} />}
 
-      <div className="space-y-3">
+      <div className="settings-list-stack">
         {prompts.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50/80 px-4 py-10 text-center">
+          <div className="settings-empty-panel">
             <p className="text-sm font-semibold text-gray-900">No AI prompts yet</p>
             <p className="mt-1 text-sm text-gray-500">Create your first custom prompt to speed up inbox rewrites.</p>
           </div>
@@ -228,53 +220,66 @@ export const AIPrompts = () => {
           prompts.map((prompt) => (
             <div
               key={prompt.id}
-              className={`rounded-2xl px-4 py-4 transition-colors sm:px-5 sm:py-5 ${
-                prompt.isEnabled ? 'bg-[var(--color-primary-light)]' : 'bg-slate-50/80'
+              className={`settings-row-card settings-prompt-card ${
+                prompt.isEnabled ? 'settings-row-card--active' : ''
               }`}
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
+              <div className="settings-control-card__body flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="settings-control-card__content min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{prompt.name}</p>
+                    <p className="settings-prompt-card__title text-sm font-semibold text-gray-900">{prompt.name}</p>
                     <Tag
                       label={prompt.isDefault ? 'Default' : 'Custom'}
                       bgColor={prompt.isDefault ? 'gray' : 'primary'}
                       size="sm"
                     />
-                    <Tag
-                      label={prompt.isEnabled ? 'Enabled' : 'Disabled'}
-                      bgColor={prompt.isEnabled ? 'success' : 'gray'}
-                      size="sm"
-                    />
                   </div>
-                  <p className="mt-1 break-words text-sm leading-5 text-gray-500">{prompt.description ?? prompt.prompt}</p>
+                  <p className="settings-prompt-card__description mt-1 break-words text-sm leading-5 text-gray-500">
+                    {prompt.description ?? prompt.prompt}
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="settings-prompt-card__actions">
                   {!prompt.isDefault && (
-                    <Button
-                      onClick={() => requestDelete(prompt)}
-                      variant="danger-ghost"
-       
-                      leftIcon={<Trash2 size={15} />}
-                      fullWidth={isMobile}
-                    >
-                      Delete
-                    </Button>
+                    <div className="settings-prompt-card__buttons">
+                      {isMobile ? (
+                        <IconButton
+                          aria-label={`Delete ${prompt.name}`}
+                          icon={<Trash2 size={16} />}
+                          onClick={() => requestDelete(prompt)}
+                          variant="danger-ghost"
+                          size="md"
+                        />
+                      ) : (
+                        <Button
+                          onClick={() => requestDelete(prompt)}
+                          variant="danger-ghost"
+                          leftIcon={<Trash2 size={15} />}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                      {isMobile ? (
+                        <IconButton
+                          aria-label={`Edit ${prompt.name}`}
+                          icon={<Edit2 size={16} />}
+                          onClick={() => openEdit(prompt)}
+                          variant="secondary"
+                          size="md"
+                        />
+                      ) : (
+                        <Button
+                          onClick={() => openEdit(prompt)}
+                          variant="secondary"
+                          leftIcon={<Edit2 size={15} />}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
                   )}
-                  {!prompt.isDefault && (
-                    <Button
-                      onClick={() => openEdit(prompt)}
-                      variant="secondary"
-                  
-                      leftIcon={<Edit2 size={15} />}
-                      fullWidth={isMobile}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                  <div className="ml-auto flex items-center gap-2 rounded-full bg-white/85 px-2.5 py-1.5 sm:ml-0">
-                    <span className="text-xs font-medium text-gray-600">{prompt.isEnabled ? 'On' : 'Off'}</span>
+                  <div className="settings-toggle-pill">
+                    <span className="settings-toggle-pill__label">{prompt.isEnabled ? 'On' : 'Off'}</span>
                     <ToggleSwitch
                       checked={Boolean(prompt.isEnabled)}
                       onChange={() => void handleToggle(prompt)}

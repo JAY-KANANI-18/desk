@@ -142,7 +142,7 @@ export const SettingsLayout = ({
                 contentClassName="min-h-0 flex-1 overflow-y-auto px-0 py-0"
               >
                 <div
-                  className={`mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-6 md:px-6 md:py-8 lg:px-8 ${contentClassName}`}
+                  className={`settings-content-area mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-6 md:px-6 md:py-8 lg:px-8 ${contentClassName}`}
                 >
                   {children}
                 </div>

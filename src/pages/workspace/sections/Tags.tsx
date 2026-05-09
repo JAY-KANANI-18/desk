@@ -233,33 +233,34 @@ export const Tags = () => {
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white">
-        <div className={`${isMobile ? 'hidden' : 'px-6 py-4'} flex-shrink-0 border-b border-gray-100`}>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Conversation tags</h2>
-            <p className="mt-0.5 text-xs text-gray-500">Organize and filter conversations with tags</p>
-          </div>
-          <div className="mt-4">
-            <Button
-              onClick={openCreateTag}
-              leftIcon={<Plus size={16} />}
-            >
-              Add tag
-            </Button>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="settings-data-panel">
+        <div className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
+          <div className="settings-page-intro">
+            <p className="settings-page-intro__copy">Organize and filter conversations with tags.</p>
+            <div className="settings-page-actions">
+              <Button
+                onClick={openCreateTag}
+                leftIcon={<Plus size={16} />}
+              >
+                Add tag
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className={`${isMobile ? 'hidden' : 'px-6 py-4'} flex-shrink-0 border-b border-gray-100`}>
-          <div className="w-full md:max-w-xs">
-            <SearchInput
-              appearance="toolbar"
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder="Search tags..."
-              onClear={() => setSearchDraft('')}
-              clearAriaLabel="Clear tag search"
-            />
+        <div className={`${isMobile ? 'hidden' : 'settings-toolbar-row'}`}>
+          <div className="settings-filter-row">
+            <div className="settings-filter-row__search">
+              <SearchInput
+                appearance="toolbar"
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Search tags..."
+                onClear={() => setSearchDraft('')}
+                clearAriaLabel="Clear tag search"
+              />
+            </div>
           </div>
         </div>
 

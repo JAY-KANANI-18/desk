@@ -477,7 +477,7 @@ const StagePanel = ({
   onChange, onBlurSave, onDelete, onMenuAction, onAddNew, onCommitNew,
   getDragHandleProps, getDropZoneProps, drag,
 }: PanelProps) => (
-  <div className={`rounded-2xl border border-gray-200 overflow-visible flex flex-col ${className}`}>
+  <div className={`rounded-lg border border-gray-200 bg-white overflow-visible flex flex-col ${className}`}>
     {/* Panel header */}
     <div className="flex flex-wrap items-start gap-3 border-b border-gray-100 bg-white/60 px-4 pb-3.5 pt-4 sm:px-5">
       <span className="mt-0.5 shrink-0 text-xl">{icon}</span>
@@ -737,7 +737,7 @@ export const Lifecycle = () => {
 
   return (
     <>
-      <div className="space-y-4 px-0 py-1 sm:space-y-5 sm:p-6">
+      <div className="settings-page-stack">
 
         {/* Toast stack */}
         <div className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex flex-col gap-2 sm:inset-x-auto sm:right-4">
@@ -759,47 +759,54 @@ export const Lifecycle = () => {
           ))}
         </div>
 
-        {/* Page header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">🔄</span>
-            <h1 className="text-lg font-semibold text-gray-900">Lifecycle</h1>
-          </div>
-          <p className="text-sm leading-5 text-gray-500 sm:ml-9">
-            Track and manage Contacts through every stage of your sales process
-          </p>
-        </div>
-
-        {/* Visibility card */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800">Show Lifecycle Stages</p>
-            <p className="mt-1 text-sm leading-5 text-gray-500">
-              Display Lifecycle Stages in Inbox and Contacts. Disabling only hides the stages — your contact data remains unchanged.
+        <section className="settings-data-header">
+          <div className="settings-page-intro">
+            <p className="settings-page-intro__copy">
+              Control the lifecycle stages shown in Inbox and Contacts.
             </p>
           </div>
-          <div className="self-start sm:self-auto">
-            <ToggleSwitch
-              checked={enabled}
-              disabled={togglingVis}
-              onChange={handleToggleVisibility}
-              aria-label={enabled ? "Hide lifecycle stages" : "Show lifecycle stages"}
-            />
+        </section>
+
+        {/* Visibility card */}
+        <div className={`settings-row-card ${enabled ? 'settings-row-card--active' : ''}`}>
+          <div className="settings-control-card__body flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="settings-control-card__content min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-gray-900">Show Lifecycle Stages</p>
+                <Tag
+                  label={enabled ? 'Enabled' : 'Disabled'}
+                  bgColor={enabled ? 'success' : 'gray'}
+                  size="sm"
+                />
+              </div>
+              <p className="settings-control-card__description mt-1 text-sm leading-5 text-gray-500">
+                Display Lifecycle Stages in Inbox and Contacts. Disabling only hides the stages - your contact data remains unchanged.
+              </p>
+            </div>
+            <div className="settings-toggle-pill">
+              <span className="settings-toggle-pill__label">{togglingVis ? 'Saving' : enabled ? 'On' : 'Off'}</span>
+              <ToggleSwitch
+                checked={enabled}
+                disabled={togglingVis}
+                onChange={handleToggleVisibility}
+                aria-label={enabled ? "Hide lifecycle stages" : "Show lifecycle stages"}
+              />
+            </div>
           </div>
         </div>
 
         {/* Section heading */}
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+        <h2 className="settings-section-kicker">
           Configure Stages
         </h2>
 
         {/* Panels */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+        <div className="settings-card-grid">
           <StagePanel
             title="Lifecycle Stages"
             subtitle="Track Contacts through key milestones. A default inbox is created for each lifecycle stage."
             icon="🟡"
-            className="bg-white"
+            className=""
             stages={lifecycleStages}
             type="lifecycle"
             onChange={handleChange}
@@ -816,7 +823,7 @@ export const Lifecycle = () => {
             title="Lost Stages"
             subtitle="Track where Contacts go after exiting the pipeline. No inbox is created for lost stages."
             icon="😞"
-            className="bg-orange-50/60"
+            className=""
             stages={lostStages}
             type="lost"
             onChange={handleChange}

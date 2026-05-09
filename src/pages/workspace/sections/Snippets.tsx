@@ -404,25 +404,24 @@ export const Snippets = () => {
   if (error && snippets.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white">
-        <div className={`${isMobile ? 'hidden' : 'px-6 py-4'} flex-shrink-0 border-b border-gray-100`}>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Snippets</h2>
-            <p className="mt-0.5 text-xs text-gray-500">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="settings-data-panel">
+        <div className={`${isMobile ? 'hidden' : 'settings-data-header'}`}>
+          <div className="settings-page-intro">
+            <p className="settings-page-intro__copy">
               Create canned responses to use in Inbox, broadcasts, and workflows.
             </p>
-          </div>
-          <div className="mt-4">
-            <Button onClick={openCreate} leftIcon={<Plus size={16} />}>
-              Add snippet
-            </Button>
+            <div className="settings-page-actions">
+              <Button onClick={openCreate} leftIcon={<Plus size={16} />}>
+                Add snippet
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className={`${isMobile ? 'hidden' : 'px-6 py-4'} flex-shrink-0 border-b border-gray-100`}>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-full md:max-w-xs">
+        <div className={`${isMobile ? 'hidden' : 'settings-toolbar-row'}`}>
+          <div className="settings-filter-row">
+            <div className="settings-filter-row__search">
               <SearchInput
                 appearance="toolbar"
                 value={searchDraft}
@@ -433,7 +432,7 @@ export const Snippets = () => {
                 aria-label="Search snippets"
               />
             </div>
-            <div className="w-56">
+            <div className="w-full md:w-56">
               <BaseSelect
                 value={topicFilter}
                 options={topicOptions}

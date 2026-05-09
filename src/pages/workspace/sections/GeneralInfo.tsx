@@ -64,25 +64,41 @@ export const WorkspaceGeneralInfo = () => {
     return <SectionError message={error ?? "Unknown error"} />;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
-        <div className="flex items-start gap-6 mb-6">
-          <div className="flex-1 space-y-4">
-            <BaseInput
-              label="Workspace name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-
-            <CopyInput label="Workspace ID" value={form.id} />
+    <div className="settings-page-stack">
+      <section className="settings-data-header">
+        <div className="settings-page-intro">
+          <p className="settings-page-intro__copy">
+            Update your workspace identity and regional defaults.
+          </p>
+          <div className="settings-page-actions">
+            <Button
+              onClick={handleSave}
+              loading={saving}
+              loadingMode="inline"
+              loadingLabel="Saving..."
+              variant={saved ? "success" : "primary"}
+              leftIcon={saved ? <Check size={16} /> : <Save size={16} />}
+            >
+              {saved ? "Saved" : "Save changes"}
+            </Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-2xl bg-slate-50/80 p-5 sm:p-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-5">
-          Localization
-        </h2>
+      <section className="settings-section-panel">
+        <div className="space-y-4">
+          <BaseInput
+            label="Workspace name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+
+          <CopyInput label="Workspace ID" value={form.id} />
+        </div>
+      </section>
+
+      <section className="settings-section-panel">
+        <h2 className="settings-section-title mb-5">Localization</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <BaseSelect
@@ -92,23 +108,9 @@ export const WorkspaceGeneralInfo = () => {
             options={timezoneOptions}
           />
         </div>
-      </div>
+      </section>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
-
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          loading={saving}
-          loadingMode="inline"
-          loadingLabel="Saving..."
-          variant={saved ? "success" : "primary"}
-       
-          leftIcon={saved ? <Check size={16} /> : <Save size={16} />}
-        >
-          {saved ? "Saved" : "Save changes"}
-        </Button>
-      </div>
     </div>
   );
 };

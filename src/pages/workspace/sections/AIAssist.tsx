@@ -69,21 +69,30 @@ export const AIAssist = () => {
   if (error || !settings || !assistPrompt) return <SectionError message={error ?? 'Unknown error'} onRetry={load} />;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="rounded-2xl bg-slate-50/80 p-4 sm:p-6">
-        <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-light)]0 to-blue-600 sm:h-10 sm:w-10">
-              <Wand2 size={20} className="text-white" />
+    <div className="settings-page-stack">
+      <section className="settings-data-header">
+        <div className="settings-page-intro">
+          <p className="settings-page-intro__copy">
+            Configure the AI reply action and the prompt used by the inbox composer.
+          </p>
+        </div>
+      </section>
+
+      <section className={`settings-row-card ${settings.enabled ? 'settings-row-card--active' : ''}`}>
+        <div className="settings-control-card__body flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="settings-control-card__content flex min-w-0 items-start gap-3">
+            <div className="settings-section-icon">
+              <Wand2 size={18} />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-gray-900">AI Assist</h2>
-              <p className="mt-1 text-sm leading-5 text-gray-500">
-                Configure the one prompt used by the `AI Assist` button in the inbox composer.
+              <h2 className="settings-section-title">Enable AI Assist</h2>
+              <p className="settings-section-description settings-control-card__description">
+                Show the AI Assist reply action in the inbox composer.
               </p>
             </div>
           </div>
-          <div className="self-start sm:self-auto">
+          <div className="settings-toggle-pill">
+            <span className="settings-toggle-pill__label">{settings.enabled ? 'On' : 'Off'}</span>
             <ToggleSwitch
               checked={settings.enabled}
               onChange={v => handleSettingsChange({ enabled: v })}
@@ -91,33 +100,33 @@ export const AIAssist = () => {
             />
           </div>
         </div>
+      </section>
 
-        <div className="rounded-2xl bg-white/80 p-4 sm:p-5">
-          <div className="mb-3">
-            <p className="text-sm font-semibold text-gray-900">AI Assist Prompt</p>
-            <p className="mt-1 text-sm leading-5 text-gray-500">
-              This prompt is used only for the AI Assist reply action. Summary prompt is internal and not user-editable.
-            </p>
-          </div>
-          <TextareaInput
-            value={assistPrompt.prompt}
-            onChange={(e) => setAssistPrompt({ ...assistPrompt, prompt: e.target.value })}
-            rows={6}
-            placeholder="You will be a seasoned customer support agent..."
-          />
-          <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button
-              onClick={handlePromptSave}
-              loading={savingPrompt}
-              loadingMode="inline"
-              loadingLabel="Saving..."
-              fullWidth={isMobile}
-            >
-              Save
-            </Button>
-          </div>
+      <section className="settings-section-panel">
+        <div className="mb-3">
+          <p className="text-sm font-semibold text-gray-900">AI Assist Prompt</p>
+          <p className="mt-1 text-sm leading-5 text-gray-500">
+            This prompt is used only for the AI Assist reply action. Summary prompt is internal and not user-editable.
+          </p>
         </div>
-      </div>
+        <TextareaInput
+          value={assistPrompt.prompt}
+          onChange={(e) => setAssistPrompt({ ...assistPrompt, prompt: e.target.value })}
+          rows={6}
+          placeholder="You will be a seasoned customer support agent..."
+        />
+        <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            onClick={handlePromptSave}
+            loading={savingPrompt}
+            loadingMode="inline"
+            loadingLabel="Saving..."
+            fullWidth={isMobile}
+          >
+            Save
+          </Button>
+        </div>
+      </section>
     </div>
   );
 };
