@@ -44,7 +44,7 @@ export const AIAssist = () => {
     const updated = { ...settings, ...patch };
     setSettings(updated);
     try {
-      await workspaceApi.updateAISettings(updated);
+      await workspaceApi.updateAISettings(patch);
     } catch {
       void load();
     }
