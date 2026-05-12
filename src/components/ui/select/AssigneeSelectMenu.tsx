@@ -92,8 +92,17 @@ function getUserDescriptionTone(user: AssigneeSelectUser) {
   return "default" as const;
 }
 
-function renderUnassignedIcon(size = 18) {
-  return <UserCircle2 size={size} className="text-gray-400" />;
+function renderUnassignedIcon(size: "xs" | "sm" = "sm") {
+  return (
+    <span
+      className={cx(
+        "inline-flex shrink-0 items-center justify-center rounded-full border border-[var(--color-gray-200)] bg-white text-[var(--color-gray-400)]",
+        size === "xs" ? "h-6 w-6" : "h-8 w-8",
+      )}
+    >
+      <UserCircle2 size={size === "xs" ? 16 : 18} />
+    </span>
+  );
 }
 
 function renderUserAvatar(user: AssigneeSelectUser, size: "xs" | "sm") {
@@ -102,6 +111,9 @@ function renderUserAvatar(user: AssigneeSelectUser, size: "xs" | "sm") {
       src={user.avatarUrl ?? undefined}
       name={getUserName(user)}
       size={size}
+      fallbackTone="neutral"
+      showStatus={user.activityStatus === "online"}
+      className="bg-white ring-1 ring-[var(--color-gray-200)]"
     />
   );
 }
@@ -114,8 +126,8 @@ function unassignedOption(
     value: UNASSIGNED_VALUE,
     label,
     description,
-    leading: renderUnassignedIcon(18),
-    tone: "primary",
+    leading: renderUnassignedIcon("sm"),
+    tone: "neutral",
     alwaysVisible: true,
   };
 }
@@ -151,7 +163,7 @@ function renderTriggerContent({
   }
 
   if (variant === "icon") {
-    return selectedUser ? renderUserAvatar(selectedUser, "xs") : renderUnassignedIcon(18);
+    return selectedUser ? renderUserAvatar(selectedUser, "xs") : renderUnassignedIcon("xs");
   }
 
   const label = selectedUser ? getUserName(selectedUser) : unassignedLabel;
@@ -163,7 +175,7 @@ function renderTriggerContent({
         variant === "toolbar" ? "gap-2.5" : "gap-2",
       )}
     >
-      {selectedUser ? renderUserAvatar(selectedUser, "xs") : renderUnassignedIcon(18)}
+      {selectedUser ? renderUserAvatar(selectedUser, "xs") : renderUnassignedIcon("xs")}
       <span
         className={cx(
           "truncate",

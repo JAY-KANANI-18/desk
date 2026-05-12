@@ -20,10 +20,15 @@ export interface TooltipProps {
   delay?: number;
   disabled?: boolean;
   maxWidth?: number | string;
+  maxHeight?: number | string;
+  maxLines?: number;
 }
 
 const VIEWPORT_PADDING = 12;
 const TOOLTIP_GAP = 10;
+const DEFAULT_TOOLTIP_MAX_WIDTH = "min(280px, calc(100vw - 24px))";
+const DEFAULT_TOOLTIP_MAX_HEIGHT = "min(15rem, calc(100vh - 24px))";
+const DEFAULT_TEXT_TOOLTIP_LINES = 8;
 
 function isTouchOnlyDevice() {
   if (typeof window === "undefined") {
@@ -152,7 +157,9 @@ export function Tooltip({
   position = "auto",
   delay = 400,
   disabled = false,
-  maxWidth = 280,
+  maxWidth = DEFAULT_TOOLTIP_MAX_WIDTH,
+  maxHeight = DEFAULT_TOOLTIP_MAX_HEIGHT,
+  maxLines = DEFAULT_TEXT_TOOLTIP_LINES,
 }: TooltipProps) {
   const isMobile = useIsMobile();
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -217,10 +224,27 @@ export function Tooltip({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [content, isOpen, maxWidth, position]);
+  }, [content, isOpen, maxHeight, maxWidth, position]);
 
   const shouldDisable =
     disabled || !content || isMobile || isTouchDevice || !portalReady;
+  const isPlainTextContent = typeof content === "string";
+  const textContentStyle: CSSProperties | undefined =
+    isPlainTextContent && maxLines > 0
+      ? {
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: maxLines,
+          overflow: "hidden",
+        }
+      : undefined;
+  const tooltipContent = isPlainTextContent ? (
+    <span className="block" style={textContentStyle}>
+      {content}
+    </span>
+  ) : (
+    content
+  );
 
   const scheduleOpen = () => {
     if (shouldDisable) {
@@ -265,15 +289,20 @@ export function Tooltip({
               transform: coords.transform,
               zIndex: "var(--z-tooltip)",
               maxWidth,
+              maxHeight,
               backgroundColor: "var(--color-gray-900)",
               borderColor: "var(--color-gray-800)",
               color: "white",
+              overflow: "hidden",
+              overflowWrap: "anywhere",
+              whiteSpace: "normal",
+              wordBreak: "break-word",
               opacity: isVisible ? 1 : 0,
               transition:
                 "opacity var(--transition-fast), transform var(--transition-fast)",
             }}
           >
-            {content}
+            {tooltipContent}
           </div>,
           document.body,
         )
