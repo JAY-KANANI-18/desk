@@ -185,7 +185,9 @@ export function ChatHeader({
       <div className="flex w-full min-w-0 items-center gap-1 sm:gap-2 md:contents">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3 md:gap-3.5">
           {onBack ? (
-            <BackButton ariaLabel="Back to inbox" onClick={onBack}  size="sm"/>
+            <span className="md:hidden">
+              <BackButton ariaLabel="Back to inbox" onClick={onBack} size="sm" />
+            </span>
           ) : null}
 
           <div className="relative">

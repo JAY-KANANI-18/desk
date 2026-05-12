@@ -392,7 +392,7 @@ export function BroadcastComposerModal({
     <ResponsiveModal
       isOpen={open}
       onClose={onClose}
-      title="New message broadcast"
+      title="New broadcast"
       mobileTitle={
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -400,7 +400,7 @@ export function BroadcastComposerModal({
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-slate-900">
             <Users size={18} />
-            New message broadcast
+            New broadcast
           </h2>
         </div>
       }

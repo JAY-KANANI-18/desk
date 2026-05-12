@@ -134,6 +134,18 @@ function getRecipientTimeline(row: TraceRow) {
   return `Prepared ${formatDateTime(row.createdAt)}`;
 }
 
+function getRecipientErrorText(value: string) {
+  if (/request failed with status code 4\d\d/i.test(value)) {
+    return "The messaging provider rejected this recipient. Check that the contact can receive messages on this channel, then try again.";
+  }
+
+  if (/request failed with status code 5\d\d/i.test(value)) {
+    return "The messaging provider had a temporary problem. Try again in a few minutes.";
+  }
+
+  return value;
+}
+
 function csvCell(value: string | number | null | undefined) {
   const normalized = value === null || value === undefined ? "" : String(value);
   const safeValue = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
@@ -694,7 +706,7 @@ export function BroadcastDetailsDrawer({
                     </p>
                   ) : null}
                   {row.lastError ? (
-                    <p className="text-red-600">Problem: {row.lastError}</p>
+                    <p className="text-red-600">Problem: {getRecipientErrorText(row.lastError)}</p>
                   ) : null}
                 </div>
               </div>
