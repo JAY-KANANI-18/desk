@@ -5,6 +5,7 @@ import {
   CheckCircle2,
 } from "@/components/ui/icons";
 import { workspaceApi } from "../../../lib/workspaceApi";
+import { useWorkspace } from "../../../context/WorkspaceContext";
 import { DataLoader } from "../../Loader";
 import { Button } from "../../../components/ui/Button";
 import { IconButton } from "../../../components/ui/button/IconButton";
@@ -540,6 +541,7 @@ export const Lifecycle = () => {
   const [enabled, setEnabled]       = useState(true);
   const [togglingVis, setTogglingVis] = useState(false);
   const { toasts, push }            = useToasts();
+  const { setActiveWorkspaceFeatures } = useWorkspace();
 
   // Stable ref so event handlers can trigger reload without stale closures
   const loadRef = useRef<() => Promise<void>>();
@@ -550,14 +552,19 @@ export const Lifecycle = () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const data: LifecycleStage[] = await workspaceApi.getLifecycleStages();
+      const [data, visibility]: [LifecycleStage[], { enabled: boolean }] = await Promise.all([
+        workspaceApi.getLifecycleStages({ includeDisabled: true }),
+        workspaceApi.getLifecycleVisibility(),
+      ]);
       setStages(data.map(toUI));
+      setEnabled(visibility.enabled);
+      setActiveWorkspaceFeatures({ lifecycleEnabled: visibility.enabled });
     } catch {
       setLoadError("Failed to load lifecycle stages.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setActiveWorkspaceFeatures]);
 
   loadRef.current = load;
 
@@ -675,7 +682,7 @@ export const Lifecycle = () => {
       const patch = action === "setDefault" ? { isDefault: true } : { isWon: true };
       await workspaceApi.updateLifecycleStage(id, patch);
       // Re-fetch for server-authoritative state (BE clears other rows)
-      const all: LifecycleStage[] = await workspaceApi.getLifecycleStages();
+      const all: LifecycleStage[] = await workspaceApi.getLifecycleStages({ includeDisabled: true });
       setStages(prev => {
         const uiMap = new Map(prev.map(s => [s.id, s]));
         return all.map(s => ({ ...toUI(s), _showDesc: uiMap.get(s.id)?._showDesc ?? false }));
@@ -702,14 +709,16 @@ export const Lifecycle = () => {
     setEnabled(next);
     setTogglingVis(true);
     try {
-      await workspaceApi.updateVisibility(next);
+      const visibility = await workspaceApi.updateVisibility(next);
+      setEnabled(visibility.enabled);
+      setActiveWorkspaceFeatures({ lifecycleEnabled: visibility.enabled });
     } catch {
       setEnabled(!next);
       push("Failed to update visibility");
     } finally {
       setTogglingVis(false);
     }
-  }, [enabled, push]);
+  }, [enabled, push, setActiveWorkspaceFeatures]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 

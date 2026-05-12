@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, MoreVertical, Plus, X } from "@/components/ui/icons";
 import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
+import { FeatureGate, useFeatureFlags } from "../../../context/FeatureFlagContext";
 import { MobileSheet } from "../../../components/ui/modal";
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
@@ -49,6 +50,9 @@ export function ContactsHeader({
   desktopMode = "standalone",
 }: ContactsHeaderProps) {
   const isMobile = useIsMobile();
+  const { flags } = useFeatureFlags();
+  const showLifecycleFilter = flags.lifecycle && Boolean(selectedLifecycle);
+  const showFilterRow = showLifecycleFilter || Boolean(sortOption);
 
   const closeActionsMenu = () => setShowActionsMenu(false);
   const actionMenuItems: ActionMenuEntry[] = [
@@ -148,7 +152,7 @@ export function ContactsHeader({
         desktopMode === "embedded"
           ? ""
           : `bg-white px-3 md:border-b md:border-gray-200 md:p-4 ${
-              toast || selectedLifecycle || sortOption ? "pb-3" : ""
+              toast || showFilterRow ? "pb-3" : ""
             }`
       }
     >
@@ -218,17 +222,19 @@ export function ContactsHeader({
         </div>
       </div>
 
-      {(selectedLifecycle || sortOption) && (
+      {showFilterRow && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs text-gray-500">Filters:</span>
-          {selectedLifecycle && (
-            <Tag
-              label={selectedLifecycle}
-              bgColor="primary"
-              size="sm"
-              onRemove={() => setSelectedLifecycle(null)}
-            />
-          )}
+          <FeatureGate flag="lifecycle">
+            {selectedLifecycle ? (
+              <Tag
+                label={selectedLifecycle}
+                bgColor="primary"
+                size="sm"
+                onRemove={() => setSelectedLifecycle(null)}
+              />
+            ) : null}
+          </FeatureGate>
           {sortOption && (
             <Tag
               label={`Sort: ${sortOption.label}`}

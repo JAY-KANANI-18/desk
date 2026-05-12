@@ -229,6 +229,7 @@ export const reportsSettingsConfig: SettingsModuleConfig = {
           label: "Lifecycle",
           icon: <GitBranch size={22} />,
           permission: { ws: "ws:reports:view" },
+          feature: "lifecycle",
           to: "/reports/lifecycle",
         },
       ],

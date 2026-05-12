@@ -15,6 +15,11 @@ import { initApi } from "../lib/api";
 import { useAuth } from "./AuthContext";
 import { useLocation } from "react-router-dom";
 
+export interface WorkspaceFeatures {
+  aiAgentsEnabled?: boolean;
+  lifecycleEnabled?: boolean;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -22,6 +27,7 @@ export interface Workspace {
   timezone: string;
   language: string;
   dateFormat: string;
+  features?: WorkspaceFeatures;
 
 }
 interface WorkspaceCreate {
@@ -49,6 +55,7 @@ interface WorkspaceContextType {
   deleteWorkspace: (ws: Workspace) => Promise<void>;
   setWorkspaces: (ws: Workspace[]) => void;
   setActiveWorkspaceFunc: (ws: Workspace) => void;
+  setActiveWorkspaceFeatures: (features: Partial<WorkspaceFeatures>) => void;
   refreshWorkspaceUsers:() => Promise<void>
 }
 
@@ -195,6 +202,43 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
       organizations?.find((org) => org.id === ws.organizationId)
     );
   };
+
+  const setActiveWorkspaceFeatures = useCallback(
+    (features: Partial<WorkspaceFeatures>) => {
+      const activeWorkspaceId = activeWorkspace?.id;
+
+      setActiveWorkspace((current) => {
+        if (!current) return current;
+
+        const next = {
+          ...current,
+          features: {
+            ...current.features,
+            ...features,
+          },
+        };
+
+        workspaceRef.current = next;
+        localStorage.setItem("active_workspace", JSON.stringify(next));
+        return next;
+      });
+
+      setWorkspaces((current) =>
+        current?.map((workspace) =>
+          workspace.id === activeWorkspaceId
+            ? {
+                ...workspace,
+                features: {
+                  ...workspace.features,
+                  ...features,
+                },
+              }
+            : workspace,
+        ) ?? current,
+      );
+    },
+    [activeWorkspace?.id],
+  );
   const inviteUser = useCallback(
     async (email: string, role: string, workspaceAccess: any) => {
       const result = await workspaceApi.inviteUser(
@@ -256,6 +300,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         workspaces,
         setActiveWorkspaceFunc,
+        setActiveWorkspaceFeatures,
         refreshWorkspaceUsers,
         inviteUser,
         updateUser,

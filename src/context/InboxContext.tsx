@@ -44,6 +44,7 @@ import {
   ConvPriority,
 } from "../lib/inboxApi";
 import { workspaceApi } from "../lib/workspaceApi";
+import { useFeatureFlags } from "./FeatureFlagContext";
 import { useChannel } from "./ChannelContext";
 import { getContactScopedChannels, isSameChannel } from "../pages/inbox/channelUtils";
 import {
@@ -244,6 +245,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const { socket } = useSocket();
   const { user } = useAuth();
   const { activeWorkspace, refreshWorkspaceUsers, workspaceUsers } = useWorkspace();
+  const { flags } = useFeatureFlags();
 
   const wsId = activeWorkspace?.id as string | undefined;
 
@@ -541,9 +543,17 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const fetchLifecycles = useCallback(async () => {
+    if (!flags.lifecycle) {
+      setLifecycles([]);
+      _setFilters((prev) =>
+        prev.lifecycleId == null ? prev : { ...prev, lifecycleId: undefined, cursor: undefined },
+      );
+      return;
+    }
+
     const result = await workspaceApi.getLifecycleStages();
     setLifecycles(result);
-  }, [activeWorkspace?.id]);
+  }, [activeWorkspace?.id, flags.lifecycle]);
 
   const getBoundaryMessageId = useCallback(
     (direction: "older" | "newer") => {

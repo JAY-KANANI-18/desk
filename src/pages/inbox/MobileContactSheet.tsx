@@ -16,7 +16,7 @@ export function MobileContactSheet({
   selectedConversation,
   contactDetails,
 }: MobileContactSheetProps) {
-  const { convList, refreshContact, refreshConversations, selectConversation } =
+  const { convList, lifecycles, refreshContact, refreshConversations, selectConversation } =
     useInbox();
 
   const title = (
@@ -36,6 +36,7 @@ export function MobileContactSheet({
         selectedConversation={selectedConversation}
         contactDetails={contactDetails}
         mode="mobile"
+        lifecycleStages={lifecycles}
         refreshContact={refreshContact}
         refreshConversations={refreshConversations}
         conversationList={convList as any}

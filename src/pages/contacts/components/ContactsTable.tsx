@@ -22,6 +22,7 @@ import type { LifecycleStage } from "../../workspace/types";
 import { MAX_VISIBLE_CHANNELS, MAX_VISIBLE_TAGS } from "../constants";
 import { ContactsPagination } from "./ContactsPagination";
 import { TruncatedText } from "../../../components/ui/TruncatedText";
+import { FeatureGate, useFeatureFlags } from "../../../context/FeatureFlagContext";
 
 interface ContactsTableProps {
   loading: boolean;
@@ -227,6 +228,7 @@ export function ContactsTable({
   totalPages,
   setCurrentPage,
 }: ContactsTableProps) {
+  const { flags } = useFeatureFlags();
   const tagMetaById = new Map(availableTags.map((tag) => [String(tag.id), tag]));
   const tagMetaByName = new Map(availableTags.map((tag) => [tag.name, tag]));
 
@@ -374,31 +376,35 @@ export function ContactsTable({
         );
       },
     },
-    {
-      id: "lifecycle",
-      header: "Lifecycle",
-      sortable: true,
-      sortField: "lifecycle",
-      mobile: "secondary",
-      headerClassName: CONTACT_COLUMN_CLASS_NAMES.lifecycle,
-      className: `${CONTACT_COLUMN_CLASS_NAMES.lifecycle} overflow-hidden`,
-      width: CONTACT_COLUMN_WIDTHS.lifecycle,
-      cell: (contact) => {
-        const lifecycleLabel = getLifecycleLabel(contact, stages);
-        return lifecycleLabel === "-" ? (
-          <span className="text-xs text-gray-300">-</span>
-        ) : (
+    ...(flags.lifecycle
+      ? [
+          {
+            id: "lifecycle",
+            header: "Lifecycle",
+            sortable: true,
+            sortField: "lifecycle",
+            mobile: "secondary",
+            headerClassName: CONTACT_COLUMN_CLASS_NAMES.lifecycle,
+            className: `${CONTACT_COLUMN_CLASS_NAMES.lifecycle} overflow-hidden`,
+            width: CONTACT_COLUMN_WIDTHS.lifecycle,
+            cell: (contact) => {
+              const lifecycleLabel = getLifecycleLabel(contact, stages);
+              return lifecycleLabel === "-" ? (
+                <span className="text-xs text-gray-300">-</span>
+              ) : (
 
-          <TruncatedText
-            text={lifecycleLabel}
-            maxLines={1}
-            maxLength={22}
-            className="min-w-0 text-gray-800"
-          />
-        
-        );
-      },
-    },
+                <TruncatedText
+                  text={lifecycleLabel}
+                  maxLines={1}
+                  maxLength={22}
+                  className="min-w-0 text-gray-800"
+                />
+              
+              );
+            },
+          } satisfies DataTableColumn<Contact, SortField>,
+        ]
+      : []),
     {
       id: "email",
       header: "Email",
@@ -480,11 +486,13 @@ export function ContactsTable({
                     <p className="truncate text-[16px] font-semibold leading-tight text-slate-900">
                       {getContactName(contact)}
                     </p>
-                    <div className={`mt-1 flex min-w-0 flex-wrap items-center gap-2 ${ lifecycle.label ?  "text-slate-400" : "text-gray-300"}`}>
-                      <span className="text-xs"
-                       
-                      > {lifecycle.label}</span>
-                    </div>
+                    <FeatureGate flag="lifecycle">
+                      <div className={`mt-1 flex min-w-0 flex-wrap items-center gap-2 ${ lifecycle.label ?  "text-slate-400" : "text-gray-300"}`}>
+                        <span className="text-xs"
+                         
+                        > {lifecycle.label}</span>
+                      </div>
+                    </FeatureGate>
                   </div>
                 </div>
               </button>

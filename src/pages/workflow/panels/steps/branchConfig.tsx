@@ -25,6 +25,7 @@ import {
 } from "../../../../components/ui/select";
 import { Tooltip } from "../../../../components/ui/Tooltip";
 import { useChannel } from "../../../../context/ChannelContext";
+import { FeatureGate, useFeatureFlags } from "../../../../context/FeatureFlagContext";
 import { useWorkspace } from "../../../../context/WorkspaceContext";
 import {
   ALL_OPERATORS,
@@ -263,18 +264,20 @@ function ValueInput({
   ) {
     if (field === "lifecycle_id") {
       return (
-        <div className={fieldClassName}>
-          <LifecycleSelectMenu
-            stages={lifecycleStages}
-            value={strVal || null}
-            onChange={(stageId) => onChange(stageId ?? "")}
-            variant="field"
-            placeholder="Select lifecycle"
-            allowEmpty={false}
-            searchable
-            fullWidth
-          />
-        </div>
+        <FeatureGate flag="lifecycle">
+          <div className={fieldClassName}>
+            <LifecycleSelectMenu
+              stages={lifecycleStages}
+              value={strVal || null}
+              onChange={(stageId) => onChange(stageId ?? "")}
+              variant="field"
+              placeholder="Select lifecycle"
+              allowEmpty={false}
+              searchable
+              fullWidth
+            />
+          </div>
+        </FeatureGate>
       );
     }
 
@@ -500,13 +503,14 @@ function useTags() {
 }
 
 function useBranchMetadata() {
+  const { flags } = useFeatureFlags();
   const [lifecycleStages, setLifecycleStages] = useState<LifecycleSelectStage[]>([]);
   const [teams, setTeams] = useState<SelectOption[]>([]);
 
   const load = useCallback(async () => {
     try {
       const [stageResponse, teamResponse] = await Promise.all([
-        workspaceApi.getLifecycleStages(),
+        flags.lifecycle ? workspaceApi.getLifecycleStages() : Promise.resolve([]),
         workspaceApi.getTeams(),
       ]);
 
@@ -524,7 +528,7 @@ function useBranchMetadata() {
       setLifecycleStages([]);
       setTeams([]);
     }
-  }, []);
+  }, [flags.lifecycle]);
 
   useEffect(() => {
     void load();

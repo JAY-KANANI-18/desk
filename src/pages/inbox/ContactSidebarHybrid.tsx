@@ -47,6 +47,7 @@ import {
   WorkspaceTagManager,
   type WorkspaceTagSelectOption,
 } from '../../components/ui/select';
+import { FeatureGate, useFeatureFlags } from '../../context/FeatureFlagContext';
 
 export interface ContactSidebarHybridProps {
   selectedConversation?: SidebarConversation | null;
@@ -127,6 +128,7 @@ export function ContactSidebarHybrid({
   desktopContainerClassName,
 }: ContactSidebarHybridProps) {
   const { workspaceUsers: workspaceUsersFromContext } = useWorkspace();
+  const { flags } = useFeatureFlags();
   const isMobileMode = mode === 'mobile';
   const [currentContact, setCurrentContact] = useState<SidebarContact | null>(contactDetails);
   const [activeField, setActiveField] = useState<string | null>(null);
@@ -145,7 +147,11 @@ export function ContactSidebarHybrid({
 
   const contact = currentContact ?? contactDetails;
   const resolvedWorkspaceUsers = workspaceUsers ?? workspaceUsersFromContext;
-  const resolvedLifecycleStages = lifecycleStages?.length ? lifecycleStages : loadedLifecycleStages;
+  const resolvedLifecycleStages = flags.lifecycle
+    ? lifecycleStages?.length
+      ? lifecycleStages
+      : loadedLifecycleStages
+    : [];
   const channels = useMemo(() => ((contact as any)?.contactChannels ?? []) as any[], [contact]);
   const selectedSuggestion = useMemo(
     () => duplicateSuggestions.find((item) => String((item.contact as any).id) === selectedSuggestionId) ?? duplicateSuggestions[0] ?? null,
@@ -248,12 +254,16 @@ export function ContactSidebarHybrid({
   }, [contactDetails]);
 
   useEffect(() => {
-    if (lifecycleStages?.length) {
+    if (flags.lifecycle && lifecycleStages?.length) {
       setLoadedLifecycleStages(lifecycleStages);
     }
-  }, [lifecycleStages]);
+  }, [flags.lifecycle, lifecycleStages]);
 
   useEffect(() => {
+    if (!flags.lifecycle) {
+      setLoadedLifecycleStages([]);
+      return;
+    }
     if (lifecycleStages?.length) return;
 
     let cancelled = false;
@@ -275,7 +285,7 @@ export function ContactSidebarHybrid({
     return () => {
       cancelled = true;
     };
-  }, [lifecycleStages]);
+  }, [flags.lifecycle, lifecycleStages]);
 
   useEffect(() => {
     let cancelled = false;
@@ -381,7 +391,7 @@ export function ContactSidebarHybrid({
   };
 
   const persistLifecycle = async (nextLifecycleId: string) => {
-    if (!contact?.id) return;
+    if (!flags.lifecycle || !contact?.id) return;
 
     setContactLoading(true);
     try {
@@ -763,25 +773,27 @@ export function ContactSidebarHybrid({
           <div className="mx-5 border-t border-[#f0f2f8]" />
 
           <div className="space-y-4 px-5 py-3.5">
-            <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[#8b95a5]"><Workflow size={10} /></span>
-                <span className="text-[10px] font-semibold uppercase text-[#5f6b7a]">Lifecycle</span>
+            <FeatureGate flag="lifecycle">
+              <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="text-[#8b95a5]"><Workflow size={10} /></span>
+                  <span className="text-[10px] font-semibold uppercase text-[#5f6b7a]">Lifecycle</span>
+                </div>
+                <LifecycleSelectMenu
+                  value={lifecycleValue}
+                  stages={resolvedLifecycleStages}
+                  onChange={(stageId) => {
+                    void persistLifecycle(stageId ?? '');
+                  }}
+                  variant="sidebar"
+                  noneLabel="No Stage"
+                  fallbackLabel={lifecycleFallbackLabel}
+                  dropdownPlacement="top"
+                  dropdownAlign="end"
+                  dropdownWidth="sm"
+                />
               </div>
-              <LifecycleSelectMenu
-                value={lifecycleValue}
-                stages={resolvedLifecycleStages}
-                onChange={(stageId) => {
-                  void persistLifecycle(stageId ?? '');
-                }}
-                variant="sidebar"
-                noneLabel="No Stage"
-                fallbackLabel={lifecycleFallbackLabel}
-                dropdownPlacement="top"
-                dropdownAlign="end"
-                dropdownWidth="sm"
-              />
-            </div>
+            </FeatureGate>
             <div className={`transition-opacity ${activeField !== null ? 'opacity-50 pointer-events-none select-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[#8b95a5]"><Users size={10} /></span>

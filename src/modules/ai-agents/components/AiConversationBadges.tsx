@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Bot, ShieldCheck, UserRoundCheck } from "@/components/ui/icons";
 import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
-import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
+import { useFeatureFlags } from "../../../context/FeatureFlagContext";
 import type { AiConversationStatus } from "../types";
 
 export function AiConversationBadges({ conversationId }: { conversationId?: string | number | null }) {

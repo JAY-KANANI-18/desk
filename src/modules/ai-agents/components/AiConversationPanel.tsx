@@ -5,7 +5,7 @@ import { Bot, Loader2, Pause, Play, RefreshCw, ShieldCheck, UserRoundCheck } fro
 import { Button } from "../../../components/ui/Button";
 import { Tag } from "../../../components/ui/Tag";
 import { aiAgentsApi } from "../../../lib/aiAgentsApi";
-import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
+import { useFeatureFlags } from "../../../context/FeatureFlagContext";
 import { useAuthorization } from "../../../context/AuthorizationContext";
 import type { AiConversationStatus } from "../types";
 

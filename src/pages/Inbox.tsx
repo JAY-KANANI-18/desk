@@ -57,6 +57,7 @@ export function InboxPage() {
     inputMode,
     snoozedUntil,
     selectedContact,
+    lifecycles,
     msgSearchOpen,
     msgSearch,
     selectConversation,
@@ -219,6 +220,7 @@ export function InboxPage() {
                   <ContactSidebarHybrid
                     selectedConversation={selectedConversation as any}
                     contactDetails={selectedContact}
+                    lifecycleStages={lifecycles}
                     refreshContact={refreshContact}
                     refreshConversations={refreshConversations}
                     conversationList={convList}

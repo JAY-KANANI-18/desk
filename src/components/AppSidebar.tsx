@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { BookCheck, Settings, type AppIcon } from "@/components/ui/icons";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
-import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useFeatureFlags } from "../context/FeatureFlagContext";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { APP_NAV_ITEMS } from "./appNavigation";
 import { useSettingsLinks } from "./settingsLinks";

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "r
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import { ShieldCheck, Users } from "@/components/ui/icons";
 import { Button } from "../../components/ui/Button";
+import { FeatureGate } from "../../context/FeatureFlagContext";
 import { Input } from "../../components/ui/Input";
 import { CheckboxInput } from "../../components/ui/inputs";
 import {
@@ -174,15 +175,17 @@ export function BroadcastComposerModal({
         searchable
       />
 
-      <LifecycleSelectMenu
-        label="Customer stage"
-        value={form.lifecycleId}
-        stages={lifecycles}
-        onChange={(stageId) =>
-          onFormChange({ ...form, lifecycleId: stageId ?? "" })
-        }
-        noneLabel="Any stage"
-      />
+      <FeatureGate flag="lifecycle">
+        <LifecycleSelectMenu
+          label="Customer stage"
+          value={form.lifecycleId}
+          stages={lifecycles}
+          onChange={(stageId) =>
+            onFormChange({ ...form, lifecycleId: stageId ?? "" })
+          }
+          noneLabel="Any stage"
+        />
+      </FeatureGate>
 
       <BroadcastTagPicker
         label="Send to people with these tags"

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthorization } from "../../context/AuthorizationContext";
 import { useAuth } from "../../context/AuthContext";
+import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { PageLayout } from "../ui/PageLayout";
 import {
@@ -35,12 +36,13 @@ export const SettingsLayout = ({
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { canOrg, canWs } = useAuthorization();
+  const { flags } = useFeatureFlags();
   const { registration: mobileHeaderRegistration } =
     useMobileHeaderActionState();
 
   const visibleSections = useMemo(
-    () => filterSettingsSections(config.sections, canOrg, canWs),
-    [config.sections, canOrg, canWs],
+    () => filterSettingsSections(config.sections, canOrg, canWs, flags),
+    [config.sections, canOrg, canWs, flags],
   );
 
   const activeMatch = useMemo(

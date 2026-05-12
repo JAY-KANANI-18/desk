@@ -1,10 +1,10 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "@/components/ui/icons";
-import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
+import { FeatureGate, useFeatureFlags } from "../../../context/FeatureFlagContext";
 
 export function AiAgentsFeatureRoute({ children }: { children: React.ReactNode }) {
-  const { flags, loading } = useFeatureFlags();
+  const { loading } = useFeatureFlags();
 
   if (loading) {
     return (
@@ -15,9 +15,9 @@ export function AiAgentsFeatureRoute({ children }: { children: React.ReactNode }
     );
   }
 
-  if (!flags.aiAgents) {
-    return <Navigate to="/inbox" replace />;
-  }
-
-  return <>{children}</>;
+  return (
+    <FeatureGate flag="aiAgents" fallback={<Navigate to="/inbox" replace />}>
+      {children}
+    </FeatureGate>
+  );
 }

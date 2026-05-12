@@ -19,6 +19,10 @@ export interface WorkspaceTagInput {
   description?: string;
 }
 
+export interface LifecycleVisibilityResponse {
+  enabled: boolean;
+}
+
 type WorkspaceCreatePayload = Pick<Workspace, "name" | "organizationId">;
 type WorkspaceUpdatePayload = Partial<Workspace> & { logoUrl?: string };
 type WorkflowCreatePayload = Pick<Workflow, "name"> &
@@ -245,8 +249,11 @@ export const workspaceApi = {
      Lifecycle Stages
   ========================================================= */
 
-  getLifecycleStages: () =>
-    api.get(`/workspaces/lifecycle`),
+  getLifecycleStages: (params?: { includeDisabled?: boolean }) =>
+    api.get(`/workspaces/lifecycle${params?.includeDisabled ? "?includeDisabled=true" : ""}`),
+
+  getLifecycleVisibility: (): Promise<LifecycleVisibilityResponse> =>
+    api.get(`/workspaces/lifecycle/visibility`),
 
   addLifecycleStage: (stage: any) =>
     api.post(`/workspaces/lifecycle`, stage),
@@ -256,8 +263,8 @@ export const workspaceApi = {
 
   deleteLifecycleStage: (stageId: number) =>
     api.delete(`/workspaces/lifecycle/${stageId}`),
-  updateVisibility: (enabled: boolean) =>
-    api.put(`/workspaces/lifecycle/visibility`, { enabled }),
+  updateVisibility: (enabled: boolean): Promise<LifecycleVisibilityResponse> =>
+    api.patch(`/workspaces/lifecycle/visibility`, { enabled }),
   reorderLifecycleStages: (stages: any) =>
     api.patch(`/workspaces/lifecycle/reorder`, stages),
   /* =========================================================

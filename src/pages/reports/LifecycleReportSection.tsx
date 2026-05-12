@@ -1,4 +1,6 @@
 import { useCallback, useMemo } from "react";
+import { Navigate } from "react-router-dom";
+import { FeatureGate } from "../../context/FeatureFlagContext";
 import { workspaceApi } from "../../lib/workspaceApi";
 import {
   ReportChartCard,
@@ -9,7 +11,7 @@ import {
   useReportLoader,
 } from "./shared";
 
-export const LifecycleReportSection = () => {
+const LifecycleReportContent = () => {
   const { data, error, loading } = useReportLoader(
     useCallback((filters) => workspaceApi.getLifecycle(filters), []),
   );
@@ -55,3 +57,9 @@ export const LifecycleReportSection = () => {
     </div>
   );
 };
+
+export const LifecycleReportSection = () => (
+  <FeatureGate flag="lifecycle" fallback={<Navigate to="/reports/messages" replace />}>
+    <LifecycleReportContent />
+  </FeatureGate>
+);

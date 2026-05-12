@@ -1,9 +1,10 @@
 import React from 'react';
 import { TriggerConfig, TriggerType } from '../workflow.types';
 import { TRIGGER_LIST, TRIGGER_META } from '../canvas/triggerTypes';
-import { PanelShell, Section, ToggleRow } from './PanelShell';
+import { PanelShell, Section, ToggleRow, InfoBox } from './PanelShell';
 import { useWorkflow } from '../WorkflowContext';
 import { CompactSelectMenu } from '../../../components/ui/select/CompactSelectMenu';
+import { FeatureGate, useFeatureFlags } from '../../../context/FeatureFlagContext';
 import {
   ContactFieldConfig,
   ContactTagConfig,
@@ -22,6 +23,7 @@ interface TriggerPanelProps {
 
 export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
   const { state, setTrigger, selectNode } = useWorkflow();
+  const { flags } = useFeatureFlags();
   const trigger = state.workflow?.config?.trigger ?? null;
 
   const handleSelectType = (type: TriggerType) => {
@@ -40,7 +42,9 @@ export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
 
   const selectedMeta = trigger ? TRIGGER_META[trigger.type] : null;
   const SelectedIcon = selectedMeta?.Icon;
-  const triggerOptions = TRIGGER_LIST.map((item) => {
+  const triggerOptions = TRIGGER_LIST.filter(
+    (item) => item.type !== 'lifecycle_updated' || flags.lifecycle,
+  ).map((item) => {
     const { Icon } = item;
 
     return {
@@ -104,7 +108,20 @@ export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
           {trigger.type === 'story_reply' && <StoryReplyTriggerConfig trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'template_send' && <TemplateSendTriggerConfig trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'manual_trigger' && <ManualTriggerConfig trigger={trigger} onChange={handleUpdate} />}
-          {trigger.type === 'lifecycle_updated' && <LifecycleConfig trigger={trigger} onChange={handleUpdate} />}
+          {trigger.type === 'lifecycle_updated' && (
+            <FeatureGate
+              flag="lifecycle"
+              fallback={
+                <Section title="Configuration">
+                  <InfoBox type="warning">
+                    Lifecycle is disabled for this workspace.
+                  </InfoBox>
+                </Section>
+              }
+            >
+              <LifecycleConfig trigger={trigger} onChange={handleUpdate} />
+            </FeatureGate>
+          )}
         </>
       ) : null}
 

@@ -7,7 +7,7 @@ import { SettingsNavList } from "../components/settings/SettingsNavList";
 import type { SettingsNavSection } from "../components/settings/navigation";
 import { useSettingsLinks } from "../components/settingsLinks";
 import { useAuthorization } from "../context/AuthorizationContext";
-import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useFeatureFlags } from "../context/FeatureFlagContext";
 import { useIsMobile } from "../hooks/useIsMobile";
 
 export function MorePage() {

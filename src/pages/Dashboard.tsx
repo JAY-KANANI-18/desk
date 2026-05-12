@@ -29,6 +29,7 @@ import { CompactSelectMenu, type CompactSelectMenuGroup } from "../components/ui
 import { CountBadge } from "../components/ui/CountBadge";
 import { TruncatedText } from "../components/ui/TruncatedText";
 import { getAvatarBadgeTypeForChannel } from "../config/channelMetadata";
+import { FeatureGate, useFeatureFlags } from "../context/FeatureFlagContext";
 import { workspaceApi } from "../lib/workspaceApi";
 import {
   CHANNEL_CONNECT_SLUGS,
@@ -290,6 +291,8 @@ function SectionCard({
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { flags } = useFeatureFlags();
+  const isLifecycleFeatureEnabled = flags.lifecycle;
 
   // Lifecycle
   const [lifecycle, setLifecycle] = useState<{
@@ -330,12 +333,17 @@ export const Dashboard = () => {
   // ── Loaders ──────────────────────────────────────────────────────────────────
 
   const loadLifecycle = useCallback(async () => {
+    if (!isLifecycleFeatureEnabled) {
+      setLifecycle(null);
+      return;
+    }
+
     try {
       const res = await workspaceApi.getDashboardLifecycle();
       setLifecycle(res);
     } catch (e) {
     }
-  }, []);
+  }, [isLifecycleFeatureEnabled]);
 
   const loadContacts = useCallback(
     async (tab: ContactTab, cursor?: string, replace = true) => {
@@ -388,7 +396,7 @@ export const Dashboard = () => {
     loadContacts("open");
     loadMembers(1, "all");
     loadMerge();
-  }, []);
+  }, [loadContacts, loadLifecycle, loadMembers, loadMerge]);
 
   // Re-fetch contacts when tab changes
   useEffect(() => {
@@ -396,12 +404,12 @@ export const Dashboard = () => {
     setContactCursor(undefined);
     setContactNextCursor(undefined);
     loadContacts(contactTab);
-  }, [contactTab]);
+  }, [contactTab, loadContacts]);
 
   // Re-fetch members when filter / page changes
   useEffect(() => {
     loadMembers(memberPage, memberFilter);
-  }, [memberPage, memberFilter]);
+  }, [loadMembers, memberFilter, memberPage]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -499,7 +507,8 @@ export const Dashboard = () => {
     >
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:p-4 md:flex-none md:overflow-visible">
         {/* ── Lifecycle — single horizontal row ────────────────────── */}
-        <SectionCard title="Lifecycle">
+        <FeatureGate flag="lifecycle">
+          <SectionCard title="Lifecycle">
           <div className="overflow-x-auto px-3 py-3 scrollbar-thin scrollbar-thumb-gray-200 sm:px-4">
             <div className="flex min-w-max gap-3">
               {(lifecycle?.stages ?? []).length === 0 ? (
@@ -542,7 +551,8 @@ export const Dashboard = () => {
               )}
             </div>
           </div>
-        </SectionCard>
+          </SectionCard>
+        </FeatureGate>
 
         {/* ── Middle row: Contacts + Members ───────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

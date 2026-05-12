@@ -2,6 +2,7 @@ import type { ChangeEvent, DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../../context/WorkspaceContext";
+import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { PageLayout } from "../../components/ui/PageLayout";
 import type {
@@ -134,7 +135,9 @@ interface PendingDeleteState {
 export function ContactsPage() {
   const navigate = useNavigate();
   const { workspaceUsers } = useWorkspace();
+  const { flags } = useFeatureFlags();
   const isMobile = useIsMobile();
+  const isLifecycleFeatureEnabled = flags.lifecycle;
 
   const [contacts, setContacts] = useState<Contact[]>(
     DUMMY_MODE ? SEED_CONTACTS : [],
@@ -219,7 +222,15 @@ export function ContactsPage() {
         workspaceApi.getTags(),
       ]);
 
-      if (lifecycleResult.status === "fulfilled") {
+      if (!isLifecycleFeatureEnabled) {
+        setStages([]);
+        if (selectedLifecycle) {
+          setSelectedLifecycle(null);
+        }
+        if (sortOption?.field === "lifecycle") {
+          setSortOption(null);
+        }
+      } else if (lifecycleResult.status === "fulfilled") {
         setStages(lifecycleResult.value);
       }
 
@@ -235,11 +246,16 @@ export function ContactsPage() {
         return;
       }
 
+      const activeSortOption =
+        isLifecycleFeatureEnabled || sortOption?.field !== "lifecycle"
+          ? sortOption
+          : null;
+
       const result = await contactsApi.getContacts({
         search: debouncedSearchQuery || undefined,
-        lifecycle: selectedLifecycle ?? undefined,
-        sortField: sortOption?.field,
-        sortDir: sortOption?.dir,
+        lifecycle: isLifecycleFeatureEnabled ? selectedLifecycle ?? undefined : undefined,
+        sortField: activeSortOption?.field,
+        sortDir: activeSortOption?.dir,
         page: currentPage,
         limit: PAGE_SIZE,
       });
@@ -260,7 +276,7 @@ export function ContactsPage() {
         setLoading(false);
       }
     }
-  }, [currentPage, debouncedSearchQuery, isMobile, selectedLifecycle, sortOption]);
+  }, [currentPage, debouncedSearchQuery, isLifecycleFeatureEnabled, isMobile, selectedLifecycle, sortOption]);
 
   useEffect(() => {
     loadRef.current = load;
@@ -446,7 +462,7 @@ export function ContactsPage() {
     }
 
     const payload = buildContactPayload(editForm) as UpdateContactPayload;
-    const nextLifecycleId = editForm.lifecycle || null;
+    const nextLifecycleId = isLifecycleFeatureEnabled ? editForm.lifecycle || null : null;
     const nextAssigneeId = editForm.assigneeId || null;
     const existingTagIds = editingContact.tagIds ?? [];
     const nextTagIds = editForm.tagIds;
@@ -470,6 +486,7 @@ export function ContactsPage() {
         normalizeComparableText(payload.phone);
 
     const lifecycleChanged =
+      isLifecycleFeatureEnabled &&
       String(editingContact.lifecycleId ?? "") !== String(nextLifecycleId ?? "");
     const assigneeChanged =
       String(editingContact.assigneeId ?? "") !== String(nextAssigneeId ?? "");
@@ -485,7 +502,7 @@ export function ContactsPage() {
             ? {
                 ...contact,
                 ...payload,
-                lifecycleId: nextLifecycleId ?? undefined,
+                ...(isLifecycleFeatureEnabled ? { lifecycleId: nextLifecycleId ?? undefined } : {}),
                 assigneeId: nextAssigneeId ?? undefined,
                 assignee:
                   assignee && nextAssigneeId
@@ -553,7 +570,7 @@ export function ContactsPage() {
     }
 
     const payload = buildContactPayload(newContact) as CreateContactPayload;
-    const lifecycleId = newContact.lifecycle || "";
+    const lifecycleId = isLifecycleFeatureEnabled ? newContact.lifecycle || "" : "";
 
     if (lifecycleId) {
       payload.lifecycleId = lifecycleId;
@@ -567,7 +584,7 @@ export function ContactsPage() {
         {
           id: Date.now(),
           ...payload,
-          lifecycleId: lifecycleId || undefined,
+          ...(isLifecycleFeatureEnabled ? { lifecycleId: lifecycleId || undefined } : {}),
           tags: tagNames,
           tagIds: [...newContact.tagIds],
         },
@@ -615,7 +632,7 @@ export function ContactsPage() {
     if (!DUMMY_MODE) {
       try {
         data = await contactsApi.exportContacts({
-          lifecycle: selectedLifecycle ?? undefined,
+          lifecycle: isLifecycleFeatureEnabled ? selectedLifecycle ?? undefined : undefined,
         });
       } catch {
         showToast("error", "Export failed.");

@@ -10,6 +10,7 @@ import {
   Workflow,
 } from "@/components/ui/icons";
 import type { WorkspacePermission } from "../context/AuthorizationContext";
+import type { FeatureFlagName } from "../context/FeatureFlagContext";
 import { Contact } from "./ui/icons";
 
 export type AppNavItem = {
@@ -18,7 +19,7 @@ export type AppNavItem = {
   path: string;
   ws?: WorkspacePermission;
   mobile?: boolean;
-  feature?: "aiAgents";
+  feature?: FeatureFlagName;
 };
 
 export const PRIMARY_MOBILE_PATH_ORDER = [

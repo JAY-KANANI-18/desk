@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import { broadcastApi, type BroadcastSendResult } from "../../lib/broadcastApi";
+import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { workspaceApi } from "../../lib/workspaceApi";
 import type {
   BroadcastAudiencePreviewState,
@@ -35,6 +36,7 @@ export function useBroadcastComposer({
   channels: any[];
   reloadRuns: () => Promise<void>;
 }) {
+  const { flags } = useFeatureFlags();
   const [tags, setTags] = useState<TagRow[]>([]);
   const [lifecycles, setLifecycles] = useState<LifecycleRow[]>([]);
   const [showComposer, setShowComposer] = useState(false);
@@ -48,11 +50,15 @@ export function useBroadcastComposer({
   const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    if (!flags.lifecycle) {
+      setLifecycles([]);
+    }
+
     (async () => {
       try {
         const [tagResponse, lifecycleResponse] = await Promise.all([
           workspaceApi.getTags(),
-          workspaceApi.getLifecycleStages(),
+          flags.lifecycle ? workspaceApi.getLifecycleStages() : Promise.resolve([]),
         ]);
         const tagList = Array.isArray(tagResponse)
           ? tagResponse
@@ -66,7 +72,12 @@ export function useBroadcastComposer({
         // Non-fatal metadata load.
       }
     })();
-  }, []);
+  }, [flags.lifecycle]);
+
+  useEffect(() => {
+    if (flags.lifecycle || !form.lifecycleId) return;
+    setForm((prev) => (prev.lifecycleId ? { ...prev, lifecycleId: "" } : prev));
+  }, [flags.lifecycle, form.lifecycleId]);
 
   const selectedChannel = useMemo(
     () => channels.find((channel) => String(channel.id) === form.channelId),
@@ -140,7 +151,7 @@ export function useBroadcastComposer({
       const result = await broadcastApi.audiencePreview({
         channelId: form.channelId,
         tagIds: form.tagIds.length ? form.tagIds : undefined,
-        lifecycleId: form.lifecycleId || undefined,
+        lifecycleId: flags.lifecycle && form.lifecycleId ? form.lifecycleId : undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
         limit: 200,
       });
@@ -154,7 +165,7 @@ export function useBroadcastComposer({
     } finally {
       setPreviewLoading(false);
     }
-  }, [form, selectedChannel]);
+  }, [flags.lifecycle, form, selectedChannel]);
 
   const handleSend = useCallback(async () => {
     if (!form.name.trim()) {
@@ -212,7 +223,7 @@ export function useBroadcastComposer({
               }
             : undefined,
         tagIds: form.tagIds.length ? form.tagIds : undefined,
-        lifecycleId: form.lifecycleId || undefined,
+        lifecycleId: flags.lifecycle && form.lifecycleId ? form.lifecycleId : undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
         limit: Math.min(500, Math.max(1, form.limit)),
         scheduledAt:
@@ -239,7 +250,7 @@ export function useBroadcastComposer({
     } finally {
       setSending(false);
     }
-  }, [form, isWhatsApp, reloadRuns, selectedChannel, selectedTemplate, templateVars]);
+  }, [flags.lifecycle, form, isWhatsApp, reloadRuns, selectedChannel, selectedTemplate, templateVars]);
 
   return {
     tags,

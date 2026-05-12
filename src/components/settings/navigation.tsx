@@ -6,6 +6,11 @@ import {
   useAuthorization,
 } from "../../context/AuthorizationContext";
 import { useAuth } from "../../context/AuthContext";
+import {
+  useFeatureFlags,
+  type FeatureFlagName,
+  type FeatureFlags,
+} from "../../context/FeatureFlagContext";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { SettingsNavList } from "./SettingsNavList";
 
@@ -23,6 +28,7 @@ export interface SettingsNavItem {
   badge?: string;
   children?: SettingsNavItem[];
   permission?: SettingsPermission;
+  feature?: FeatureFlagName;
 }
 
 export interface SettingsNavSection {
@@ -65,7 +71,12 @@ const isItemVisible = (
   item: SettingsNavItem,
   canOrg: (...permissions: OrgPermission[]) => boolean,
   canWs: (...permissions: WorkspacePermission[]) => boolean,
+  flags?: FeatureFlags,
 ) => {
+  if (item.feature && !flags?.[item.feature]) {
+    return false;
+  }
+
   const orgPermissions = toArray(item.permission?.org);
   const workspacePermissions = toArray(item.permission?.ws);
 
@@ -84,14 +95,15 @@ const filterSettingsItems = (
   items: SettingsNavItem[],
   canOrg: (...permissions: OrgPermission[]) => boolean,
   canWs: (...permissions: WorkspacePermission[]) => boolean,
+  flags?: FeatureFlags,
 ): SettingsNavItem[] =>
   items.reduce<SettingsNavItem[]>((visibleItems, item) => {
-    if (!isItemVisible(item, canOrg, canWs)) {
+    if (!isItemVisible(item, canOrg, canWs, flags)) {
       return visibleItems;
     }
 
     const children = item.children
-      ? filterSettingsItems(item.children, canOrg, canWs)
+      ? filterSettingsItems(item.children, canOrg, canWs, flags)
       : undefined;
 
     if (item.children && (!children || children.length === 0)) {
@@ -110,9 +122,10 @@ export const filterSettingsSections = (
   sections: SettingsNavSection[],
   canOrg: (...permissions: OrgPermission[]) => boolean,
   canWs: (...permissions: WorkspacePermission[]) => boolean,
+  flags?: FeatureFlags,
 ) =>
   sections.reduce<SettingsNavSection[]>((visibleSections, section) => {
-    const items = filterSettingsItems(section.items, canOrg, canWs);
+    const items = filterSettingsItems(section.items, canOrg, canWs, flags);
 
     if (items.length === 0) {
       return visibleSections;
@@ -253,10 +266,11 @@ export const SettingsIndexRedirect = ({
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { canOrg, canWs } = useAuthorization();
+  const { flags } = useFeatureFlags();
 
   const visibleSections = useMemo(
-    () => filterSettingsSections(config.sections, canOrg, canWs),
-    [config.sections, canOrg, canWs],
+    () => filterSettingsSections(config.sections, canOrg, canWs, flags),
+    [config.sections, canOrg, canWs, flags],
   );
 
   const targetPath = resolveRedirectPath(

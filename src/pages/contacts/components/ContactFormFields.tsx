@@ -6,6 +6,7 @@ import {
 } from "../../../components/ui/Select";
 import { BaseInput } from "../../../components/ui/inputs/BaseInput";
 import { PhoneField } from "../../../components/ui/phone";
+import { FeatureGate, useFeatureFlags } from "../../../context/FeatureFlagContext";
 import type {
   ContactFormState,
   ContactTagOption,
@@ -29,6 +30,7 @@ export function ContactFormFields<TForm extends ContactFormState>({
   includeAssignee?: boolean;
   variant?: "default" | "sidebar";
 }) {
+  const { flags } = useFeatureFlags();
   const update = (patch: Partial<ContactFormState>) =>
     onChange({ ...value, ...patch } as TForm);
   const fieldAppearance = variant === "sidebar" ? "sidebar" : "default";
@@ -95,32 +97,43 @@ export function ContactFormFields<TForm extends ContactFormState>({
     </>
   );
 
-  const renderWorkspaceFields = () => (
-    <div className="grid gap-4 md:grid-cols-2">
-      <LifecycleSelectMenu
-        label="Lifecycle"
-        variant={variant === "sidebar" ? "sidebar" : "field"}
-        value={value.lifecycle}
-        stages={stages}
-        onChange={(stageId) => update({ lifecycle: stageId ?? "" })}
-        noneLabel="No Stage"
-        placeholder="Select lifecycle"
-        dropdownWidth="trigger"
-      />
+  const renderWorkspaceFields = () => {
+    const showLifecycleField = flags.lifecycle;
+    const splitWorkspaceFields = showLifecycleField && includeAssignee;
 
-      {includeAssignee ? (
-        <AssigneeSelectMenu
-          label="Assign Contact"
-          value={value.assigneeId}
-          users={workspaceUsers ?? []}
-          onChange={(userId) => update({ assigneeId: userId ?? "" })}
-          variant={variant === "sidebar" ? "sidebar" : "field"}
-          unassignedLabel="Unassigned"
-          dropdownWidth="trigger"
-        />
-      ) : null}
-    </div>
-  );
+    if (!showLifecycleField && !includeAssignee) {
+      return null;
+    }
+
+    return (
+      <div className={`grid gap-4 ${splitWorkspaceFields ? "md:grid-cols-2" : ""}`}>
+        <FeatureGate flag="lifecycle">
+          <LifecycleSelectMenu
+            label="Lifecycle"
+            variant={variant === "sidebar" ? "sidebar" : "field"}
+            value={value.lifecycle}
+            stages={stages}
+            onChange={(stageId) => update({ lifecycle: stageId ?? "" })}
+            noneLabel="No Stage"
+            placeholder="Select lifecycle"
+            dropdownWidth="trigger"
+          />
+        </FeatureGate>
+
+        {includeAssignee ? (
+          <AssigneeSelectMenu
+            label="Assign Contact"
+            value={value.assigneeId}
+            users={workspaceUsers ?? []}
+            onChange={(userId) => update({ assigneeId: userId ?? "" })}
+            variant={variant === "sidebar" ? "sidebar" : "field"}
+            unassignedLabel="Unassigned"
+            dropdownWidth="trigger"
+          />
+        ) : null}
+      </div>
+    );
+  };
 
   const renderTags = () => (
     <WorkspaceTagManager
@@ -155,6 +168,8 @@ export function ContactFormFields<TForm extends ContactFormState>({
   );
 
   if (variant === "sidebar") {
+    const workspaceFields = renderWorkspaceFields();
+
     return (
       <div className="space-y-4">
         <section className="space-y-3">
@@ -169,12 +184,16 @@ export function ContactFormFields<TForm extends ContactFormState>({
           {renderContactFields()}
         </section>
 
-        <div className={dividerClassName} />
+        {workspaceFields ? (
+          <>
+            <div className={dividerClassName} />
 
-        <section className="space-y-3">
-          <p className="text-[12px] font-semibold text-[#374151]">Workspace</p>
-          {renderWorkspaceFields()}
-        </section>
+            <section className="space-y-3">
+              <p className="text-[12px] font-semibold text-[#374151]">Workspace</p>
+              {workspaceFields}
+            </section>
+          </>
+        ) : null}
 
         <div className={dividerClassName} />
 

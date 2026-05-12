@@ -14,7 +14,7 @@ import {
 } from "./appNavigation";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
-import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useFeatureFlags } from "../context/FeatureFlagContext";
 import { useSettingsLinks } from "./settingsLinks";
 
 type TabElement = HTMLAnchorElement | null;

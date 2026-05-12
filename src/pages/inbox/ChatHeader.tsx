@@ -9,6 +9,7 @@ import {
 import type { Conversation } from "./types";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import { useInbox } from "../../context/InboxContext";
+import { FeatureGate, useFeatureFlags } from "../../context/FeatureFlagContext";
 import { inboxApi } from "../../lib/inboxApi";
 import { useCall } from "../../context/CallContext";
 import { Avatar } from "../../components/ui/Avatar";
@@ -16,7 +17,6 @@ import { Button } from "../../components/ui/Button";
 import {
   AssigneeSelectMenu,
   LifecycleSelectMenu,
-  type LifecycleSelectStage,
 } from "../../components/ui/select";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { IconButton } from "../../components/ui/button/IconButton";
@@ -62,6 +62,8 @@ export function ChatHeader({
     sendMessage,
     selectedChannel,
   } = useInbox();
+  const { flags } = useFeatureFlags();
+  const showLifecycleToolbar = flags.lifecycle;
   const { startOutgoingCall } = useCall();
 
   useEffect(() => {
@@ -87,16 +89,6 @@ export function ChatHeader({
         (user) => user.id === selectedConversation?.contact?.assigneeId,
       ) || null,
     [workspaceUsers, selectedConversation?.contact?.assigneeId],
-  );
-
-  const currentLifecycle = useMemo(
-    () =>
-      (lifecycles ?? []).find(
-        (stage: LifecycleSelectStage) =>
-          String(stage.id) ===
-          String(selectedConversation?.contact?.lifecycleId),
-      ) ?? null,
-    [lifecycles, selectedConversation?.contact?.lifecycleId],
   );
 
   const contactName =
@@ -285,16 +277,18 @@ export function ChatHeader({
                   conversationId={selectedConversation?.id}
                 />
               </div>
-              <LifecycleSelectMenu
-                value={selectedConversation?.contact?.lifecycleId}
-                stages={lifecycles ?? []}
-                onChange={(stageId) => {
-                  void handleLifecycleChange(stageId);
-                }}
-                fallbackLabel={fallbackLifecycleName || undefined}
-                variant="inline"
-                className="mt-0.5 hidden md:block text-gray-500"
-              />
+              <FeatureGate flag="lifecycle">
+                <LifecycleSelectMenu
+                  value={selectedConversation?.contact?.lifecycleId}
+                  stages={lifecycles ?? []}
+                  onChange={(stageId) => {
+                    void handleLifecycleChange(stageId);
+                  }}
+                  fallbackLabel={fallbackLifecycleName || undefined}
+                  variant="inline"
+                  className="mt-0.5 hidden md:block text-gray-500"
+                />
+              </FeatureGate>
             </div>
           </div>
         </div>
@@ -409,27 +403,37 @@ export function ChatHeader({
         </div>
       </div>
 
-      <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] items-center border-t border-gray-100 md:hidden">
-        <div className="min-w-0 py-0.5 pr-2">
-          <LifecycleSelectMenu
-            value={selectedConversation?.contact?.lifecycleId}
-            stages={lifecycles ?? []}
-            onChange={(stageId) => {
-              void handleLifecycleChange(stageId);
-            }}
-            fallbackLabel={fallbackLifecycleName || undefined}
-            variant="inline"
-            className="min-w-0 w-full"
-            fullWidth
-            triggerClassName="w-full min-h-[1.75rem] rounded-lg px-2 py-0.5 text-[13px]"
-            mobileSheetTitle="Select lifecycle"
-            mobileSheetSubtitle={contactName}
-          />
-        </div>
+      <div
+        className={`w-full min-w-0 items-center border-t border-gray-100 md:hidden ${
+          showLifecycleToolbar
+            ? "grid grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]"
+            : "block"
+        }`}
+      >
+        <FeatureGate flag="lifecycle">
+          <>
+            <div className="min-w-0 py-0.5 pr-2">
+              <LifecycleSelectMenu
+                value={selectedConversation?.contact?.lifecycleId}
+                stages={lifecycles ?? []}
+                onChange={(stageId) => {
+                  void handleLifecycleChange(stageId);
+                }}
+                fallbackLabel={fallbackLifecycleName || undefined}
+                variant="inline"
+                className="min-w-0 w-full"
+                fullWidth
+                triggerClassName="w-full min-h-[1.75rem] rounded-lg px-2 py-0.5 text-[13px]"
+                mobileSheetTitle="Select lifecycle"
+                mobileSheetSubtitle={contactName}
+              />
+            </div>
 
-        <div aria-hidden="true" className="h-6 bg-gray-200" />
+            <div aria-hidden="true" className="h-6 bg-gray-200" />
+          </>
+        </FeatureGate>
 
-        <div className="min-w-0 py-0.5 pl-2">
+        <div className={`min-w-0 py-0.5 ${showLifecycleToolbar ? "pl-2" : ""}`}>
           <AssigneeSelectMenu
             value={assignee?.id ?? null}
             selectedUser={assignee}
