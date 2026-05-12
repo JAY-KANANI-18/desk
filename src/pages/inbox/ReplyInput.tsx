@@ -249,8 +249,12 @@ export function ReplyInput({
     ],
   );
   const availableReplyChannels = useMemo(
-    () => getContactScopedChannels(channels, selectorContactChannels),
-    [channels, selectorContactChannels],
+    () => getContactScopedChannels(
+      channels,
+      selectorContactChannels,
+      hasLoadedSelectedContact ? selectedContact : selectedConversation?.contact,
+    ),
+    [channels, hasLoadedSelectedContact, selectedContact, selectedConversation?.contact, selectorContactChannels],
   );
   const activeComposerChannel = useMemo(() => {
     if (availableReplyChannels.length === 0) return selectedChannel ?? null;
@@ -272,8 +276,12 @@ export function ReplyInput({
     : [];
   const channelType = activeComposerChannel?.type ?? selectedConversation?.channel?.type;
   const selectedContactChannel = useMemo(
-    () => findMatchingContactChannel(validatedContactChannels, activeComposerChannel),
-    [activeComposerChannel, validatedContactChannels],
+    () => findMatchingContactChannel(
+      validatedContactChannels,
+      activeComposerChannel,
+      hasLoadedSelectedContact ? selectedContact : selectedConversation?.contact,
+    ),
+    [activeComposerChannel, hasLoadedSelectedContact, selectedContact, selectedConversation?.contact, validatedContactChannels],
   );
   const hasValidatedSelectedContactChannel = hasLoadedSelectedContact && Boolean(selectedContactChannel);
   const normalizedChannelType = String(channelType ?? '').toLowerCase();

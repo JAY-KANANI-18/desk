@@ -58,6 +58,32 @@ const LIFECYCLE_COLOR_MAP: Record<string, string> = {
   "bg-pink-500": "#ec4899",
 };
 
+const CONTACT_TABLE_MIN_WIDTH = 1480;
+const DESKTOP_VISIBLE_TAGS = 2;
+const DESKTOP_TAG_MAX_WIDTH = 184;
+
+const CONTACT_COLUMN_WIDTHS = {
+  select: 40,
+  name: 250,
+  channel: 132,
+  assignee: 140,
+  lifecycle: 160,
+  email: 280,
+  phone: 124,
+  tags: 300,
+} as const;
+
+const CONTACT_COLUMN_CLASS_NAMES = {
+  select: "w-10 max-w-10",
+  name: "w-[250px] max-w-[250px]",
+  channel: "w-[132px] max-w-[132px] overflow-hidden",
+  assignee: "w-[140px] max-w-[140px]",
+  lifecycle: "w-[160px] max-w-[160px]",
+  email: "w-[280px] max-w-[280px]",
+  phone: "w-[124px] max-w-[124px]",
+  tags: "w-[300px] max-w-[300px]",
+} as const;
+
 function getAssigneeName(contact: Contact, workspaceUsers: WorkspaceUser[] | null) {
   const workspaceAssignee =
     workspaceUsers?.find((user) => user.id === contact.assigneeId) ?? null;
@@ -130,6 +156,10 @@ function getContactName(contact: Contact) {
   return `${contact.firstName} ${contact.lastName ?? ""}`.trim();
 }
 
+function getContactDisplayName(contact: Contact) {
+  return getContactName(contact) || contact.email || contact.phone || "Unknown contact";
+}
+
 function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?: boolean }) {
   const visibleChannels = contact.contactChannels?.slice(0, MAX_VISIBLE_CHANNELS) ?? [];
   const overflowChannels = Math.max(
@@ -142,7 +172,7 @@ function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
       {visibleChannels.map((channel, index) => {
         const icon = channelConfig[channel.channelType ?? ""]?.icon;
         const label = `${channel.channelType ?? "channel"}: ${channel.channelId ?? channel.identifier ?? ""}`;
@@ -205,9 +235,11 @@ export function ContactsTable({
       return <span className="text-sm text-gray-300">-</span>;
     }
 
+    const visibleTagLimit = mobile ? MAX_VISIBLE_TAGS : DESKTOP_VISIBLE_TAGS;
+
     return (
-      <div className={`flex min-w-0 ${mobile ? "flex-wrap gap-1.5" : "items-center gap-1"}`}>
-        {contact.tags.slice(0, MAX_VISIBLE_TAGS).map((tag, index) => {
+      <div className={`flex min-w-0 max-w-full ${mobile ? "flex-wrap gap-1.5" : "items-center gap-1 overflow-hidden"}`}>
+        {contact.tags.slice(0, visibleTagLimit).map((tag, index) => {
           const tagMeta =
             tagMetaByName.get(tag) ??
             (contact.tagIds?.[index] ? tagMetaById.get(String(contact.tagIds[index])) : undefined);
@@ -234,13 +266,15 @@ export function ContactsTable({
                 emoji={tagMeta?.emoji}
                 bgColor={tagColor}
                 size="sm"
+                maxWidth={mobile ? undefined : DESKTOP_TAG_MAX_WIDTH}
+                className="shrink-0"
               />
             )
           );
         })}
-        {contact.tags.length > MAX_VISIBLE_TAGS ? (
+        {contact.tags.length > visibleTagLimit ? (
           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-200 bg-white px-1.5 text-[10px] font-medium text-slate-500">
-            +{contact.tags.length - MAX_VISIBLE_TAGS}
+            +{contact.tags.length - visibleTagLimit}
           </span>
         ) : null}
       </div>
@@ -266,7 +300,9 @@ export function ContactsTable({
         </div>
       ),
       align: "center",
-      className: "w-8",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.select,
+      className: CONTACT_COLUMN_CLASS_NAMES.select,
+      width: CONTACT_COLUMN_WIDTHS.select,
       mobile: "hidden",
       cell: (contact) => (
         <div className="flex justify-center" onClick={(event) => event.stopPropagation()}>
@@ -285,33 +321,54 @@ export function ContactsTable({
       sortable: true,
       sortField: "name",
       mobile: "primary",
-      cell: (contact) => (
-        <div className="flex min-w-0 items-center gap-2">
-          <Avatar
-            src={contact.avatarUrl ?? undefined}
-            name={getContactName(contact)}
-            size="sm"
-          />
-          <span className="truncate whitespace-nowrap text-sm font-medium text-gray-800">
-            {getContactName(contact)}
-          </span>
-        </div>
-      ),
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.name,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.name} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.name,
+      cell: (contact) => {
+        const displayName = getContactDisplayName(contact);
+
+        return (
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar
+              src={contact.avatarUrl ?? undefined}
+              name={displayName}
+              size="sm"
+            />
+            <TruncatedText
+              text={displayName}
+              maxLines={1}
+              maxLength={42}
+              className="min-w-0 text-sm font-medium text-gray-800"
+            />
+          </div>
+        );
+      },
     },
     {
       id: "channel",
       header: "Channel",
       mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.channel,
+      className: CONTACT_COLUMN_CLASS_NAMES.channel,
+      width: CONTACT_COLUMN_WIDTHS.channel,
       cell: (contact) => <ChannelIcons contact={contact} />,
     },
     {
       id: "assignee",
       header: "Assignee",
       mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.assignee,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.assignee} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.assignee,
       cell: (contact) => {
         const assigneeName = getAssigneeName(contact, workspaceUsers);
         return assigneeName ? (
-          <TruncatedText maxLength={20} text={assigneeName} />
+          <TruncatedText
+            text={assigneeName}
+            maxLines={1}
+            maxLength={22}
+            className="min-w-0 text-gray-800"
+          />
         ) : (
           <span className="text-xs text-gray-300">-</span>
         );
@@ -323,13 +380,21 @@ export function ContactsTable({
       sortable: true,
       sortField: "lifecycle",
       mobile: "secondary",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.lifecycle,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.lifecycle} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.lifecycle,
       cell: (contact) => {
         const lifecycleLabel = getLifecycleLabel(contact, stages);
         return lifecycleLabel === "-" ? (
           <span className="text-xs text-gray-300">-</span>
         ) : (
 
-          <TruncatedText maxLength={20} text={lifecycleLabel} />
+          <TruncatedText
+            text={lifecycleLabel}
+            maxLines={1}
+            maxLength={22}
+            className="min-w-0 text-gray-800"
+          />
         
         );
       },
@@ -340,7 +405,20 @@ export function ContactsTable({
       sortable: true,
       sortField: "email",
       mobile: "detail",
-      cell: (contact) => <span className=" text-gray-800">{contact.email || "-"}</span>,
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.email,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.email} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.email,
+      cell: (contact) =>
+        contact.email ? (
+          <TruncatedText
+            text={contact.email}
+            maxLines={1}
+            maxLength={46}
+            className="min-w-0 text-gray-800"
+          />
+        ) : (
+          <span className="text-xs text-gray-300">-</span>
+        ),
     },
     {
       id: "phone",
@@ -348,14 +426,29 @@ export function ContactsTable({
       sortable: true,
       sortField: "phone",
       mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.phone,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.phone} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.phone,
       cell: (contact) => (
-        <span className="whitespace-nowrap text-gray-800">{contact.phone || "-"}</span>
+        contact.phone ? (
+          <TruncatedText
+            text={contact.phone}
+            maxLines={1}
+            maxLength={18}
+            className="min-w-0 text-gray-800"
+          />
+        ) : (
+          <span className="text-xs text-gray-300">-</span>
+        )
       ),
     },
     {
       id: "tags",
       header: "Tags",
       mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.tags,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.tags} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.tags,
       cell: (contact) => renderTags(contact),
     },
   ];
@@ -462,7 +555,9 @@ export function ContactsTable({
         onRowClick={openEditModal}
         getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-[var(--color-primary-light)]" : "")}
         renderMobileCard={(contact) => renderMobileCard(contact)}
-        minTableWidth={980}
+        minTableWidth={CONTACT_TABLE_MIN_WIDTH}
+        density="compact"
+        tableLayout="fixed"
         mobileLoadMore={{
           hasMore: safePage < totalPages,
           loading: mobileLoadingMore,

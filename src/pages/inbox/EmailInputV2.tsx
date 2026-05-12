@@ -209,8 +209,12 @@ export function EmailInput({
     ],
   );
   const availableEmailChannels = useMemo(
-    () => getContactScopedChannels(channels, selectorContactChannels),
-    [channels, selectorContactChannels],
+    () => getContactScopedChannels(
+      channels,
+      selectorContactChannels,
+      hasLoadedSelectedContact ? selectedContact : selectedConversation?.contact,
+    ),
+    [channels, hasLoadedSelectedContact, selectedContact, selectedConversation?.contact, selectorContactChannels],
   );
   const activeComposerChannel = useMemo(() => {
     if (availableEmailChannels.length === 0) return selectedChannel ?? null;

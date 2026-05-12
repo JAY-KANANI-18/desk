@@ -83,3 +83,47 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@layer components {
+  .email-message-body {
+    color: #111827;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 16px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .email-message-body p {
+    margin: 1em 0;
+  }
+
+  .email-message-body p:first-child {
+    margin-top: 0;
+  }
+
+  .email-message-body p:empty {
+    min-height: 1em;
+  }
+
+  .email-message-body blockquote {
+    border-left: 1px solid #d1d5db;
+    margin: 1em 0 1em 0.8ex;
+    padding-left: 1em;
+  }
+
+  .email-message-body a {
+    color: #2563eb;
+    cursor: pointer;
+    text-decoration: underline;
+    overflow-wrap: anywhere;
+  }
+
+  .email-message-body img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .email-message-body table {
+    max-width: 100%;
+  }
+}

@@ -11,6 +11,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
   type WheelEvent as ReactWheelEvent,
@@ -20,6 +21,8 @@ import { ActionMenu, type ActionMenuEntry } from "./menu";
 type RowKey = string | number;
 type Align = "left" | "center" | "right";
 type MobileColumnRole = "primary" | "secondary" | "detail" | "hidden";
+type DataTableDensity = "default" | "compact";
+type DataTableLayout = "auto" | "fixed";
 
 export type DataTableSortDirection = "asc" | "desc";
 
@@ -38,6 +41,7 @@ export type DataTableColumn<T, SortField extends string = string> = {
   align?: Align;
   className?: string;
   headerClassName?: string;
+  width?: number | string;
   mobile?: MobileColumnRole;
   mobileLabel?: ReactNode;
 };
@@ -79,6 +83,8 @@ interface DataTableProps<T, SortField extends string = string> {
   mobileLoadMore?: MobileLoadMore;
   footer?: ReactNode;
   minTableWidth?: number;
+  density?: DataTableDensity;
+  tableLayout?: DataTableLayout;
   className?: string;
 }
 
@@ -113,6 +119,14 @@ function SortIcon({
   ) : (
     <ArrowDown size={11} className="text-[var(--color-primary)]" />
   );
+}
+
+function getColumnWidthStyle(width: number | string | undefined): CSSProperties | undefined {
+  if (width === undefined) return undefined;
+
+  return {
+    width: typeof width === "number" ? `${width}px` : width,
+  };
 }
 
 function RowActions<T>({
@@ -235,6 +249,8 @@ export function DataTable<T, SortField extends string = string>({
   mobileLoadMore,
   footer,
   minTableWidth = 800,
+  density = "default",
+  tableLayout = "auto",
   className = "",
 }: DataTableProps<T, SortField>) {
   const [openActionKey, setOpenActionKey] = useState<string | null>(null);
@@ -245,6 +261,8 @@ export function DataTable<T, SortField extends string = string>({
   );
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const hasActions = Boolean(rowActions);
+  const cellPaddingClass = density === "compact" ? "px-3 py-2" : "px-3 py-3";
+  const tableLayoutClass = tableLayout === "fixed" ? "table-fixed" : "";
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -393,7 +411,13 @@ export function DataTable<T, SortField extends string = string>({
         <>
           {!isMobileLayout ? (
             <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-              <table className="w-full" style={{ minWidth: minTableWidth }}>
+              <table className={`w-full ${tableLayoutClass}`} style={{ minWidth: minTableWidth }}>
+                <colgroup>
+                  {columns.map((column) => (
+                    <col key={column.id} style={getColumnWidthStyle(column.width)} />
+                  ))}
+                  {hasActions ? <col style={{ width: "48px" }} /> : null}
+                </colgroup>
                 <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
                   <tr>
                     {columns.map((column) => {
@@ -444,14 +468,14 @@ export function DataTable<T, SortField extends string = string>({
                           return (
                             <td
                               key={column.id}
-                              className={`px-3 py-3 text-sm text-gray-700 ${cellAlignClass[align]} ${column.className ?? ""}`}
+                              className={`${cellPaddingClass} text-sm text-gray-700 ${cellAlignClass[align]} ${column.className ?? ""}`}
                             >
                               {column.cell(row)}
                             </td>
                           );
                         })}
                         {hasActions ? (
-                          <td className="px-3 py-3 text-right">
+                          <td className={`${cellPaddingClass} text-right`}>
                             {makeActions(row)}
                           </td>
                         ) : null}

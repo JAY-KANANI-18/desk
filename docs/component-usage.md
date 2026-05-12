@@ -2274,7 +2274,7 @@ Do not use it for simple static lists or layouts that are not tabular data.
 Props:
 
 - `rows: T[]`; required; table rows.
-- `columns: Array<{ id: string; header: React.ReactNode; cell: (row: T) => React.ReactNode; sortable?: boolean; sortField?: SortField; align?: "left" | "center" | "right"; className?: string; headerClassName?: string; mobile?: "primary" | "secondary" | "detail" | "hidden"; mobileLabel?: React.ReactNode }>`; required; column definitions.
+- `columns: Array<{ id: string; header: React.ReactNode; cell: (row: T) => React.ReactNode; sortable?: boolean; sortField?: SortField; align?: "left" | "center" | "right"; className?: string; headerClassName?: string; width?: number | string; mobile?: "primary" | "secondary" | "detail" | "hidden"; mobileLabel?: React.ReactNode }>`; required; column definitions.
 - `getRowId: (row: T) => string | number`; required; stable row id.
 - `loading?: boolean`; default `false`; loading state.
 - `loadingLabel?: string`; default `"Loading..."`; loading text.
@@ -2288,6 +2288,8 @@ Props:
 - `mobileLoadMore?: { hasMore: boolean; loading?: boolean; onLoadMore: () => void; loadingLabel?: string; endLabel?: string }`; default `undefined`; infinite mobile load.
 - `footer?: React.ReactNode`; default `undefined`; desktop footer.
 - `minTableWidth?: number`; default `800`; desktop table min width.
+- `density?: "default" | "compact"`; default `"default"`; controls desktop row padding.
+- `tableLayout?: "auto" | "fixed"`; default `"auto"`; use fixed layout with explicit column widths when dynamic text must truncate reliably.
 - `className?: string`; default `""`; root class.
 
 Minimal:
@@ -2314,6 +2316,8 @@ Advanced:
     { id: "delete", label: "Delete", tone: "danger", icon: <Trash2 size={14} />, onClick: deleteContact },
   ]}
   onRowClick={openContact}
+  density="compact"
+  tableLayout="fixed"
   mobileLoadMore={{ hasMore, loading: loadingMore, onLoadMore }}
   footer={<ListPagination {...paginationProps} />}
 />

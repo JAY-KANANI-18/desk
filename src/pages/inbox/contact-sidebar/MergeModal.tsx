@@ -39,6 +39,7 @@ interface MergeModalProps {
   onMerge: (resolution: Record<string, any>) => void;
   onCancel: () => void;
   loading?: boolean;
+  error?: string | null;
 }
 
 export function MergeModal({
@@ -49,6 +50,7 @@ export function MergeModal({
   onMerge,
   onCancel,
   loading,
+  error,
 }: MergeModalProps) {
   const [sel, setSel] = useState<Record<string, 'current' | 'duplicate'>>(() => {
     const selection: Record<string, 'current' | 'duplicate'> = {};
@@ -189,11 +191,14 @@ export function MergeModal({
       subtitle="Review and select information to be merged here."
       headerIcon={<GitMerge size={18} className="text-[var(--color-primary)]" />}
       size="lg"
-      width={672}
+      width="min(672px, calc(100vw - 32px))"
       closeOnOverlayClick={false}
       bodyPadding="none"
       footerMeta={
-        <p className="text-xs text-[#6b7280]">One contact and one conversation will remain after merge.</p>
+        <div className="space-y-1">
+          <p className="text-xs text-[#6b7280]">One contact and one conversation will remain after merge.</p>
+          {error ? <p className="text-xs font-medium text-red-600">{error}</p> : null}
+        </div>
       }
       secondaryAction={
         <Button
@@ -216,11 +221,9 @@ export function MergeModal({
         </Button>
       }
     >
-      <div
-        className="flex max-h-[90vh] flex-col"
-      >
-        <div className="overflow-y-auto flex-1 px-6 py-5 bg-[#fafafa]">
-          <div className="grid grid-cols-2 gap-4">
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 pb-6 sm:px-6 sm:py-5">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {contactCards.map(({ key, contact, roleLabel }) => {
               const channel = resolveChannel(contact);
               return (
@@ -285,7 +288,7 @@ export function MergeModal({
                       <span className="text-[11px] text-[var(--color-primary)] font-medium">Matched field</span>
                     ) : null}
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {(['current', 'duplicate'] as const).map((side) => {
                       const contact = side === 'current' ? current : duplicate;
                       const chosen = field.isTags ? !mergeTags && sel[field.key] === side : sel[field.key] === side;
@@ -321,7 +324,7 @@ export function MergeModal({
                       );
                     })}
                     {field.isTags ? (
-                      <div className="col-span-2">
+                      <div className="sm:col-span-2">
                         <div
                           className={`mt-3 rounded-xl border px-4 py-3 transition-all ${
                             mergeTags ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]' : 'border-[#d1d5db]'

@@ -27,7 +27,12 @@ import { useNotifications } from "./NotificationContext";
 import { useSocket } from "../socket/socket-provider";
 import { useWorkspace } from "./WorkspaceContext";
 import { useAuth } from "./AuthContext";
-import { contactsApi } from "../lib/contactApi";
+import {
+  contactsApi,
+  type ContactMergePreview,
+  type ContactMergeResult,
+} from "../lib/contactApi";
+import { ApiError, CONTACT_CHANNEL_IDENTIFIER_CONFLICT } from "../lib/apiClient";
 import {
   inboxApi,
   ApiConversation,
@@ -41,12 +46,23 @@ import {
 import { workspaceApi } from "../lib/workspaceApi";
 import { useChannel } from "./ChannelContext";
 import { getContactScopedChannels, isSameChannel } from "../pages/inbox/channelUtils";
+import {
+  ChannelIdentityConflictModal,
+  type ChannelIdentityConflictContact,
+  type ChannelIdentityConflictDetails,
+} from "../pages/inbox/ChannelIdentityConflictModal";
+import { MergeModal } from "../pages/inbox/contact-sidebar/MergeModal";
+import type { SidebarContact } from "../pages/inbox/contact-sidebar/types";
 
 /* ══════════════════════════════════════════════════════════════════
    TYPES
 ══════════════════════════════════════════════════════════════════ */
 
 export type { ApiConversation, ApiMessage, ApiTimelineItem };
+
+type InboxContactMergeResult = ContactMergeResult & {
+  survivorConversation?: ApiConversation | null;
+};
 
 export interface InboxFilters extends ConversationFilters {
   // extends the API filter type — status, priority, direction,
@@ -152,6 +168,64 @@ const DEFAULT_FILTERS: InboxFilters = {
   limit: 25,
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function optionalString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function optionalId(value: unknown) {
+  if (typeof value === "string" || typeof value === "number") return value;
+  return null;
+}
+
+function readConflictContact(value: unknown): ChannelIdentityConflictContact | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    id: optionalId(value.id),
+    firstName: optionalString(value.firstName),
+    lastName: optionalString(value.lastName),
+    email: optionalString(value.email),
+    phone: optionalString(value.phone),
+    company: optionalString(value.company),
+    avatarUrl: optionalString(value.avatarUrl),
+  };
+}
+
+function buildChannelIdentityConflict(
+  error: unknown,
+  currentContact: unknown,
+): ChannelIdentityConflictDetails | null {
+  if (!(error instanceof ApiError) || error.code !== CONTACT_CHANNEL_IDENTIFIER_CONFLICT) {
+    return null;
+  }
+
+  const data = isRecord(error.data) ? error.data : {};
+  const identifierField = optionalString(data.identifierField);
+  const identifier = optionalString(data.identifier);
+  const existingContact =
+    readConflictContact(data.existingContact) ??
+    ({
+      id: optionalId(data.existingContactId),
+      firstName: optionalString(data.existingContactName),
+      ...(identifierField === "email" ? { email: identifier } : { phone: identifier }),
+    } satisfies ChannelIdentityConflictContact);
+
+  return {
+    channelType: optionalString(data.channelType),
+    channelLabel: optionalString(data.channelLabel),
+    identifier,
+    identifierField,
+    message: optionalString(data.message) ?? error.message,
+    currentContact: readConflictContact(currentContact),
+    existingContact,
+    existingContactName: optionalString(data.existingContactName),
+  };
+}
+
 /* ══════════════════════════════════════════════════════════════════
    CONTEXT
 ══════════════════════════════════════════════════════════════════ */
@@ -227,6 +301,27 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [snoozedUntil, setSnoozedUntil] = useState<string | null>(null);
   const [msgSearchOpen, setMsgSearchOpen] = useState(false);
   const [msgSearch, setMsgSearch] = useState("");
+  const [channelIdentityConflict, setChannelIdentityConflict] =
+    useState<ChannelIdentityConflictDetails | null>(null);
+  const [channelMergePreview, setChannelMergePreview] =
+    useState<ContactMergePreview | null>(null);
+  const [channelMergeCurrentContact, setChannelMergeCurrentContact] =
+    useState<SidebarContact | null>(null);
+  const [channelMergeDuplicateContact, setChannelMergeDuplicateContact] =
+    useState<SidebarContact | null>(null);
+  const [channelMergePreviewLoading, setChannelMergePreviewLoading] = useState(false);
+  const [channelMergeLoading, setChannelMergeLoading] = useState(false);
+  const [channelMergeError, setChannelMergeError] = useState<string | null>(null);
+
+  const clearChannelIdentityConflict = useCallback(() => {
+    setChannelIdentityConflict(null);
+    setChannelMergePreview(null);
+    setChannelMergeCurrentContact(null);
+    setChannelMergeDuplicateContact(null);
+    setChannelMergePreviewLoading(false);
+    setChannelMergeLoading(false);
+    setChannelMergeError(null);
+  }, []);
 
   /* ── Workspace users (for assignee picker) ── */
   const { channels } = useChannel();
@@ -866,11 +961,26 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }
 
-      const message = await inboxApi.sendMessage(
-        selectedConversation?.id!,
-        resolvedChannelId,
-        payload,
-      );
+      try {
+        await inboxApi.sendMessage(
+          selectedConversation?.id!,
+          resolvedChannelId,
+          payload,
+        );
+      } catch (error) {
+        const conflict = buildChannelIdentityConflict(
+          error,
+          selectedContact ?? selectedConversation?.contact,
+        );
+        if (conflict) {
+          setChannelIdentityConflict(conflict);
+          setChannelMergePreview(null);
+          setChannelMergeCurrentContact(null);
+          setChannelMergeDuplicateContact(null);
+          setChannelMergeError(null);
+        }
+        return;
+      }
 
       if (
         user?.id &&
@@ -897,7 +1007,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
     },
-    [selectedChannel?.id, selectedConversation, user?.id, workspaceUsers],
+    [selectedChannel?.id, selectedConversation, selectedContact, user?.id, workspaceUsers],
   );
 
   // const sendMessage = useCallback(
@@ -1099,6 +1209,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const selectConversation = useCallback(
     (conv: ApiConversation, options?: { targetMessageId?: string | null; preserveSearch?: boolean }) => {
+      clearChannelIdentityConflict();
       setSelectedConversation({ ...conv, unreadCount: 0 });
       selectedConvIdRef.current = conv.id;
       setSelectedContact(null);
@@ -1133,6 +1244,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       const contactScopedChannels = getContactScopedChannels(
         channels,
         (conv as any)?.contact?.contactChannels,
+        (conv as any)?.contact,
       );
       setSelectedChannel(matchedChannel ?? contactScopedChannels[0] ?? channels?.[0] ?? null);
 
@@ -1161,6 +1273,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           const nextContactChannels = getContactScopedChannels(
             channels,
             (contact as any)?.contactChannels,
+            contact as any,
           );
           if (nextContactChannels.length === 0) return;
 
@@ -1194,7 +1307,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
     },
-    [wsId, channels, fetchLatestTimeline, fetchTimelineAroundMessage],
+    [wsId, channels, fetchLatestTimeline, fetchTimelineAroundMessage, clearChannelIdentityConflict],
   );
 
   /* ── Channel helpers ── */
@@ -1208,6 +1321,111 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       return !prev;
     });
   }, []);
+
+  const openChannelIdentityMergePreview = useCallback(async () => {
+    const primaryContactId = channelIdentityConflict?.currentContact?.id;
+    const secondaryContactId = channelIdentityConflict?.existingContact?.id;
+
+    if (!primaryContactId || !secondaryContactId) {
+      setChannelMergeError("Could not prepare this merge. Refresh the contact and try again.");
+      return;
+    }
+
+    setChannelMergePreviewLoading(true);
+    setChannelMergeError(null);
+
+    try {
+      const preview = await contactsApi.getMergePreview(primaryContactId, secondaryContactId);
+      setChannelMergePreview(preview);
+      setChannelMergeCurrentContact(preview.primary as SidebarContact);
+      setChannelMergeDuplicateContact(preview.secondary as SidebarContact);
+    } catch (error) {
+      setChannelMergeError(
+        error instanceof Error
+          ? error.message
+          : "Could not prepare this merge. Try again.",
+      );
+    } finally {
+      setChannelMergePreviewLoading(false);
+    }
+  }, [channelIdentityConflict]);
+
+  const closeChannelMergeReview = useCallback(() => {
+    setChannelMergePreview(null);
+    setChannelMergeCurrentContact(null);
+    setChannelMergeDuplicateContact(null);
+    setChannelMergeLoading(false);
+    setChannelMergeError(null);
+  }, []);
+
+  const mergeChannelIdentityContacts = useCallback(
+    async (resolution: Record<string, any>) => {
+      const primaryContactId =
+        channelMergeCurrentContact?.id ?? channelIdentityConflict?.currentContact?.id;
+      const secondaryContactId =
+        channelMergeDuplicateContact?.id ?? channelIdentityConflict?.existingContact?.id;
+
+      if (!primaryContactId || !secondaryContactId || !channelMergePreview) {
+        setChannelMergeError("Could not merge these contacts. Refresh and try again.");
+        return;
+      }
+
+      setChannelMergeLoading(true);
+      setChannelMergeError(null);
+
+      try {
+        const mergeResult = (await contactsApi.mergeContactIntoPrimary(
+          primaryContactId,
+          secondaryContactId,
+          {
+            source: "inbox_send_conflict",
+            confidenceScore: channelMergePreview.confidenceScore,
+            reasonCodes: channelMergePreview.reasonCodes,
+            resolution,
+          },
+        )) as InboxContactMergeResult;
+
+        clearChannelIdentityConflict();
+
+        const refreshedConversations = await refreshConversations();
+        const survivorConversation =
+          mergeResult.survivorConversation ??
+          refreshedConversations.find(
+            (conversation) => conversation.id === mergeResult.survivorConversationId,
+          ) ??
+          convList.find(
+            (conversation) => conversation.id === mergeResult.survivorConversationId,
+          ) ??
+          null;
+
+        if (survivorConversation) {
+          selectConversation(survivorConversation);
+          return;
+        }
+
+        await refreshContact();
+      } catch (error) {
+        setChannelMergeError(
+          error instanceof Error
+            ? error.message
+            : "Could not merge these contacts. Try again.",
+        );
+      } finally {
+        setChannelMergeLoading(false);
+      }
+    },
+    [
+      channelIdentityConflict,
+      channelMergeCurrentContact?.id,
+      channelMergeDuplicateContact?.id,
+      channelMergePreview,
+      clearChannelIdentityConflict,
+      convList,
+      refreshContact,
+      refreshConversations,
+      selectConversation,
+    ],
+  );
 
   /* ══════════════════════════════════════════════════════════════
      PROVIDE
@@ -1266,6 +1484,30 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       }}
     >
       {children}
+      {channelMergePreview && channelMergeCurrentContact && channelMergeDuplicateContact ? (
+        <MergeModal
+          current={channelMergeCurrentContact}
+          duplicate={channelMergeDuplicateContact}
+          preview={channelMergePreview}
+          conflictField={channelIdentityConflict?.identifierField === "email" ? "email" : "phone"}
+          onMerge={mergeChannelIdentityContacts}
+          onCancel={closeChannelMergeReview}
+          loading={channelMergeLoading}
+          error={channelMergeError}
+        />
+      ) : (
+        <ChannelIdentityConflictModal
+          conflict={channelIdentityConflict}
+          onClose={clearChannelIdentityConflict}
+          onReviewMerge={() => void openChannelIdentityMergePreview()}
+          mergePreviewLoading={channelMergePreviewLoading}
+          mergeError={channelMergeError}
+          canMerge={Boolean(
+            channelIdentityConflict?.currentContact?.id &&
+              channelIdentityConflict?.existingContact?.id,
+          )}
+        />
+      )}
     </InboxContext.Provider>
   );
 };

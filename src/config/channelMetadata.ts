@@ -60,6 +60,8 @@ export interface ChannelBroadcastMetadata {
   helperText: string;
 }
 
+export type ContactIdentifierField = "email" | "phone";
+
 export interface ChannelMetadata {
   key: ChannelKey;
   aliases?: string[];
@@ -83,6 +85,7 @@ export interface ChannelMetadata {
   badgeGlow?: string;
   badgeShadow?: string;
   avatarBadgeType: AvatarBadgeType;
+  initiateMessageContactField?: ContactIdentifierField;
   manageNavItems?: ManageChannelNavItemDefinition[];
   additionalResources?: ChannelResourceLink[];
   onboarding?: ChannelOnboardingDefinition;
@@ -136,6 +139,7 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
     badgeGlow: "from-[#25d366] to-[#128c7e]",
     badgeShadow: "rgba(37,211,102,0.45)",
     avatarBadgeType: "whatsapp",
+    initiateMessageContactField: "phone",
     broadcast: {
       supported: true,
       messageMode: "approved_template",
@@ -273,6 +277,7 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
     // badge: "Popular",
     badgeColor: "bg-green-100 text-green-700",
     avatarBadgeType: "email",
+    initiateMessageContactField: "email",
     broadcast: {
       supported: true,
       messageMode: "text",
@@ -293,6 +298,17 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
       iconKey: "mail",
       iconUrl: simpleIconUrl("gmail", "EA4335"),
     },
+  },
+  {
+    key: "gmail",
+    label: "Gmail",
+    catalogName: "Gmail",
+    simpleIconSlug: "gmail",
+    icon: simpleIconUrl("gmail"),
+    coloredIcon: simpleIconUrl("gmail", "EA4335"),
+    color: "bg-red-500",
+    avatarBadgeType: "gmail",
+    initiateMessageContactField: "email",
   },
   
   {
@@ -332,6 +348,29 @@ export const CHANNEL_METADATA: ChannelMetadata[] = [
       iconKey: "globe",
       iconUrl: simpleIconUrl("livechat", "FF5100"),
     },
+  },
+  {
+    key: "sms",
+    aliases: ["msg91_sms"],
+    label: "SMS",
+    catalogName: "MSG91 SMS",
+    manageLabel: "MSG91 SMS",
+    simpleIconSlug: "androidmessages",
+    icon: simpleIconUrl("androidmessages"),
+    color: "bg-emerald-600",
+    avatarBadgeType: "sms",
+    initiateMessageContactField: "phone",
+  },
+  {
+    key: "exotel_call",
+    label: "Voice Call",
+    catalogName: "Exotel Calling",
+    manageLabel: "Exotel Calling",
+    simpleIconSlug: "ringcentral",
+    icon: simpleIconUrl("ringcentral"),
+    color: "bg-cyan-600",
+    avatarBadgeType: "web",
+    initiateMessageContactField: "phone",
   },
   // {
   //   key: "gmail",
@@ -457,6 +496,12 @@ export function normalizeChannelKey(value: string | number | null | undefined) {
 export function getChannelMetadata(value: string | number | null | undefined) {
   const key = normalizeChannelKey(value);
   return CHANNEL_METADATA_BY_KEY[key] ?? null;
+}
+
+export function getContactIdentifierFieldForChannel(
+  value: string | number | null | undefined,
+) {
+  return getChannelMetadata(value)?.initiateMessageContactField ?? null;
 }
 
 export function getChannelBroadcastMetadata(

@@ -2,9 +2,88 @@ import DOMPurify from "dompurify";
 import { CenterModal } from "../../../components/ui/Modal";
 import type { Message } from "./types";
 
+const LINKABLE_URL = /\bhttps?:\/\/[^\s<>"']+/gi;
+const TEXT_NODE_SKIP_PARENTS = new Set(["A", "SCRIPT", "STYLE", "TEXTAREA"]);
+
 interface MessageAreaEmailModalProps {
   message: Message | null;
   onClose: () => void;
+}
+
+function stripTrailingUrlPunctuation(url: string) {
+  const trailing = url.match(/[),.;!?]+$/)?.[0] ?? "";
+  return {
+    href: trailing ? url.slice(0, -trailing.length) : url,
+    trailing,
+  };
+}
+
+function linkifyTextNodes(root: HTMLElement) {
+  const doc = root.ownerDocument;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || TEXT_NODE_SKIP_PARENTS.has(parent.tagName)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      LINKABLE_URL.lastIndex = 0;
+      return LINKABLE_URL.test(node.nodeValue ?? "")
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
+    },
+  });
+
+  const nodes: Text[] = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+
+  nodes.forEach((node) => {
+    const text = node.nodeValue ?? "";
+    const fragment = doc.createDocumentFragment();
+    let cursor = 0;
+
+    text.replace(LINKABLE_URL, (match, offset: number) => {
+      if (offset > cursor) {
+        fragment.appendChild(doc.createTextNode(text.slice(cursor, offset)));
+      }
+
+      const { href, trailing } = stripTrailingUrlPunctuation(match);
+      const link = doc.createElement("a");
+      link.href = href;
+      link.textContent = href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      fragment.appendChild(link);
+      if (trailing) fragment.appendChild(doc.createTextNode(trailing));
+      cursor = offset + match.length;
+      return match;
+    });
+
+    if (cursor < text.length) {
+      fragment.appendChild(doc.createTextNode(text.slice(cursor)));
+    }
+
+    node.replaceWith(fragment);
+  });
+}
+
+function prepareEmailHtml(html: string) {
+  const sanitized = DOMPurify.sanitize(html, {
+    ADD_ATTR: ["target", "rel"],
+  });
+  const doc = new DOMParser().parseFromString(
+    `<div data-email-root="true">${sanitized}</div>`,
+    "text/html",
+  );
+  const root = doc.querySelector<HTMLElement>("[data-email-root]");
+  if (!root) return sanitized;
+
+  root.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((link) => {
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  });
+  linkifyTextNodes(root);
+
+  return root.innerHTML;
 }
 
 export function MessageAreaEmailModal({
@@ -20,6 +99,7 @@ export function MessageAreaEmailModal({
     to: message.metadata?.email?.to ?? message.metadata?.to,
     cc: message.metadata?.email?.cc ?? message.metadata?.cc,
   };
+  const htmlBody = email.htmlBody ? prepareEmailHtml(email.htmlBody) : "";
   const metaRows = [
     { label: "From", value: email?.from },
     { label: "To", value: email?.to },
@@ -58,10 +138,11 @@ export function MessageAreaEmailModal({
         ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {email?.htmlBody ? (
+          {htmlBody ? (
             <div
+              className="email-message-body min-w-0"
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(email.htmlBody),
+                __html: htmlBody,
               }}
             />
           ) : (
