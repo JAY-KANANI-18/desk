@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Plus, Radio } from "@/components/ui/icons";
 import { MobileSheet } from "../components/ui/modal";
 import { Button } from "../components/ui/Button";
@@ -6,18 +7,65 @@ import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 import { PageLayout } from "../components/ui/PageLayout";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { BroadcastCalendarView } from "./broadcast/BroadcastCalendarView";
-import { BroadcastComposerModal } from "./broadcast/BroadcastComposerModal";
-import { BroadcastDetailsDrawer } from "./broadcast/BroadcastDetailsDrawer";
+import { BroadcastComposerPage } from "./broadcast/BroadcastComposerPage";
+import { BroadcastDetailsPage } from "./broadcast/BroadcastDetailsPage";
 import { BroadcastSidebar } from "./broadcast/BroadcastSidebar";
 import { BroadcastTableView } from "./broadcast/BroadcastTableView";
 import { BroadcastToolbar } from "./broadcast/BroadcastToolbar";
+import type { BroadcastRunRow } from "../lib/broadcastApi";
 import { useBroadcastPage } from "./broadcast/useBroadcastPage";
 import { formatDateTime } from "./broadcast/utils";
 
 export const Broadcast = () => {
   const page = useBroadcastPage();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { broadcastId } = useParams<{ broadcastId?: string }>();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const isComposerRoute = location.pathname.replace(/\/+$/, "").endsWith("/broadcast/new");
+
+  useEffect(() => {
+    if (isComposerRoute) {
+      page.closeDetails();
+      return;
+    }
+    if (broadcastId) {
+      void page.openDetailById(broadcastId);
+      return;
+    }
+    page.closeDetails();
+  }, [broadcastId, isComposerRoute, page.openDetailById, page.closeDetails]);
+
+  const openDetailPage = useCallback(
+    (run: BroadcastRunRow) => {
+      navigate(run.id);
+    },
+    [navigate],
+  );
+
+  const closeDetailPage = useCallback(() => {
+    navigate("..", { relative: "path" });
+  }, [navigate]);
+
+  const openComposerPage = useCallback(() => {
+    page.openComposer();
+    navigate("new");
+  }, [navigate, page.openComposer]);
+
+  const closeComposerPage = useCallback(() => {
+    page.closeComposer();
+    navigate("..", { relative: "path" });
+  }, [navigate, page.closeComposer]);
+
+  const sendComposerBroadcast = useCallback(async () => {
+    const result = await page.handleSend();
+    if (result) {
+      navigate(`../${result.broadcastRunId}`, { relative: "path", replace: true });
+    }
+    return result;
+  }, [navigate, page.handleSend]);
+
   const desktopToolbar = isMobile ? undefined : (
     <BroadcastToolbar
       searchQuery={page.searchQuery}
@@ -27,43 +75,73 @@ export const Broadcast = () => {
       activeRunLabel={page.activeRunLabel}
       viewMode={page.viewMode}
       onViewModeChange={page.setViewMode}
-      onNewBroadcast={page.openComposer}
+      onNewBroadcast={openComposerPage}
       selectedStatus={page.selectedStatus}
       onStatusChange={page.setSelectedStatus}
       onOpenFilters={() => setShowStatusMenu(true)}
       desktopMode="embedded"
     />
   );
-  const broadcastDetailsDrawer = (
-    <BroadcastDetailsDrawer
-      selectedRun={page.selectedRun}
-      analytics={page.analytics}
-      analyticsLoading={page.analyticsLoading}
-      trace={page.trace}
-      traceLoading={page.traceLoading}
-      broadcastAction={page.broadcastAction}
-      broadcastActionSaving={page.broadcastActionSaving}
-      broadcastDraft={page.broadcastDraft}
-      onBroadcastDraftChange={page.setBroadcastDraft}
-      onClose={page.closeDetails}
-      onOpenBroadcastAction={page.openBroadcastAction}
-      onCancelBroadcastAction={() => page.setBroadcastAction(null)}
-      onSaveBroadcastAction={page.saveBroadcastAction}
-      onSendNow={page.sendSelectedBroadcastNow}
-      onRefreshAnalytics={page.refreshAnalytics}
-      onRefreshTrace={page.refreshTrace}
-      desktopVariant="inline"
-      desktopContainerClassName="flex h-full w-full min-w-0"
-    />
-  );
+
+  if (isComposerRoute) {
+    return (
+      <BroadcastComposerPage
+        channels={page.channels}
+        form={page.form}
+        onFormChange={page.setForm}
+        tags={page.tags}
+        lifecycles={page.lifecycles}
+        audiencePreview={page.audiencePreview}
+        previewLoading={page.previewLoading}
+        onPreviewAudience={page.runAudiencePreview}
+        isWhatsApp={page.isWhatsApp}
+        waTemplates={page.waTemplates}
+        selectedTemplateId={page.selectedTemplateId}
+        onSelectedTemplateIdChange={page.setSelectedTemplateId}
+        selectedTemplate={page.selectedTemplate}
+        selectedChannel={page.selectedChannel}
+        templateVars={page.templateVars}
+        onTemplateVarsChange={page.setTemplateVars}
+        sending={page.sending}
+        onBack={closeComposerPage}
+        onSend={sendComposerBroadcast}
+      />
+    );
+  }
+
+  if (broadcastId) {
+    return (
+      <BroadcastDetailsPage
+        selectedRun={page.selectedRun}
+        detailsLoading={page.detailsLoading}
+        analytics={page.analytics}
+        analyticsLoading={page.analyticsLoading}
+        trace={page.trace}
+        traceLoading={page.traceLoading}
+        traceFilter={page.traceFilter}
+        tracePage={page.tracePage}
+        traceLimit={page.traceLimit}
+        broadcastAction={page.broadcastAction}
+        broadcastActionSaving={page.broadcastActionSaving}
+        broadcastDraft={page.broadcastDraft}
+        onBroadcastDraftChange={page.setBroadcastDraft}
+        onBack={closeDetailPage}
+        onOpenBroadcastAction={page.openBroadcastAction}
+        onCancelBroadcastAction={() => page.setBroadcastAction(null)}
+        onSaveBroadcastAction={page.saveBroadcastAction}
+        onSendNow={page.sendSelectedBroadcastNow}
+        onRefreshAnalytics={page.refreshAnalytics}
+        onRefreshTrace={page.refreshTrace}
+        onTraceFilterChange={page.changeTraceFilter}
+        onTracePageChange={page.changeTracePage}
+      />
+    );
+  }
 
   return (
     <PageLayout
       title="Message broadcasts"
       toolbar={desktopToolbar}
-      aside={isMobile ? undefined : broadcastDetailsDrawer}
-      asideOpen={Boolean(page.selectedRun)}
-      asideWidth={448}
       className="bg-white"
       contentClassName="min-h-0 flex-1 overflow-hidden bg-white px-0 py-0"
     >
@@ -78,7 +156,7 @@ export const Broadcast = () => {
               activeRunLabel={page.activeRunLabel}
               viewMode={page.viewMode}
               onViewModeChange={page.setViewMode}
-              onNewBroadcast={page.openComposer}
+              onNewBroadcast={openComposerPage}
               selectedStatus={page.selectedStatus}
               onStatusChange={page.setSelectedStatus}
               onOpenFilters={() => setShowStatusMenu(true)}
@@ -96,7 +174,7 @@ export const Broadcast = () => {
                 onToday={page.goToToday}
                 onPreviousMonth={page.goToPreviousMonth}
                 onNextMonth={page.goToNextMonth}
-                onOpenDetail={page.openDetail}
+                onOpenDetail={openDetailPage}
                 hasMoreRuns={page.hasMoreRuns}
                 runsLoadingMore={page.runsLoadingMore}
                 nextCursor={page.nextCursor}
@@ -114,7 +192,7 @@ export const Broadcast = () => {
                 sortBy={page.sortBy}
                 sortOrder={page.sortOrder}
                 onToggleSort={page.toggleSort}
-                onOpenDetail={page.openDetail}
+                onOpenDetail={openDetailPage}
                 onLoadMore={page.loadMoreRuns}
               />
             )}
@@ -136,7 +214,7 @@ export const Broadcast = () => {
                 variant="link"
                 size="sm"
                 className="ml-2"
-                onClick={() => void page.openLastRun()}
+                onClick={() => navigate(page.lastSendResult.broadcastRunId)}
               >
                 View details
               </Button>
@@ -169,36 +247,11 @@ export const Broadcast = () => {
           />
         </MobileSheet>
 
-        <BroadcastComposerModal
-          open={page.showComposer}
-          channels={page.channels}
-          form={page.form}
-          onFormChange={page.setForm}
-          tags={page.tags}
-          lifecycles={page.lifecycles}
-    
-          audiencePreview={page.audiencePreview}
-          previewLoading={page.previewLoading}
-          onPreviewAudience={page.runAudiencePreview}
-          isWhatsApp={page.isWhatsApp}
-          waTemplates={page.waTemplates}
-          selectedTemplateId={page.selectedTemplateId}
-          onSelectedTemplateIdChange={page.setSelectedTemplateId}
-          selectedTemplate={page.selectedTemplate}
-          templateVars={page.templateVars}
-          onTemplateVarsChange={page.setTemplateVars}
-          sending={page.sending}
-          onClose={page.closeComposer}
-          onSend={page.handleSend}
-        />
-
         <FloatingActionButton
           label="New broadcast"
           icon={<Plus size={24} />}
-          onClick={page.openComposer}
+          onClick={openComposerPage}
         />
-
-        {isMobile ? broadcastDetailsDrawer : null}
       </div>
     </PageLayout>
   );

@@ -168,7 +168,7 @@ function WaBtn({ btn, divider = true }: { btn: ButtonType; divider?: boolean }) 
 
 // ─── WhatsApp Preview Bubble ──────────────────────────────────────────────────
 
-function WhatsAppPreview({ template, values }: { template: Template; values: Record<string, string> }) {
+export function WhatsAppPreview({ template, values }: { template: Template; values: Record<string, string> }) {
     const [cardIdx, setCardIdx] = useState(0);
     const r = (s?: string) => s ? renderTpl(s, values) : '';
 

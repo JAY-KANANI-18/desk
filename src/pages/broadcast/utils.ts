@@ -3,7 +3,20 @@ import type { BroadcastRunStatus } from "../../lib/broadcastApi";
 export function templateVariableKeys(raw: unknown): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) {
-    return raw.filter((value): value is string => typeof value === "string");
+    return raw
+      .map((value) => {
+        if (typeof value === "string") return value;
+        if (
+          typeof value === "object" &&
+          value !== null &&
+          "key" in value &&
+          typeof value.key === "string"
+        ) {
+          return value.key;
+        }
+        return null;
+      })
+      .filter((value): value is string => Boolean(value));
   }
   if (typeof raw === "object" && raw !== null && "length" in raw) {
     try {

@@ -167,43 +167,43 @@ export function useBroadcastComposer({
     }
   }, [flags.lifecycle, form, selectedChannel]);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(async (): Promise<BroadcastSendResult | null> => {
     if (!form.name.trim()) {
       toast.error("Give this broadcast a name");
-      return;
+      return null;
     }
     if (!form.channelId) {
       toast.error("Choose where to send from");
-      return;
+      return null;
     }
     if (!selectedChannel || !channelSupportsBroadcast(selectedChannel.type)) {
       toast.error("Broadcasts are available for WhatsApp and Email only");
-      return;
+      return null;
     }
     if (isWhatsApp) {
       if (!selectedTemplate) {
         toast.error("Choose an approved WhatsApp message");
-        return;
+        return null;
       }
       for (const key of templateVariableKeys(selectedTemplate.variables)) {
         if (!(templateVars[key] ?? "").trim()) {
           toast.error(`Fill in ${templateFieldLabel(key)}`);
-          return;
+          return null;
         }
       }
     } else if (!form.text.trim()) {
       toast.error("Write your message");
-      return;
+      return null;
     }
 
     if (form.scheduleMode === "later") {
       if (!form.scheduledAt) {
         toast.error("Choose when to send");
-        return;
+        return null;
       }
       if (new Date(form.scheduledAt).getTime() <= Date.now() + 30_000) {
         toast.error("Choose a time at least 1 minute from now");
-        return;
+        return null;
       }
     }
 
@@ -245,8 +245,10 @@ export function useBroadcastComposer({
       setForm(INITIAL_FORM);
       setAudiencePreview(null);
       await reloadRuns();
+      return result;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not start broadcast");
+      return null;
     } finally {
       setSending(false);
     }
@@ -264,6 +266,7 @@ export function useBroadcastComposer({
     waTemplates,
     selectedTemplateId,
     selectedTemplate,
+    selectedChannel,
     templateVars,
     isWhatsApp,
     setForm,

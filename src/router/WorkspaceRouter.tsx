@@ -144,6 +144,22 @@ export const WorkspaceRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="broadcast/new"
+          element={
+            <ProtectedRoute ws="ws:broadcasts:view">
+              <Broadcast />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="broadcast/:broadcastId"
+          element={
+            <ProtectedRoute ws="ws:broadcasts:view">
+              <Broadcast />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="workflows"

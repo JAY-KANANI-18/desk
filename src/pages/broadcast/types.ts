@@ -42,7 +42,9 @@ export type BroadcastTemplate = {
   name: string;
   language: string;
   category: string;
+  status?: string;
   variables: unknown;
+  components?: unknown;
 };
 
 export type BroadcastStatusFilter = {

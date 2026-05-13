@@ -30,6 +30,9 @@ export type BroadcastRunRow = {
   contentMode: string;
   templateName: string | null;
   templateLanguage: string | null;
+  templateVariables?: unknown;
+  templateSnapshot?: unknown;
+  messageText?: string | null;
   textPreview: string | null;
   totalAudience: number;
   queuedCount: number;
@@ -71,9 +74,16 @@ export type BroadcastAnalytics = {
   queueNote: string;
 };
 
+export type BroadcastTraceFilter = "all" | "sent" | "delivered" | "read" | "attention";
+
 export type BroadcastTrace = {
   broadcastRunId: string;
   limit: number;
+  page: number;
+  total: number;
+  filteredTotal: number;
+  totalPages: number;
+  status: BroadcastTraceFilter;
   rows: Array<{
     recipientId?: string;
     messageId: string | null;
@@ -114,7 +124,17 @@ export const broadcastApi = {
   analytics: (id: string) =>
     api.get(`/broadcasts/${id}/analytics`) as Promise<BroadcastAnalytics>,
 
-  trace: (id: string) => api.get(`/broadcasts/${id}/trace`) as Promise<BroadcastTrace>,
+  trace: (
+    id: string,
+    params: { status?: BroadcastTraceFilter; page?: number; take?: number } = {},
+  ) => {
+    const searchParams = new URLSearchParams();
+    if (params.status) searchParams.set("status", params.status);
+    if (params.page != null) searchParams.set("page", String(params.page));
+    if (params.take != null) searchParams.set("take", String(params.take));
+    const query = searchParams.toString();
+    return api.get(`/broadcasts/${id}/trace${query ? `?${query}` : ""}`) as Promise<BroadcastTrace>;
+  },
 
   update: (id: string, body: { name?: string; scheduledAt?: string }) =>
     api.patch(`/broadcasts/${id}`, body) as Promise<BroadcastRunRow>,
@@ -150,6 +170,7 @@ export const broadcastApi = {
         category: string;
         status: string;
         variables: unknown;
+        components?: unknown;
       }>
     >,
 };
