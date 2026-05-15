@@ -36,6 +36,28 @@ interface Contact {
         channelId?: string | number;
         identifier?: string;
     }>;
+    contactIntegrations?: Array<{
+        provider?: string;
+        externalId?: string;
+        role?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        lastSeenAt?: string | null;
+        integration?: {
+            id?: string;
+            provider?: string;
+            name?: string;
+            externalAccountId?: string | null;
+            externalAccountName?: string | null;
+            status?: string;
+        } | null;
+        resource?: {
+            id?: string;
+            type?: string;
+            name?: string | null;
+            externalId?: string;
+        } | null;
+    }>;
     channel?: string;
     tags?: string[];
     tagIds?: string[];
@@ -101,6 +123,60 @@ export interface ContactTagMutationResult {
     contactId: string;
     tagId: string;
     tags: string[];
+}
+
+export interface CommerceLineItem {
+    id?: string;
+    title: string;
+    sku?: string | null;
+    quantity?: number | null;
+    totalAmount?: number | null;
+}
+
+export interface CommerceCustomerSummary {
+    id: string;
+    provider: string;
+    externalCustomerId: string;
+    email?: string | null;
+    phone?: string | null;
+    status?: string | null;
+    totalOrders?: number | null;
+    totalSpentAmount?: number | null;
+    currency?: string | null;
+    lastSeenAt?: string | null;
+}
+
+export interface CommerceOrderSummary {
+    id: string;
+    provider: string;
+    orderNumber?: string | null;
+    status?: string | null;
+    financialStatus?: string | null;
+    fulfillmentStatus?: string | null;
+    currency?: string | null;
+    totalAmount?: number | null;
+    placedAt?: string | null;
+    paidAt?: string | null;
+    lineItems?: CommerceLineItem[];
+}
+
+export interface CommerceCartSummary {
+    id: string;
+    provider: string;
+    status?: string | null;
+    currency?: string | null;
+    totalAmount?: number | null;
+    itemCount?: number | null;
+    checkoutUrl?: string | null;
+    abandonedAt?: string | null;
+    providerUpdatedAt?: string | null;
+    lineItems?: CommerceLineItem[];
+}
+
+export interface ContactCommerceContext {
+    customers: CommerceCustomerSummary[];
+    orders: CommerceOrderSummary[];
+    carts: CommerceCartSummary[];
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC DATA
@@ -273,6 +349,11 @@ export const contactsApi = {
 
     getContact: async (contactId: number | string): Promise<Contact> => {
         const res = await api.get(`/contacts/${contactId}`);
+        return res;
+    },
+
+    getCommerceContext: async (contactId: number | string): Promise<ContactCommerceContext> => {
+        const res = await api.get(`/contacts/${contactId}/commerce`);
         return res;
     },
 

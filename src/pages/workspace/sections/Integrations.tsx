@@ -1,274 +1,283 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+} from "@/components/ui/icons";
 
-import { SectionError } from "../components/SectionError";
 import { workspaceApi } from "../../../lib/workspaceApi";
-import { DataLoader } from "../../Loader";
 import type { Integration } from "../types";
+import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
 import { Button } from "../../../components/ui/Button";
+import { Tag } from "../../../components/ui/Tag";
+import { INTEGRATION_CATEGORIES } from "../../../config/integrationMetadata";
+import {
+  formatDateTime,
+  integrationInitials,
+  integrationBenefits,
+  mergeIntegrationCatalog,
+  statusColor,
+  statusLabel,
+  type IntegrationViewModel,
+} from "../integrations/integrationUi";
 
-const API_ROOT =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/api\/?$/, "") ||
-  "http://localhost:3000";
+function IntegrationIcon({ integration }: { integration: IntegrationViewModel }) {
+  const [imageFailed, setImageFailed] = useState(false);
 
-function waitForMetaAdsOAuthPopup(popup: Window): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error("Facebook login timed out. Please try again."));
-    }, 5 * 60 * 1000);
+  return (
+    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
+      {imageFailed ? (
+        <span className="text-xs font-semibold text-gray-500">
+          {integrationInitials(integration.name)}
+        </span>
+      ) : (
+        <img
+          alt=""
+          className="h-9 w-9 object-contain"
+          src={integration.simpleIconUrl}
+          onError={() => setImageFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
 
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "meta_ads_oauth" && event.data?.code) {
-        cleanup();
-        resolve(event.data.code as string);
+function IntegrationBenefitList({
+  benefits,
+  connected,
+}: {
+  benefits: string[];
+  connected: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        <span className="h-px w-7 rounded-full bg-[var(--color-primary)]/45" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+          {connected ? "Active benefits" : "What this unlocks"}
+        </p>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {benefits.map((benefit) => (
+          <li
+            key={benefit}
+            className="flex items-start gap-2.5 text-sm leading-5 text-gray-700 md:text-[13px] md:leading-5"
+          >
+            <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-primary)]/70" />
+            <span className="min-w-0 font-medium">{benefit}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function IntegrationCard({
+  integration,
+  onManage,
+}: {
+  integration: IntegrationViewModel;
+  onManage: (integration: IntegrationViewModel) => void;
+}) {
+  const isPlanned = integration.availability === "planned";
+  const actionLabel = integration.connected ? "Manage" : isPlanned ? "Preview" : "Connect";
+  const accountLabel =
+    integration.connected
+      ? integration.summary?.accountName ||
+        integration.summary?.shopName ||
+        integration.summary?.shopDomain ||
+        null
+      : null;
+  const benefits = integrationBenefits(integration).slice(0, 3);
+  const stateTitle = integration.connected
+    ? "Active in workspace"
+    : isPlanned
+      ? "Coming later"
+      : "Ready to connect";
+  const stateText = integration.connected
+    ? accountLabel
+      ? `Connected to ${accountLabel}`
+      : "Connected and ready for contacts, workflows, and broadcasts."
+    : isPlanned
+      ? "Preview how this provider will fit into AxoDesk."
+      : "Connect this provider when you are ready.";
+  const cardStyle = integration.connected
+    ? {
+        borderColor:
+          "color-mix(in srgb, var(--color-primary) 36%, var(--settings-surface-border))",
+        boxShadow:
+          "inset 3px 0 0 var(--color-primary), 0 12px 30px color-mix(in srgb, var(--color-primary) 10%, transparent)",
       }
-      if (event.data?.type === "meta_ads_oauth" && event.data?.error) {
-        cleanup();
-        reject(
-          new Error(
-            (event.data.error_description as string) ||
-              (event.data.error as string) ||
-              "Facebook login was cancelled."
-          )
-        );
-      }
-    };
+    : null;
 
-    const poll = setInterval(() => {
-      try {
-        if (popup.closed) {
-          cleanup();
-          reject(new Error("Login window was closed."));
-          return;
-        }
-        const href = popup.location.href;
-        if (href?.includes("code=")) {
-          const code = new URL(href).searchParams.get("code");
-          if (code) {
-            popup.close();
-            cleanup();
-            resolve(code);
-          }
-        }
-      } catch {
-        /* cross-origin until redirect */
-      }
-    }, 500);
+  return (
+    <div
+      className={`settings-row-card flex flex-col gap-5 md:flex-row md:items-stretch ${
+        integration.connected ? "settings-row-card--active" : ""
+      }`}
+      style={cardStyle ?? undefined}
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-4">
+        <IntegrationIcon integration={integration} />
 
-    const cleanup = () => {
-      clearTimeout(timeout);
-      clearInterval(poll);
-      window.removeEventListener("message", onMessage);
-    };
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-base font-semibold text-gray-900">
+              {integration.name}
+            </p>
+            <Tag
+              label={statusLabel(integration)}
+              bgColor={statusColor(integration)}
+              textColor={integration.connected ? "var(--color-success)" : undefined}
+              size="sm"
+            />
+          </div>
+          <p className="mt-1 max-w-3xl text-sm leading-5 text-gray-500">
+            {integration.desc}
+          </p>
 
-    window.addEventListener("message", onMessage);
-  });
+          <div className="mt-3 flex flex-col gap-1 text-xs text-gray-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+            <span
+              className={`inline-flex items-center gap-1.5 font-semibold ${
+                integration.connected ? "text-[var(--color-primary)]" : "text-gray-700"
+              }`}
+            >
+              {integration.connected ? (
+                <CheckCircle2 size={14} weight="fill" />
+              ) : null}
+              {stateTitle}
+            </span>
+            <span className="hidden text-gray-300 sm:inline" aria-hidden="true">/</span>
+            <span className="font-medium text-gray-600">{stateText}</span>
+            {integration.connected && integration.lastSyncedAt ? (
+              <>
+                <span className="hidden text-gray-300 sm:inline" aria-hidden="true">/</span>
+                <span>Last synced {formatDateTime(integration.lastSyncedAt)}</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col justify-between gap-4 border-t border-gray-100 pt-4 md:w-[380px] md:border-l md:border-t-0 md:border-gray-100 md:pl-6 md:pt-0 lg:w-[420px]">
+        <IntegrationBenefitList benefits={benefits} connected={integration.connected} />
+        <Button
+          onClick={() => onManage(integration)}
+          variant={integration.connected ? "primary" : "secondary"}
+          size="sm"
+          className="w-full md:w-auto md:self-end"
+          rightIcon={<ChevronRight size={14} />}
+        >
+          {actionLabel}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export const Integrations = () => {
-  const [items, setItems] = useState<Integration[]>([]);
+  const navigate = useNavigate();
+  const [remoteItems, setRemoteItems] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await workspaceApi.getIntegrations();
-      const list = (res as { integrations?: Integration[] })?.integrations ?? [];
-      setItems(list);
+      const res = (await workspaceApi.getIntegrations()) as {
+        integrations?: Integration[];
+      };
+      setRemoteItems(res.integrations ?? []);
     } catch {
-      setError("Failed to load integrations.");
+      setError("Failed to load integration connection status.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
-  const connectMetaAds = async () => {
-    setBusyId("meta_ads");
-    try {
-      const start = (await workspaceApi.getMetaAdsOAuthUrl()) as {
-        url: string;
-        redirectUri?: string;
-      };
-      if (!start?.url) throw new Error("Could not start Facebook login.");
+  useMobileHeaderActions(
+    {
+      actions: [
+        {
+          id: "refresh-integrations",
+          label: "Refresh integrations",
+          icon: loading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <RefreshCw size={16} />
+          ),
+          onClick: () => void load(),
+          disabled: loading,
+        },
+      ],
+    },
+    [load, loading],
+  );
 
-      const popup = window.open(start.url, "meta_ads_oauth", "width=600,height=720,scrollbars=yes");
-      if (!popup) throw new Error("Popup blocked. Allow popups for this site and try again.");
+  const integrations = useMemo(
+    () => mergeIntegrationCatalog(remoteItems),
+    [remoteItems],
+  );
+  const grouped = useMemo(
+    () =>
+      INTEGRATION_CATEGORIES.map((itemCategory) => ({
+        category: itemCategory,
+        items: integrations.filter((integration) => integration.category === itemCategory),
+      })).filter((group) => group.items.length > 0),
+    [integrations],
+  );
 
-      const code = await waitForMetaAdsOAuthPopup(popup);
-      await workspaceApi.exchangeMetaAdsOAuthCode(code);
-      await load();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Meta Ads connection failed.");
-    } finally {
-      setBusyId(null);
-    }
+  const handleManage = (integration: IntegrationViewModel) => {
+    navigate(`/workspace/settings/integrations/${integration.id}`);
   };
-
-  const disconnectMetaAds = async () => {
-    setBusyId("meta_ads");
-    try {
-      await workspaceApi.disconnectMetaAdsIntegration();
-      await load();
-    } catch {
-      setError("Failed to disconnect Meta Ads.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const refreshMetaAds = async () => {
-    setBusyId("meta_ads_refresh");
-    try {
-      await workspaceApi.getMetaAdsStatus();
-      await load();
-    } catch {
-      /* non-fatal */
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  if (loading) return <DataLoader type={"integrations"} />;
-  if (error && items.length === 0) return <SectionError message={error} onRetry={load} />;
 
   return (
     <div className="settings-page-stack">
-      {error && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+      {loading ? (
+        <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+          Checking integration connection status...
+        </p>
+      ) : null}
+
+      {error ? (
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {error}
         </p>
-      )}
+      ) : null}
 
-      <section className="settings-data-header">
-        <div className="settings-page-intro">
-          <p className="settings-page-intro__copy">
-            Connect other tools your team uses, like ads and reporting. For WhatsApp, SMS, email, and similar,
-            go to{" "}
-            <a href="/channels" className="text-[var(--color-primary)] hover:underline">
-              Channels
-            </a>
-            .
+      {grouped.length === 0 ? (
+        <div className="settings-empty-panel">
+          <p className="text-sm font-medium text-gray-700">
+            No integrations found
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            Available providers will appear here when they are enabled.
           </p>
         </div>
-      </section>
-
-      <div className="settings-card-grid">
-        {items.map((int) => (
-          <div
-            key={int.id}
-            className="settings-row-card flex flex-col gap-4"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl border border-gray-100 flex-shrink-0">
-                {int.icon}
+      ) : (
+        <div className="space-y-7">
+          {grouped.map((group) => (
+            <section key={group.category} className="space-y-3">
+              <div className="space-y-3">
+                {group.items.map((integration) => (
+                  <IntegrationCard
+                    key={integration.id}
+                    integration={integration}
+                    onManage={handleManage}
+                  />
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800">{int.name}</p>
-                <span className="text-xs text-gray-400">{int.category}</span>
-                <p className="text-xs text-gray-500 mt-2 leading-relaxed">{int.desc}</p>
-              </div>
-            </div>
-
-            {int.id === "meta_ads" && int.connected && int.routingChannelId && (
-              <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 space-y-2 text-xs text-gray-700">
-                <p className="font-medium text-gray-800">Webhook URL</p>
-                <code className="block break-all text-[11px] text-[var(--color-primary)] bg-white border border-slate-200 rounded px-2 py-1.5">
-                  {API_ROOT}/api/integrations/meta-ads/webhook/{int.routingChannelId}
-                </code>
-                <p className="text-gray-500">
-                  Use this URL in Meta so new leads can appear in AxoDesk automatically.
-                </p>
-              </div>
-            )}
-
-            {int.id === "meta_ads" && int.connected && int.summary && (
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg border border-gray-100 px-3 py-2">
-                  <p className="text-gray-400">Ad account</p>
-                  <p className="font-medium text-gray-900 truncate">{int.summary.accountName || "—"}</p>
-                  <p className="text-gray-500 font-mono truncate">{int.summary.accountId || ""}</p>
-                </div>
-                <div className="rounded-lg border border-gray-100 px-3 py-2">
-                  <p className="text-gray-400">Campaigns</p>
-                  <p className="font-medium text-gray-900">
-                    {int.summary.campaignCount != null ? int.summary.campaignCount : "—"}
-                  </p>
-                  <p className="text-gray-500">{int.summary.currency || ""}</p>
-                </div>
-                <div className="col-span-2 rounded-lg border border-gray-100 px-3 py-2">
-                  <p className="text-gray-400">Status</p>
-                  <p className="font-medium text-gray-900">{int.summary.accountStatus || "—"}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2 pt-1">
-              {int.id === "meta_ads" && (
-                <>
-                  {!int.connected ? (
-                    <Button
-                      onClick={() => {
-                        setError(null);
-                        connectMetaAds();
-                      }}
-                      loading={busyId === "meta_ads"}
-                      disabled={busyId !== null && busyId !== "meta_ads"}
-                      loadingMode="inline"
-                      loadingLabel="Connecting..."
-                      variant="facebook"
-                      size="sm"
-                      
-                    >
-                      Continue with Facebook
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={() => {
-                          setError(null);
-                          refreshMetaAds();
-                        }}
-                        loading={busyId === "meta_ads_refresh"}
-                        disabled={busyId !== null && busyId !== "meta_ads_refresh"}
-                        loadingMode="inline"
-                        loadingLabel="Refreshing..."
-                        variant="secondary"
-                        size="sm"
-                        
-                      >
-                        Refresh stats
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setError(null);
-                          disconnectMetaAds();
-                        }}
-                        loading={busyId === "meta_ads"}
-                        disabled={busyId !== null && busyId !== "meta_ads"}
-                        loadingMode="inline"
-                        loadingLabel="Disconnecting..."
-                        variant="danger-ghost"
-                        size="sm"
-                        
-                      >
-                        Disconnect
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

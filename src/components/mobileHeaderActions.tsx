@@ -20,6 +20,12 @@ export type MobileHeaderAction = {
 export type MobileHeaderRegistration = {
   actions?: MobileHeaderAction[];
   panel?: ReactNode;
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  desktopToolbar?: ReactNode;
+  backTo?: string;
+  leading?: ReactNode;
 };
 
 type MobileHeaderActionsContextValue = {

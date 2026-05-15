@@ -22,9 +22,23 @@ export type BroadcastFormState = {
   tagIds: string[];
   lifecycleId: string;
   respectMarketingOptOut: boolean;
+  commerce: BroadcastCommerceAudienceState;
   limit: number;
   scheduleMode: "now" | "later";
   scheduledAt: string;
+};
+
+export type BroadcastCommerceAudienceMode = "all" | "abandoned_cart" | "purchased";
+
+export type BroadcastPurchasedStatus = "paid" | "fulfilled" | "created" | "cancelled";
+
+export type BroadcastCommerceAudienceState = {
+  mode: BroadcastCommerceAudienceMode;
+  abandonedCartOlderThanMinutes: number;
+  abandonedCartMinTotalAmount: string;
+  purchasedSince: string;
+  purchasedMinTotalAmount: string;
+  purchasedStatuses: BroadcastPurchasedStatus[];
 };
 
 export type BroadcastDraftState = {

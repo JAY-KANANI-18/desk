@@ -4,11 +4,14 @@ import React, {
   useContext,
   useMemo,
 } from "react";
+import { featureFlags as envFeatureFlags } from "../config/featureFlags";
 import { useWorkspace } from "./WorkspaceContext";
 
 export interface FeatureFlags {
   aiAgents: boolean;
   lifecycle: boolean;
+  shopifyIntegration: boolean;
+  metaAdsIntegration: boolean;
 }
 
 export type FeatureFlagName = keyof FeatureFlags;
@@ -28,6 +31,8 @@ interface FeatureGateProps {
 const DEFAULT_FLAGS: FeatureFlags = {
   aiAgents: false,
   lifecycle: false,
+  shopifyIntegration: false,
+  metaAdsIntegration: false,
 };
 
 const FeatureFlagContext = createContext<FeatureFlagContextType | null>(null);
@@ -41,6 +46,8 @@ export const FeatureFlagProvider: React.FC<{ children: React.ReactNode }> = ({
     () => ({
       aiAgents: Boolean(activeWorkspace?.features?.aiAgentsEnabled),
       lifecycle: Boolean(activeWorkspace?.features?.lifecycleEnabled),
+      shopifyIntegration: envFeatureFlags.shopifyIntegration,
+      metaAdsIntegration: envFeatureFlags.metaAdsIntegration,
     }),
     [
       activeWorkspace?.features?.aiAgentsEnabled,

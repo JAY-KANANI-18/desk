@@ -23,6 +23,7 @@ import { workspaceApi } from '../../lib/workspaceApi';
 import { AiConversationPanel } from '../../modules/ai-agents/components/AiConversationPanel';
 import type { LifecycleStage } from '../workspace/types';
 import { ContactSidebarDesktopShell } from './contact-sidebar/DesktopShell';
+import { CommerceContextPanel } from './contact-sidebar/CommerceContextPanel';
 import { ContactNameRow, FieldRow, PhoneFieldRow } from './contact-sidebar/EditableRows';
 import { MergeModal } from './contact-sidebar/MergeModal';
 import type {
@@ -729,6 +730,10 @@ export function ContactSidebarHybrid({
           </div>
         </div>
       ) : null}
+
+      <FeatureGate flag="shopifyIntegration">
+        <CommerceContextPanel contactId={contact.id} />
+      </FeatureGate>
 
       <div className="mx-5 border-t border-[#eef1f6]" />
 

@@ -14,6 +14,7 @@ export { ContactFieldConfig } from './contactFieldUpdated';
 export { MenuClickTriggerConfig } from './metaAutomation.trigger';
 export { StoryReplyTriggerConfig } from './metaAutomation.trigger';
 export { TemplateSendTriggerConfig } from './metaAutomation.trigger';
+export { IntegrationEventTriggerConfig } from './integrationEvent.trigger';
 // export { ShortcutConfig } from './shortcut';
 // export { WebhookConfig } from './incomingWebhook';
 // export { ClickToChatConfig } from './clickToChatAds';

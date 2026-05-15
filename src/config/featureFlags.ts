@@ -6,4 +6,6 @@ function readBooleanEnv(value: unknown) {
 
 export const featureFlags = {
   workflowAiBuilder: readBooleanEnv(import.meta.env.VITE_WORKFLOW_AI_BUILDER_ENABLED),
+  shopifyIntegration: readBooleanEnv(import.meta.env.VITE_SHOPIFY_FEATURE_ENABLED),
+  metaAdsIntegration: readBooleanEnv(import.meta.env.VITE_META_ADS_FEATURE_ENABLED),
 } as const;

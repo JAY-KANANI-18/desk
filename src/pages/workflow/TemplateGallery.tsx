@@ -8,6 +8,7 @@ import {
 import {
   WORKFLOW_STEP_METADATA,
 } from '../../config/workflowMetadata';
+import { featureFlags } from '../../config/featureFlags';
 import { TEMPLATES } from './templates';
 import type { WorkflowTemplate } from './workflow.types';
 import { workspaceApi } from '../../lib/workspaceApi';
@@ -37,6 +38,16 @@ function getBranchPathCount(template: WorkflowTemplate) {
   return getTemplateSteps(template).filter((step) => step.type === 'branch_connector').length;
 }
 
+function isTemplateFeatureEnabled(template: WorkflowTemplate) {
+  const triggerType = template.defaultWorkflow?.config?.trigger?.type;
+  if (triggerType === 'meta_ad_click') return featureFlags.metaAdsIntegration;
+  if (typeof triggerType === 'string' && triggerType.startsWith('commerce.')) {
+    return featureFlags.shopifyIntegration;
+  }
+  if (template.category === 'commerce') return featureFlags.shopifyIntegration;
+  return true;
+}
+
 export function TemplateGallery() {
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState<string | null>(null);
@@ -45,11 +56,15 @@ export function TemplateGallery() {
   const [workflowName, setWorkflowName] = useState('');
   const [workflowNameError, setWorkflowNameError] = useState('');
   const navigate = useNavigate();
+  const availableTemplates = useMemo(
+    () => TEMPLATES.filter(isTemplateFeatureEnabled),
+    [],
+  );
 
   const filtered = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return TEMPLATES.filter((template) => {
+    return availableTemplates.filter((template) => {
       return (
         !normalizedSearch ||
         template.name.toLowerCase().includes(normalizedSearch) ||
@@ -57,7 +72,7 @@ export function TemplateGallery() {
         template.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
       );
     });
-  }, [search]);
+  }, [availableTemplates, search]);
 
   const handleOpen = (workflowId: string) => {
     navigate(`/workflows/${workflowId}`);
@@ -180,7 +195,7 @@ Select a template to start creating a workflow
               </p>
             </div> */}
             <span className="text-xs text-slate-400">
-              {TEMPLATES.length} templates available
+              {availableTemplates.length} templates available
             </span>
           </div>
 

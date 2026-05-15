@@ -59,14 +59,42 @@ export interface Integration {
   desc: string;
   icon: string;
   category: string;
+  providerCategory?: string;
+  availability?: 'available' | 'planned' | string;
+  connectMode?: 'oauth_popup' | 'oauth_redirect' | 'api_key' | 'coming_soon' | string;
+  authType?: string;
+  capabilities?: string[];
+  plannedDomains?: string[];
   connected: boolean;
+  status?: string;
+  integrationId?: string | null;
   routingChannelId?: string | null;
+  webhookPath?: string | null;
+  health?: unknown;
+  lastSyncedAt?: string | null;
+  lastWebhookAt?: string | null;
+  actions?: {
+    connect: string;
+    disconnect: boolean;
+    refresh: boolean;
+    sync?: boolean;
+    providerActions?: Array<{
+      key: string;
+      label: string;
+      description?: string;
+      mode: 'immediate' | 'job' | string;
+      destructive?: boolean;
+    }>;
+    configure: boolean;
+  };
   summary?: {
     accountName?: string;
     accountId?: string;
     accountStatus?: string;
     currency?: string;
     campaignCount?: number;
+    shopDomain?: string;
+    shopName?: string;
   } | null;
 }
 

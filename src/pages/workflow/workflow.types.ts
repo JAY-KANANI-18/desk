@@ -61,9 +61,21 @@ export type TriggerType =
   | 'conversation_closed'
   | 'contact_tag_updated'
   | 'contact_field_updated'
+  | 'contact_assigned'
+  | 'meta_ad_click'
   | 'menu_click'
   | 'story_reply'
   | 'template_send'
+  | 'commerce.customer_created'
+  | 'commerce.customer_updated'
+  | 'commerce.cart_created'
+  | 'commerce.cart_updated'
+  | 'commerce.cart_abandoned'
+  | 'commerce.order_created'
+  | 'commerce.order_paid'
+  | 'commerce.order_fulfilled'
+  | 'commerce.order_cancelled'
+  | 'commerce.refund_created'
   | 'shortcut'
   // | 'incoming_webhook'
   // | 'click_to_chat_ads'
@@ -119,6 +131,8 @@ export type TriggerData =
   | IncomingWebhookData
   | ClickToChatAdsData
   | TikTokAdsData
+  | IntegrationEventData
+  | CommerceEventData
   | ManualTriggerData
   | LifecycleUpdatedData
   | Record<string, never>;
@@ -184,6 +198,15 @@ export interface TikTokAdsData {
   adAccountId: string;
   adSelection: 'all' | 'selected';
   selectedAdIds: string[];
+}
+
+export interface IntegrationEventData {
+  providers?: string[];
+  integrationIds?: string[];
+}
+
+export interface CommerceEventData extends IntegrationEventData {
+  resourceIds?: string[];
 }
 
 export interface ManualTriggerData {
@@ -528,7 +551,8 @@ export type TemplateCategory =
   | 'reengagement'
   | 'notifications'
   | 'routing'
-  | 'ads';
+  | 'ads'
+  | 'commerce';
 
 // ─────────────────────────────────────────────
 // MISC
@@ -774,7 +798,89 @@ export interface FieldDef {
   label: string;
   multi: boolean;
   options: { value: string; label: string }[];
+  operators?: { value: ConditionOperator; label: string }[];
+  placeholder?: string;
 }
+
+export const SINGLE_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: 'is_equal_to', label: 'is equal to' },
+  { value: 'is_not_equal_to', label: 'is not equal to' },
+];
+
+export const TEXT_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  ...SINGLE_OPERATORS,
+  { value: 'contains', label: 'contains' },
+  { value: 'does_not_contain', label: 'does not contain' },
+  { value: 'exists', label: 'exists' },
+  { value: 'does_not_exist', label: 'does not exist' },
+];
+
+export const NUMBER_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: 'is_greater_than', label: 'is greater than' },
+  { value: 'is_less_than', label: 'is less than' },
+  { value: 'is_equal_to', label: 'is equal to' },
+  { value: 'exists', label: 'exists' },
+  { value: 'does_not_exist', label: 'does not exist' },
+];
+
+export const DATE_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: 'is_timestamp_after', label: 'is after' },
+  { value: 'is_timestamp_before', label: 'is before' },
+  { value: 'exists', label: 'exists' },
+  { value: 'does_not_exist', label: 'does not exist' },
+];
+
+export const MULTI_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: 'has_any_of', label: 'has any of' },
+  { value: 'has_none_of', label: 'has none of' },
+];
+
+export const INTEGRATION_PROVIDER_OPTIONS = [
+  { value: 'shopify', label: 'Shopify' },
+  { value: 'woocommerce', label: 'WooCommerce' },
+  { value: 'bigcommerce', label: 'BigCommerce' },
+  { value: 'magento', label: 'Magento' },
+  { value: 'meta_ads', label: 'Meta Ads' },
+  { value: 'tiktok_ads', label: 'TikTok Ads' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'razorpay', label: 'Razorpay' },
+  { value: 'hubspot', label: 'HubSpot' },
+  { value: 'salesforce', label: 'Salesforce' },
+] as const;
+
+const integrationFieldDefs: FieldDef[] = [
+  { value: 'provider', label: 'Provider', multi: false, options: [...INTEGRATION_PROVIDER_OPTIONS] },
+  { value: 'integrationId', label: 'Integration ID', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'integrationResourceId', label: 'Resource ID', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'externalEventId', label: 'External Event ID', multi: false, options: [], operators: TEXT_OPERATORS },
+];
+
+const commerceFieldDefs: FieldDef[] = [
+  ...integrationFieldDefs,
+  { value: 'currency', label: 'Currency', multi: false, options: [], operators: TEXT_OPERATORS, placeholder: 'INR, USD, EUR...' },
+  { value: 'totalAmount', label: 'Total Amount', multi: false, options: [], operators: NUMBER_OPERATORS, placeholder: 'Amount' },
+  { value: 'customerEmail', label: 'Customer Email', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'customerPhone', label: 'Customer Phone', multi: false, options: [], operators: TEXT_OPERATORS },
+];
+
+const commerceOrderFieldDefs: FieldDef[] = [
+  ...commerceFieldDefs,
+  { value: 'orderNumber', label: 'Order Number', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'orderStatus', label: 'Order Status', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'financialStatus', label: 'Financial Status', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'fulfillmentStatus', label: 'Fulfillment Status', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'orderTotalAmount', label: 'Order Total', multi: false, options: [], operators: NUMBER_OPERATORS, placeholder: 'Amount' },
+  { value: 'orderPlacedAt', label: 'Order Placed At', multi: false, options: [], operators: DATE_OPERATORS, placeholder: 'YYYY-MM-DD' },
+];
+
+const commerceCartFieldDefs: FieldDef[] = [
+  ...commerceFieldDefs,
+  { value: 'cartStatus', label: 'Cart Status', multi: false, options: [], operators: TEXT_OPERATORS },
+  { value: 'cartTotalAmount', label: 'Cart Total', multi: false, options: [], operators: NUMBER_OPERATORS, placeholder: 'Amount' },
+  { value: 'cartItemCount', label: 'Cart Items', multi: false, options: [], operators: NUMBER_OPERATORS, placeholder: 'Item count' },
+  { value: 'cartAbandonedAt', label: 'Abandoned At', multi: false, options: [], operators: DATE_OPERATORS, placeholder: 'YYYY-MM-DD' },
+  { value: 'checkoutUrl', label: 'Checkout URL', multi: false, options: [], operators: TEXT_OPERATORS },
+];
 
 export const FIELD_DEFS_BY_TRIGGER: Record<string, FieldDef[]> = {
   conversation_opened: [
@@ -805,17 +911,29 @@ export const FIELD_DEFS_BY_TRIGGER: Record<string, FieldDef[]> = {
     { value: 'templateStatus',   label: 'Template Status',   multi: false, options: [] },
     { value: 'channelId',        label: 'Channel ID',        multi: false, options: [] },
   ],
+  contact_assigned: [
+    { value: 'assigneeId', label: 'Assignee ID', multi: false, options: [], operators: TEXT_OPERATORS },
+    { value: 'teamId', label: 'Team ID', multi: false, options: [], operators: TEXT_OPERATORS },
+  ],
+  meta_ad_click: [
+    ...integrationFieldDefs,
+    { value: 'source', label: 'Source', multi: false, options: [], operators: TEXT_OPERATORS },
+    { value: 'adId', label: 'Ad ID', multi: false, options: [], operators: TEXT_OPERATORS },
+    { value: 'adName', label: 'Ad Name', multi: false, options: [], operators: TEXT_OPERATORS },
+    { value: 'campaignId', label: 'Campaign ID', multi: false, options: [], operators: TEXT_OPERATORS },
+    { value: 'campaignName', label: 'Campaign Name', multi: false, options: [], operators: TEXT_OPERATORS },
+  ],
+  'commerce.customer_created': commerceFieldDefs,
+  'commerce.customer_updated': commerceFieldDefs,
+  'commerce.cart_created': commerceCartFieldDefs,
+  'commerce.cart_updated': commerceCartFieldDefs,
+  'commerce.cart_abandoned': commerceCartFieldDefs,
+  'commerce.order_created': commerceOrderFieldDefs,
+  'commerce.order_paid': commerceOrderFieldDefs,
+  'commerce.order_fulfilled': commerceOrderFieldDefs,
+  'commerce.order_cancelled': commerceOrderFieldDefs,
+  'commerce.refund_created': commerceOrderFieldDefs,
 };
-
-export const SINGLE_OPERATORS: { value: ConditionOperator; label: string }[] = [
-  { value: 'is_equal_to',     label: 'is equal to' },
-  { value: 'is_not_equal_to', label: 'is not equal to' },
-];
-
-export const MULTI_OPERATORS: { value: ConditionOperator; label: string }[] = [
-  { value: 'has_any_of',  label: 'has any of' },
-  { value: 'has_none_of', label: 'has none of' },
-];
 
 
 

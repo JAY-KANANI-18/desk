@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
-import { broadcastApi, type BroadcastSendResult } from "../../lib/broadcastApi";
+import {
+  broadcastApi,
+  type BroadcastCommerceAudienceFilters,
+  type BroadcastSendResult,
+} from "../../lib/broadcastApi";
 import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { workspaceApi } from "../../lib/workspaceApi";
 import type {
   BroadcastAudiencePreviewState,
+  BroadcastCommerceAudienceState,
   BroadcastFormState,
   BroadcastTemplate,
   LifecycleRow,
@@ -17,6 +22,15 @@ import {
   templateVariableKeys,
 } from "./utils";
 
+const INITIAL_COMMERCE_AUDIENCE: BroadcastCommerceAudienceState = {
+  mode: "all",
+  abandonedCartOlderThanMinutes: 60,
+  abandonedCartMinTotalAmount: "",
+  purchasedSince: "",
+  purchasedMinTotalAmount: "",
+  purchasedStatuses: ["paid", "fulfilled"],
+};
+
 const INITIAL_FORM: BroadcastFormState = {
   name: "",
   channelId: "",
@@ -24,10 +38,48 @@ const INITIAL_FORM: BroadcastFormState = {
   tagIds: [],
   lifecycleId: "",
   respectMarketingOptOut: true,
+  commerce: INITIAL_COMMERCE_AUDIENCE,
   limit: 200,
   scheduleMode: "now",
   scheduledAt: "",
 };
+
+function parseOptionalAmount(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return Math.round(parsed);
+}
+
+function buildCommerceAudienceFilters(
+  commerce: BroadcastCommerceAudienceState,
+): BroadcastCommerceAudienceFilters | undefined {
+  if (commerce.mode === "abandoned_cart") {
+    return {
+      abandonedCart: {
+        olderThanMinutes: Math.max(0, commerce.abandonedCartOlderThanMinutes || 0),
+        minTotalAmount: parseOptionalAmount(commerce.abandonedCartMinTotalAmount),
+      },
+    };
+  }
+
+  if (commerce.mode === "purchased") {
+    return {
+      purchased: {
+        since: commerce.purchasedSince
+          ? new Date(`${commerce.purchasedSince}T00:00:00`).toISOString()
+          : undefined,
+        minTotalAmount: parseOptionalAmount(commerce.purchasedMinTotalAmount),
+        statuses: commerce.purchasedStatuses.length
+          ? commerce.purchasedStatuses
+          : undefined,
+      },
+    };
+  }
+
+  return undefined;
+}
 
 export function useBroadcastComposer({
   channels,
@@ -79,6 +131,15 @@ export function useBroadcastComposer({
     setForm((prev) => (prev.lifecycleId ? { ...prev, lifecycleId: "" } : prev));
   }, [flags.lifecycle, form.lifecycleId]);
 
+  useEffect(() => {
+    if (flags.shopifyIntegration || form.commerce.mode === "all") return;
+    setForm((prev) =>
+      prev.commerce.mode === "all"
+        ? prev
+        : { ...prev, commerce: { ...INITIAL_COMMERCE_AUDIENCE } },
+    );
+  }, [flags.shopifyIntegration, form.commerce.mode]);
+
   const selectedChannel = useMemo(
     () => channels.find((channel) => String(channel.id) === form.channelId),
     [channels, form.channelId],
@@ -110,7 +171,13 @@ export function useBroadcastComposer({
 
   useEffect(() => {
     setAudiencePreview(null);
-  }, [form.channelId, form.lifecycleId, form.respectMarketingOptOut, form.tagIds]);
+  }, [
+    form.channelId,
+    form.commerce,
+    form.lifecycleId,
+    form.respectMarketingOptOut,
+    form.tagIds,
+  ]);
 
   const selectedTemplate = useMemo(
     () => waTemplates.find((template) => template.id === selectedTemplateId),
@@ -153,6 +220,9 @@ export function useBroadcastComposer({
         tagIds: form.tagIds.length ? form.tagIds : undefined,
         lifecycleId: flags.lifecycle && form.lifecycleId ? form.lifecycleId : undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
+        commerce: flags.shopifyIntegration
+          ? buildCommerceAudienceFilters(form.commerce)
+          : undefined,
         limit: 200,
       });
       setAudiencePreview({
@@ -165,7 +235,7 @@ export function useBroadcastComposer({
     } finally {
       setPreviewLoading(false);
     }
-  }, [flags.lifecycle, form, selectedChannel]);
+  }, [flags.lifecycle, flags.shopifyIntegration, form, selectedChannel]);
 
   const handleSend = useCallback(async (): Promise<BroadcastSendResult | null> => {
     if (!form.name.trim()) {
@@ -225,6 +295,9 @@ export function useBroadcastComposer({
         tagIds: form.tagIds.length ? form.tagIds : undefined,
         lifecycleId: flags.lifecycle && form.lifecycleId ? form.lifecycleId : undefined,
         respectMarketingOptOut: form.respectMarketingOptOut,
+        commerce: flags.shopifyIntegration
+          ? buildCommerceAudienceFilters(form.commerce)
+          : undefined,
         limit: Math.min(500, Math.max(1, form.limit)),
         scheduledAt:
           form.scheduleMode === "later" && form.scheduledAt
@@ -252,7 +325,7 @@ export function useBroadcastComposer({
     } finally {
       setSending(false);
     }
-  }, [flags.lifecycle, form, isWhatsApp, reloadRuns, selectedChannel, selectedTemplate, templateVars]);
+  }, [flags.lifecycle, flags.shopifyIntegration, form, isWhatsApp, reloadRuns, selectedChannel, selectedTemplate, templateVars]);
 
   return {
     tags,

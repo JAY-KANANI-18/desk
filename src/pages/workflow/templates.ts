@@ -1141,6 +1141,179 @@ export const TEMPLATES: WorkflowTemplate[] = [
   //   defaultWorkflow: { trigger: null, steps: [] },
   // },
   {
+    id: 'commerce-abandoned-cart-recovery',
+    name: 'Abandoned Cart Recovery',
+    description: 'Message customers after a connected store reports an abandoned cart.',
+    category: 'commerce',
+    tags: ['commerce', 'cart', 'recovery'],
+    popular: true,
+    iconName: 'ShoppingCart',
+    color: 'bg-orange-500',
+    defaultWorkflow: {
+      config: {
+        trigger: {
+          type: 'commerce.cart_abandoned',
+          conditions: [],
+          advancedSettings: {
+            triggerOncePerContact: false,
+          },
+          data: {},
+        },
+        steps: [
+          {
+            id: 'step-commerce-cart-message',
+            type: 'send_message',
+            name: 'Send recovery message',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: 'Hi {{contact.firstName}}, you left items in your cart. You can finish checkout here: {{trigger.checkoutUrl}}',
+              },
+              channelResponses: [],
+              addMessageFailureBranch: false,
+            },
+            parentId: 'trigger',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-cart-comment',
+            type: 'add_comment',
+            name: 'Add cart context',
+            data: {
+              comment: 'Abandoned cart workflow sent. Cart total: {{trigger.cartTotalAmount}} {{trigger.currency}}.',
+            },
+            parentId: 'step-commerce-cart-message',
+            position: { x: 0, y: 0 },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'commerce-order-paid-thank-you',
+    name: 'Order Paid Thank You',
+    description: 'Send a thank-you message and record order context when a connected store marks an order as paid.',
+    category: 'commerce',
+    tags: ['commerce', 'orders', 'retention'],
+    iconName: 'Package',
+    color: 'bg-emerald-500',
+    defaultWorkflow: {
+      config: {
+        trigger: {
+          type: 'commerce.order_paid',
+          conditions: [],
+          advancedSettings: {
+            triggerOncePerContact: false,
+          },
+          data: {},
+        },
+        steps: [
+          {
+            id: 'step-commerce-order-thanks',
+            type: 'send_message',
+            name: 'Send thank-you message',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: 'Thanks for your order {{trigger.orderNumber}}. We received your payment and will keep you updated.',
+              },
+              channelResponses: [],
+              addMessageFailureBranch: false,
+            },
+            parentId: 'trigger',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-wait',
+            type: 'wait',
+            name: 'Wait before follow-up',
+            data: {
+              value: 3,
+              unit: 'days',
+            },
+            parentId: 'step-commerce-order-thanks',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-followup',
+            type: 'send_message',
+            name: 'Send order follow-up',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: 'Checking in on order {{trigger.orderNumber}}. Reply here if you need anything from us.',
+              },
+              channelResponses: [],
+              addMessageFailureBranch: false,
+            },
+            parentId: 'step-commerce-order-wait',
+            position: { x: 0, y: 0 },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'meta-ad-click-route-lead',
+    name: 'Meta Ad Click Lead Routing',
+    description: 'Open and route contacts created from Meta ad click events to your team.',
+    category: 'ads',
+    tags: ['ads', 'routing', 'assignment'],
+    popular: true,
+    iconName: 'MousePointerClick',
+    color: 'bg-blue-600',
+    defaultWorkflow: {
+      config: {
+        trigger: {
+          type: 'meta_ad_click',
+          conditions: [],
+          advancedSettings: {
+            triggerOncePerContact: false,
+          },
+          data: {},
+        },
+        steps: [
+          {
+            id: 'step-meta-ad-open',
+            type: 'open_conversation',
+            name: 'Open conversation',
+            data: {},
+            parentId: 'trigger',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-meta-ad-assign',
+            type: 'assign_to',
+            name: 'Assign to workspace',
+            data: {
+              action: 'user_in_workspace',
+              assignmentLogic: 'round_robin',
+              onlyOnlineUsers: false,
+              addTimeoutBranch: false,
+              timeoutValue: 7,
+              timeoutUnit: 'days',
+            },
+            parentId: 'step-meta-ad-open',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-meta-ad-comment',
+            type: 'add_comment',
+            name: 'Add ad context',
+            data: {
+              comment: 'Lead came from Meta Ads. Campaign: {{trigger.campaignName}}. Ad: {{trigger.adName}}.',
+            },
+            parentId: 'step-meta-ad-assign',
+            position: { x: 0, y: 0 },
+          },
+        ],
+      },
+    },
+  },
+  {
     id: 'routing-least-busy',
     name: 'Assign to least busy user',
     description: 'Automatically assign contacts to the least open contact in a workspace.',
@@ -1432,6 +1605,7 @@ export const TEMPLATE_CATEGORIES: TemplateCategoryInfo[] = [
   { id: 'leads', label: 'Lead Generation', icon: '🎯', count: TEMPLATES.filter((t) => t.category === 'leads').length },
   { id: 'support', label: 'Customer Support', icon: '🎧', count: TEMPLATES.filter((t) => t.category === 'support').length },
   { id: 'sales', label: 'Sales & Marketing', icon: '💰', count: TEMPLATES.filter((t) => t.category === 'sales').length },
+  { id: 'commerce', label: 'Commerce', icon: '🛒', count: TEMPLATES.filter((t) => t.category === 'commerce').length },
   { id: 'routing', label: 'Routing', icon: '🔀', count: TEMPLATES.filter((t) => t.category === 'routing').length },
   { id: 'reengagement', label: 'Re-engagement', icon: '🔄', count: TEMPLATES.filter((t) => t.category === 'reengagement').length },
   { id: 'notifications', label: 'Notifications', icon: '🔔', count: TEMPLATES.filter((t) => t.category === 'notifications').length },

@@ -51,11 +51,14 @@ export async function apiFetch(
   const token = await authApi.getAccessToken();
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const activeWorkspace = workspace ?? null;
+  const optionHeaders = (options.headers as Record<string, string> | undefined) ?? {};
+  const hasExplicitWorkspaceHeader =
+    Boolean(optionHeaders["X-Workspace-Id"]) || Boolean(optionHeaders["x-workspace-id"]);
 
   const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> | undefined),
+    ...optionHeaders,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(activeWorkspace ? { "X-Workspace-Id": activeWorkspace.id } : {}),
+    ...(activeWorkspace && !hasExplicitWorkspaceHeader ? { "X-Workspace-Id": activeWorkspace.id } : {}),
     ...(activeWorkspace?.organizationId
       ? { "x-organization-id": activeWorkspace.organizationId }
       : {}),

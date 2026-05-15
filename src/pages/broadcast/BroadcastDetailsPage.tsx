@@ -10,6 +10,7 @@ import {
   MessageSquareText,
   RefreshCw,
   Send,
+  ShoppingCart,
   Users,
 } from "@/components/ui/icons";
 import { BackButton } from "../../components/channels/BackButton";
@@ -35,6 +36,7 @@ import {
   WhatsAppPreview,
   type Template as WhatsAppPreviewTemplate,
 } from "../inbox/TemplateModal";
+import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { BroadcastChannelLabel, getBroadcastChannelDisplay } from "./BroadcastChannelLabel";
 import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastDraftState } from "./types";
@@ -259,6 +261,41 @@ function formatCountMeta(value: number, total: number) {
 
 function formatAudienceLabel(count: number) {
   return `${count} ${count === 1 ? "person" : "people"}`;
+}
+
+function getAudienceFilterLabels(audienceFilters: unknown, includeCommerce: boolean) {
+  if (!isRecord(audienceFilters)) return [];
+  const labels: string[] = [];
+  const tagIds = Array.isArray(audienceFilters.tagIds) ? audienceFilters.tagIds : [];
+  if (tagIds.length) labels.push(`${tagIds.length} tag${tagIds.length === 1 ? "" : "s"}`);
+  if (typeof audienceFilters.lifecycleId === "string" && audienceFilters.lifecycleId) {
+    labels.push("Lifecycle filtered");
+  }
+  if (audienceFilters.respectMarketingOptOut !== false) {
+    labels.push("Opt-outs skipped");
+  }
+
+  if (includeCommerce) {
+    const commerce = audienceFilters.commerce;
+    if (isRecord(commerce) && isRecord(commerce.abandonedCart)) {
+      const olderThan = commerce.abandonedCart.olderThanMinutes;
+      labels.push(
+        typeof olderThan === "number" && olderThan > 0
+          ? `Abandoned cart over ${olderThan} min`
+          : "Abandoned carts",
+      );
+    }
+    if (isRecord(commerce) && isRecord(commerce.purchased)) {
+      const since = commerce.purchased.since;
+      labels.push(
+        typeof since === "string" && since
+          ? `Purchased since ${formatDateTime(since)}`
+          : "Customers who purchased",
+      );
+    }
+  }
+
+  return labels;
 }
 
 function recipientFilterLabel(filter: BroadcastTraceFilter) {
@@ -512,6 +549,7 @@ export function BroadcastDetailsPage({
   onTracePageChange,
 }: BroadcastDetailsPageProps) {
   const [messagePreviewOpen, setMessagePreviewOpen] = useState(false);
+  const { flags } = useFeatureFlags();
 
   if (detailsLoading && !selectedRun) {
     return (
@@ -588,6 +626,10 @@ export function BroadcastDetailsPage({
     : undefined;
   const whatsappPreviewTemplate = buildWhatsAppPreviewTemplate(selectedRun);
   const whatsappPreviewValues = templatePreviewValues(selectedRun);
+  const audienceFilterLabels = getAudienceFilterLabels(
+    selectedRun.audienceFilters,
+    flags.shopifyIntegration,
+  );
 
   const peopleColumns: Array<DataTableColumn<TraceRow>> = [
       {
@@ -827,6 +869,23 @@ export function BroadcastDetailsPage({
                   icon={<Users size={15} />}
                 />
               </div>
+
+              {audienceFilterLabels.length > 0 ? (
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                  {audienceFilterLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
+                    >
+                      {label.toLowerCase().includes("cart") ||
+                      label.toLowerCase().includes("purchased") ? (
+                        <ShoppingCart size={12} />
+                      ) : null}
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             {broadcastAction ? (

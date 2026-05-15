@@ -34,6 +34,28 @@ export interface Contact {
     channelId?: string | number;
     identifier?: string;
   }>;
+  contactIntegrations?: Array<{
+    provider?: string;
+    externalId?: string;
+    role?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    lastSeenAt?: string | null;
+    integration?: {
+      id?: string;
+      provider?: string;
+      name?: string;
+      externalAccountId?: string | null;
+      externalAccountName?: string | null;
+      status?: string;
+    } | null;
+    resource?: {
+      id?: string;
+      type?: string;
+      name?: string | null;
+      externalId?: string;
+    } | null;
+  }>;
   channel?: string;
   tags?: string[];
   tagIds?: string[];

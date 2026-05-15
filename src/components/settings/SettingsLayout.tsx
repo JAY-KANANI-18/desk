@@ -66,6 +66,30 @@ export const SettingsLayout = ({
 
     return activeMatch.item.label;
   }, [activeMatch, config.basePath, config.title]);
+  const desktopHeaderTitle = mobileHeaderRegistration.title ?? desktopTitle;
+  const desktopHeaderEyebrow = mobileHeaderRegistration.title
+    ? mobileHeaderRegistration.eyebrow
+    : activeMatch
+      ? config.title
+      : undefined;
+  const desktopHeaderLeading =
+    mobileHeaderRegistration.backTo || mobileHeaderRegistration.leading ? (
+      <div className="flex items-center gap-2">
+        {mobileHeaderRegistration.backTo ? (
+          <BackButton
+            ariaLabel="Back"
+            onClick={() => navigate(mobileHeaderRegistration.backTo ?? config.basePath)}
+            size="sm"
+          />
+        ) : null}
+        {mobileHeaderRegistration.leading ? (
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center">
+            {mobileHeaderRegistration.leading}
+          </div>
+        ) : null}
+      </div>
+    ) : undefined;
+  const desktopHeaderToolbar = mobileHeaderRegistration.desktopToolbar ?? toolbar;
 
   useEffect(() => {
     if (!activeMatch?.item.to || typeof window === "undefined") {
@@ -80,6 +104,11 @@ export const SettingsLayout = ({
   }, [activeMatch?.item.to, scopedStorageKey]);
 
   const handleMobileBack = () => {
+    if (mobileHeaderRegistration.backTo) {
+      navigate(mobileHeaderRegistration.backTo);
+      return;
+    }
+
     if (activeMatch) {
       navigate(config.basePath);
       return;
@@ -102,12 +131,18 @@ export const SettingsLayout = ({
                 <BackButton ariaLabel="Back" onClick={handleMobileBack} size="sm"/>
               )}
 
+              {mobileHeaderRegistration.leading ? (
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center">
+                  {mobileHeaderRegistration.leading}
+                </div>
+              ) : null}
+
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-900">
-                  {config.title}
+                  {mobileHeaderRegistration.eyebrow ?? config.title}
                 </p>
                 <h1 className="truncate text-base font-semibold text-slate-900">
-                  {activeMatch ? activeMatch.item.label : ""}
+                  {mobileHeaderRegistration.title ?? (activeMatch ? activeMatch.item.label : "")}
                 </h1>
               </div>
 
@@ -137,9 +172,11 @@ export const SettingsLayout = ({
               </div>
             ) : (
               <PageLayout
-                eyebrow={activeMatch ? config.title : undefined}
-                title={desktopTitle}
-                toolbar={toolbar}
+                leading={desktopHeaderLeading}
+                eyebrow={desktopHeaderEyebrow}
+                title={desktopHeaderTitle}
+                subtitle={mobileHeaderRegistration.subtitle}
+                toolbar={desktopHeaderToolbar}
                 className="bg-white"
                 contentClassName="min-h-0 flex-1 overflow-y-auto px-0 py-0"
               >

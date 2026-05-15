@@ -46,10 +46,12 @@ import Lifecycle from "../pages/workspace/sections/Lifecycle";
 import { Tags } from "../pages/workspace/sections/Tags";
 import { Snippets } from "../pages/workspace/sections/Snippets";
 import { Integrations } from "../pages/workspace/sections/Integrations";
+import { IntegrationManagePage } from "../pages/workspace/integrations/IntegrationManagePage";
 import { WorkspaceGeneralInfo } from "../pages/workspace/sections/GeneralInfo";
 import { AIAssist } from "../pages/workspace/sections/AIAssist";
 import { AIPrompts } from "../pages/workspace/sections/AIPrompts";
 import MetaAdsCallback from "../pages/MetaAdsCallback";
+import ShopifyCallback from "../pages/ShopifyCallback";
 import OnboardingPage from "../pages/GetStartedChecklist";
 import { WorkspaceNotFound } from "../pages/WorkspaceNotFound";
 import { StaticAvatarGenerator } from "../pages/StaticAvatarGenerator";
@@ -86,6 +88,7 @@ export const WorkspaceRouter = () => {
         />
         <Route index element={<Navigate to="/inbox" replace />} />
         <Route path="/meta/ads/callback" element={<MetaAdsCallback />} />
+        <Route path="/shopify/callback" element={<ShopifyCallback />} />
         <Route path="more" element={<MorePage />} />
 
         {/* Agents and above */}
@@ -340,6 +343,22 @@ export const WorkspaceRouter = () => {
             element={
               <ProtectedRoute ws="ws:channels:manage">
                 <Integrations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="integrations/:providerId"
+            element={
+              <ProtectedRoute ws="ws:channels:manage">
+                <IntegrationManagePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="integrations/:providerId/:tabId"
+            element={
+              <ProtectedRoute ws="ws:channels:manage">
+                <IntegrationManagePage />
               </ProtectedRoute>
             }
           />

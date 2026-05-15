@@ -3,7 +3,7 @@ import { Loader2 } from "@/components/ui/icons";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 
-/** Facebook OAuth redirect target — must match META_ADS_REDIRECT_URI on the API. */
+/** Legacy frontend OAuth redirect target. Prefer the backend Meta Ads callback route. */
 export default function MetaAdsCallback() {
   const [params] = useSearchParams();
   const [showCloseButton, setShowCloseButton] = useState(false);

@@ -97,13 +97,16 @@ export function ConditionBuilder({
             const isLast = index === conditions.length - 1;
             const fieldDef = getFieldDef(condition.field);
             const isMulti = fieldDef?.multi ?? false;
-            const operators = isMulti ? MULTI_OPERATORS : SINGLE_OPERATORS;
+            const operators = fieldDef?.operators ?? (isMulti ? MULTI_OPERATORS : SINGLE_OPERATORS);
             const valueOptions = fieldDef?.options ?? [];
             const multiValues = Array.isArray(condition.value)
               ? condition.value
               : [];
             const singleValue =
               typeof condition.value === "string" ? condition.value : "";
+            const needsValue =
+              condition.operator !== "exists" &&
+              condition.operator !== "does_not_exist";
 
             return (
               <div key={condition.id}>
@@ -120,9 +123,8 @@ export function ConditionBuilder({
 
                         update(condition.id, {
                           field: value,
-                          operator: nextFieldDef?.multi
-                            ? "has_any_of"
-                            : "is_equal_to",
+                          operator: nextFieldDef?.operators?.[0]?.value ??
+                            (nextFieldDef?.multi ? "has_any_of" : "is_equal_to"),
                           value: nextFieldDef?.multi ? [] : "",
                         });
                       }}
@@ -152,7 +154,7 @@ export function ConditionBuilder({
                   />
                 </div>
 
-                {valueOptions.length > 0 ? (
+                {needsValue && valueOptions.length > 0 ? (
                   <div className="mt-1.5">
                     {isMulti ? (
                       <MultiSelect
@@ -178,14 +180,14 @@ export function ConditionBuilder({
                   </div>
                 ) : null}
 
-                {!isMulti && valueOptions.length === 0 ? (
+                {needsValue && !isMulti && valueOptions.length === 0 ? (
                   <div className="mt-1.5">
                     <BaseInput
                       value={singleValue}
                       onChange={(event) =>
                         update(condition.id, { value: event.target.value })
                       }
-                      placeholder="Enter value..."
+                      placeholder={fieldDef?.placeholder ?? "Enter value..."}
                       size="sm"
                     />
                   </div>

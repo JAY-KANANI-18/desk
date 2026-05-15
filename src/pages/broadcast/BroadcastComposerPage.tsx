@@ -15,9 +15,11 @@ import {
   Clock,
   Mail,
   MessageSquareText,
+  Package,
   Send,
   ShieldCheck,
   Sparkles,
+  ShoppingCart,
   Users,
 } from "@/components/ui/icons";
 import { BackButton } from "../../components/channels/BackButton";
@@ -37,7 +39,7 @@ import {
   SnippetSuggestionMenu,
   useWorkspaceSnippets,
 } from "../../components/snippets/SnippetSuggestionMenu";
-import { FeatureGate } from "../../context/FeatureFlagContext";
+import { FeatureGate, useFeatureFlags } from "../../context/FeatureFlagContext";
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
 import type { BroadcastSendResult } from "../../lib/broadcastApi";
 import {
@@ -53,6 +55,9 @@ import { BroadcastChannelLabel } from "./BroadcastChannelLabel";
 import { BroadcastTagPicker } from "./BroadcastTagPicker";
 import type {
   BroadcastAudiencePreviewState,
+  BroadcastCommerceAudienceState,
+  BroadcastCommerceAudienceMode,
+  BroadcastPurchasedStatus,
   BroadcastFormState,
   BroadcastTemplate,
   LifecycleRow,
@@ -276,6 +281,22 @@ function scheduleLabel(form: BroadcastFormState) {
   return "Send now";
 }
 
+function commerceAudienceLabel(commerce: BroadcastCommerceAudienceState) {
+  if (commerce.mode === "abandoned_cart") {
+    const minutes = commerce.abandonedCartOlderThanMinutes || 0;
+    return minutes > 0 ? `Abandoned cart over ${minutes} min` : "Abandoned carts";
+  }
+
+  if (commerce.mode === "purchased") {
+    if (commerce.purchasedSince) {
+      return `Purchased since ${commerce.purchasedSince}`;
+    }
+    return "Customers who purchased";
+  }
+
+  return "Any commerce activity";
+}
+
 function StepRail({
   activeStep,
   completed,
@@ -395,6 +416,142 @@ function SummaryRow({
         <div className="mt-1 min-w-0 text-sm font-semibold text-slate-950">
           {value}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const COMMERCE_MODE_OPTIONS: Array<{
+  value: BroadcastCommerceAudienceMode;
+  label: string;
+  icon: ReactNode;
+}> = [
+  { value: "all", label: "Any", icon: <Users size={14} /> },
+  { value: "abandoned_cart", label: "Abandoned cart", icon: <ShoppingCart size={14} /> },
+  { value: "purchased", label: "Purchased", icon: <Package size={14} /> },
+];
+
+const PURCHASED_STATUS_OPTIONS: Array<{
+  value: BroadcastPurchasedStatus;
+  label: string;
+}> = [
+  { value: "paid", label: "Paid" },
+  { value: "fulfilled", label: "Fulfilled" },
+  { value: "created", label: "Created" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+function CommerceAudienceFilters({
+  value,
+  onChange,
+}: {
+  value: BroadcastCommerceAudienceState;
+  onChange: (next: BroadcastCommerceAudienceState) => void;
+}) {
+  const update = (patch: Partial<BroadcastCommerceAudienceState>) =>
+    onChange({ ...value, ...patch });
+
+  const togglePurchasedStatus = (status: BroadcastPurchasedStatus) => {
+    const statuses = value.purchasedStatuses.includes(status)
+      ? value.purchasedStatuses.filter((item) => item !== status)
+      : [...value.purchasedStatuses, status];
+    update({ purchasedStatuses: statuses });
+  };
+
+  return (
+    <div className="border-y border-slate-100 py-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <ShoppingCart size={15} className="text-slate-500" />
+          <p className="text-sm font-semibold text-slate-800">
+            Commerce activity
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {COMMERCE_MODE_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              size="xs"
+              variant={value.mode === option.value ? "soft-primary" : "secondary"}
+              leftIcon={option.icon}
+              onClick={() => update({ mode: option.value })}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+
+        {value.mode === "abandoned_cart" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="Cart age in minutes"
+              type="number"
+              min={0}
+              inputSize="sm"
+              value={String(value.abandonedCartOlderThanMinutes)}
+              onChange={(event) =>
+                update({
+                  abandonedCartOlderThanMinutes:
+                    parseInt(event.target.value, 10) || 0,
+                })
+              }
+            />
+            <Input
+              label="Minimum cart total"
+              type="number"
+              min={0}
+              inputSize="sm"
+              value={value.abandonedCartMinTotalAmount}
+              onChange={(event) =>
+                update({ abandonedCartMinTotalAmount: event.target.value })
+              }
+            />
+          </div>
+        ) : null}
+
+        {value.mode === "purchased" ? (
+          <div className="grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Purchased since"
+                type="date"
+                inputSize="sm"
+                value={value.purchasedSince}
+                onChange={(event) => update({ purchasedSince: event.target.value })}
+              />
+              <Input
+                label="Minimum order total"
+                type="number"
+                min={0}
+                inputSize="sm"
+                value={value.purchasedMinTotalAmount}
+                onChange={(event) =>
+                  update({ purchasedMinTotalAmount: event.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {PURCHASED_STATUS_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  size="xs"
+                  variant={
+                    value.purchasedStatuses.includes(option.value)
+                      ? "soft-primary"
+                      : "secondary"
+                  }
+                  onClick={() => togglePurchasedStatus(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -542,6 +699,7 @@ export function BroadcastComposerPage({
   const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
   const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
+  const { flags } = useFeatureFlags();
   const { snippets, snippetsLoading } = useWorkspaceSnippets();
   const templateOptions = useMemo(
     () => [
@@ -769,6 +927,13 @@ export function BroadcastComposerPage({
               onChange={(tagIds) => onFormChange({ ...form, tagIds })}
             />
 
+            <FeatureGate flag="shopifyIntegration">
+              <CommerceAudienceFilters
+                value={form.commerce}
+                onChange={(commerce) => onFormChange({ ...form, commerce })}
+              />
+            </FeatureGate>
+
             <div className="border-y border-slate-100 py-3">
               <CheckboxInput
                 checked={form.respectMarketingOptOut}
@@ -945,6 +1110,13 @@ export function BroadcastComposerPage({
               value={audienceLabel(audiencePreview)}
               icon={<Users size={16} />}
             />
+            {flags.shopifyIntegration && form.commerce.mode !== "all" ? (
+              <SummaryRow
+                label="Commerce"
+                value={commerceAudienceLabel(form.commerce)}
+                icon={<ShoppingCart size={16} />}
+              />
+            ) : null}
             <SummaryRow
               label="Message"
               value={

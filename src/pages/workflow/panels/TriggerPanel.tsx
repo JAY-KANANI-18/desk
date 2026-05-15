@@ -4,12 +4,13 @@ import { TRIGGER_LIST, TRIGGER_META } from '../canvas/triggerTypes';
 import { PanelShell, Section, ToggleRow, InfoBox } from './PanelShell';
 import { useWorkflow } from '../WorkflowContext';
 import { CompactSelectMenu } from '../../../components/ui/select/CompactSelectMenu';
-import { FeatureGate, useFeatureFlags } from '../../../context/FeatureFlagContext';
+import { FeatureGate, useFeatureFlags, type FeatureFlags } from '../../../context/FeatureFlagContext';
 import {
   ContactFieldConfig,
   ContactTagConfig,
   ConversationClosedConfig,
   ConversationOpenedConfig,
+  IntegrationEventTriggerConfig,
   LifecycleConfig,
   ManualTriggerConfig,
   MenuClickTriggerConfig,
@@ -19,6 +20,32 @@ import {
 
 interface TriggerPanelProps {
   hideHeader?: boolean;
+}
+
+const INTEGRATION_EVENT_TRIGGER_TYPES = new Set<TriggerType>([
+  'contact_assigned',
+  'meta_ad_click',
+  'commerce.customer_created',
+  'commerce.customer_updated',
+  'commerce.cart_created',
+  'commerce.cart_updated',
+  'commerce.cart_abandoned',
+  'commerce.order_created',
+  'commerce.order_paid',
+  'commerce.order_fulfilled',
+  'commerce.order_cancelled',
+  'commerce.refund_created',
+]);
+
+function isCommerceTrigger(type: TriggerType) {
+  return type.startsWith('commerce.');
+}
+
+function isTriggerFeatureEnabled(type: TriggerType, flags: FeatureFlags) {
+  if (type === 'meta_ad_click') return flags.metaAdsIntegration;
+  if (isCommerceTrigger(type)) return flags.shopifyIntegration;
+  if (type === 'lifecycle_updated') return flags.lifecycle;
+  return true;
 }
 
 export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
@@ -42,8 +69,11 @@ export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
 
   const selectedMeta = trigger ? TRIGGER_META[trigger.type] : null;
   const SelectedIcon = selectedMeta?.Icon;
-  const triggerOptions = TRIGGER_LIST.filter(
-    (item) => item.type !== 'lifecycle_updated' || flags.lifecycle,
+  const selectedTriggerDisabled = trigger
+    ? !isTriggerFeatureEnabled(trigger.type, flags)
+    : false;
+  const triggerOptions = TRIGGER_LIST.filter((item) =>
+    isTriggerFeatureEnabled(item.type, flags),
   ).map((item) => {
     const { Icon } = item;
 
@@ -107,8 +137,18 @@ export function TriggerPanel({ hideHeader = false }: TriggerPanelProps) {
           {trigger.type === 'menu_click' && <MenuClickTriggerConfig trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'story_reply' && <StoryReplyTriggerConfig trigger={trigger} onChange={handleUpdate} />}
           {trigger.type === 'template_send' && <TemplateSendTriggerConfig trigger={trigger} onChange={handleUpdate} />}
+          {selectedTriggerDisabled ? (
+            <Section title="Configuration">
+              <InfoBox type="warning">
+                This trigger is currently disabled by workspace feature settings.
+              </InfoBox>
+            </Section>
+          ) : null}
+          {!selectedTriggerDisabled && INTEGRATION_EVENT_TRIGGER_TYPES.has(trigger.type) && (
+            <IntegrationEventTriggerConfig trigger={trigger} onChange={handleUpdate} />
+          )}
           {trigger.type === 'manual_trigger' && <ManualTriggerConfig trigger={trigger} onChange={handleUpdate} />}
-          {trigger.type === 'lifecycle_updated' && (
+          {!selectedTriggerDisabled && trigger.type === 'lifecycle_updated' && (
             <FeatureGate
               flag="lifecycle"
               fallback={
@@ -155,6 +195,18 @@ function getDefaultData(type: TriggerType): TriggerConfig['data'] {
     case 'menu_click': return {};
     case 'story_reply': return {};
     case 'template_send': return {};
+    case 'contact_assigned': return {};
+    case 'meta_ad_click': return {};
+    case 'commerce.customer_created': return {};
+    case 'commerce.customer_updated': return {};
+    case 'commerce.cart_created': return {};
+    case 'commerce.cart_updated': return {};
+    case 'commerce.cart_abandoned': return {};
+    case 'commerce.order_created': return {};
+    case 'commerce.order_paid': return {};
+    case 'commerce.order_fulfilled': return {};
+    case 'commerce.order_cancelled': return {};
+    case 'commerce.refund_created': return {};
     case 'shortcut': return { icon: 'zap', name: '', description: '', formFields: [] };
     case 'manual_trigger': return {};
     case 'lifecycle_updated': return { stageSelection: 'all', stages: [], triggerWhenCleared: false };

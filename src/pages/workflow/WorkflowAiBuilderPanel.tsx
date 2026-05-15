@@ -16,6 +16,7 @@ import {
   type WorkflowAiBuilderChatResponse,
   type WorkflowAiBuilderPatchOperation,
 } from "../../lib/workspaceApi";
+import { featureFlags } from "../../config/featureFlags";
 import { useWorkflow } from "./WorkflowContext";
 import type {
   BranchCategory,
@@ -172,13 +173,31 @@ const TRIGGER_TYPES: Record<TriggerType, true> = {
   conversation_closed: true,
   contact_tag_updated: true,
   contact_field_updated: true,
+  contact_assigned: true,
+  meta_ad_click: true,
   menu_click: true,
   story_reply: true,
   template_send: true,
+  "commerce.customer_created": true,
+  "commerce.customer_updated": true,
+  "commerce.cart_created": true,
+  "commerce.cart_updated": true,
+  "commerce.cart_abandoned": true,
+  "commerce.order_created": true,
+  "commerce.order_paid": true,
+  "commerce.order_fulfilled": true,
+  "commerce.order_cancelled": true,
+  "commerce.refund_created": true,
   shortcut: true,
   manual_trigger: true,
   lifecycle_updated: true,
 };
+
+function isTriggerFeatureEnabled(type: TriggerType) {
+  if (type === "meta_ad_click") return featureFlags.metaAdsIntegration;
+  if (type.startsWith("commerce.")) return featureFlags.shopifyIntegration;
+  return true;
+}
 
 const QUESTION_TYPES: Record<QuestionType, true> = {
   text: true,
@@ -500,6 +519,7 @@ function normalizeAiTrigger(
     ? value.type
     : fallback?.type;
   if (!type) return fallback;
+  if (!isTriggerFeatureEnabled(type)) return fallback;
 
   const fallbackData =
     fallback?.type === type && isRecord(fallback.data) ? fallback.data : {};

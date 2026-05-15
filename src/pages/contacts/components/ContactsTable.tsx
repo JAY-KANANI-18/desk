@@ -22,7 +22,8 @@ import type { LifecycleStage } from "../../workspace/types";
 import { MAX_VISIBLE_CHANNELS, MAX_VISIBLE_TAGS } from "../constants";
 import { ContactsPagination } from "./ContactsPagination";
 import { TruncatedText } from "../../../components/ui/TruncatedText";
-import { FeatureGate, useFeatureFlags } from "../../../context/FeatureFlagContext";
+import { FeatureGate, useFeatureFlags, type FeatureFlags } from "../../../context/FeatureFlagContext";
+import { getIntegrationMetadata } from "../../../config/integrationMetadata";
 
 interface ContactsTableProps {
   loading: boolean;
@@ -59,7 +60,7 @@ const LIFECYCLE_COLOR_MAP: Record<string, string> = {
   "bg-pink-500": "#ec4899",
 };
 
-const CONTACT_TABLE_MIN_WIDTH = 1480;
+const CONTACT_TABLE_MIN_WIDTH = 1600;
 const DESKTOP_VISIBLE_TAGS = 2;
 const DESKTOP_TAG_MAX_WIDTH = 184;
 
@@ -67,6 +68,7 @@ const CONTACT_COLUMN_WIDTHS = {
   select: 40,
   name: 250,
   channel: 132,
+  source: 120,
   assignee: 140,
   lifecycle: 160,
   email: 280,
@@ -78,6 +80,7 @@ const CONTACT_COLUMN_CLASS_NAMES = {
   select: "w-10 max-w-10",
   name: "w-[250px] max-w-[250px]",
   channel: "w-[132px] max-w-[132px] overflow-hidden",
+  source: "w-[120px] max-w-[120px] overflow-hidden",
   assignee: "w-[140px] max-w-[140px]",
   lifecycle: "w-[160px] max-w-[160px]",
   email: "w-[280px] max-w-[280px]",
@@ -205,6 +208,91 @@ function ChannelIcons({ contact, compact = false }: { contact: Contact; compact?
   );
 }
 
+type ContactIntegrationSource = NonNullable<Contact["contactIntegrations"]>[number];
+
+function getIntegrationSourceProvider(source: ContactIntegrationSource) {
+  return (source.provider ?? source.integration?.provider ?? "").toLowerCase();
+}
+
+function isIntegrationSourceFeatureEnabled(provider: string, flags: FeatureFlags) {
+  if (provider === "shopify") return flags.shopifyIntegration;
+  if (provider === "meta_ads") return flags.metaAdsIntegration;
+  return true;
+}
+
+function getVisibleIntegrationSources(contact: Contact, flags: FeatureFlags) {
+  return (contact.contactIntegrations ?? []).filter((source) =>
+    isIntegrationSourceFeatureEnabled(getIntegrationSourceProvider(source), flags),
+  );
+}
+
+function IntegrationSourceIcons({
+  contact,
+  compact = false,
+  flags,
+}: {
+  contact: Contact;
+  compact?: boolean;
+  flags: FeatureFlags;
+}) {
+  const sources = getVisibleIntegrationSources(contact, flags);
+  const visibleSources = sources.slice(0, MAX_VISIBLE_CHANNELS);
+  const overflowSources = Math.max(
+    0,
+    sources.length - MAX_VISIBLE_CHANNELS,
+  );
+
+  if (visibleSources.length === 0) {
+    return <span className="text-sm text-gray-300">-</span>;
+  }
+
+  return (
+    <div className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
+      {visibleSources.map((source, index) => {
+        const provider = source.provider ?? source.integration?.provider ?? "";
+        const metadata = getIntegrationMetadata(provider);
+        const accountName =
+          source.integration?.externalAccountName ??
+          source.resource?.name ??
+          source.integration?.name;
+        const externalLabel = source.externalId ? ` (${source.externalId})` : "";
+        const providerName = metadata?.name ?? (provider || "Integration");
+        const label = [
+          providerName,
+          accountName ? `from ${accountName}` : null,
+          source.role ? `${source.role}${externalLabel}` : externalLabel.trim(),
+        ].filter(Boolean).join(" - ");
+        const initials = providerName.slice(0, 2).toUpperCase();
+
+        return (
+          <Tooltip
+            key={`${provider}-${source.externalId ?? index}`}
+            content={label}
+            position="top"
+          >
+            <div className={`flex items-center justify-center rounded-full border border-slate-100 bg-white shadow-sm ${compact ? "h-7 w-7" : "h-6 w-6"}`}>
+              {metadata?.simpleIconUrl ? (
+                <img
+                  src={metadata.simpleIconUrl}
+                  alt={metadata.name}
+                  className={compact ? "h-4 w-4 object-contain" : "h-3.5 w-3.5 object-contain"}
+                />
+              ) : (
+                <span className="text-[9px] font-semibold text-slate-500">{initials}</span>
+              )}
+            </div>
+          </Tooltip>
+        );
+      })}
+      {overflowSources > 0 ? (
+        <span className={`inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-1.5 font-semibold text-slate-500 ${compact ? "h-7 min-w-7 text-[10px]" : "h-6 min-w-6 text-[10px]"}`}>
+          +{overflowSources}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function ContactsTable({
   loading,
   mobileLoadingMore,
@@ -229,6 +317,12 @@ export function ContactsTable({
   setCurrentPage,
 }: ContactsTableProps) {
   const { flags } = useFeatureFlags();
+  const showIntegrationSources =
+    flags.shopifyIntegration ||
+    flags.metaAdsIntegration ||
+    contacts.some((contact) => getVisibleIntegrationSources(contact, flags).length > 0);
+  const tableMinWidth =
+    CONTACT_TABLE_MIN_WIDTH - (showIntegrationSources ? 0 : CONTACT_COLUMN_WIDTHS.source);
   const tagMetaById = new Map(availableTags.map((tag) => [String(tag.id), tag]));
   const tagMetaByName = new Map(availableTags.map((tag) => [tag.name, tag]));
 
@@ -355,6 +449,19 @@ export function ContactsTable({
       width: CONTACT_COLUMN_WIDTHS.channel,
       cell: (contact) => <ChannelIcons contact={contact} />,
     },
+    ...(showIntegrationSources
+      ? [
+          {
+            id: "source",
+            header: "Source",
+            mobile: "detail",
+            headerClassName: CONTACT_COLUMN_CLASS_NAMES.source,
+            className: CONTACT_COLUMN_CLASS_NAMES.source,
+            width: CONTACT_COLUMN_WIDTHS.source,
+            cell: (contact) => <IntegrationSourceIcons contact={contact} flags={flags} />,
+          } satisfies DataTableColumn<Contact, SortField>,
+        ]
+      : []),
     {
       id: "assignee",
       header: "Assignee",
@@ -499,6 +606,9 @@ export function ContactsTable({
 
               <div className="flex flex-shrink-0 items-center gap-1">
                 <ChannelIcons contact={contact} compact />
+                {showIntegrationSources ? (
+                  <IntegrationSourceIcons contact={contact} compact flags={flags} />
+                ) : null}
               </div>
             </div>
           </div>
@@ -563,7 +673,7 @@ export function ContactsTable({
         onRowClick={openEditModal}
         getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-[var(--color-primary-light)]" : "")}
         renderMobileCard={(contact) => renderMobileCard(contact)}
-        minTableWidth={CONTACT_TABLE_MIN_WIDTH}
+        minTableWidth={tableMinWidth}
         density="compact"
         tableLayout="fixed"
         mobileLoadMore={{

@@ -216,6 +216,87 @@ export const workspaceApi = {
   disconnectMetaAdsIntegration: () =>
     api.delete(`/integrations/meta-ads`),
 
+  getShopifyOAuthUrl: (shop: string) => {
+    const query = new URLSearchParams({ shop });
+    return api.get(`/integrations/shopify/oauth/url?${query.toString()}`);
+  },
+
+  exchangeShopifyOAuthCode: (payload: {
+    code: string;
+    shop?: string | null;
+    hmac?: string | null;
+    timestamp?: string | null;
+    host?: string | null;
+    state?: string | null;
+  }, workspaceId?: string | null) =>
+    api.post(
+      `/integrations/shopify/oauth/exchange`,
+      payload,
+      workspaceId ? { headers: { "X-Workspace-Id": workspaceId } } : undefined,
+    ),
+
+  getIntegrationEvents: (
+    integrationId: string,
+    params?: { limit?: number; cursor?: string | null },
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.cursor) query.set("cursor", params.cursor);
+    const suffix = query.toString();
+    return api.get(`/integrations/${integrationId}/events${suffix ? `?${suffix}` : ""}`);
+  },
+
+  getIntegrationJobs: (
+    integrationId: string,
+    params?: { limit?: number; cursor?: string | null },
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.cursor) query.set("cursor", params.cursor);
+    const suffix = query.toString();
+    return api.get(`/integrations/${integrationId}/jobs${suffix ? `?${suffix}` : ""}`);
+  },
+
+  retryIntegrationJob: (integrationId: string, jobId: string) =>
+    api.post(`/integrations/${integrationId}/jobs/${jobId}/retry`),
+
+  replayIntegrationEvent: (integrationId: string, eventId: string) =>
+    api.post(`/integrations/${integrationId}/events/${eventId}/replay`),
+
+  getIntegrationResources: (
+    integrationId: string,
+    params?: { type?: string },
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.type) query.set("type", params.type);
+    const suffix = query.toString();
+    return api.get(`/integrations/${integrationId}/resources${suffix ? `?${suffix}` : ""}`);
+  },
+
+  updateIntegrationResource: (
+    integrationId: string,
+    resourceId: string,
+    payload: {
+      status?: "active" | "inactive";
+      settings?: Record<string, unknown>;
+    },
+  ) =>
+    api.patch(`/integrations/${integrationId}/resources/${resourceId}`, payload),
+
+  syncIntegration: (
+    integrationId: string,
+    payload?: {
+      mode?: "manual_sync" | "backfill";
+      resources?: string[];
+      since?: string;
+      until?: string;
+    },
+  ) =>
+    api.post(`/integrations/${integrationId}/sync`, payload ?? {}),
+
+  runIntegrationAction: (integrationId: string, action: string) =>
+    api.post(`/integrations/${integrationId}/actions/${action}`),
+
 
   /* =========================================================
      Widget Settings

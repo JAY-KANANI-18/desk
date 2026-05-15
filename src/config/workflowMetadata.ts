@@ -15,8 +15,13 @@ import {
   Menu,
   MessageCircle,
   MessageSquare,
+  MousePointerClick,
+  Package,
+  ReceiptText,
   RefreshCcw,
+  ShoppingCart,
   StickyNote,
+  Store,
   Tag,
   UserCheck,
   Workflow,
@@ -56,8 +61,13 @@ export type WorkflowIconKey =
   | "menu"
   | "messageCircle"
   | "messageSquare"
+  | "mousePointerClick"
+  | "package"
+  | "receiptText"
   | "refreshCcw"
+  | "shoppingCart"
   | "stickyNote"
+  | "store"
   | "tag"
   | "userCheck"
   | "workflow"
@@ -119,8 +129,13 @@ export const WORKFLOW_ICON_COMPONENTS: Record<WorkflowIconKey, AppIcon> = {
   menu: Menu,
   messageCircle: MessageCircle,
   messageSquare: MessageSquare,
+  mousePointerClick: MousePointerClick,
+  package: Package,
+  receiptText: ReceiptText,
   refreshCcw: RefreshCcw,
+  shoppingCart: ShoppingCart,
   stickyNote: StickyNote,
+  store: Store,
   tag: Tag,
   userCheck: UserCheck,
   workflow: Workflow,
@@ -337,6 +352,12 @@ export const WORKFLOW_TRIGGER_METADATA: Record<TriggerType, WorkflowTriggerMetad
     description: "When a specified contact field is updated",
     iconKey: "edit3",
   }),
+  contact_assigned: defineTrigger({
+    type: "contact_assigned",
+    label: "Contact Assigned",
+    description: "When a contact assignment changes",
+    iconKey: "userCheck",
+  }),
   menu_click: defineTrigger({
     type: "menu_click",
     label: "Menu Click",
@@ -354,6 +375,12 @@ export const WORKFLOW_TRIGGER_METADATA: Record<TriggerType, WorkflowTriggerMetad
     label: "Template Send",
     description: "When a template message is sent through a connected channel",
     iconKey: "fileText",
+  }),
+  meta_ad_click: defineTrigger({
+    type: "meta_ad_click",
+    label: "Meta Ad Click",
+    description: "When a Meta ad click or lead event reaches AxoDesk",
+    iconKey: "mousePointerClick",
   }),
   shortcut: defineTrigger({
     type: "shortcut",
@@ -373,6 +400,66 @@ export const WORKFLOW_TRIGGER_METADATA: Record<TriggerType, WorkflowTriggerMetad
     label: "Lifecycle Updated",
     description: "When a contact's lifecycle stage changes",
     iconKey: "refreshCcw",
+  }),
+  "commerce.customer_created": defineTrigger({
+    type: "commerce.customer_created",
+    label: "Commerce Customer Created",
+    description: "When an integrated store creates a customer",
+    iconKey: "store",
+  }),
+  "commerce.customer_updated": defineTrigger({
+    type: "commerce.customer_updated",
+    label: "Commerce Customer Updated",
+    description: "When an integrated store updates a customer",
+    iconKey: "store",
+  }),
+  "commerce.cart_created": defineTrigger({
+    type: "commerce.cart_created",
+    label: "Commerce Cart Created",
+    description: "When an integrated store creates a cart or checkout",
+    iconKey: "shoppingCart",
+  }),
+  "commerce.cart_updated": defineTrigger({
+    type: "commerce.cart_updated",
+    label: "Commerce Cart Updated",
+    description: "When an integrated store updates a cart or checkout",
+    iconKey: "shoppingCart",
+  }),
+  "commerce.cart_abandoned": defineTrigger({
+    type: "commerce.cart_abandoned",
+    label: "Abandoned Cart",
+    description: "When a normalized commerce cart becomes abandoned",
+    iconKey: "shoppingCart",
+  }),
+  "commerce.order_created": defineTrigger({
+    type: "commerce.order_created",
+    label: "Order Created",
+    description: "When a normalized commerce order is created",
+    iconKey: "package",
+  }),
+  "commerce.order_paid": defineTrigger({
+    type: "commerce.order_paid",
+    label: "Order Paid",
+    description: "When a normalized commerce order is paid",
+    iconKey: "package",
+  }),
+  "commerce.order_fulfilled": defineTrigger({
+    type: "commerce.order_fulfilled",
+    label: "Order Fulfilled",
+    description: "When a normalized commerce order is fulfilled",
+    iconKey: "package",
+  }),
+  "commerce.order_cancelled": defineTrigger({
+    type: "commerce.order_cancelled",
+    label: "Order Cancelled",
+    description: "When a normalized commerce order is cancelled",
+    iconKey: "xCircle",
+  }),
+  "commerce.refund_created": defineTrigger({
+    type: "commerce.refund_created",
+    label: "Refund Created",
+    description: "When a normalized commerce refund is created",
+    iconKey: "receiptText",
   }),
 };
 

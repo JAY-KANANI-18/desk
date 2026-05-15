@@ -21,6 +21,20 @@ export type BroadcastSendResult = {
   whatsAppComplianceNote?: string;
 };
 
+export type BroadcastCommerceAudienceFilters = {
+  abandonedCart?: {
+    olderThanMinutes?: number;
+    minTotalAmount?: number;
+    productExternalIds?: string[];
+  };
+  purchased?: {
+    since?: string;
+    minTotalAmount?: number;
+    productExternalIds?: string[];
+    statuses?: string[];
+  };
+};
+
 export type BroadcastRunRow = {
   id: string;
   name: string;
@@ -146,6 +160,7 @@ export const broadcastApi = {
     tagIds?: string[];
     lifecycleId?: string;
     respectMarketingOptOut?: boolean;
+    commerce?: BroadcastCommerceAudienceFilters;
     limit?: number;
   }) => api.post("/broadcasts/audience-preview", body) as Promise<BroadcastAudiencePreview>,
 
@@ -157,6 +172,7 @@ export const broadcastApi = {
     tagIds?: string[];
     lifecycleId?: string;
     respectMarketingOptOut?: boolean;
+    commerce?: BroadcastCommerceAudienceFilters;
     limit?: number;
     scheduledAt?: string;
   }) => api.post("/broadcasts/send", body) as Promise<BroadcastSendResult>,
