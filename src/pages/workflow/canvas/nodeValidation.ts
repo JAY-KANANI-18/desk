@@ -38,6 +38,11 @@ export interface WorkflowValidationWarning {
   type: StepType | "trigger";
 }
 
+interface WorkflowValidationContext {
+  triggerType?: string | null;
+  channelTypesById?: Record<string, string | undefined>;
+}
+
 function hasText(value: string | null | undefined) {
   return Boolean(value?.replace(/\s+/g, " ").trim());
 }
@@ -54,8 +59,58 @@ function hasCompleteMapping(mapping: HttpResponseMapping) {
   return hasText(mapping.jsonKey) && hasText(mapping.variableName);
 }
 
-function getSendMessageIssue(data: SendMessageData) {
+function getTemplateVariableKeys(data: SendMessageData) {
+  const variables = data.metadata?.template?.variables;
+  if (variables) return Object.keys(variables);
+
+  const keys = new Set<string>();
+  const visit = (value: unknown) => {
+    if (typeof value === "string") {
+      Array.from(value.matchAll(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g)).forEach((match) => {
+        keys.add(match[1]);
+      });
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+
+    if (value && typeof value === "object") {
+      Object.values(value as Record<string, unknown>).forEach(visit);
+    }
+  };
+
+  (data.metadata?.template?.components ?? []).forEach(visit);
+  return Array.from(keys);
+}
+
+function getSendMessageIssue(data: SendMessageData, context?: WorkflowValidationContext) {
   if (!hasText(data.channel)) return "Select a channel";
+
+  const selectedTemplate = data.metadata?.template;
+  if (selectedTemplate) {
+    if (!hasText(selectedTemplate.name) || !hasText(selectedTemplate.language)) {
+      return "Choose an approved template";
+    }
+
+    const missingTemplateVariables = getTemplateVariableKeys(data).filter(
+      (key) => !hasText(selectedTemplate.variables?.[key]),
+    );
+    if (missingTemplateVariables.length > 0) return "Fill template variables";
+
+    return undefined;
+  }
+
+  if (context?.triggerType?.startsWith("commerce.")) {
+    if (data.channel === "last_interacted") return "Choose a specific channel";
+    const channelType = context.channelTypesById?.[data.channel];
+    if (channelType === "whatsapp") return "Use an approved template";
+    if (channelType === "messenger" || channelType === "instagram" || channelType === "webchat") {
+      return "Requires an open customer window";
+    }
+  }
 
   if (data.defaultMessage?.type === "media") {
     const hasAttachment = (data.attachments ?? []).some((attachment) =>
@@ -231,10 +286,14 @@ function getHttpRequestIssue(data: HttpRequestData) {
   return undefined;
 }
 
-export function getStepValidationIssue(step: StepConfig, steps: StepConfig[]) {
+export function getStepValidationIssue(
+  step: StepConfig,
+  steps: StepConfig[],
+  context?: WorkflowValidationContext,
+) {
   switch (step.type) {
     case "send_message":
-      return getSendMessageIssue(step.data as SendMessageData);
+      return getSendMessageIssue(step.data as SendMessageData, context);
     case "ask_question":
       return getAskQuestionIssue(step.data as AskQuestionData);
     case "assign_to":
@@ -307,6 +366,7 @@ function getStepWarningTitle(step: StepConfig, steps: StepConfig[]) {
 export function getWorkflowValidationWarnings(config: {
   trigger?: TriggerConfig | null;
   steps?: StepConfig[] | null;
+  context?: WorkflowValidationContext;
 }): WorkflowValidationWarning[] {
   const steps = config.steps ?? [];
   const warnings: WorkflowValidationWarning[] = [];
@@ -324,7 +384,10 @@ export function getWorkflowValidationWarnings(config: {
   steps.forEach((step) => {
     if (step.type === "branch_connector") return;
 
-    const message = getStepValidationIssue(step, steps);
+    const message = getStepValidationIssue(step, steps, {
+      ...config.context,
+      triggerType: config.context?.triggerType ?? config.trigger?.type,
+    });
     if (!message) return;
 
     warnings.push({

@@ -1,40 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from '@/components/ui/icons';
-import { MobileSheet } from '../../../components/ui/modal';
+import { useEffect, useState } from 'react';
+import { CenterModal, MobileSheet } from '../../../components/ui/modal';
 import { useIsMobile } from '../../../hooks/useIsMobile';
-import { STEP_LIST, STEPS_BY_CATEGORY, StepMeta } from './stepTypes';
-import { StepType } from '../workflow.types';
+import { STEP_LIST, STEPS_BY_CATEGORY, type StepMeta } from './stepTypes';
+import type { StepType } from '../workflow.types';
 import { Button } from '../../../components/ui/Button';
-import { IconButton } from '../../../components/ui/button/IconButton';
 import { SearchInput } from '../../../components/ui/inputs';
 import { Tag } from '../../../components/ui/Tag';
 
 interface AddStepMenuProps {
+  isOpen: boolean;
   onSelect: (type: StepType) => void;
   onClose: () => void;
 }
 
-export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
+export function AddStepMenu({ isOpen, onSelect, onClose }: AddStepMenuProps) {
   const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-  const ref = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (isMobile) return;
-
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [isMobile, onClose]);
+    if (!isOpen) {
+      setSearch('');
+      setActiveCategory('all');
+    }
+  }, [isOpen]);
 
   const filtered: StepMeta[] = search
     ? STEP_LIST.filter((s) =>
@@ -51,12 +40,15 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
       .filter((c) => c.steps?.length > 0)
       .map((c) => ({ id: c.id, label: c.label })),
   ];
+  const contentHeightClass = isMobile
+    ? 'h-full'
+    : 'max-h-[min(420px,calc(100vh-10rem))]';
 
   const content = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className={`flex min-h-0 flex-col overflow-hidden ${contentHeightClass}`}>
       <div className="border-b border-gray-100 px-3 py-2.5">
         <SearchInput
-          ref={inputRef}
+          autoFocus={isOpen}
           placeholder="Search steps..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -132,7 +124,7 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
   if (isMobile) {
     return (
       <MobileSheet
-        isOpen
+        isOpen={isOpen}
         onClose={onClose}
         fullScreen
         title={
@@ -149,36 +141,16 @@ export function AddStepMenu({ onSelect, onClose }: AddStepMenuProps) {
     );
   }
 
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 'var(--z-modal)' }}>
-      <div
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px]"
-        aria-hidden="true"
-        onMouseDown={onClose}
-      />
-
-      <div
-        ref={ref}
-        className="relative z-[1] flex max-h-[min(520px,calc(100vh-2rem))] w-[min(480px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
-      >
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <span className="text-sm font-medium text-gray-900">Add Step</span>
-          <IconButton
-            aria-label="Close add step menu"
-            icon={<X size={14} />}
-            variant="ghost"
-            size="xs"
-            onClick={onClose}
-          />
-        </div>
-
-        {content}
-      </div>
-    </div>,
-    document.body,
+  return (
+    <CenterModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add Step"
+      size="md"
+      width={480}
+      bodyPadding="none"
+    >
+      {content}
+    </CenterModal>
   );
 }

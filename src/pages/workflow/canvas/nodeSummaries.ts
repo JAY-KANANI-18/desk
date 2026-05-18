@@ -135,6 +135,16 @@ function getChannelToken(
 }
 
 function getMessageDetails(data: SendMessageData) {
+  if (data.metadata?.template) {
+    const template = data.metadata.template;
+    const label = [template.name, template.language].filter(Boolean).join(" - ");
+    return {
+      text: label || "Choose approved template",
+      typeLabel: "Template",
+      isPlaceholder: !label,
+    };
+  }
+
   if (data.defaultMessage?.type === "media") {
     const attachments = data.attachments ?? [];
     if (attachments.length > 0) {

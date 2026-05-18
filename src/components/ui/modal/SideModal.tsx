@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   BaseModalProps,
   ModalBody,
@@ -6,6 +7,7 @@ import {
   ModalFrame,
   ModalHeader,
   ModalPortal,
+  getModalMotionTransition,
   handleDialogKeyDown,
   useModalDialog,
 } from "./shared";
@@ -36,19 +38,24 @@ export function SideModal({
   bodyPadding = "md",
   children,
 }: SideModalProps) {
-  const { dialogRef, titleId, isMounted, isVisible } = useModalDialog({
-    isOpen,
-    onClose,
-    lockBodyScroll,
-  });
+  const { dialogRef, titleId, isMounted, isVisible, onExitComplete } =
+    useModalDialog({
+      isOpen,
+      onClose,
+      lockBodyScroll,
+    });
+  const shouldReduceMotion = useReducedMotion();
+  const hiddenMotion = shouldReduceMotion
+    ? { opacity: 0 }
+    : { opacity: 0, x: 24 };
+  const visibleMotion = shouldReduceMotion
+    ? { opacity: 1 }
+    : { opacity: 1, x: 0 };
 
   const panelStyle: CSSProperties = {
     width: typeof width === "number" ? `${width}px` : width,
     maxWidth: "100vw",
     height: "100%",
-    opacity: isVisible ? 1 : 0,
-    transform: isVisible ? "translateX(0)" : "translateX(24px)",
-    transition: "opacity var(--transition-base), transform var(--transition-base)",
     borderTopLeftRadius: "var(--radius-lg)",
     borderBottomLeftRadius: "var(--radius-lg)",
   };
@@ -57,19 +64,25 @@ export function SideModal({
     <ModalPortal isMounted={isMounted}>
       <ModalFrame
         isVisible={isVisible}
+        onExitComplete={onExitComplete}
         panelPosition="end"
         onOverlayClick={closeOnOverlayClick ? onClose : undefined}
         showOverlay={showOverlay}
         allowBackgroundInteraction={allowBackgroundInteraction}
       >
-        <div
+        <motion.div
+          key="side-modal-panel"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
           onKeyDown={(event) => handleDialogKeyDown(event, onClose)}
-          className="flex min-h-0 h-full flex-col overflow-hidden border border-[var(--color-gray-200)] bg-white shadow-xl focus:outline-none"
+          className="relative z-[1] flex h-full min-h-0 min-w-0 pointer-events-auto flex-col overflow-hidden border border-[var(--color-gray-200)] bg-white shadow-xl focus:outline-none"
+          initial={hiddenMotion}
+          animate={visibleMotion}
+          exit={hiddenMotion}
+          transition={getModalMotionTransition(shouldReduceMotion)}
           style={panelStyle}
         >
           <ModalHeader
@@ -89,7 +102,7 @@ export function SideModal({
             secondaryAction={secondaryAction}
             primaryAction={primaryAction}
           />
-        </div>
+        </motion.div>
       </ModalFrame>
     </ModalPortal>
   );

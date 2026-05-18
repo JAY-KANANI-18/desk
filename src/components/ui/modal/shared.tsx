@@ -9,12 +9,34 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Transition,
+} from "framer-motion";
 import { ChevronLeft, X } from "@/components/ui/icons";
 import { IconButton } from "../button/IconButton";
 import { cx } from "../inputs/shared";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "fullscreen";
 export type ModalBodyPadding = "none" | "sm" | "md" | "lg";
+
+const MODAL_PRESENCE_DURATION_MS = 200;
+const MODAL_MOTION_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const modalMotionTransition: Transition = {
+  opacity: { duration: 0.11, ease: "easeOut" },
+  scale: { duration: 0.18, ease: MODAL_MOTION_EASE },
+  x: { duration: 0.18, ease: MODAL_MOTION_EASE },
+  y: { duration: 0.18, ease: MODAL_MOTION_EASE },
+};
+
+export function getModalMotionTransition(
+  shouldReduceMotion: boolean | null,
+): Transition {
+  return shouldReduceMotion ? { duration: 0 } : modalMotionTransition;
+}
 
 export interface BaseModalProps {
   isOpen: boolean;
@@ -40,31 +62,23 @@ export interface BaseModalProps {
 
 export function useModalPresence(isOpen: boolean) {
   const [isMounted, setIsMounted] = useState(isOpen);
-  const [isVisible, setIsVisible] = useState(isOpen);
+  const isOpenRef = useRef(isOpen);
 
   useEffect(() => {
+    isOpenRef.current = isOpen;
+
     if (isOpen) {
       setIsMounted(true);
-      const frame = window.requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
-
-      return () => {
-        window.cancelAnimationFrame(frame);
-      };
     }
-
-    setIsVisible(false);
-    const timeout = window.setTimeout(() => {
-      setIsMounted(false);
-    }, 200);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
   }, [isOpen]);
 
-  return { isMounted, isVisible };
+  const handleExitComplete = () => {
+    if (!isOpenRef.current) {
+      setIsMounted(false);
+    }
+  };
+
+  return { isMounted, isVisible: isOpen, onExitComplete: handleExitComplete };
 }
 
 let bodyScrollLockCount = 0;
@@ -210,6 +224,7 @@ export function ModalPortal({
 
 export function ModalFrame({
   isVisible,
+  onExitComplete,
   onOverlayClick,
   showOverlay = true,
   allowBackgroundInteraction = false,
@@ -217,12 +232,15 @@ export function ModalFrame({
   children,
 }: {
   isVisible: boolean;
+  onExitComplete?: () => void;
   onOverlayClick?: () => void;
   showOverlay?: boolean;
   allowBackgroundInteraction?: boolean;
   panelPosition?: "center" | "end";
   children: ReactNode;
 }) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div
       className={cx(
@@ -241,21 +259,36 @@ export function ModalFrame({
         }
       }}
     >
-      {showOverlay ? (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            backgroundColor: "rgb(17 24 39 / 0.48)",
-            opacity: isVisible ? 1 : 0,
-            transition: "opacity var(--transition-base)",
-          }}
-        />
-      ) : null}
-
-      <div className="relative z-[1] flex min-h-0 min-w-0 pointer-events-auto">
-        {children}
-      </div>
+      <AnimatePresence onExitComplete={onExitComplete}>
+        {isVisible
+          ? [
+              showOverlay ? (
+                <motion.div
+                  key="modal-overlay"
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: shouldReduceMotion
+                      ? 0
+                      : MODAL_PRESENCE_DURATION_MS / 1000,
+                    ease: "easeInOut",
+                  }}
+                  style={{
+                    backgroundColor: "rgb(17 24 39 / 0.48)",
+                  }}
+                  onMouseDown={(event) => {
+                    event.stopPropagation();
+                    onOverlayClick?.();
+                  }}
+                />
+              ) : null,
+              children,
+            ]
+          : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -434,7 +467,7 @@ export function useModalDialog({
 
   useBodyScrollLock(lockBodyScroll && presence.isMounted);
   useEscapeToClose(isOpen, onClose);
-  useFocusTrap(isOpen, dialogRef);
+  useFocusTrap(isOpen && presence.isMounted, dialogRef);
 
   return {
     dialogRef,

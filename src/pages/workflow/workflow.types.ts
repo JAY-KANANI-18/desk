@@ -303,14 +303,30 @@ export interface MessageAttachment {
   mimeType?: string;
   size?: number;
 }
+
+export interface MessageTemplateData {
+  id?: string;
+  metaId?: string | null;
+  name: string;
+  language: string;
+  category?: string;
+  status?: string;
+  variables?: Record<string, string>;
+  components?: unknown[];
+}
+
+export interface SendMessageMetadata {
+  template?: MessageTemplateData;
+  [key: string]: unknown;
+}
 export interface SendMessageData {
   channel: MessageChannel;
   defaultMessage: MessageContent;
   channelResponses: ChannelResponse[];
   connectors?: string[];
   addMessageFailureBranch: boolean;
-    attachments?: MessageAttachment[]; // ← add this
-
+  attachments?: MessageAttachment[];
+  metadata?: SendMessageMetadata;
 }
 
 export type QuestionType =

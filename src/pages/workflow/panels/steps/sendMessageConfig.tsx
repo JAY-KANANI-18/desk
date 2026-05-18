@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { MessageAttachment, SendMessageData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
+import type {
+  MessageAttachment,
+  MessageTemplateData,
+  SendMessageData,
+  SP,
+} from "../../workflow.types";
+import { VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, ToggleRow } from "../PanelShell";
-import { Upload, X } from "@/components/ui/icons";
+import { AlertCircle, FileText, Upload, X } from "@/components/ui/icons";
 import { useWorkflow } from "../../WorkflowContext";
 import { useChannel } from "../../../../context/ChannelContext";
 import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
-import { ChannelSelectMenu } from "../../../../components/ui/Select";
+import { BaseSelect, ChannelSelectMenu } from "../../../../components/ui/Select";
 import { VariableTextEditor } from "../../../../components/ui/variable-editor";
 import type { VariableSuggestionOption } from "../../../../components/ui/Select";
+import { ChannelApi } from "../../../../lib/channelApi";
 import {
   SnippetSuggestionMenu,
   useWorkspaceSnippets,
@@ -50,6 +57,136 @@ const workflowVariableOptions: VariableSuggestionOption[] = VARIABLE_OPTIONS.map
   label: key,
 }));
 
+const commerceVariableOptions: VariableSuggestionOption[] = [
+  "trigger.orderNumber",
+  "trigger.orderTotalAmount",
+  "trigger.currency",
+  "trigger.checkoutUrl",
+  "trigger.customerEmail",
+  "trigger.customerPhone",
+].map((key) => ({ key, label: key }));
+
+const messageVariableOptions = [...workflowVariableOptions, ...commerceVariableOptions];
+
+type MessageMode = "text" | "media" | "template";
+
+type TemplateOption = {
+  id: string;
+  metaId?: string | null;
+  name: string;
+  language: string;
+  category?: string;
+  status?: string;
+  components: unknown[];
+  variables: string[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function clearTemplateMetadata(metadata?: SendMessageData["metadata"]) {
+  if (!metadata?.template) return metadata;
+  const rest = { ...metadata };
+  delete rest.template;
+  return Object.keys(rest).length > 0 ? rest : undefined;
+}
+
+function supportsApprovedTemplates(channelType?: string | null) {
+  return channelType === "whatsapp" || channelType === "messenger";
+}
+
+function extractTemplateKeysFromText(text: string | undefined) {
+  if (!text) return [];
+  return [...text.matchAll(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g)].map((match) => match[1]);
+}
+
+function extractTemplateKeysFromComponents(components: unknown[]) {
+  const keys = new Set<string>();
+  const visit = (value: unknown) => {
+    if (typeof value === "string") {
+      extractTemplateKeysFromText(value).forEach((key) => keys.add(key));
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (isRecord(value)) {
+      Object.values(value).forEach(visit);
+    }
+  };
+  components.forEach(visit);
+  return Array.from(keys);
+}
+
+function normalizeTemplate(row: unknown): TemplateOption | null {
+  if (!isRecord(row)) return null;
+  const id = String(row.id ?? row.metaId ?? row.name ?? "");
+  const name = String(row.name ?? "");
+  const language = String(row.language ?? "");
+  if (!id || !name || !language) return null;
+
+  const components = Array.isArray(row.components) ? row.components : [];
+  const rawVariables = Array.isArray(row.variables)
+    ? row.variables.map((item) => {
+        if (typeof item === "string") return item;
+        return isRecord(item) ? String(item.key ?? item.label ?? "") : "";
+      })
+    : [];
+  const variables = Array.from(
+    new Set([...rawVariables.filter(Boolean), ...extractTemplateKeysFromComponents(components)]),
+  );
+
+  return {
+    id,
+    metaId: typeof row.metaId === "string" ? row.metaId : null,
+    name,
+    language,
+    category: typeof row.category === "string" ? row.category : undefined,
+    status: typeof row.status === "string" ? row.status : undefined,
+    components,
+    variables,
+  };
+}
+
+function normalizeTemplateList(result: unknown) {
+  const rows = isRecord(result) && Array.isArray(result.data)
+    ? result.data
+    : Array.isArray(result)
+      ? result
+      : [];
+  return rows.map(normalizeTemplate).filter((item): item is TemplateOption => Boolean(item));
+}
+
+function templateId(template?: MessageTemplateData) {
+  return template?.id ?? template?.metaId ?? (template?.name && template?.language
+    ? `${template.name}:${template.language}`
+    : "");
+}
+
+function templateOptionValue(template: TemplateOption) {
+  return template.id || template.metaId || `${template.name}:${template.language}`;
+}
+
+function buildTemplateMetadata(template: TemplateOption, existing?: MessageTemplateData): MessageTemplateData {
+  const currentVariables = existing?.variables ?? {};
+  const variables = Object.fromEntries(
+    template.variables.map((key) => [key, currentVariables[key] ?? ""]),
+  );
+
+  return {
+    id: template.id,
+    metaId: template.metaId,
+    name: template.name,
+    language: template.language,
+    category: template.category,
+    status: template.status,
+    variables,
+    components: template.components,
+  };
+}
+
 function AttachmentIcon({ type }: { type: string }) {
   // simple icon based on type
   const icons: Record<string, string> = {
@@ -62,12 +199,33 @@ export function SendMessageConfig({ step, onChange }: SP) {
   const u = (p: Partial<SendMessageData>) => onChange({ ...data, ...p });
 
   const [uploading, setUploading] = useState(false);
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
   const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
   const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
-  const { uploadFile } = useWorkflow();
+  const { uploadFile, state } = useWorkflow();
   const { channels } = useChannel();
   const { snippets, snippetsLoading } = useWorkspaceSnippets();
   const messageText = data.defaultMessage.text ?? "";
+  const selectedChannel = useMemo(
+    () => channels.find((channel: { id?: string | number }) => String(channel.id) === String(data.channel)),
+    [channels, data.channel],
+  );
+  const selectedChannelType =
+    typeof selectedChannel?.type === "string" ? selectedChannel.type : null;
+  const templateChannel = supportsApprovedTemplates(selectedChannelType);
+  const selectedTemplate = data.metadata?.template;
+  const currentMode: MessageMode = selectedTemplate
+    ? "template"
+    : data.defaultMessage.type === "media"
+      ? "media"
+      : "text";
+  const messageModes: MessageMode[] = templateChannel
+    ? ["text", "media", "template"]
+    : ["text", "media"];
+  const selectedTemplateId = templateId(selectedTemplate);
+  const isCommerceTrigger = Boolean(state.workflow?.config?.trigger?.type?.startsWith("commerce."));
   const snippetQuery = getSnippetTriggerQuery(messageText);
   const snippetMenuOpen =
     data.defaultMessage.type === "text" &&
@@ -81,6 +239,83 @@ export function SendMessageConfig({ step, onChange }: SP) {
   useEffect(() => {
     setSnippetHighlightIndex(0);
   }, [snippetQuery, snippetOptions.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!templateChannel || !data.channel || data.channel === "last_interacted") {
+      setTemplates([]);
+      setTemplateError(null);
+      setTemplatesLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setTemplatesLoading(true);
+    setTemplateError(null);
+
+    const loadTemplates = selectedChannelType === "messenger"
+      ? ChannelApi.listMessengerTemplates(data.channel)
+      : ChannelApi.listWhatsAppTemplates(data.channel, { status: "APPROVED" });
+
+    Promise.resolve(loadTemplates)
+      .then((result) => {
+        if (cancelled) return;
+        setTemplates(normalizeTemplateList(result));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTemplates([]);
+        setTemplateError("Could not load approved templates for this channel.");
+      })
+      .finally(() => {
+        if (!cancelled) setTemplatesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.channel, selectedChannelType, templateChannel]);
+
+  const templateVariableKeys = useMemo(() => {
+    if (selectedTemplate?.variables) return Object.keys(selectedTemplate.variables);
+    const storedComponents = Array.isArray(selectedTemplate?.components)
+      ? selectedTemplate.components
+      : [];
+    return extractTemplateKeysFromComponents(storedComponents);
+  }, [selectedTemplate]);
+
+  const selectedTemplateOption = useMemo(() => {
+    const fromList = templates.find((template) => templateOptionValue(template) === selectedTemplateId);
+    if (fromList) return fromList;
+    if (!selectedTemplate?.name || !selectedTemplate.language) return null;
+
+    return {
+      id: selectedTemplate.id ?? selectedTemplateId,
+      metaId: selectedTemplate.metaId,
+      name: selectedTemplate.name,
+      language: selectedTemplate.language,
+      category: selectedTemplate.category,
+      status: selectedTemplate.status,
+      components: Array.isArray(selectedTemplate.components) ? selectedTemplate.components : [],
+      variables: templateVariableKeys,
+    } satisfies TemplateOption;
+  }, [selectedTemplate, selectedTemplateId, templateVariableKeys, templates]);
+
+  const commerceWindowWarning = useMemo(() => {
+    if (!isCommerceTrigger) return null;
+    if (data.channel === "last_interacted") {
+      return "Commerce events do not open a chat window. Choose a specific sendable channel instead of Last Interacted.";
+    }
+    if (selectedChannelType === "whatsapp" && currentMode !== "template") {
+      return "Shopify/order events do not open WhatsApp's 24-hour window. Use an approved template for first-touch order messages.";
+    }
+    if (selectedChannelType === "messenger" || selectedChannelType === "instagram" || selectedChannelType === "webchat") {
+      return "This channel needs an existing customer conversation window. Commerce phone or email data alone cannot start it.";
+    }
+    return null;
+  }, [currentMode, data.channel, isCommerceTrigger, selectedChannelType]);
 
   const updateMessageText = useCallback((text: string) => {
     if (text !== messageText) {
@@ -182,6 +417,75 @@ export function SendMessageConfig({ step, onChange }: SP) {
     u({ attachments: next });
   };
 
+  const setMessageMode = (mode: MessageMode) => {
+    if (mode === "template") {
+      u({
+        defaultMessage: {
+          ...data.defaultMessage,
+          type: "text",
+          text: "",
+        },
+        attachments: [],
+        metadata: {
+          ...(data.metadata ?? {}),
+          template: data.metadata?.template ?? {
+            name: "",
+            language: "",
+            variables: {},
+          },
+        },
+      });
+      return;
+    }
+
+    u({
+      defaultMessage: {
+        ...data.defaultMessage,
+        type: mode,
+      },
+      metadata: clearTemplateMetadata(data.metadata),
+    });
+  };
+
+  const handleTemplateChange = (value: string) => {
+    const nextTemplate = templates.find((template) => templateOptionValue(template) === value);
+    if (!nextTemplate) {
+      u({
+        metadata: clearTemplateMetadata(data.metadata),
+      });
+      return;
+    }
+
+    u({
+      defaultMessage: {
+        ...data.defaultMessage,
+        type: "text",
+        text: "",
+      },
+      attachments: [],
+      metadata: {
+        ...(data.metadata ?? {}),
+        template: buildTemplateMetadata(nextTemplate, data.metadata?.template),
+      },
+    });
+  };
+
+  const updateTemplateVariable = (key: string, value: string) => {
+    if (!selectedTemplate) return;
+    u({
+      metadata: {
+        ...(data.metadata ?? {}),
+        template: {
+          ...selectedTemplate,
+          variables: {
+            ...(selectedTemplate.variables ?? {}),
+            [key]: value,
+          },
+        },
+      },
+    });
+  };
+
   return (
     <>
       <Section title="Channel">
@@ -189,7 +493,18 @@ export function SendMessageConfig({ step, onChange }: SP) {
           <ChannelSelectMenu
             channels={channels}
             value={data.channel || "last_interacted"}
-            onChange={(channel) => u({ channel })}
+            onChange={(channel) => {
+              const nextChannel = channels.find(
+                (candidate: { id?: string | number }) => String(candidate.id) === String(channel),
+              );
+              const nextType = typeof nextChannel?.type === "string" ? nextChannel.type : null;
+              u({
+                channel,
+                metadata: supportsApprovedTemplates(nextType)
+                  ? data.metadata
+                  : clearTemplateMetadata(data.metadata),
+              });
+            }}
             variant="panel"
             groupLabel="Channels"
             specialOptions={[
@@ -205,31 +520,80 @@ export function SendMessageConfig({ step, onChange }: SP) {
       </Section>
 
       <Section title="Message">
+        {commerceWindowWarning ? (
+          <div className="mb-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <span>{commerceWindowWarning}</span>
+          </div>
+        ) : null}
         <Field label="Type">
           <div className="flex gap-2 mb-3">
-            {(["text", "media"] as const).map((t) => (
+            {messageModes.map((t) => (
               <div key={t} className="flex-1">
                 <Button
-                  onClick={() =>
-                    u({
-                      defaultMessage: {
-                        ...data.defaultMessage,
-                        type: t,
-                      },
-                    })
-                  }
-                  variant={data.defaultMessage.type === t ? "dark" : "secondary"}
+                  onClick={() => setMessageMode(t)}
+                  variant={currentMode === t ? "dark" : "secondary"}
                   size="sm"
                   fullWidth
+                  leftIcon={t === "template" ? <FileText size={13} /> : undefined}
                 >
-                  {t === "text" ? "Text" : "Media"}
+                  {t === "text" ? "Text" : t === "media" ? "Media" : "Template"}
                 </Button>
               </div>
             ))}
           </div>
         </Field>
 
-        {data.defaultMessage.type === "text" ? (
+        {currentMode === "template" ? (
+          <Field
+            label="Approved template"
+            required
+            hint={
+              selectedChannelType === "whatsapp"
+                ? "Required for WhatsApp messages outside the 24-hour window."
+                : "Requires an existing Messenger recipient identity."
+            }
+          >
+            <div className="space-y-3">
+              <BaseSelect
+                options={[
+                  { value: "", label: templatesLoading ? "Loading templates..." : "Choose approved template" },
+                  ...templates.map((template) => ({
+                    value: templateOptionValue(template),
+                    label: `${template.name} (${template.language})${template.category ? ` - ${template.category}` : ""}`,
+                  })),
+                ]}
+                value={selectedTemplateId}
+                onChange={handleTemplateChange}
+                placeholder={templatesLoading ? "Loading templates..." : "Choose approved template"}
+                disabled={templatesLoading || !templateChannel}
+                emptyMessage="No approved templates found."
+              />
+              {templateError ? (
+                <p className="text-xs text-red-500">{templateError}</p>
+              ) : null}
+              {selectedTemplateOption && templateVariableKeys.length > 0 ? (
+                <div className="space-y-2">
+                  {templateVariableKeys.map((key) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-xs font-medium text-gray-600">
+                        {`{{${key}}}`}
+                      </label>
+                      <VariableTextEditor
+                        value={selectedTemplate?.variables?.[key] ?? ""}
+                        onChange={(value) => updateTemplateVariable(key, value)}
+                        variables={messageVariableOptions}
+                        placeholder={`Value for ${key}`}
+                        menuPlacement="bottom"
+                        editorClassName="min-h-[38px] w-full rounded-lg border border-[var(--color-gray-300)] px-3 py-2 text-sm text-[var(--color-gray-700)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </Field>
+        ) : data.defaultMessage.type === "text" ? (
           <Field
             label="Content"
             required
@@ -249,7 +613,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
               <VariableTextEditor
                 value={messageText}
                 onChange={updateMessageText}
-                variables={workflowVariableOptions}
+                variables={messageVariableOptions}
                 placeholder="Type your message..."
                 menuPlacement="bottom"
                 onKeyDown={handleSnippetKeyDown}

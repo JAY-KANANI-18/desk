@@ -159,6 +159,15 @@ function isPreviewChannel(
   return typeof value === "object" && value !== null;
 }
 
+function getChannelTypesById(channels: WorkflowPreviewContext["channels"]) {
+  return channels.reduce<Record<string, string>>((acc, channel) => {
+    if (channel.id !== undefined && typeof channel.type === "string") {
+      acc[String(channel.id)] = channel.type;
+    }
+    return acc;
+  }, {});
+}
+
 function getStepNumber(stepId: string, steps: WorkflowCanvasStep[]) {
   const visibleSteps = steps.filter((step) => step.type !== "branch_connector");
   const index = visibleSteps.findIndex((step) => step.id === stepId);
@@ -531,6 +540,10 @@ export function buildGraph(
   const showAddNodes = options.showAddNodes ?? true;
   const showValidation = options.showValidation ?? true;
   const showActions = options.showActions ?? true;
+  const validationContext = {
+    triggerType: raw.trigger?.type,
+    channelTypesById: getChannelTypesById(previewContext.channels),
+  };
 
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -678,7 +691,7 @@ export function buildGraph(
 
       // ── NORMAL / BRANCH NODE ──
       const nodePreview = getStepNodePreview(step, previewContext);
-      const validationIssue = getStepValidationIssue(step, previewContext.steps);
+      const validationIssue = getStepValidationIssue(step, previewContext.steps, validationContext);
       const stepNumber = getStepNumber(step.id, previewContext.steps);
       const nodeHeight = estimateNodeHeight(nodePreview);
       const hasValidationIssue = showValidation && Boolean(validationIssue);
@@ -1505,8 +1518,11 @@ export function WorkflowCanvas() {
       getWorkflowValidationWarnings({
         trigger: workflow?.config?.trigger ?? null,
         steps: workflow?.config?.steps ?? [],
+        context: {
+          channelTypesById: getChannelTypesById(previewChannels),
+        },
       }),
-    [workflow?.config?.trigger, workflow?.config?.steps],
+    [previewChannels, workflow?.config?.trigger, workflow?.config?.steps],
   );
 
   const closeSelectedPanel = useCallback(() => {
@@ -1632,15 +1648,14 @@ export function WorkflowCanvas() {
         </MobileSheet>
       ) : null}
 
-      {addMenu.isOpen && (
-        <AddStepMenu
-          onSelect={handleAddStep}
-          onClose={() => {
-            addMenu.close();
-            insertCtxRef.current = null;
-          }}
-        />
-      )}
+      <AddStepMenu
+        isOpen={addMenu.isOpen}
+        onSelect={handleAddStep}
+        onClose={() => {
+          addMenu.close();
+          insertCtxRef.current = null;
+        }}
+      />
 
       {isWorkflowAiBuilderEnabled ? (
         <React.Suspense fallback={null}>

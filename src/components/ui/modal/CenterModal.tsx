@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   BaseModalProps,
   ModalBody,
@@ -7,6 +8,7 @@ import {
   ModalHeader,
   ModalPortal,
   getCenterModalPanelStyle,
+  getModalMotionTransition,
   handleDialogKeyDown,
   useModalDialog,
   type ModalSize,
@@ -40,11 +42,19 @@ export function CenterModal({
   bodyPadding = "md",
   children,
 }: CenterModalProps) {
-  const { dialogRef, titleId, isMounted, isVisible } = useModalDialog({
-    isOpen,
-    onClose,
-    lockBodyScroll,
-  });
+  const { dialogRef, titleId, isMounted, isVisible, onExitComplete } =
+    useModalDialog({
+      isOpen,
+      onClose,
+      lockBodyScroll,
+    });
+  const shouldReduceMotion = useReducedMotion();
+  const hiddenMotion = shouldReduceMotion
+    ? { opacity: 0 }
+    : { opacity: 0, scale: 0.97, y: 8 };
+  const visibleMotion = shouldReduceMotion
+    ? { opacity: 1 }
+    : { opacity: 1, scale: 1, y: 0 };
 
   const panelStyle: CSSProperties = {
     ...getCenterModalPanelStyle(size),
@@ -53,28 +63,31 @@ export function CenterModal({
         ? `${width}px`
         : width ?? (size === "fullscreen" ? "100vw" : "100%"),
     borderRadius: size === "fullscreen" ? 0 : "var(--radius-lg)",
-    opacity: isVisible ? 1 : 0,
-    transform: isVisible ? "scale(1) translateY(0)" : "scale(0.97) translateY(8px)",
-    transition: "opacity var(--transition-base), transform var(--transition-base)",
   };
 
   return (
     <ModalPortal isMounted={isMounted}>
       <ModalFrame
         isVisible={isVisible}
+        onExitComplete={onExitComplete}
         panelPosition="center"
         onOverlayClick={closeOnOverlayClick ? onClose : undefined}
         showOverlay={showOverlay}
         allowBackgroundInteraction={allowBackgroundInteraction}
       >
-        <div
+        <motion.div
+          key="center-modal-panel"
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
           onKeyDown={(event) => handleDialogKeyDown(event, onClose)}
-          className="flex min-h-0 max-h-[calc(100vh-var(--spacing-2xl))] w-full flex-col overflow-hidden border border-[var(--color-gray-200)] bg-white shadow-xl focus:outline-none"
+          className="relative z-[1] flex min-h-0 min-w-0 max-h-[calc(100vh-var(--spacing-2xl))] w-full pointer-events-auto flex-col overflow-hidden border border-[var(--color-gray-200)] bg-white shadow-xl focus:outline-none"
+          initial={hiddenMotion}
+          animate={visibleMotion}
+          exit={hiddenMotion}
+          transition={getModalMotionTransition(shouldReduceMotion)}
           style={panelStyle}
         >
           <ModalHeader
@@ -96,7 +109,7 @@ export function CenterModal({
             primaryAction={primaryAction}
             showDivider={showDividers}
           />
-        </div>
+        </motion.div>
       </ModalFrame>
     </ModalPortal>
   );

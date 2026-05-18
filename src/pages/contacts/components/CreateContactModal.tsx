@@ -32,10 +32,6 @@ export function CreateContactModal({
     Boolean(value.firstName.trim()) &&
     validatePhoneNumberForForm(value.phone) === true;
 
-  if (!open) {
-    return null;
-  }
-
   if (isMobile) {
     return (
       <MobileSheet
