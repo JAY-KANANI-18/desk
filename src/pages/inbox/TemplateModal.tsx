@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
     X, Search, ChevronRight, Check, Send, AlertCircle,
     Image as ImageIcon, Video, FileText, Phone, ExternalLink,
@@ -13,6 +13,10 @@ import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { SearchInput } from '../../components/ui/inputs';
 import { Tag } from '../../components/ui/Tag';
 import { useInbox } from '../../context/InboxContext';
+import {
+    normalizeWhatsAppTemplateComponents,
+    WhatsAppTemplateMessageWindow,
+} from './message-area/WhatsAppTemplatePreview';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +51,7 @@ export type Template = {
     expiryTime?: string;
     couponCode?: string;
     variables: { key: string; label: string; description?: string; defaultValue?: string }[];
+    components?: ApiTemplateComponent[];
 };
 
 interface TemplateModalProps {
@@ -62,6 +67,9 @@ type ApiTemplateComponent = {
     type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
     format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'LOCATION';
     text?: string;
+    example?: {
+        header_handle?: string[];
+    };
     buttons?: { type: string; text: string; url?: string; phone_number?: string }[];
 };
 
@@ -72,7 +80,7 @@ type ApiTemplate = {
     language: string;
     status: string;
     components: ApiTemplateComponent[];
-    variables?: string[] | { key: string; label: string; description?: string; defaultValue?: string }[];
+    variables?: Array<string | { key: string; label: string; description?: string; defaultValue?: string }>;
 };
 
 // ─── API Response Mapper ──────────────────────────────────────────────────────
@@ -103,7 +111,7 @@ function mapApiTemplate(api: ApiTemplate): Template {
     const bodyText = bodyComp?.text ?? '';
     const keys = [...new Set([...bodyText.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]))];
     const variables = Array.isArray(api.variables)
-        ? api.variables.map((entry: any) =>
+        ? api.variables.map((entry) =>
             typeof entry === 'string'
                 ? { key: entry, label: entry }
                 : entry,
@@ -121,6 +129,7 @@ function mapApiTemplate(api: ApiTemplate): Template {
         footer:   footerComp?.text,
         buttons:  buttons.length > 0 ? buttons : undefined,
         variables,
+        components: api.components ?? [],
     };
 }
 
@@ -381,6 +390,97 @@ export function WhatsAppPreview({ template, values }: { template: Template; valu
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
+function getTemplateLivePreviewValues(values: Record<string, string>) {
+    const filledValues: Record<string, string> = {};
+
+    Object.entries(values).forEach(([key, value]) => {
+        if (value.trim()) {
+            filledValues[key] = value;
+        }
+    });
+
+    return filledValues;
+}
+
+function TemplateLivePreview({
+    template,
+    values,
+    className,
+}: {
+    template: Template;
+    values: Record<string, string>;
+    className?: string;
+}) {
+    const components = useMemo(
+        () => normalizeWhatsAppTemplateComponents(
+            template.components,
+            getTemplateLivePreviewValues(values),
+        ),
+        [template.components, values],
+    );
+
+    return (
+        <WhatsAppTemplateMessageWindow
+            components={components}
+            className={className}
+            contentClassName="px-3 py-3"
+            variant="chat"
+            showMeta
+            displayTime="now"
+            isOutgoing
+        />
+    );
+}
+
+function TemplatePickerCard({
+    template,
+    contextValues,
+    onPick,
+}: {
+    template: Template;
+    contextValues: Record<string, string>;
+    onPick: (template: Template) => void;
+}) {
+    const components = useMemo(
+        () => normalizeWhatsAppTemplateComponents(
+            template.components,
+            getTemplateLivePreviewValues(contextValues),
+        ),
+        [contextValues, template.components],
+    );
+
+    return (
+        <article className="flex h-[268px] min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-[#dce1e7] shadow-sm transition-shadow hover:shadow-md">
+            <div className="flex items-center justify-between gap-2 px-2.5 py-2">
+                <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-xs font-semibold text-gray-900">
+                        {template.name}
+                    </h3>
+                    <p className="mt-0.5 truncate text-[10px] font-medium uppercase text-gray-500">
+                        {template.category} / {template.type} / {template.language}
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    rightIcon={<ChevronRight size={12} />}
+                    onClick={() => onPick(template)}
+                >
+                    Use
+                </Button>
+            </div>
+
+            <WhatsAppTemplateMessageWindow
+                components={components}
+                className="flex-1"
+                contentClassName="px-2.5 py-2"
+                previewScale={0.86}
+            />
+        </article>
+    );
+}
+
 export function TemplateModal({ open, onClose, onUse, contextValues = {} }: TemplateModalProps) {
     const [query, setQuery]           = useState('');
     const [selected, setSelected]     = useState<Template | null>(null);
@@ -439,8 +539,7 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
         setSelected(t);
         const init: Record<string, string> = {};
         allKeys(t).forEach(k => {
-            const def = t.variables.find(v => v.key === k);
-            init[k] = contextValues[k] ?? def?.defaultValue ?? '';
+            init[k] = contextValues[k] ?? '';
         });
         setVarValues(init);
         setStep('fill');
@@ -552,7 +651,7 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
             headerIcon={modalHeaderIcon}
             onBack={step === 'fill' ? () => setStep('list') : undefined}
             size="xl"
-            width="56rem"
+            width="min(64rem, calc(100vw - 2rem))"
             bodyPadding="none"
             mobileBodyClassName="h-full"
             mobileFooter={mobileFooter}
@@ -650,43 +749,14 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                     ) : null}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                     {templates.map(template => (
-                                        <Button
+                                        <TemplatePickerCard
                                             key={template.id}
-                                            onClick={() => pick(template)}
-                                            variant="select-card"
-                                            fullWidth
-                                            contentAlign="start"
-                                            preserveChildLayout
-                                            radius="lg"
-                                            className="group items-start whitespace-normal text-left hover:shadow-md"
-                                        >
-                                            <div className="flex items-start gap-2.5">
-                                                <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-[#e8f5e9] flex items-center justify-center text-gray-500 group-hover:text-[#128c7e] transition-colors flex-shrink-0">
-                                                    {TYPE_ICON[template.type]}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                                                        <span className="text-[12.5px] font-semibold text-gray-800">{template.name}</span>
-                                                        <Tag label={template.category} size="sm" bgColor="gray" />
-                                                    </div>
-                                                    <p className="text-[11px] text-gray-400 truncate leading-snug">
-                                                        {template.body?.replace(/\{\{[^}]+\}\}/g, '...')}
-                                                    </p>
-                                                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                                        <Tag label={template.type} size="sm" bgColor="gray" />
-                                                        {template.variables.length > 0 && (
-                                                            <Tag label={`${template.variables.length} var${template.variables.length > 1 ? 's' : ''}`} size="sm" bgColor="tag-purple" />
-                                                        )}
-                                                        {template.buttons && template.buttons.length > 0 && (
-                                                            <Tag label={`${template.buttons.length} btn${template.buttons.length > 1 ? 's' : ''}`} size="sm" bgColor="success" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <ChevronRight size={13} className="text-gray-300 group-hover:text-[#128c7e] flex-shrink-0 mt-1 transition-colors" />
-                                            </div>
-                                        </Button>
+                                            template={template}
+                                            contextValues={contextValues}
+                                            onPick={pick}
+                                        />
                                     ))}
                                 </div>
                             )}
@@ -744,7 +814,11 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                         <div className="h-1.5 w-1.5 rounded-full bg-[#25d366]" />
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Preview</p>
                                     </div>
-                                    <WhatsAppPreview template={selected} values={varValues} />
+                                    <TemplateLivePreview
+                                        template={selected}
+                                        values={varValues}
+                                        className="h-[calc(100vh-14rem)] min-h-[420px] max-h-[620px]"
+                                    />
                                 </div>
                             </div>
 
@@ -771,8 +845,12 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#25d366]" />
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</p>
                             </div>
-                            <div className="flex-1 overflow-y-auto px-3 pb-4">
-                                <WhatsAppPreview template={selected} values={varValues} />
+                            <div className="flex-1 overflow-y-auto px-3 pb-3">
+                                <TemplateLivePreview
+                                    template={selected}
+                                    values={varValues}
+                                    className="h-full max-h-full"
+                                />
                             </div>
                         </div>
                     </div>

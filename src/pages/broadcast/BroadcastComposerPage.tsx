@@ -48,9 +48,10 @@ import {
   replaceSnippetTrigger,
 } from "../../lib/snippets";
 import {
-  WhatsAppPreview,
-  type Template as WhatsAppPreviewTemplate,
-} from "../inbox/TemplateModal";
+  buildWhatsAppTemplatePreviewComponents,
+  normalizeWhatsAppTemplateComponents,
+  WhatsAppTemplateMessageWindow,
+} from "../inbox/message-area/WhatsAppTemplatePreview";
 import { BroadcastChannelLabel } from "./BroadcastChannelLabel";
 import { BroadcastTagPicker } from "./BroadcastTagPicker";
 import type {
@@ -184,87 +185,40 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function extractTemplateKeys(...texts: Array<string | undefined>) {
-  const keys = texts.flatMap((text) =>
-    text ? [...text.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]) : [],
-  );
-  return Array.from(new Set(keys));
-}
-
 function templateComponents(template?: BroadcastTemplate) {
   if (!template || !Array.isArray(template.components)) return [];
   return template.components.filter(isRecord) as TemplateComponent[];
 }
 
-function normalizeTemplateCategory(
-  category?: string,
-): WhatsAppPreviewTemplate["category"] {
-  const normalized = category?.toUpperCase();
-  if (
-    normalized === "UTILITY" ||
-    normalized === "AUTHENTICATION" ||
-    normalized === "SERVICE"
-  ) {
-    return normalized;
-  }
-  return "MARKETING";
+function filledTemplateValues(values: Record<string, string>) {
+  return Object.entries(values).reduce<Record<string, string>>(
+    (filled, [key, value]) => {
+      if (value.trim()) {
+        filled[key] = value;
+      }
+      return filled;
+    },
+    {},
+  );
 }
 
-function buildWhatsAppPreviewTemplate(
+function buildBroadcastWhatsAppPreviewComponents(
   template?: BroadcastTemplate,
-): WhatsAppPreviewTemplate | null {
+  values: Record<string, string> = {},
+) {
   if (!template) return null;
 
   const components = templateComponents(template);
-  const getComponent = (type: string) =>
-    components.find((component) => component.type === type);
-  const header = getComponent("HEADER");
-  const body = getComponent("BODY");
-  const footer = getComponent("FOOTER");
-  const buttonsComponent = getComponent("BUTTONS");
-  const bodyText = body?.text ?? "Template content will appear here.";
-  const headerText = header?.format === "TEXT" ? header.text : undefined;
-  const headerMedia = header?.example?.header_handle?.[0];
-  const formatType: Record<string, WhatsAppPreviewTemplate["type"]> = {
-    IMAGE: "image",
-    VIDEO: "video",
-    DOCUMENT: "document",
-    LOCATION: "location",
-  };
-  const type = header?.format ? formatType[header.format] ?? "text" : "text";
-  const buttonRows = (buttonsComponent?.buttons ?? []).map((button) => {
-    const label = button.text || "Button";
-    if (button.type === "URL") {
-      return { kind: "url" as const, label, url: button.url ?? "" };
-    }
-    if (button.type === "PHONE_NUMBER") {
-      return { kind: "phone" as const, label, phone: button.phone_number ?? "" };
-    }
-    if (button.type === "COPY_CODE") {
-      return { kind: "copy_code" as const, label, code: label };
-    }
-    return { kind: "quick_reply" as const, label };
-  });
-  const variables = Array.from(
-    new Set([
-      ...templateVariableKeys(template.variables),
-      ...extractTemplateKeys(headerText, bodyText, footer?.text),
-    ]),
-  ).map((key) => ({ key, label: key }));
+  const normalizedComponents = normalizeWhatsAppTemplateComponents(
+    components,
+    filledTemplateValues(values),
+  );
 
-  return {
-    id: template.id,
-    name: template.name,
-    category: normalizeTemplateCategory(template.category),
-    language: template.language,
-    type,
-    header: headerText ?? (type === "document" ? header?.text : undefined),
-    body: bodyText,
-    footer: footer?.text,
-    buttons: buttonRows.length ? buttonRows : undefined,
-    mediaUrl: type === "image" || type === "video" ? headerMedia : undefined,
-    variables,
-  };
+  return normalizedComponents.length
+    ? normalizedComponents
+    : buildWhatsAppTemplatePreviewComponents({
+        body: "Template content will appear here.",
+      });
 }
 
 function audienceLabel(audiencePreview: BroadcastAudiencePreviewState | null) {
@@ -608,7 +562,10 @@ function LivePreviewPanel({
   audiencePreview: BroadcastAudiencePreviewState | null;
   compact?: boolean;
 }) {
-  const whatsappTemplate = buildWhatsAppPreviewTemplate(selectedTemplate);
+  const whatsappPreviewComponents = buildBroadcastWhatsAppPreviewComponents(
+    selectedTemplate,
+    templateVars,
+  );
   const channelName = selectedChannel?.name ?? "Broadcast channel";
   const previewTitle = isWhatsApp ? "WhatsApp preview" : "Email preview";
 
@@ -619,8 +576,16 @@ function LivePreviewPanel({
       </h2>
 
       {isWhatsApp ? (
-        whatsappTemplate ? (
-          <WhatsAppPreview template={whatsappTemplate} values={templateVars} />
+        whatsappPreviewComponents ? (
+          <WhatsAppTemplateMessageWindow
+            components={whatsappPreviewComponents}
+            className={compact ? "h-[calc(100vh-14rem)] min-h-[420px] max-h-[620px]" : "h-[calc(100vh-12rem)] min-h-[420px] max-h-[620px]"}
+            contentClassName={compact ? "px-3 py-3" : "px-3 py-3"}
+            variant="chat"
+            showMeta
+            displayTime="now"
+            isOutgoing
+          />
         ) : (
           <div className="flex min-h-[180px] flex-col items-center justify-center border-y border-dashed border-slate-200 px-5 text-center">
             <MessageSquareText size={24} className="text-slate-400" />
@@ -1288,7 +1253,7 @@ export function BroadcastComposerPage({
                 )
               ) : (
                 <>
-                  {stepIcon(activeStep)}
+                  {/* {stepIcon(activeStep)} */}
                   Step {activeIndex + 1} of {COMPOSER_STEPS.length}
                 </>
               )}

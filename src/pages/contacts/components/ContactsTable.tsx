@@ -88,6 +88,14 @@ const CONTACT_COLUMN_CLASS_NAMES = {
   tags: "w-[300px] max-w-[300px]",
 } as const;
 
+const CONTACT_STICKY_LEADING_WIDTH =
+  CONTACT_COLUMN_WIDTHS.select + CONTACT_COLUMN_WIDTHS.name;
+const CONTACT_STICKY_CELL_CLASS = "contacts-table-sticky-cell bg-white group-hover:bg-gray-50";
+const CONTACT_STICKY_SELECT_HEADER_CLASS = `${CONTACT_COLUMN_CLASS_NAMES.select} sticky left-0 z-30 bg-[var(--color-gray-50)]`;
+const CONTACT_STICKY_SELECT_CELL_CLASS = `${CONTACT_COLUMN_CLASS_NAMES.select} sticky left-0 z-20 ${CONTACT_STICKY_CELL_CLASS}`;
+const CONTACT_STICKY_NAME_HEADER_CLASS = `${CONTACT_COLUMN_CLASS_NAMES.name} sticky left-[40px] z-30 bg-[var(--color-gray-50)]`;
+const CONTACT_STICKY_NAME_CELL_CLASS = `${CONTACT_COLUMN_CLASS_NAMES.name} sticky left-[40px] z-20 overflow-hidden ${CONTACT_STICKY_CELL_CLASS}`;
+
 function getAssigneeName(contact: Contact, workspaceUsers: WorkspaceUser[] | null) {
   const workspaceAssignee =
     workspaceUsers?.find((user) => user.id === contact.assigneeId) ?? null;
@@ -396,8 +404,8 @@ export function ContactsTable({
         </div>
       ),
       align: "center",
-      headerClassName: CONTACT_COLUMN_CLASS_NAMES.select,
-      className: CONTACT_COLUMN_CLASS_NAMES.select,
+      headerClassName: CONTACT_STICKY_SELECT_HEADER_CLASS,
+      className: CONTACT_STICKY_SELECT_CELL_CLASS,
       width: CONTACT_COLUMN_WIDTHS.select,
       mobile: "hidden",
       cell: (contact) => (
@@ -417,8 +425,8 @@ export function ContactsTable({
       sortable: true,
       sortField: "name",
       mobile: "primary",
-      headerClassName: CONTACT_COLUMN_CLASS_NAMES.name,
-      className: `${CONTACT_COLUMN_CLASS_NAMES.name} overflow-hidden`,
+      headerClassName: CONTACT_STICKY_NAME_HEADER_CLASS,
+      className: CONTACT_STICKY_NAME_CELL_CLASS,
       width: CONTACT_COLUMN_WIDTHS.name,
       cell: (contact) => {
         const displayName = getContactDisplayName(contact);
@@ -428,7 +436,7 @@ export function ContactsTable({
             <Avatar
               src={contact.avatarUrl ?? undefined}
               name={displayName}
-              size="sm"
+              size="xs"
             />
             <TruncatedText
               text={displayName}
@@ -440,78 +448,6 @@ export function ContactsTable({
         );
       },
     },
-    {
-      id: "channel",
-      header: "Channel",
-      mobile: "detail",
-      headerClassName: CONTACT_COLUMN_CLASS_NAMES.channel,
-      className: CONTACT_COLUMN_CLASS_NAMES.channel,
-      width: CONTACT_COLUMN_WIDTHS.channel,
-      cell: (contact) => <ChannelIcons contact={contact} />,
-    },
-    ...(showIntegrationSources
-      ? [
-          {
-            id: "source",
-            header: "Source",
-            mobile: "detail",
-            headerClassName: CONTACT_COLUMN_CLASS_NAMES.source,
-            className: CONTACT_COLUMN_CLASS_NAMES.source,
-            width: CONTACT_COLUMN_WIDTHS.source,
-            cell: (contact) => <IntegrationSourceIcons contact={contact} flags={flags} />,
-          } satisfies DataTableColumn<Contact, SortField>,
-        ]
-      : []),
-    {
-      id: "assignee",
-      header: "Assignee",
-      mobile: "detail",
-      headerClassName: CONTACT_COLUMN_CLASS_NAMES.assignee,
-      className: `${CONTACT_COLUMN_CLASS_NAMES.assignee} overflow-hidden`,
-      width: CONTACT_COLUMN_WIDTHS.assignee,
-      cell: (contact) => {
-        const assigneeName = getAssigneeName(contact, workspaceUsers);
-        return assigneeName ? (
-          <TruncatedText
-            text={assigneeName}
-            maxLines={1}
-            maxLength={22}
-            className="min-w-0 text-gray-800"
-          />
-        ) : (
-          <span className="text-xs text-gray-300">-</span>
-        );
-      },
-    },
-    ...(flags.lifecycle
-      ? [
-          {
-            id: "lifecycle",
-            header: "Lifecycle",
-            sortable: true,
-            sortField: "lifecycle",
-            mobile: "secondary",
-            headerClassName: CONTACT_COLUMN_CLASS_NAMES.lifecycle,
-            className: `${CONTACT_COLUMN_CLASS_NAMES.lifecycle} overflow-hidden`,
-            width: CONTACT_COLUMN_WIDTHS.lifecycle,
-            cell: (contact) => {
-              const lifecycleLabel = getLifecycleLabel(contact, stages);
-              return lifecycleLabel === "-" ? (
-                <span className="text-xs text-gray-300">-</span>
-              ) : (
-
-                <TruncatedText
-                  text={lifecycleLabel}
-                  maxLines={1}
-                  maxLength={22}
-                  className="min-w-0 text-gray-800"
-                />
-              
-              );
-            },
-          } satisfies DataTableColumn<Contact, SortField>,
-        ]
-      : []),
     {
       id: "email",
       header: "Email",
@@ -554,6 +490,76 @@ export function ContactsTable({
           <span className="text-xs text-gray-300">-</span>
         )
       ),
+    },
+    ...(flags.lifecycle
+      ? [
+          {
+            id: "lifecycle",
+            header: "Lifecycle",
+            sortable: true,
+            sortField: "lifecycle",
+            mobile: "secondary",
+            headerClassName: CONTACT_COLUMN_CLASS_NAMES.lifecycle,
+            className: `${CONTACT_COLUMN_CLASS_NAMES.lifecycle} overflow-hidden`,
+            width: CONTACT_COLUMN_WIDTHS.lifecycle,
+            cell: (contact) => {
+              const lifecycleLabel = getLifecycleLabel(contact, stages);
+              return lifecycleLabel === "-" ? (
+                <span className="text-xs text-gray-300">-</span>
+              ) : (
+                <TruncatedText
+                  text={lifecycleLabel}
+                  maxLines={1}
+                  maxLength={22}
+                  className="min-w-0 text-gray-800"
+                />
+              );
+            },
+          } satisfies DataTableColumn<Contact, SortField>,
+        ]
+      : []),
+    {
+      id: "channel",
+      header: "Channel",
+      mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.channel,
+      className: CONTACT_COLUMN_CLASS_NAMES.channel,
+      width: CONTACT_COLUMN_WIDTHS.channel,
+      cell: (contact) => <ChannelIcons contact={contact} />,
+    },
+    ...(showIntegrationSources
+      ? [
+          {
+            id: "source",
+            header: "Source",
+            mobile: "detail",
+            headerClassName: CONTACT_COLUMN_CLASS_NAMES.source,
+            className: CONTACT_COLUMN_CLASS_NAMES.source,
+            width: CONTACT_COLUMN_WIDTHS.source,
+            cell: (contact) => <IntegrationSourceIcons contact={contact} flags={flags} />,
+          } satisfies DataTableColumn<Contact, SortField>,
+        ]
+      : []),
+    {
+      id: "assignee",
+      header: "Assignee",
+      mobile: "detail",
+      headerClassName: CONTACT_COLUMN_CLASS_NAMES.assignee,
+      className: `${CONTACT_COLUMN_CLASS_NAMES.assignee} overflow-hidden`,
+      width: CONTACT_COLUMN_WIDTHS.assignee,
+      cell: (contact) => {
+        const assigneeName = getAssigneeName(contact, workspaceUsers);
+        return assigneeName ? (
+          <TruncatedText
+            text={assigneeName}
+            maxLines={1}
+            maxLength={22}
+            className="min-w-0 text-gray-800"
+          />
+        ) : (
+          <span className="text-xs text-gray-300">-</span>
+        );
+      },
     },
     {
       id: "tags",
@@ -671,11 +677,16 @@ export function ContactsTable({
           },
         ]}
         onRowClick={openEditModal}
-        getRowClassName={(contact) => (selectedIds.has(contact.id) ? "bg-[var(--color-primary-light)]" : "")}
+        getRowClassName={(contact) =>
+          selectedIds.has(contact.id)
+            ? "bg-[var(--color-primary-light)] [&_.contacts-table-sticky-cell]:bg-[var(--color-primary-light)]"
+            : ""
+        }
         renderMobileCard={(contact) => renderMobileCard(contact)}
         minTableWidth={tableMinWidth}
         density="compact"
         tableLayout="fixed"
+        stickyLeadingShadowOffset={CONTACT_STICKY_LEADING_WIDTH}
         mobileLoadMore={{
           hasMore: safePage < totalPages,
           loading: mobileLoadingMore,

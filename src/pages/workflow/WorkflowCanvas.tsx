@@ -1,4 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Transition,
+} from "framer-motion";
 import ReactFlow, {
   Background,
   Controls,
@@ -60,6 +66,16 @@ const WorkflowAiBuilderPanel = React.lazy(() =>
     default: module.WorkflowAiBuilderPanel,
   })),
 );
+
+const WORKFLOW_CONFIG_SIDEBAR_WIDTH = 320;
+const WORKFLOW_CONFIG_SIDEBAR_EASE: [number, number, number, number] = [
+  0.16, 1, 0.3, 1,
+];
+const workflowConfigSidebarTransition: Transition = {
+  opacity: { duration: 0.11, ease: "easeOut" },
+  width: { duration: 0.2, ease: WORKFLOW_CONFIG_SIDEBAR_EASE },
+  x: { duration: 0.2, ease: WORKFLOW_CONFIG_SIDEBAR_EASE },
+};
 
 /* ───────────────────────────────────────────────────────────────────────────
    layout.constants.ts
@@ -1026,6 +1042,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
 
 export function WorkflowCanvas() {
   const isMobile = useIsMobile();
+  const shouldReduceMotion = useReducedMotion();
   const addMenu = useDisclosure();
   const insertCtxRef = useRef<InsertCtx | null>(null);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
@@ -1550,6 +1567,9 @@ export function WorkflowCanvas() {
     ) : selectedPanelType === "step" && selectedStep ? (
       <StepPanel step={selectedStep} hideHeader={isMobile} />
     ) : null;
+  const configSidebarTransition: Transition = shouldReduceMotion
+    ? { duration: 0 }
+    : workflowConfigSidebarTransition;
 
   const aiBuilderFacts = useMemo(
     () => ({
@@ -1616,11 +1636,33 @@ export function WorkflowCanvas() {
           </ReactFlow>
         </div>
 
-        {!isMobile && selectedPanelContent && (
-          <div className="w-80 flex-shrink-0 border-l border-gray-200">
-            {selectedPanelContent}
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {!isMobile && selectedPanelContent ? (
+            <motion.aside
+              key="workflow-config-sidebar"
+              aria-label="Workflow configuration"
+              className="min-h-0 flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white"
+              initial={
+                shouldReduceMotion
+                  ? { opacity: 0, width: WORKFLOW_CONFIG_SIDEBAR_WIDTH }
+                  : { opacity: 0, width: 0, x: 24 }
+              }
+              animate={{
+                opacity: 1,
+                width: WORKFLOW_CONFIG_SIDEBAR_WIDTH,
+                x: 0,
+              }}
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 0, width: WORKFLOW_CONFIG_SIDEBAR_WIDTH }
+                  : { opacity: 0, width: 0, x: 24 }
+              }
+              transition={configSidebarTransition}
+            >
+              <div className="h-full w-80">{selectedPanelContent}</div>
+            </motion.aside>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       {isMobile && selectedPanelContent && selectedPanelTitle ? (

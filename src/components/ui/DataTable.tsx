@@ -85,6 +85,7 @@ interface DataTableProps<T, SortField extends string = string> {
   minTableWidth?: number;
   density?: DataTableDensity;
   tableLayout?: DataTableLayout;
+  stickyLeadingShadowOffset?: number;
   className?: string;
 }
 
@@ -113,12 +114,17 @@ function SortIcon({
   active: boolean;
   direction?: DataTableSortDirection;
 }) {
-  if (!active) return <ArrowUpDown size={11} className="text-gray-300" />;
+  if (!active) return <ArrowUpDown size={13} className="text-[var(--color-gray-400)]" />;
   return direction === "asc" ? (
-    <ArrowUp size={11} className="text-[var(--color-primary)]" />
+    <ArrowUp size={13} className="text-[var(--color-primary)]" />
   ) : (
-    <ArrowDown size={11} className="text-[var(--color-primary)]" />
+    <ArrowDown size={13} className="text-[var(--color-primary)]" />
   );
+}
+
+function getAriaSort(active: boolean, direction: DataTableSortDirection | undefined) {
+  if (!active) return "none";
+  return direction === "desc" ? "descending" : "ascending";
 }
 
 function getColumnWidthStyle(width: number | string | undefined): CSSProperties | undefined {
@@ -251,6 +257,7 @@ export function DataTable<T, SortField extends string = string>({
   minTableWidth = 800,
   density = "default",
   tableLayout = "auto",
+  stickyLeadingShadowOffset,
   className = "",
 }: DataTableProps<T, SortField>) {
   const [openActionKey, setOpenActionKey] = useState<string | null>(null);
@@ -259,9 +266,13 @@ export function DataTable<T, SortField extends string = string>({
       ? window.matchMedia("(max-width: 767px)").matches
       : false,
   );
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const [isHorizontallyScrolled, setIsHorizontallyScrolled] = useState(false);
   const hasActions = Boolean(rowActions);
   const cellPaddingClass = density === "compact" ? "px-3 py-2" : "px-3 py-3";
+  const headerCellClass =
+    "whitespace-nowrap px-3 py-3 text-sm font-semibold text-[var(--color-gray-600)]";
   const tableLayoutClass = tableLayout === "fixed" ? "table-fixed" : "";
 
   useLayoutEffect(() => {
@@ -273,6 +284,18 @@ export function DataTable<T, SortField extends string = string>({
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+
+  useLayoutEffect(() => {
+    if (isMobileLayout) {
+      setIsHorizontallyScrolled(false);
+      return;
+    }
+
+    const nextIsScrolled = (desktopScrollRef.current?.scrollLeft ?? 0) > 0;
+    setIsHorizontallyScrolled((current) =>
+      current === nextIsScrolled ? current : nextIsScrolled,
+    );
+  }, [columns.length, isMobileLayout, minTableWidth, rows.length]);
 
   const makeActions = (row: T) => {
     const rowKey = String(getRowId(row));
@@ -321,6 +344,13 @@ export function DataTable<T, SortField extends string = string>({
     if (nextScrollTop !== previousScrollTop) {
       container.scrollTop = nextScrollTop;
     }
+  };
+
+  const handleDesktopScroll = () => {
+    const nextIsScrolled = (desktopScrollRef.current?.scrollLeft ?? 0) > 0;
+    setIsHorizontallyScrolled((current) =>
+      current === nextIsScrolled ? current : nextIsScrolled,
+    );
   };
 
   const renderDefaultMobileCard = (row: T, actions: ReactNode) => {
@@ -410,80 +440,100 @@ export function DataTable<T, SortField extends string = string>({
       ) : (
         <>
           {!isMobileLayout ? (
-            <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-              <table className={`w-full ${tableLayoutClass}`} style={{ minWidth: minTableWidth }}>
-                <colgroup>
-                  {columns.map((column) => (
-                    <col key={column.id} style={getColumnWidthStyle(column.width)} />
-                  ))}
-                  {hasActions ? <col style={{ width: "48px" }} /> : null}
-                </colgroup>
-                <thead className="sticky top-0 z-10 border-b border-gray-100 bg-white">
-                  <tr>
-                    {columns.map((column) => {
-                      const align = column.align ?? "left";
-                      const sortField = getSortField(column);
-                      const active = sort?.field === sortField;
-                      return (
-                        <th
-                          key={column.id}
-                          className={`whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${alignClass[align]} ${column.headerClassName ?? ""}`}
-                        >
-                          {column.sortable && sort ? (
-                            <button
-                              type="button"
-                              onClick={() => sort.onChange(sortField)}
-                              className="inline-flex items-center gap-1 transition-colors hover:text-gray-700"
-                            >
-                              {column.header}
-                              <SortIcon active={active} direction={sort.direction} />
-                            </button>
-                          ) : (
-                            column.header
-                          )}
+            <div className="relative min-h-0 min-w-0 flex-1">
+              <div
+                ref={desktopScrollRef}
+                onScroll={handleDesktopScroll}
+                className={`data-table-scroll-frame h-full min-h-0 min-w-0 overflow-auto ${
+                  isHorizontallyScrolled ? "data-table-scrolled-x" : ""
+                }`}
+              >
+                <table className={`w-full ${tableLayoutClass}`} style={{ minWidth: minTableWidth }}>
+                  <colgroup>
+                    {columns.map((column) => (
+                      <col key={column.id} style={getColumnWidthStyle(column.width)} />
+                    ))}
+                    {hasActions ? <col style={{ width: "48px" }} /> : null}
+                  </colgroup>
+                  <thead className="sticky top-0 z-50 border-b border-[var(--color-gray-200)] bg-[var(--color-gray-50)]">
+                    <tr>
+                      {columns.map((column) => {
+                        const align = column.align ?? "left";
+                        const sortField = getSortField(column);
+                        const active = sort?.field === sortField;
+                        return (
+                          <th
+                            key={column.id}
+                            aria-sort={
+                              column.sortable && sort
+                                ? getAriaSort(active, sort.direction)
+                                : undefined
+                            }
+                            className={`${headerCellClass} ${alignClass[align]} ${column.headerClassName ?? ""}`}
+                          >
+                            {column.sortable && sort ? (
+                              <button
+                                type="button"
+                                onClick={() => sort.onChange(sortField)}
+                                className="inline-flex items-center gap-1.5 rounded-md text-inherit transition-colors hover:text-[var(--color-gray-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)]"
+                              >
+                                {column.header}
+                                <SortIcon active={active} direction={sort.direction} />
+                              </button>
+                            ) : (
+                              column.header
+                            )}
+                          </th>
+                        );
+                      })}
+                      {hasActions ? (
+                        <th className={`${headerCellClass} w-12 text-right`}>
+                          Actions
                         </th>
+                      ) : null}
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {rows.map((row) => {
+                      const rowKey = String(getRowId(row));
+                      return (
+                        <tr
+                          key={rowKey}
+                          onClick={() => onRowClick?.(row)}
+                          className={`group transition-colors ${
+                            onRowClick ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50/70"
+                          } ${getRowClassName?.(row) ?? ""}`}
+                        >
+                          {columns.map((column) => {
+                            const align = column.align ?? "left";
+                            return (
+                              <td
+                                key={column.id}
+                                className={`${cellPaddingClass} text-sm text-gray-700 ${cellAlignClass[align]} ${column.className ?? ""}`}
+                              >
+                                {column.cell(row)}
+                              </td>
+                            );
+                          })}
+                          {hasActions ? (
+                            <td className={`${cellPaddingClass} text-right`}>
+                              {makeActions(row)}
+                            </td>
+                          ) : null}
+                        </tr>
                       );
                     })}
-                    {hasActions ? (
-                      <th className="w-12 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                        Actions
-                      </th>
-                    ) : null}
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {rows.map((row) => {
-                    const rowKey = String(getRowId(row));
-                    return (
-                      <tr
-                        key={rowKey}
-                        onClick={() => onRowClick?.(row)}
-                        className={`transition-colors ${
-                          onRowClick ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50/70"
-                        } ${getRowClassName?.(row) ?? ""}`}
-                      >
-                        {columns.map((column) => {
-                          const align = column.align ?? "left";
-                          return (
-                            <td
-                              key={column.id}
-                              className={`${cellPaddingClass} text-sm text-gray-700 ${cellAlignClass[align]} ${column.className ?? ""}`}
-                            >
-                              {column.cell(row)}
-                            </td>
-                          );
-                        })}
-                        {hasActions ? (
-                          <td className={`${cellPaddingClass} text-right`}>
-                            {makeActions(row)}
-                          </td>
-                        ) : null}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
+              {isHorizontallyScrolled && stickyLeadingShadowOffset !== undefined ? (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 z-40 w-3 bg-gradient-to-r from-[rgba(15,23,42,0.10)] via-[rgba(15,23,42,0.03)] to-transparent"
+                  style={{ left: stickyLeadingShadowOffset }}
+                />
+              ) : null}
             </div>
           ) : (
             <div

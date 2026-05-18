@@ -61,6 +61,8 @@ export function MessageBubble({
   isAiMessage,
   failedMessageCopy,
   animateIn,
+  hideMeta = false,
+  templateMaxWidthClassName = "max-w-[300px]",
 }: {
   msg: Message;
   isOutgoing: boolean;
@@ -78,6 +80,8 @@ export function MessageBubble({
   isAiMessage: boolean;
   failedMessageCopy: string | null;
   animateIn?: boolean;
+  hideMeta?: boolean;
+  templateMaxWidthClassName?: string;
 }) {
   const atts = msg.messageAttachments ?? msg.attachments ?? [];
   const images = atts.filter((a) => a.type === "image");
@@ -110,34 +114,38 @@ export function MessageBubble({
     statusIconClass: string | undefined = undefined,
     aiPillClass = defaultAiPillClass,
     statusVariant: "default" | "bubble" = isOutgoing ? "bubble" : "default",
-  ) => (
-    <span
-      className={`${className} inline-flex items-center gap-1 whitespace-nowrap align-baseline text-[10px] leading-none ${textClassName}`}
-    >
-      {isAiMessage ? (
-        <span
-          className={`rounded-full px-1 py-0.5 text-[9px] font-semibold leading-none ${aiPillClass}`}
-        >
-          AI
-        </span>
-      ) : null}
-      <span>{displayTime}</span>
-      {isOutgoing && !failedMessageCopy ? (
-        <MessageStatusIcon
-          status={msg.status}
-          className={statusIconClass}
-          variant={statusVariant}
-        />
-      ) : null}
-      {failedMessageCopy ? (
-        <Tooltip content={failedMessageCopy} position="left">
-          <span className="inline-flex cursor-help items-center">
-            <AlertTriangle size={12} className="text-red-500 flex-shrink-0" />
+  ) => {
+    if (hideMeta) return null;
+
+    return (
+      <span
+        className={`${className} inline-flex items-center gap-1 whitespace-nowrap align-baseline text-[10px] leading-none ${textClassName}`}
+      >
+        {isAiMessage ? (
+          <span
+            className={`rounded-full px-1 py-0.5 text-[9px] font-semibold leading-none ${aiPillClass}`}
+          >
+            AI
           </span>
-        </Tooltip>
-      ) : null}
-    </span>
-  );
+        ) : null}
+        <span>{displayTime}</span>
+        {isOutgoing && !failedMessageCopy ? (
+          <MessageStatusIcon
+            status={msg.status}
+            className={statusIconClass}
+            variant={statusVariant}
+          />
+        ) : null}
+        {failedMessageCopy ? (
+          <Tooltip content={failedMessageCopy} position="left">
+            <span className="inline-flex cursor-help items-center">
+              <AlertTriangle size={12} className="text-red-500 flex-shrink-0" />
+            </span>
+          </Tooltip>
+        ) : null}
+      </span>
+    );
+  };
 
 
 
@@ -202,7 +210,7 @@ export function MessageBubble({
     }
 
     return (
-      <div className={`relative max-w-[300px] overflow-visible ${bubbleEnterClass}`}>
+      <div className={`relative ${templateMaxWidthClassName} overflow-visible ${bubbleEnterClass}`}>
         <div
           data-message-bubble="true"
           data-message-direction={messageDirection}
@@ -283,15 +291,17 @@ export function MessageBubble({
           </div>
         )}
 
-        <div className="flex justify-end px-3 pb-1.5 pt-0.5">
-          {renderMeta(
-            "ml-0",
-            "text-[#8a8a8a]",
-            msg.status !== "read" ? "text-[#8a8a8a]" : undefined,
-            "bg-gray-100 text-gray-600",
-            "default",
-          )}
-        </div>
+        {!hideMeta ? (
+          <div className="flex justify-end px-3 pb-1.5 pt-0.5">
+            {renderMeta(
+              "ml-0",
+              "text-[#8a8a8a]",
+              msg.status !== "read" ? "text-[#8a8a8a]" : undefined,
+              "bg-gray-100 text-gray-600",
+              "default",
+            )}
+          </div>
+        ) : null}
 
         {buttons.length > 0 && (
           <div className="border-t border-[#e9edef]">

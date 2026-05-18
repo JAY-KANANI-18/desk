@@ -1,21 +1,44 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, Check, Eye, RefreshCw } from '@/components/ui/icons';
-
 import {
-  DataTable,
-  type DataTableColumn,
-  type DataTableSortDirection,
-} from '../../../components/ui/DataTable';
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Copy,
+  Eye,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+} from '@/components/ui/icons';
+
 import { Button } from '../../../components/ui/button/Button';
+import { IconButton } from '../../../components/ui/button/IconButton';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { SearchInput } from '../../../components/ui/inputs';
+import { ActionMenu } from '../../../components/ui/menu';
 import { CenterModal } from '../../../components/ui/modal/CenterModal';
 import { BaseSelect } from '../../../components/ui/select/BaseSelect';
 import type { SelectOption } from '../../../components/ui/select/shared';
 import { Tag } from '../../../components/ui/tag/Tag';
 import { TruncatedText } from '../../../components/ui/truncated-text';
-import { ChannelApi, type WaTemplate } from '../../../lib/channelApi';
+import {
+  ChannelApi,
+  type WaTemplate,
+  type WaTemplatePreview,
+} from '../../../lib/channelApi';
 import { useSocket } from '../../../socket/socket-provider';
+import {
+  buildWhatsAppTemplatePreviewComponents,
+  getWhatsAppTemplateSampleValues,
+  normalizeWhatsAppTemplateComponents,
+  WhatsAppTemplateMessageWindow,
+} from '../../inbox/message-area/WhatsAppTemplatePreview';
 import { ConnectedChannel } from '../../channels/ManageChannelPage';
 
 type WhatsAppTemplateSortField =
@@ -24,6 +47,8 @@ type WhatsAppTemplateSortField =
   | 'language'
   | 'variables'
   | 'status';
+
+type SortDirection = 'asc' | 'desc';
 
 const statusOptions: SelectOption[] = [
   { value: '', label: 'All statuses' },
@@ -40,6 +65,25 @@ const categoryOptions: SelectOption[] = [
   { value: 'AUTHENTICATION', label: 'AUTHENTICATION' },
 ];
 
+const sortOptions: SelectOption[] = [
+  { value: 'name', label: 'Sort by name' },
+  { value: 'status', label: 'Sort by status' },
+  { value: 'category', label: 'Sort by category' },
+  { value: 'language', label: 'Sort by language' },
+  { value: 'variables', label: 'Sort by variables' },
+];
+
+const isWhatsAppTemplateSortField = (
+  value: string,
+): value is WhatsAppTemplateSortField =>
+  sortOptions.some((option) => option.value === value);
+
+const formatEnumLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const StatusBadge = ({ status }: { status: string }) => {
   const colorMap: Record<string, string> = {
     APPROVED: 'success',
@@ -48,24 +92,146 @@ const StatusBadge = ({ status }: { status: string }) => {
     PAUSED: 'gray',
   };
 
-  return <Tag label={status} size="sm" bgColor={colorMap[status] ?? 'gray'} />;
-};
-
-const CategoryBadge = ({ category }: { category: string }) => {
-  const colorMap: Record<string, string> = {
-    MARKETING: 'tag-purple',
-    UTILITY: 'tag-blue',
-    AUTHENTICATION: 'tag-orange',
-  };
-
   return (
     <Tag
-      label={category}
+      label={formatEnumLabel(status)}
       size="sm"
-      bgColor={colorMap[category] ?? 'gray'}
+      bgColor={colorMap[status] ?? 'gray'}
     />
   );
 };
+
+type ChannelSyncEvent = {
+  channelId?: string | number;
+  feature?: string;
+  synced?: number;
+  errors?: number;
+};
+
+const formatSyncedAt = (syncedAt?: string) => {
+  if (!syncedAt) return 'Not synced';
+
+  const timestamp = new Date(syncedAt).getTime();
+  if (Number.isNaN(timestamp)) return 'Not synced';
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (elapsedSeconds < 60) return 'just now';
+
+  const units = [
+    { label: 'year', seconds: 31_536_000 },
+    { label: 'month', seconds: 2_592_000 },
+    { label: 'day', seconds: 86_400 },
+    { label: 'hour', seconds: 3_600 },
+    { label: 'minute', seconds: 60 },
+  ];
+
+  const unit = units.find((candidate) => elapsedSeconds >= candidate.seconds);
+  if (!unit) return 'just now';
+
+  const value = Math.floor(elapsedSeconds / unit.seconds);
+  return `${value} ${unit.label}${value === 1 ? '' : 's'} ago`;
+};
+
+const WhatsAppTemplateCard = ({
+  template,
+  onPreview,
+}: {
+  template: WaTemplate;
+  onPreview: (template: WaTemplate) => void;
+}) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const templateComponents = useMemo(
+    () => normalizeWhatsAppTemplateComponents(
+      template.components,
+      getWhatsAppTemplateSampleValues(template.variables),
+    ),
+    [template],
+  );
+
+  const copyTemplateName = async () => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(template.name);
+  };
+
+  return (
+    <article className="relative flex h-[452px] w-full max-w-[392px] flex-col overflow-hidden rounded-lg border border-gray-200 bg-[#dce1e7] shadow-sm ring-1 ring-black/[0.02]">
+      <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-4">
+        <div className="min-w-0 flex-1">
+          <TruncatedText
+            as="h3"
+            text={template.name}
+            maxLines={1}
+            className="text-base font-semibold text-gray-950"
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge status={template.status} />
+            <span className="text-sm text-gray-600">
+              {formatEnumLabel(template.category)}
+            </span>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onPreview(template)}
+          >
+            View
+          </Button>
+          <div className="relative">
+            <IconButton
+              ref={menuButtonRef}
+              icon={<MoreHorizontal size={16} />}
+              aria-label={`Actions for ${template.name}`}
+              variant="secondary"
+              size="sm"
+              onClick={() => setMenuOpen((open) => !open)}
+            />
+            <ActionMenu
+              isOpen={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              anchorRef={menuButtonRef}
+              items={[
+                {
+                  id: 'preview',
+                  label: 'Preview',
+                  icon: <Eye size={14} />,
+                  onSelect: () => onPreview(template),
+                },
+                {
+                  id: 'copy-name',
+                  label: 'Copy template name',
+                  icon: <Copy size={14} />,
+                  onSelect: copyTemplateName,
+                },
+              ]}
+              width="sm"
+              ariaLabel={`Actions for ${template.name}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <WhatsAppTemplateMessageWindow
+        components={templateComponents}
+        syncedAt={template.syncedAt}
+        className="flex-1"
+      />
+
+      <div className="flex min-h-11 items-center justify-between gap-3 px-5 py-2.5 text-sm text-gray-900">
+        <span className="font-medium uppercase tracking-normal">
+          {template.language}
+        </span>
+        <span className="text-right">{formatSyncedAt(template.syncedAt)}</span>
+      </div>
+    </article>
+  );
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 const PreviewModal = ({
   template,
@@ -77,7 +243,7 @@ const PreviewModal = ({
   onClose: () => void;
 }) => {
   const [vars, setVars] = useState<Record<string, string>>({});
-  const [preview, setPreview] = useState<any>(null);
+  const [preview, setPreview] = useState<WaTemplatePreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,8 +270,8 @@ const PreviewModal = ({
         vars,
       );
       setPreview(nextPreview);
-    } catch (err: any) {
-      setError(err?.message ?? 'Preview failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Preview failed'));
     } finally {
       setLoading(false);
     }
@@ -162,29 +328,15 @@ const PreviewModal = ({
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
               Preview
             </p>
-            <div className="max-w-[280px] overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-              {preview.header ? (
-                <div className="border-b border-gray-100 bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700">
-                  {preview.header}
-                </div>
-              ) : null}
-              <div className="whitespace-pre-wrap px-3 py-3 text-sm leading-relaxed text-gray-800">
-                {preview.body}
-              </div>
-              {preview.footer ? (
-                <div className="px-3 pb-2 text-xs text-gray-400">
-                  {preview.footer}
-                </div>
-              ) : null}
-              {preview.buttons?.map((button: any, index: number) => (
-                <div
-                  key={`${button.text}-${index}`}
-                  className="border-t border-gray-100 px-3 py-2 text-center text-xs font-medium text-[var(--color-primary)]"
-                >
-                  {button.text}
-                </div>
-              ))}
-            </div>
+            <WhatsAppTemplateMessageWindow
+              components={buildWhatsAppTemplatePreviewComponents({
+                header: preview.header,
+                body: preview.body,
+                footer: preview.footer,
+                buttons: preview.buttons,
+              })}
+              className="h-[360px] rounded-lg"
+            />
           </div>
         ) : null}
 
@@ -226,7 +378,7 @@ export const WhatsAppTemplatesSection = ({
   const [sortField, setSortField] =
     useState<WhatsAppTemplateSortField>('name');
   const [sortDirection, setSortDirection] =
-    useState<DataTableSortDirection>('asc');
+    useState<SortDirection>('asc');
 
   const load = async () => {
     setLoading(true);
@@ -241,8 +393,8 @@ export const WhatsAppTemplatesSection = ({
         },
       );
       setTemplates(nextTemplates ?? []);
-    } catch (err: any) {
-      setError(err?.message ?? 'Failed to load templates');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to load templates'));
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -256,7 +408,7 @@ export const WhatsAppTemplatesSection = ({
   useEffect(() => {
     if (!socket) return;
 
-    const onSync = (event: any) => {
+    const onSync = (event: ChannelSyncEvent) => {
       if (
         String(event?.channelId) === String(channel.id) &&
         event?.feature === 'whatsapp_templates'
@@ -279,15 +431,14 @@ export const WhatsAppTemplatesSection = ({
     void load();
   };
 
-  const handleSort = (field: WhatsAppTemplateSortField) => {
-    setSortField((current) => {
-      if (current === field) {
-        setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'));
-        return current;
-      }
-      setSortDirection('asc');
-      return field;
-    });
+  const handleSortFieldChange = (field: string) => {
+    if (isWhatsAppTemplateSortField(field)) {
+      setSortField(field);
+    }
+  };
+
+  const toggleSortDirection = () => {
+    setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'));
   };
 
   const sortedTemplates = useMemo(() => {
@@ -310,68 +461,6 @@ export const WhatsAppTemplatesSection = ({
     });
   }, [sortDirection, sortField, templates]);
 
-  const columns: Array<DataTableColumn<WaTemplate, WhatsAppTemplateSortField>> = [
-    {
-      id: 'name',
-      header: 'Name',
-      sortable: true,
-      sortField: 'name',
-      mobile: 'primary',
-      className: 'max-w-[220px]',
-      cell: (template) => (
-        <TruncatedText
-          text={template.name}
-          maxLines={1}
-          className="block font-mono text-xs text-gray-800"
-        />
-      ),
-    },
-    {
-      id: 'category',
-      header: 'Category',
-      sortable: true,
-      sortField: 'category',
-      mobile: 'secondary',
-      cell: (template) => <CategoryBadge category={template.category} />,
-    },
-    {
-      id: 'language',
-      header: 'Language',
-      sortable: true,
-      sortField: 'language',
-      mobile: 'detail',
-      cell: (template) => (
-        <span className="text-xs text-gray-500">{template.language}</span>
-      ),
-    },
-    {
-      id: 'variables',
-      header: 'Variables',
-      sortable: true,
-      sortField: 'variables',
-      mobile: 'detail',
-      cell: (template) =>
-        template.variables?.length ? (
-          <Tag
-            label={template.variables.join(', ')}
-            size="sm"
-            bgColor="gray"
-            maxWidth={220}
-          />
-        ) : (
-          <span className="text-xs text-gray-300">-</span>
-        ),
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      sortable: true,
-      sortField: 'status',
-      mobile: 'detail',
-      cell: (template) => <StatusBadge status={template.status} />,
-    },
-  ];
-
   const handleSync = async () => {
     setSyncing(true);
     setSyncMsg(null);
@@ -381,8 +470,8 @@ export const WhatsAppTemplatesSection = ({
         `Synced ${result?.synced ?? 0} templates${result?.errors ? ` (${result.errors} errors)` : ''}`,
       );
       await load();
-    } catch (err: any) {
-      setError(err?.message ?? 'Sync failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Sync failed'));
     } finally {
       setSyncing(false);
       window.setTimeout(() => setSyncMsg(null), 4000);
@@ -435,6 +524,7 @@ export const WhatsAppTemplatesSection = ({
             value={statusFilter}
             onChange={setStatus}
             options={statusOptions}
+            placeholder="All statuses"
           />
         </div>
         <div className="min-w-[180px]">
@@ -442,8 +532,33 @@ export const WhatsAppTemplatesSection = ({
             value={catFilter}
             onChange={setCategory}
             options={categoryOptions}
+            placeholder="All categories"
           />
         </div>
+        <div className="min-w-[180px]">
+          <BaseSelect
+            value={sortField}
+            onChange={handleSortFieldChange}
+            options={sortOptions}
+          />
+        </div>
+        <IconButton
+          icon={
+            sortDirection === 'asc' ? (
+              <ArrowUp size={14} />
+            ) : (
+              <ArrowDown size={14} />
+            )
+          }
+          aria-label={
+            sortDirection === 'asc'
+              ? 'Sort ascending'
+              : 'Sort descending'
+          }
+          variant="secondary"
+          size="sm"
+          onClick={toggleSortDirection}
+        />
       </div>
 
       {error ? (
@@ -453,32 +568,39 @@ export const WhatsAppTemplatesSection = ({
         </div>
       ) : null}
 
-      <div className="min-h-[320px] min-w-0 flex-1 overflow-hidden border-y border-gray-100">
-        <DataTable
-          className="h-full"
-          rows={sortedTemplates}
-          columns={columns}
-          getRowId={(template) => template.id}
-          loading={loading}
-          loadingLabel="Loading templates..."
-          emptyTitle="No templates found"
-          emptyDescription="Try syncing or adjusting your filters."
-          sort={{
-            field: sortField,
-            direction: sortDirection,
-            onChange: handleSort,
-          }}
-          rowActions={(template) => [
-            {
-              id: 'preview',
-              label: 'Preview',
-              icon: <Eye size={13} />,
-              onClick: () => setPreview(template),
-            },
-          ]}
-          onRowClick={(template) => setPreview(template)}
-          minTableWidth={820}
-        />
+      <div className="min-h-[320px] min-w-0 flex-1 overflow-y-auto border-y border-gray-100 bg-gray-50/60 py-5 [scrollbar-width:thin]">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-20 text-sm text-gray-500">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[var(--color-primary)]" />
+            Loading templates...
+          </div>
+        ) : sortedTemplates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-sm text-gray-400">
+            <Search size={28} className="text-gray-300" />
+            <span className="mt-2 font-medium text-gray-500">
+              No templates found
+            </span>
+            <span className="mt-1 text-xs text-gray-400">
+              Try syncing or adjusting your filters.
+            </span>
+          </div>
+        ) : (
+          <div
+            className="grid justify-start gap-5"
+            style={{
+              gridTemplateColumns:
+                'repeat(auto-fill, minmax(min(100%, 360px), 392px))',
+            }}
+          >
+            {sortedTemplates.map((template) => (
+              <WhatsAppTemplateCard
+                key={template.id}
+                template={template}
+                onPreview={setPreview}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="flex-shrink-0 text-xs text-gray-400">

@@ -87,7 +87,6 @@ export function getFailedMessageCopy(message: {
 
 export function formatWaBody(text: string): string {
   return text
-    .replace(/\n{2,}/g, "\n")
     .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
     .replace(/_([^_]+)_/g, "<i>$1</i>")
     .replace(/~([^~]+)~/g, "<s>$1</s>")

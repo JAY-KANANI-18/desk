@@ -47,6 +47,39 @@ export interface ConnectSelectedMessengerPagesResponse {
     channels: Channel[];
 }
 
+export interface WaTemplateExample {
+    header_handle?: string[];
+    body_text?: string[][];
+}
+
+export interface WaTemplateButton {
+    type: string;
+    text: string;
+    url?: string;
+    phone_number?: string;
+}
+
+export interface WaTemplateCarouselCard {
+    components?: WaTemplateComponent[];
+}
+
+export interface WaTemplateComponent {
+    type: string;
+    format?: string;
+    text?: string;
+    example?: WaTemplateExample;
+    buttons?: WaTemplateButton[];
+    cards?: WaTemplateCarouselCard[];
+}
+
+export interface WaTemplatePreview {
+    header?: string;
+    body: string;
+    footer?: string;
+    buttons?: WaTemplateButton[];
+    components: WaTemplateComponent[];
+}
+
 export interface WaTemplate {
     id: string;
     metaId?: string | null;
@@ -54,7 +87,7 @@ export interface WaTemplate {
     language: string;
     category: string;
     status: string;
-    components: any[];
+    components: WaTemplateComponent[];
     variables: string[];
     rejectedReason?: string | null;
     syncedAt?: string;
@@ -287,9 +320,9 @@ export const ChannelApi = {
             category: params?.category,
             language: params?.language,
             search: params?.search,
-        })}`),
+        })}`) as Promise<WaTemplate[]>,
     previewTemplate: (channelId: string | number, templateId: string, variables: Record<string, string>) =>
-        api.post(`/channels/${channelId}/whatsapp/templates/${templateId}/preview`, { variables }),
+        api.post(`/channels/${channelId}/whatsapp/templates/${templateId}/preview`, { variables }) as Promise<WaTemplatePreview>,
     syncWhatsAppTemplates: (channelId: string | number) =>
         api.post(`/channels/${channelId}/whatsapp/templates/sync`),
 

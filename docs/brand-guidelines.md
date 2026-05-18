@@ -469,7 +469,7 @@ Sizes:
 
 `Card`: `.card` white surface, `--color-gray-200` border, `--radius-lg`, `--spacing-lg` padding, `--shadow-sm`; `hover` adds `--shadow-md` and `translateY(-2px)`.
 
-`DataTable`: desktop table uses white header/body, gray borders/dividers, compact uppercase header labels, row hover gray. Mobile layout uses rounded white cards, slate utility colors, and a custom low elevation shadow. Row action menus are portaled with rounded-xl, white surface, gray border, `shadow-xl`, and `ring-black/5`.
+`DataTable`: desktop table uses a soft gray sticky header band, white body, gray borders/dividers, readable 14px semibold header labels, row hover gray, and accessible sort indicators. Mobile layout uses rounded white cards, slate utility colors, and a custom low elevation shadow. Row action menus are portaled with rounded-xl, white surface, gray border, `shadow-xl`, and `ring-black/5`.
 
 `ListPagination`: desktop footer is white with top border gray-200, compact rounded-lg buttons, active page `bg-indigo-600 text-white`. Mobile uses an intersection-observer sentinel and pill loading/scroll labels with slate utility colors.
 

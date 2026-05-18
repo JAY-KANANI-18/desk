@@ -12,7 +12,7 @@ import {
 } from "./BroadcastChannelLabel";
 import { BroadcastStatusTag } from "./BroadcastStatusTag";
 import type { BroadcastSortableField } from "./types";
-import { contentModeLabel, formatDateTime } from "./utils";
+import { formatDateTime } from "./utils";
 
 type BroadcastTableViewProps = {
   runs: BroadcastRunRow[];
@@ -28,6 +28,14 @@ type BroadcastTableViewProps = {
   onOpenDetail: (run: BroadcastRunRow) => void;
   onLoadMore: (cursor?: string) => void;
 };
+
+const BROADCAST_NAME_COLUMN_WIDTH = 260;
+const BROADCAST_STICKY_CELL_CLASS =
+  "broadcast-table-sticky-cell bg-white group-hover:bg-gray-50";
+const BROADCAST_STICKY_NAME_HEADER_CLASS =
+  "sticky left-0 z-30 w-[260px] max-w-[260px] bg-[var(--color-gray-50)]";
+const BROADCAST_STICKY_NAME_CELL_CLASS =
+  `sticky left-0 z-20 w-[260px] max-w-[260px] overflow-hidden ${BROADCAST_STICKY_CELL_CLASS}`;
 
 export function BroadcastTableView({
   runs,
@@ -45,8 +53,19 @@ export function BroadcastTableView({
 }: BroadcastTableViewProps) {
   const columns: Array<DataTableColumn<BroadcastRunRow, BroadcastSortableField>> = [
     {
+      id: "name",
+      header: "Name",
+      sortable: true,
+      sortField: "name",
+      headerClassName: BROADCAST_STICKY_NAME_HEADER_CLASS,
+      className: BROADCAST_STICKY_NAME_CELL_CLASS,
+      width: BROADCAST_NAME_COLUMN_WIDTH,
+      cell: (run) => <span className="font-medium text-gray-900">{run.name}</span>,
+      mobile: "primary",
+    },
+    {
       id: "status",
-      header: "Progress",
+      header: "Status",
       sortable: true,
       sortField: "status",
       cell: (run) => <BroadcastStatusTag status={run.status} />,
@@ -54,7 +73,7 @@ export function BroadcastTableView({
     },
     {
       id: "scheduledAt",
-      header: "Send time",
+      header: "Time",
       sortable: true,
       sortField: "scheduledAt",
       cell: (run) =>
@@ -63,24 +82,10 @@ export function BroadcastTableView({
       mobile: "detail",
     },
     {
-      id: "name",
-      header: "Broadcast",
-      sortable: true,
-      sortField: "name",
-      cell: (run) => <span className="font-medium text-gray-900">{run.name}</span>,
-      mobile: "primary",
-    },
-    {
       id: "channel",
       header: "Send from",
       cell: (run) => <BroadcastChannelLabel channel={run.channel} />,
       mobile: "secondary",
-    },
-    {
-      id: "contentMode",
-      header: "Message type",
-      cell: (run) => <span>{contentModeLabel(run.contentMode)}</span>,
-      mobile: "detail",
     },
     {
       id: "totalAudience",
@@ -143,6 +148,8 @@ export function BroadcastTableView({
       }}
       onRowClick={onOpenDetail}
       minTableWidth={960}
+      tableLayout="fixed"
+      stickyLeadingShadowOffset={BROADCAST_NAME_COLUMN_WIDTH}
       mobileLoadMore={{
         hasMore: hasMoreRuns,
         loading: runsLoadingMore,
