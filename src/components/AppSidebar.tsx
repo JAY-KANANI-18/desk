@@ -1,6 +1,11 @@
 import { useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { BookCheck, Settings, type AppIcon } from "@/components/ui/icons";
+import {
+  BookCheck,
+  Settings,
+  type AppIcon,
+  type IconProps,
+} from "@/components/ui/icons";
 import { useAuthorization } from "../context/AuthorizationContext";
 import { useGetStarted } from "../context/GetStartedContext";
 import { useFeatureFlags } from "../context/FeatureFlagContext";
@@ -35,11 +40,12 @@ export const AppSidebar = ({
   const activeNavClass = isExpanded
     ? "relative bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
     : "relative bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.55rem] before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]";
-  const isSettingsRouteActive = settingsLinks.some(
-    (link) =>
-      location.pathname === link.path ||
-      location.pathname.startsWith(`${link.path}/`),
-  );
+  const isSettingsRouteActive =
+    settingsLinks.some(
+      (link) =>
+        location.pathname === link.path ||
+        location.pathname.startsWith(`${link.path}/`),
+    );
   const isSettingsActive = settingsMenu.isOpen || isSettingsRouteActive;
 
   const handleNavClick = () => {
@@ -55,6 +61,7 @@ export const AppSidebar = ({
     path: string,
     label: string,
     Icon: AppIcon,
+    activeIconWeight: IconProps["weight"] = "fill",
   ) => {
     const navLink = (
       <NavLink
@@ -79,7 +86,7 @@ export const AppSidebar = ({
             <>
               <Icon
                 size={22}
-                weight={active ? "fill" : "regular"}
+                weight={active ? activeIconWeight : "regular"}
                 className="flex-shrink-0"
               />
               {isExpanded ? (
@@ -137,7 +144,12 @@ export const AppSidebar = ({
             renderPrimaryLink("/get-started", "Quick Setup", BookCheck)}
 
           {visibleNavItems.map((item) =>
-            renderPrimaryLink(item.path, item.label, item.icon),
+            renderPrimaryLink(
+              item.path,
+              item.label,
+              item.icon,
+              item.activeIconWeight,
+            ),
           )}
 
           {!isExpanded && (
@@ -173,6 +185,7 @@ export const AppSidebar = ({
               >
                 {settingsLinks.map((link) => {
                   const LinkIcon = link.icon;
+                  const isLinkActive = (isActive: boolean) => isActive;
 
                   return (
                     <NavLink
@@ -181,7 +194,7 @@ export const AppSidebar = ({
                       onClick={handleNavClick}
                       className={({ isActive }) =>
                         `flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-slate-50 ${
-                          isActive ? "text-[var(--color-primary)]" : "text-slate-700"
+                          isLinkActive(isActive) ? "text-[var(--color-primary)]" : "text-slate-700"
                         }`
                       }
                     >
@@ -189,7 +202,7 @@ export const AppSidebar = ({
                         <>
                           <LinkIcon
                             size={20}
-                            weight={isActive ? "fill" : "regular"}
+                            weight={isLinkActive(isActive) ? "fill" : "regular"}
                             className="flex-shrink-0"
                           />
                           <div className="min-w-0">
@@ -218,6 +231,7 @@ export const AppSidebar = ({
             <div className="space-y-1">
               {settingsLinks.map((link) => {
                 const LinkIcon = link.icon;
+                const isLinkActive = (isActive: boolean) => isActive;
 
                 return (
                   <NavLink
@@ -226,7 +240,7 @@ export const AppSidebar = ({
                     onClick={handleNavClick}
                     className={({ isActive }) =>
                       `relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${
-                        isActive
+                        isLinkActive(isActive)
                           ? "bg-transparent text-[var(--color-primary)] before:absolute before:left-[-0.6rem] before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-[var(--color-primary)]"
                           : "text-slate-600 hover:bg-slate-100"
                       }`
@@ -236,7 +250,7 @@ export const AppSidebar = ({
                       <>
                         <LinkIcon
                           size={18}
-                          weight={isActive ? "fill" : "regular"}
+                          weight={isLinkActive(isActive) ? "fill" : "regular"}
                           className="flex-shrink-0"
                         />
                         <div className="min-w-0">

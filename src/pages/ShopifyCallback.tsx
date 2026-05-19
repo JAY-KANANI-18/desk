@@ -61,7 +61,7 @@ export default function ShopifyCallback() {
 
   const closeOrReturn = () => {
     window.close();
-    navigate("/workspace/settings/integrations", { replace: true });
+    navigate("/integrations", { replace: true });
   };
 
   useEffect(() => {

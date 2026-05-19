@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/icons";
 
 import { Button } from "../../../components/ui/Button";
+import { BackButton } from "../../../components/channels/BackButton";
+import { PageLayout } from "../../../components/ui/PageLayout";
 import { useMobileHeaderActions } from "../../../components/mobileHeaderActions";
 import { BaseInput, CheckboxInput } from "../../../components/ui/inputs";
 import { ConfirmDeleteModal } from "../../../components/ui/modal";
@@ -34,6 +36,7 @@ import {
   integrationInitials,
   integrationBenefits,
   mergeIntegrationCatalog,
+  mergeIntegrationConnections,
   shopifyPhaseColor,
   statusLabel,
   webhookUrlFor,
@@ -54,10 +57,22 @@ type IntegrationEventLogItem = {
   eventType: string;
   externalEventId?: string | null;
   status: string;
+  summary?: IntegrationEventSummary | null;
   occurredAt?: string | null;
   processedAt?: string | null;
   error?: string | null;
   createdAt: string;
+};
+
+type IntegrationEventSummary = {
+  resourceType: "order" | "cart" | "customer";
+  identifier?: string | null;
+  customerLabel?: string | null;
+  totalAmount?: number | null;
+  currency?: string | null;
+  itemCount?: number | null;
+  itemPreview?: string | null;
+  status?: string | null;
 };
 
 type IntegrationJobLogItem = {
@@ -96,6 +111,13 @@ type IntegrationResourceResponse = {
   items?: IntegrationResourceItem[];
 };
 
+type IntegrationsResponse = {
+  integrations?: Integration[];
+  connections?: Integration[];
+};
+
+const INTEGRATIONS_ROUTE = "/integrations";
+
 type ShopifySyncResource = "products" | "customers" | "orders" | "carts";
 
 type ShopifyBackfillState = {
@@ -110,6 +132,10 @@ const SHOPIFY_SYNC_RESOURCES: Array<{ id: ShopifySyncResource; label: string }> 
   { id: "orders", label: "Orders" },
   { id: "carts", label: "Carts / checkouts" },
 ];
+
+function isMinimalIntegration(integration: IntegrationViewModel) {
+  return integration.id === "shopify" || integration.id === "meta_ads";
+}
 
 function IntegrationIcon({
   integration,
@@ -249,7 +275,7 @@ function friendlyHealthMessage(message: string | null, integration: IntegrationV
   return message;
 }
 
-function totalSyncedRecords(totals: HealthRecord | null) {
+function totalShopifyRecords(totals: HealthRecord | null) {
   if (!totals) return null;
   return [
     readHealthNumber(totals, "products") ?? 0,
@@ -259,6 +285,18 @@ function totalSyncedRecords(totals: HealthRecord | null) {
   ].reduce((sum, count) => sum + count, 0);
 }
 
+function shopifyRecordTotals(integration: IntegrationViewModel) {
+  const health = asHealthRecord(integration.health);
+  const initialSync = asHealthRecord(health?.initialSync);
+  const backfill = asHealthRecord(health?.backfill);
+  return asHealthRecord(backfill?.totals) ?? asHealthRecord(initialSync?.totals);
+}
+
+function shopifyResourceCountLabel(totals: HealthRecord | null, resource: ShopifySyncResource) {
+  const count = readHealthNumber(totals, resource);
+  return count == null ? "Not available" : count.toLocaleString();
+}
+
 function friendlyActionLabel(action: { key: string; label: string }, integration: IntegrationViewModel) {
   if (action.key === "test_connection") return "Check connection";
   if (action.key === "refresh_sources") {
@@ -266,6 +304,11 @@ function friendlyActionLabel(action: { key: string; label: string }, integration
   }
   if (action.key === "resubscribe_webhooks") return "Reconnect live updates";
   return action.label;
+}
+
+function shopifyStoreUrl(integration: IntegrationViewModel) {
+  const shop = integration.summary?.shopDomain || integration.summary?.shopName;
+  return shop ? `https://${shop.replace(/^https?:\/\//i, "")}` : "-";
 }
 
 function HealthPanel({
@@ -286,7 +329,7 @@ function HealthPanel({
   const failedWebhooks = readHealthNumber(webhookRegistration, "failedCount");
   const syncStatus = readHealthString(backfill, "status") ?? readHealthString(initialSync, "status");
   const friendlyMessage = friendlyHealthMessage(skippedReason, integration);
-  const syncedRecords = totalSyncedRecords(totals);
+  const syncedRecords = totalShopifyRecords(totals);
 
   return (
     <section className="settings-row-card">
@@ -548,6 +591,512 @@ function OverviewTab({
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function ShopifyConnectView({
+  shopifyShop,
+  shopifyShopError,
+  shopifyConnectPhase,
+  shopifyConnectMessage,
+  busyAction,
+  onShopifyShopChange,
+  onConnectShopify,
+}: {
+  shopifyShop: string;
+  shopifyShopError: string | null;
+  shopifyConnectPhase: ShopifyConnectPhase;
+  shopifyConnectMessage: string | null;
+  busyAction: string | null;
+  onShopifyShopChange: (value: string) => void;
+  onConnectShopify: (event?: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <section className="max-w-3xl">
+      <form className="settings-row-card space-y-4" onSubmit={onConnectShopify}>
+        <div>
+          <p className="text-base font-semibold text-gray-900">Connect your Shopify store</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Enter your store URL. We will open Shopify so you can approve the connection.
+          </p>
+        </div>
+
+        <BaseInput
+          label="Shopify store URL"
+          value={shopifyShop}
+          disabled={busyAction === "connect"}
+          onChange={(event) => onShopifyShopChange(event.target.value)}
+          placeholder="your-store.myshopify.com"
+          error={shopifyShopError ?? undefined}
+          hint="Example: your-store.myshopify.com"
+        />
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            type="submit"
+            className="w-full sm:w-auto"
+            loading={busyAction === "connect"}
+            loadingMode="inline"
+            loadingLabel="Connecting..."
+          >
+            Connect store
+          </Button>
+        </div>
+
+        {shopifyConnectMessage ? (
+          <div
+            className={`rounded-lg border px-3 py-2 text-sm ${shopifyPhaseColor(
+              shopifyConnectPhase,
+            )}`}
+          >
+            {shopifyConnectMessage}
+          </div>
+        ) : null}
+      </form>
+    </section>
+  );
+}
+
+function ShopifyStoreSummary({
+  integration,
+  latestJob,
+  busyAction,
+  onSync,
+  onRefresh,
+}: {
+  integration: IntegrationViewModel;
+  latestJob?: IntegrationJobLogItem | null;
+  busyAction: string | null;
+  onSync: () => void;
+  onRefresh: () => void;
+}) {
+  const health = asHealthRecord(integration.health);
+  const totals = shopifyRecordTotals(integration);
+  const totalRecords = totalShopifyRecords(totals);
+  const checkedAt = readHealthString(health, "checkedAt");
+
+  return (
+    <section className="settings-row-card settings-row-card--active">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-base font-semibold text-gray-900">Store connected</p>
+            <Tag label="Ready" bgColor="tag-green" size="sm" />
+          </div>
+          <p className="mt-1 break-words text-sm text-gray-500">
+            {integrationAccountLabel(integration)}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {integration.actions?.sync ? (
+            <Button
+              onClick={onSync}
+              size="xs"
+              loading={busyAction === "sync"}
+              loadingMode="inline"
+              loadingLabel="Syncing..."
+              leftIcon={<RefreshCcw size={14} />}
+            >
+              Sync now
+            </Button>
+          ) : null}
+          <Button
+            onClick={onRefresh}
+            variant="secondary"
+            size="xs"
+            loading={busyAction === "refresh"}
+            loadingMode="inline"
+            loadingLabel="Refreshing..."
+            leftIcon={<RefreshCw size={14} />}
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DetailTile label="Store URL" value={shopifyStoreUrl(integration)} />
+        <DetailTile label="Last checked" value={formatDateTime(checkedAt)} />
+        <DetailTile
+          label="Total records"
+          value={totalRecords == null ? "-" : totalRecords.toLocaleString()}
+        />
+        <DetailTile
+          label="Latest sync"
+          value={latestJob ? formatLogLabel(latestJob.status) : "Ready"}
+        />
+      </div>
+
+      {latestJob?.lastError ? (
+        <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {latestJob.lastError}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function ShopifyConfigTab({
+  integration,
+  latestJob,
+  busyAction,
+  onSync,
+  onRefresh,
+  onDisconnect,
+}: {
+  integration: IntegrationViewModel;
+  latestJob?: IntegrationJobLogItem | null;
+  busyAction: string | null;
+  onSync: () => void;
+  onRefresh: () => void;
+  onDisconnect: () => void;
+}) {
+  const totals = shopifyRecordTotals(integration);
+
+  return (
+    <div className="space-y-4">
+      <ShopifyStoreSummary
+        integration={integration}
+        latestJob={latestJob}
+        busyAction={busyAction}
+        onSync={onSync}
+        onRefresh={onRefresh}
+      />
+
+      <section className="settings-row-card">
+        <p className="text-sm font-semibold text-gray-900">Store records</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Customers, orders, products, and abandoned carts stay available for conversations,
+          broadcasts, and workflows.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {SHOPIFY_SYNC_RESOURCES.map((resource) => (
+            <DetailTile
+              key={resource.id}
+              label={resource.label}
+              value={shopifyResourceCountLabel(totals, resource.id)}
+              subValue="Total records"
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="settings-row-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Disconnect store</p>
+            <p className="mt-1 text-sm text-gray-500">
+              New Shopify data will stop syncing into AxoDesk.
+            </p>
+          </div>
+          <Button
+            onClick={onDisconnect}
+            variant="danger-ghost"
+            loading={busyAction === "disconnect"}
+            loadingMode="inline"
+            loadingLabel="Disconnecting..."
+          >
+            Disconnect
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MetaAdsConnectView({
+  busyAction,
+  onConnectMetaAds,
+}: {
+  busyAction: string | null;
+  onConnectMetaAds: () => void;
+}) {
+  return (
+    <section className="max-w-3xl">
+      <div className="settings-row-card space-y-4">
+        <div>
+          <p className="text-base font-semibold text-gray-900">Connect Meta Ads</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Sign in with Meta to bring new lead form submissions into AxoDesk.
+          </p>
+        </div>
+
+        <Button
+          onClick={onConnectMetaAds}
+          variant="facebook"
+          className="w-full sm:w-auto"
+          loading={busyAction === "connect"}
+          loadingMode="inline"
+          loadingLabel="Connecting..."
+        >
+          Connect Meta Ads
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function MetaAdsSummary({
+  integration,
+  resources,
+  resourcesLoading,
+  busyAction,
+  onProviderAction,
+  onRefresh,
+}: {
+  integration: IntegrationViewModel;
+  resources: IntegrationResourceItem[];
+  resourcesLoading: boolean;
+  busyAction: string | null;
+  onProviderAction: (action: string) => void;
+  onRefresh: () => void;
+}) {
+  const adAccounts = resourcesOfType(resources, "ad_account");
+  const pages = resourcesOfType(resources, "page");
+  const leadForms = resourcesOfType(resources, "lead_form");
+  const activeLeadForms = leadForms.filter((form) => form.status === "active");
+  const primaryAdAccount =
+    adAccounts.find((resource) => readResourceBoolean(resource.settings, "primary")) ??
+    adAccounts[0];
+  const canCheckConnection = integration.actions?.providerActions?.some(
+    (action) => action.key === "test_connection",
+  );
+
+  return (
+    <section className="settings-row-card settings-row-card--active">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-base font-semibold text-gray-900">Meta Ads connected</p>
+            <Tag label="Ready" bgColor="tag-green" size="sm" />
+          </div>
+          <p className="mt-1 break-words text-sm text-gray-500">
+            {primaryAdAccount?.name ?? integration.summary?.accountName ?? "Lead forms ready"}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => onProviderAction("refresh_sources")}
+            size="xs"
+            loading={busyAction === "action:refresh_sources"}
+            loadingMode="inline"
+            loadingLabel="Refreshing..."
+            leftIcon={<RefreshCcw size={14} />}
+          >
+            Refresh sources
+          </Button>
+          {canCheckConnection ? (
+            <Button
+              onClick={() => onProviderAction("test_connection")}
+              variant="secondary"
+              size="xs"
+              loading={busyAction === "action:test_connection"}
+              loadingMode="inline"
+              loadingLabel="Checking..."
+            >
+              Check connection
+            </Button>
+          ) : (
+            <Button
+              onClick={onRefresh}
+              variant="secondary"
+              size="xs"
+              loading={busyAction === "refresh"}
+              loadingMode="inline"
+              loadingLabel="Refreshing..."
+              leftIcon={<RefreshCw size={14} />}
+            >
+              Refresh
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DetailTile
+          label="Ad account"
+          value={resourcesLoading ? "Loading..." : primaryAdAccount?.name ?? "-"}
+        />
+        <DetailTile
+          label="Pages"
+          value={resourcesLoading ? "Loading..." : pages.length.toLocaleString()}
+        />
+        <DetailTile
+          label="Lead forms"
+          value={resourcesLoading ? "Loading..." : leadForms.length.toLocaleString()}
+        />
+        <DetailTile
+          label="Active forms"
+          value={resourcesLoading ? "Loading..." : activeLeadForms.length.toLocaleString()}
+        />
+      </div>
+    </section>
+  );
+}
+
+function MetaAdsConfigTab({
+  integration,
+  resources,
+  resourcesLoading,
+  resourcesError,
+  busyAction,
+  onProviderAction,
+  onRefresh,
+  onUpdateResourceSettings,
+  onDisconnect,
+}: {
+  integration: IntegrationViewModel;
+  resources: IntegrationResourceItem[];
+  resourcesLoading: boolean;
+  resourcesError: string | null;
+  busyAction: string | null;
+  onProviderAction: (action: string) => void;
+  onRefresh: () => void;
+  onUpdateResourceSettings: (
+    resourceId: string,
+    payload: { status?: "active" | "inactive"; settings?: Record<string, unknown> },
+  ) => void;
+  onDisconnect: () => void;
+}) {
+  const leadForms = resourcesOfType(resources, "lead_form");
+
+  return (
+    <div className="space-y-4">
+      <MetaAdsSummary
+        integration={integration}
+        resources={resources}
+        resourcesLoading={resourcesLoading}
+        busyAction={busyAction}
+        onProviderAction={onProviderAction}
+        onRefresh={onRefresh}
+      />
+
+      <section className="settings-row-card">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Lead sources</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Choose which Meta lead forms should create contacts and start workflows.
+            </p>
+          </div>
+          <Tag label={`${leadForms.length} forms`} bgColor="tag-blue" size="sm" />
+        </div>
+
+        {resourcesError ? (
+          <p className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            {resourcesError}
+          </p>
+        ) : null}
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-gray-100">
+          {resourcesLoading ? (
+            <div className="flex items-center gap-2 px-3 py-5 text-sm text-gray-500">
+              <Loader2 size={14} className="animate-spin" />
+              Loading lead sources...
+            </div>
+          ) : leadForms.length > 0 ? (
+            leadForms.map((form) => {
+              const settings = form.settings ?? {};
+              const metadata = form.metadata ?? {};
+              const sourceLabel =
+                readResourceString(settings, "sourceLabel") ??
+                form.name ??
+                form.externalId;
+              const enabled = readResourceBoolean(settings, "sourceEnabled") ?? true;
+              const pageName =
+                readResourceString(settings, "linkedPageName") ??
+                readResourceString(metadata, "pageName");
+
+              return (
+                <div
+                  key={form.id}
+                  className="grid gap-3 border-b border-gray-100 px-4 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-gray-900">{sourceLabel}</p>
+                    <p className="mt-1 truncate text-xs text-gray-500">
+                      {pageName ? `${pageName} page` : "Meta lead form"}
+                    </p>
+                  </div>
+                  <CheckboxInput
+                    checked={enabled}
+                    onChange={(checked) =>
+                      onUpdateResourceSettings(form.id, {
+                        settings: { sourceEnabled: checked },
+                      })
+                    }
+                    label="Use in AxoDesk"
+                    description="Create contacts from this form"
+                  />
+                </div>
+              );
+            })
+          ) : (
+            <div className="px-3 py-5 text-sm text-gray-500">
+              No lead forms found yet. Refresh sources after your Meta account has page and form access.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="settings-row-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Disconnect Meta Ads</p>
+            <p className="mt-1 text-sm text-gray-500">
+              New Meta leads will stop coming into AxoDesk.
+            </p>
+          </div>
+          <Button
+            onClick={onDisconnect}
+            variant="danger-ghost"
+            loading={busyAction === "disconnect"}
+            loadingMode="inline"
+            loadingLabel="Disconnecting..."
+          >
+            Disconnect
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function IntegrationUnderlineTabs({
+  tabs,
+  activeTab,
+  routeId,
+  onNavigate,
+}: {
+  tabs: Array<{ id: IntegrationTabId; label: string }>;
+  activeTab: IntegrationTabId;
+  routeId: string;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <div className="border-b border-gray-200">
+      <div className="flex overflow-x-auto">
+        {tabs.map((tab) => {
+          const selected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onNavigate(`${INTEGRATIONS_ROUTE}/${routeId}/${tab.id}`)}
+              className={`min-h-11 shrink-0 border-b-2 px-8 text-sm font-medium transition-colors ${
+                selected
+                  ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                  : "border-transparent text-gray-700 hover:border-gray-200 hover:text-gray-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -909,8 +1458,400 @@ function logStatusColor(status: string) {
   return "tag-blue";
 }
 
+function formatShopifyMoney(value?: number | null, currency?: string | null) {
+  if (value == null) return null;
+  const normalizedCurrency = currency || "USD";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 2,
+    }).format(value / 100);
+  } catch {
+    return `${normalizedCurrency} ${(value / 100).toFixed(2)}`;
+  }
+}
+
+function compactDetails(parts: Array<string | null | undefined>) {
+  const clean = parts.filter((part): part is string => Boolean(part));
+  return clean.length > 0 ? clean.join(" | ") : "Details are not available yet.";
+}
+
+function shopifyOrderAction(eventType: string) {
+  const normalized = eventType.toLowerCase();
+  if (normalized.includes("order") && normalized.includes("paid")) {
+    return "paid";
+  }
+  if (normalized.includes("order") && normalized.includes("fulfilled")) {
+    return "fulfilled";
+  }
+  if (normalized.includes("order") && normalized.includes("cancel")) {
+    return "cancelled";
+  }
+  return "updated";
+}
+
+function shopifyEventLabel(event: IntegrationEventLogItem) {
+  const normalized = event.eventType.toLowerCase();
+  const summary = event.summary;
+  const money = formatShopifyMoney(summary?.totalAmount, summary?.currency);
+  const identifier = summary?.identifier || event.externalEventId || null;
+
+  if (normalized.includes("order")) {
+    const action = shopifyOrderAction(event.eventType);
+    const readableId = identifier ? ` ${identifier}` : "";
+    return {
+      title: `Order${readableId} ${action}`,
+      detail: compactDetails([
+        money,
+        summary?.customerLabel,
+        summary?.itemPreview,
+        summary?.status ? `Status: ${formatLogLabel(summary.status)}` : null,
+      ]),
+    };
+  }
+  if (normalized.includes("customer")) {
+    const customerName = summary?.customerLabel || identifier;
+    return {
+      title: customerName
+        ? `${normalized.includes("created") ? "New customer" : "Customer updated"}: ${customerName}`
+        : normalized.includes("created") ? "New customer" : "Customer updated",
+      detail: compactDetails([
+        summary?.itemCount != null ? `${summary.itemCount} orders` : null,
+        money ? `${money} total spent` : null,
+        summary?.status ? `Status: ${formatLogLabel(summary.status)}` : null,
+      ]),
+    };
+  }
+  if (normalized.includes("cart") || normalized.includes("checkout")) {
+    const itemCopy =
+      summary?.itemCount == null
+        ? null
+        : `${summary.itemCount} ${summary.itemCount === 1 ? "item" : "items"}`;
+    return {
+      title: normalized.includes("abandoned") ? "Abandoned cart" : "Cart updated",
+      detail: compactDetails([
+        itemCopy,
+        money,
+        summary?.customerLabel,
+        summary?.itemPreview,
+        summary?.status ? `Status: ${formatLogLabel(summary.status)}` : null,
+      ]),
+    };
+  }
+  if (normalized.includes("product")) {
+    return {
+      title: identifier
+        ? `${normalized.includes("created") ? "New product" : "Product updated"}: ${identifier}`
+        : normalized.includes("created") ? "New product" : "Product updated",
+      detail: "Product details changed in Shopify.",
+    };
+  }
+  return {
+    title: formatLogLabel(event.eventType).replace(/^Commerce\s+/i, ""),
+    detail: identifier ? `Shopify reference: ${identifier}` : "Shopify sent an update to AxoDesk.",
+  };
+}
+
+function shopifyEventStatus(status: string) {
+  const normalized = status.toLowerCase();
+  if (["failed", "error"].includes(normalized)) {
+    return { label: "Needs attention", color: "tag-red" };
+  }
+  if (["pending", "processing", "received"].includes(normalized)) {
+    return { label: "In progress", color: "tag-blue" };
+  }
+  if (["cancelled", "skipped"].includes(normalized)) {
+    return { label: "Skipped", color: "tag-grey" };
+  }
+  if (["projected", "processed", "completed", "sent", "connected"].includes(normalized)) {
+    return { label: "Added to AxoDesk", color: "tag-green" };
+  }
+  return { label: formatLogLabel(status), color: logStatusColor(status) };
+}
+
+function ShopifyActivityTab({
+  logsLoading,
+  logsError,
+  eventLogs,
+  eventNextCursor,
+  replayingEventId,
+  onReload,
+  onLoadMoreEvents,
+  onReplayEvent,
+}: {
+  logsLoading: boolean;
+  logsError: string | null;
+  eventLogs: IntegrationEventLogItem[];
+  eventNextCursor: string | null;
+  replayingEventId: string | null;
+  onReload: () => void;
+  onLoadMoreEvents: () => void;
+  onReplayEvent: (eventId: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          onClick={onReload}
+          variant="secondary"
+          size="sm"
+          loading={logsLoading}
+          loadingMode="inline"
+          loadingLabel="Loading..."
+          leftIcon={<RefreshCw size={14} />}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {logsError ? (
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {logsError}
+        </p>
+      ) : null}
+
+      <section className="settings-row-card">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Recent store activity</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Helpful Shopify updates AxoDesk has received for this store.
+            </p>
+          </div>
+          <span className="text-xs text-gray-400">{eventLogs.length} recent</span>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-gray-100">
+          {logsLoading ? (
+            <div className="flex items-center gap-2 px-3 py-5 text-sm text-gray-500">
+              <Loader2 size={14} className="animate-spin" />
+              Loading activity...
+            </div>
+          ) : eventLogs.length > 0 ? (
+            eventLogs.map((event) => {
+              const label = shopifyEventLabel(event);
+              const status = shopifyEventStatus(event.status);
+              const canRetry = ["failed", "error"].includes(event.status.toLowerCase());
+
+              return (
+                <div
+                  key={event.id}
+                  className="grid gap-3 border-b border-gray-100 px-4 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_170px_160px_96px] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{label.title}</p>
+                    <p className="mt-1 text-xs text-gray-500">{label.detail}</p>
+                    {event.error ? (
+                      <p className="mt-1 text-xs text-red-600">{event.error}</p>
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 sm:justify-self-start">
+                    <Tag label={status.label} bgColor={status.color} size="sm" />
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {formatDateTime(event.processedAt || event.occurredAt || event.createdAt)}
+                  </p>
+                  <div className="flex min-h-9 justify-start sm:justify-end">
+                    {canRetry ? (
+                      <Button
+                        onClick={() => onReplayEvent(event.id)}
+                        variant="secondary"
+                        size="2xs"
+                        loading={replayingEventId === event.id}
+                        loadingMode="inline"
+                        loadingLabel="Trying..."
+                      >
+                        Try again
+                      </Button>
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="px-3 py-5 text-sm text-gray-500">
+              No Shopify activity yet. New orders, customers, products, and carts will appear here.
+            </div>
+          )}
+        </div>
+
+        {eventNextCursor ? (
+          <div className="mt-3 flex justify-end">
+            <Button
+              onClick={onLoadMoreEvents}
+              variant="secondary"
+              size="xs"
+              loading={logsLoading}
+              loadingMode="inline"
+              loadingLabel="Loading..."
+            >
+              Load more
+            </Button>
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function metaAdsEventLabel(event: IntegrationEventLogItem, resources: IntegrationResourceItem[]) {
+  const source = event.resourceId
+    ? resources.find((resource) => resource.id === event.resourceId)
+    : null;
+  const sourceLabel =
+    source?.name ??
+    readResourceString(source?.settings, "sourceLabel") ??
+    readResourceString(source?.metadata, "pageName");
+  const leadId = event.externalEventId ? `Lead ${event.externalEventId}` : null;
+
+  return {
+    title: formatLogLabel(event.eventType).toLowerCase().includes("lead")
+      ? "New lead received"
+      : formatLogLabel(event.eventType),
+    detail: compactDetails([
+      sourceLabel ? `Source: ${sourceLabel}` : null,
+      leadId,
+      event.error,
+    ]),
+  };
+}
+
+function MetaAdsActivityTab({
+  logsLoading,
+  logsError,
+  eventLogs,
+  eventNextCursor,
+  replayingEventId,
+  resources,
+  onReload,
+  onLoadMoreEvents,
+  onReplayEvent,
+}: {
+  logsLoading: boolean;
+  logsError: string | null;
+  eventLogs: IntegrationEventLogItem[];
+  eventNextCursor: string | null;
+  replayingEventId: string | null;
+  resources: IntegrationResourceItem[];
+  onReload: () => void;
+  onLoadMoreEvents: () => void;
+  onReplayEvent: (eventId: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          onClick={onReload}
+          variant="secondary"
+          size="sm"
+          loading={logsLoading}
+          loadingMode="inline"
+          loadingLabel="Loading..."
+          leftIcon={<RefreshCw size={14} />}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {logsError ? (
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {logsError}
+        </p>
+      ) : null}
+
+      <section className="settings-row-card">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Recent lead activity</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Meta lead form submissions AxoDesk has received.
+            </p>
+          </div>
+          <span className="text-xs text-gray-400">{eventLogs.length} recent</span>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-gray-100">
+          {logsLoading ? (
+            <div className="flex items-center gap-2 px-3 py-5 text-sm text-gray-500">
+              <Loader2 size={14} className="animate-spin" />
+              Loading lead activity...
+            </div>
+          ) : eventLogs.length > 0 ? (
+            eventLogs.map((event) => {
+              const label = metaAdsEventLabel(event, resources);
+              const failed = ["failed", "error"].includes(event.status.toLowerCase());
+              const status = failed
+                ? { label: "Needs attention", color: "tag-red" }
+                : ["received", "processing", "pending"].includes(event.status.toLowerCase())
+                  ? { label: "Received", color: "tag-blue" }
+                  : { label: "Added to AxoDesk", color: "tag-green" };
+
+              return (
+                <div
+                  key={event.id}
+                  className="grid gap-3 border-b border-gray-100 px-4 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_150px_160px_96px] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{label.title}</p>
+                    <p className="mt-1 text-xs text-gray-500">{label.detail}</p>
+                  </div>
+                  <div className="min-w-0 sm:justify-self-start">
+                    <Tag label={status.label} bgColor={status.color} size="sm" />
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {formatDateTime(event.processedAt || event.occurredAt || event.createdAt)}
+                  </p>
+                  <div className="flex min-h-9 justify-start sm:justify-end">
+                    {failed ? (
+                      <Button
+                        onClick={() => onReplayEvent(event.id)}
+                        variant="secondary"
+                        size="2xs"
+                        loading={replayingEventId === event.id}
+                        loadingMode="inline"
+                        loadingLabel="Trying..."
+                      >
+                        Try again
+                      </Button>
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="px-3 py-5 text-sm text-gray-500">
+              No leads yet. New Meta lead form submissions will appear here.
+            </div>
+          )}
+        </div>
+
+        {eventNextCursor ? (
+          <div className="mt-3 flex justify-end">
+            <Button
+              onClick={onLoadMoreEvents}
+              variant="secondary"
+              size="xs"
+              loading={logsLoading}
+              loadingMode="inline"
+              loadingLabel="Loading..."
+            >
+              Load more
+            </Button>
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
 function ActivityTab({
   integration,
+  resources,
   logsLoading,
   logsError,
   eventLogs,
@@ -926,6 +1867,7 @@ function ActivityTab({
   onRetryJob,
 }: {
   integration: IntegrationViewModel;
+  resources: IntegrationResourceItem[];
   logsLoading: boolean;
   logsError: string | null;
   eventLogs: IntegrationEventLogItem[];
@@ -946,6 +1888,37 @@ function ActivityTab({
         <p className="text-sm font-medium text-gray-700">No activity yet</p>
         <p className="mt-1 text-sm text-gray-500">Activity starts after the provider is connected.</p>
       </div>
+    );
+  }
+
+  if (integration.id === "shopify") {
+    return (
+      <ShopifyActivityTab
+        logsLoading={logsLoading}
+        logsError={logsError}
+        eventLogs={eventLogs}
+        eventNextCursor={eventNextCursor}
+        replayingEventId={replayingEventId}
+        onReload={onReload}
+        onLoadMoreEvents={onLoadMoreEvents}
+        onReplayEvent={onReplayEvent}
+      />
+    );
+  }
+
+  if (integration.id === "meta_ads") {
+    return (
+      <MetaAdsActivityTab
+        logsLoading={logsLoading}
+        logsError={logsError}
+        eventLogs={eventLogs}
+        eventNextCursor={eventNextCursor}
+        replayingEventId={replayingEventId}
+        resources={resources}
+        onReload={onReload}
+        onLoadMoreEvents={onLoadMoreEvents}
+        onReplayEvent={onReplayEvent}
+      />
     );
   }
 
@@ -1187,7 +2160,7 @@ function SettingsTab({
 export function IntegrationManagePage() {
   const { providerId, tabId } = useParams<{ providerId: string; tabId?: string }>();
   const navigate = useNavigate();
-  const metadata = getIntegrationMetadata(providerId);
+  const routeMetadata = getIntegrationMetadata(providerId);
   const [items, setItems] = useState<IntegrationViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1224,10 +2197,14 @@ export function IntegrationManagePage() {
     if (!options?.silent) setLoading(true);
     setError(null);
     try {
-      const res = (await workspaceApi.getIntegrations()) as {
-        integrations?: Integration[];
-      };
-      const next = mergeIntegrationCatalog(res.integrations ?? []);
+      const res = (await workspaceApi.getIntegrations()) as IntegrationsResponse;
+      const connections = res.connections ?? (res.integrations ?? []).filter(
+        (item) => item.integrationId || item.routingChannelId,
+      );
+      const next = [
+        ...mergeIntegrationConnections(connections),
+        ...mergeIntegrationCatalog([]),
+      ];
       setItems(next);
       return next;
     } catch {
@@ -1242,27 +2219,71 @@ export function IntegrationManagePage() {
     void load();
   }, [load]);
 
+  const routeIntegration = useMemo(() => {
+    if (!providerId) return null;
+    return items.find(
+      (item) =>
+        item.routeId === providerId ||
+        item.integrationId === providerId ||
+        item.routingChannelId === providerId,
+    ) ?? null;
+  }, [items, providerId]);
+
+  const metadata =
+    routeMetadata ?? (routeIntegration ? getIntegrationMetadata(routeIntegration.id) : null);
+
   const fallbackIntegration = useMemo(() => {
     if (!metadata) return null;
     return mergeIntegrationCatalog([]).find((item) => item.id === metadata.id) ?? null;
   }, [metadata]);
 
   const integration = useMemo(() => {
+    if (routeIntegration) return routeIntegration;
     if (!metadata) return null;
-    return items.find((item) => item.id === metadata.id) ?? fallbackIntegration;
-  }, [fallbackIntegration, items, metadata]);
+    return (
+      items.find(
+        (item) =>
+          item.routeId === metadata.id ||
+          (!item.integrationId && item.id === metadata.id),
+      ) ?? fallbackIntegration
+    );
+  }, [fallbackIntegration, items, metadata, routeIntegration]);
 
-  const defaultTab = integration?.tabs[0]?.id ?? "overview";
+  const visibleTabs = useMemo(() => {
+    if (!integration) return [];
+    if (isMinimalIntegration(integration)) {
+      return integration.connected
+        ? [
+            { id: "settings" as const, label: "Config" },
+            { id: "activity" as const, label: "Logs" },
+          ]
+        : [];
+    }
+    return integration.tabs;
+  }, [integration]);
+
+  const defaultTab = visibleTabs[0]?.id ?? integration?.tabs[0]?.id ?? "overview";
   const activeTab = (tabId ?? defaultTab) as IntegrationTabId;
   const integrationTabButtons = useMemo(() => {
-    if (!integration) return undefined;
+    if (!integration || visibleTabs.length === 0) return undefined;
+
+    if (isMinimalIntegration(integration)) {
+      return (
+        <IntegrationUnderlineTabs
+          tabs={visibleTabs}
+          activeTab={activeTab}
+          routeId={integration.routeId}
+          onNavigate={navigate}
+        />
+      );
+    }
 
     return (
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {integration.tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <Button
             key={tab.id}
-            onClick={() => navigate(`/workspace/settings/integrations/${integration.id}/${tab.id}`)}
+            onClick={() => navigate(`${INTEGRATIONS_ROUTE}/${integration.routeId}/${tab.id}`)}
             variant={activeTab === tab.id ? "soft-primary" : "secondary"}
             size="xs"
             className="shrink-0"
@@ -1272,15 +2293,15 @@ export function IntegrationManagePage() {
         ))}
       </div>
     );
-  }, [activeTab, integration, navigate]);
+  }, [activeTab, integration, navigate, visibleTabs]);
 
   useMobileHeaderActions(
     metadata
       ? {
-          eyebrow: "Integrations",
+          eyebrow: "",
           title: integration?.name ?? metadata.name,
           subtitle: integration?.desc ?? metadata.desc,
-          backTo: "/workspace/settings/integrations",
+          backTo: INTEGRATIONS_ROUTE,
           leading: integration ? (
             <IntegrationIcon compact integration={integration} />
           ) : undefined,
@@ -1297,6 +2318,7 @@ export function IntegrationManagePage() {
       integration?.desc,
       integration?.id,
       integration?.name,
+      integration?.routeId,
       integrationTabButtons,
       metadata?.desc,
       metadata?.name,
@@ -1304,12 +2326,16 @@ export function IntegrationManagePage() {
     ],
   );
 
-  const validTab = integration?.tabs.some((tab) => tab.id === activeTab) ?? false;
+  const validTab =
+    visibleTabs.length > 0
+      ? visibleTabs.some((tab) => tab.id === activeTab)
+      : integration?.tabs.some((tab) => tab.id === activeTab) ?? false;
 
   useEffect(() => {
     if (!integration || !providerId) return;
+    if (isMinimalIntegration(integration) && !integration.connected) return;
     if (!tabId || !validTab) {
-      navigate(`/workspace/settings/integrations/${providerId}/${defaultTab}`, {
+      navigate(`${INTEGRATIONS_ROUTE}/${providerId}/${defaultTab}`, {
         replace: true,
       });
     }
@@ -1320,26 +2346,30 @@ export function IntegrationManagePage() {
     setLogsLoading(true);
     setLogsError(null);
     try {
-      const [eventsRes, jobsRes] = await Promise.all([
-        workspaceApi.getIntegrationEvents(integration.integrationId, { limit: 25 }),
-        workspaceApi.getIntegrationJobs(integration.integrationId, { limit: 10 }),
-      ]);
+      const eventsRes = await workspaceApi.getIntegrationEvents(integration.integrationId, {
+        limit: 25,
+      });
+      const jobsRes = isMinimalIntegration(integration)
+        ? null
+        : await workspaceApi.getIntegrationJobs(integration.integrationId, { limit: 10 });
       setEventLogs(
         ((eventsRes as IntegrationLogResponse<IntegrationEventLogItem>)?.items ?? []),
       );
-      setJobLogs(((jobsRes as IntegrationLogResponse<IntegrationJobLogItem>)?.items ?? []));
+      setJobLogs(
+        jobsRes ? ((jobsRes as IntegrationLogResponse<IntegrationJobLogItem>)?.items ?? []) : [],
+      );
       setEventNextCursor(
         (eventsRes as IntegrationLogResponse<IntegrationEventLogItem>)?.nextCursor ?? null,
       );
       setJobNextCursor(
-        (jobsRes as IntegrationLogResponse<IntegrationJobLogItem>)?.nextCursor ?? null,
+        jobsRes ? (jobsRes as IntegrationLogResponse<IntegrationJobLogItem>)?.nextCursor ?? null : null,
       );
     } catch {
       setLogsError("Failed to load integration activity.");
     } finally {
       setLogsLoading(false);
     }
-  }, [integration?.integrationId]);
+  }, [integration]);
 
   const loadResources = useCallback(async () => {
     if (!integration?.integrationId) {
@@ -1443,10 +2473,14 @@ export function IntegrationManagePage() {
   }, [integration?.integrationId, loadActivity]);
 
   useEffect(() => {
-    if (integration?.integrationId && ["ads", "commerce"].includes(activeTab)) {
+    const needsProviderResources =
+      integration?.integrationId &&
+      (["ads", "commerce"].includes(activeTab) ||
+        (integration.id === "meta_ads" && integration.connected));
+    if (needsProviderResources) {
       void loadResources();
     }
-  }, [activeTab, integration?.integrationId, loadResources]);
+  }, [activeTab, integration?.connected, integration?.id, integration?.integrationId, loadResources]);
 
   const refreshProvider = useCallback(async () => {
     if (!integration) return;
@@ -1578,13 +2612,21 @@ export function IntegrationManagePage() {
     setError(null);
     try {
       await connectMetaAdsViaPopup();
-      await load({ silent: true });
+      const refreshed = await load({ silent: true });
+      const connected = refreshed.find(
+        (item) => item.id === "meta_ads" && item.integrationId,
+      );
+      if (connected) {
+        navigate(`${INTEGRATIONS_ROUTE}/${connected.routeId}/settings`, {
+          replace: true,
+        });
+      }
     } catch (connectError: unknown) {
       setError(connectError instanceof Error ? connectError.message : "Meta Ads connection failed.");
     } finally {
       setBusyAction(null);
     }
-  }, [load]);
+  }, [load, navigate]);
 
   const connectShopify = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -1603,9 +2645,22 @@ export function IntegrationManagePage() {
           setShopifyConnectPhase(phase);
           setShopifyConnectMessage(message);
         });
-        await load({ silent: true });
+        const refreshed = await load({ silent: true });
         setShopifyConnectPhase("connected");
         setShopifyConnectMessage("Shopify is connected. The catalog has been refreshed.");
+        const connected =
+          refreshed.find(
+            (item) =>
+              item.id === "shopify" &&
+              item.integrationId &&
+              normalizeShopInput(item.summary?.shopDomain ?? item.externalAccountId ?? "") === shop,
+          ) ??
+          refreshed.find((item) => item.id === "shopify" && item.integrationId);
+        if (connected) {
+          navigate(`${INTEGRATIONS_ROUTE}/${connected.routeId}/settings`, {
+            replace: true,
+          });
+        }
       } catch (connectError: unknown) {
         const message =
           connectError instanceof Error ? connectError.message : "Shopify connection failed.";
@@ -1617,10 +2672,18 @@ export function IntegrationManagePage() {
           setShopifyConnectMessage("Popup closed. Checking Shopify connection status...");
           await delay(1600);
           const refreshed = await load({ silent: true });
-          const shopify = refreshed.find((item) => item.id === "shopify");
+          const shopify = refreshed.find(
+            (item) =>
+              item.id === "shopify" &&
+              item.integrationId &&
+              normalizeShopInput(item.summary?.shopDomain ?? item.externalAccountId ?? "") === shop,
+          );
           if (shopify?.connected) {
             setShopifyConnectPhase("connected");
             setShopifyConnectMessage("Shopify is connected. The catalog has been refreshed.");
+            navigate(`${INTEGRATIONS_ROUTE}/${shopify.routeId}/settings`, {
+              replace: true,
+            });
             return;
           }
         }
@@ -1630,7 +2693,7 @@ export function IntegrationManagePage() {
         setBusyAction(null);
       }
     },
-    [load, shopifyShop],
+    [load, navigate, shopifyShop],
   );
 
   const disconnectIntegration = useCallback(async () => {
@@ -1638,10 +2701,10 @@ export function IntegrationManagePage() {
     setBusyAction("disconnect");
     setError(null);
     try {
-      await workspaceApi.disconnectIntegration(integration.id);
+      await workspaceApi.disconnectIntegration(integration.integrationId ?? integration.id);
       setConfirmDisconnectOpen(false);
       await load({ silent: true });
-      navigate(`/workspace/settings/integrations/${integration.id}/overview`, {
+      navigate(INTEGRATIONS_ROUTE, {
         replace: true,
       });
     } catch {
@@ -1657,20 +2720,63 @@ export function IntegrationManagePage() {
     window.setTimeout(() => setCopiedWebhook(false), 1500);
   };
 
+  const pageTitle =
+    integration?.name ?? metadata?.name ?? routeMetadata?.name ?? "Integration";
+  const pageSubtitle = integration?.desc ?? metadata?.desc ?? routeMetadata?.desc;
+  const pageLeading = (
+    <BackButton
+      ariaLabel="Back to integrations"
+      onClick={() => navigate(INTEGRATIONS_ROUTE)}
+    />
+  );
+  const pageTitleLeading = integration ? (
+    <IntegrationIcon compact integration={integration} />
+  ) : null;
+  const renderPage = (
+    content: ReactNode,
+    options?: {
+      title?: string;
+      subtitle?: string;
+      toolbar?: ReactNode;
+    },
+  ) => (
+    <PageLayout
+      title={options?.title ?? pageTitle}
+      subtitle={options?.subtitle ?? pageSubtitle}
+      leading={pageLeading}
+      titleLeading={pageTitleLeading}
+      toolbar={options?.toolbar}
+      className="bg-white"
+      contentClassName="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-6 md:px-6 md:py-8 lg:px-8"
+    >
+      <div className="settings-page-stack mx-auto min-h-0 w-full max-w-7xl flex-1 overflow-y-auto px-4 pb-24 pt-4 md:min-h-full md:flex-none md:overflow-visible md:px-0 md:pb-0 md:pt-0">
+        {content}
+      </div>
+    </PageLayout>
+  );
+
+  if (loading) {
+    return renderPage(<DataLoader type="integrations" />);
+  }
+
   if (!metadata) {
-    return (
+    return renderPage(
       <div className="settings-empty-panel">
         <p className="text-sm font-medium text-gray-700">Integration not found</p>
         <div className="mt-4">
-          <Button onClick={() => navigate("/workspace/settings/integrations")}>
+          <Button onClick={() => navigate(INTEGRATIONS_ROUTE)}>
             Back to integrations
           </Button>
         </div>
-      </div>
+      </div>,
+      {
+        title: "Integration not found",
+        subtitle: "Choose an available integration to connect or manage.",
+        toolbar: undefined,
+      },
     );
   }
 
-  if (loading) return <DataLoader type="integrations" />;
   if (!integration) return null;
 
   const connectionPanel = (
@@ -1693,29 +2799,64 @@ export function IntegrationManagePage() {
     />
   );
 
-  return (
-    <div className="settings-page-stack">
+  return renderPage(
+    <>
       {error ? (
         <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {error}
         </p>
       ) : null}
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">
-        {integration.tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            onClick={() => navigate(`/workspace/settings/integrations/${integration.id}/${tab.id}`)}
-            variant={activeTab === tab.id ? "soft-primary" : "secondary"}
-            size="xs"
-            className="shrink-0"
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+      {visibleTabs.length > 0 && isMinimalIntegration(integration) ? (
+        <div className="md:hidden">
+          <IntegrationUnderlineTabs
+            tabs={visibleTabs}
+            activeTab={activeTab}
+            routeId={integration.routeId}
+            onNavigate={navigate}
+          />
+        </div>
+      ) : null}
 
-      {activeTab === "overview" ? (
+      {visibleTabs.length > 0 && !isMinimalIntegration(integration) ? (
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">
+          {visibleTabs.map((tab) => (
+            <Button
+              key={tab.id}
+              onClick={() => navigate(`${INTEGRATIONS_ROUTE}/${integration.routeId}/${tab.id}`)}
+              variant={activeTab === tab.id ? "soft-primary" : "secondary"}
+              size="xs"
+              className="shrink-0"
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
+      {integration.id === "shopify" && !integration.connected ? (
+        <ShopifyConnectView
+          shopifyShop={shopifyShop}
+          shopifyShopError={shopifyShopError}
+          shopifyConnectPhase={shopifyConnectPhase}
+          shopifyConnectMessage={shopifyConnectMessage}
+          busyAction={busyAction}
+          onShopifyShopChange={(value) => {
+            setShopifyShop(value);
+            if (shopifyShopError) setShopifyShopError(null);
+          }}
+          onConnectShopify={connectShopify}
+        />
+      ) : null}
+
+      {integration.id === "meta_ads" && !integration.connected ? (
+        <MetaAdsConnectView
+          busyAction={busyAction}
+          onConnectMetaAds={connectMetaAds}
+        />
+      ) : null}
+
+      {!isMinimalIntegration(integration) && activeTab === "overview" ? (
         <OverviewTab
           integration={integration}
           connectionPanel={connectionPanel}
@@ -1723,7 +2864,32 @@ export function IntegrationManagePage() {
         />
       ) : null}
 
-      {["commerce", "ads", "payments", "mapping"].includes(activeTab) ? (
+      {integration.id === "meta_ads" && integration.connected && activeTab === "settings" ? (
+        <MetaAdsConfigTab
+          integration={integration}
+          resources={resources}
+          resourcesLoading={resourcesLoading}
+          resourcesError={resourcesError}
+          busyAction={busyAction}
+          onProviderAction={runProviderAction}
+          onRefresh={refreshProvider}
+          onUpdateResourceSettings={updateResourceSettings}
+          onDisconnect={() => setConfirmDisconnectOpen(true)}
+        />
+      ) : null}
+
+      {integration.id === "shopify" && integration.connected && activeTab === "settings" ? (
+        <ShopifyConfigTab
+          integration={integration}
+          latestJob={jobLogs[0] ?? null}
+          busyAction={busyAction}
+          onSync={syncProvider}
+          onRefresh={refreshProvider}
+          onDisconnect={() => setConfirmDisconnectOpen(true)}
+        />
+      ) : null}
+
+      {!isMinimalIntegration(integration) && ["commerce", "ads", "payments", "mapping"].includes(activeTab) ? (
         <ProviderTab
           integration={integration}
           tabId={activeTab}
@@ -1741,7 +2907,7 @@ export function IntegrationManagePage() {
         />
       ) : null}
 
-      {activeTab === "webhooks" ? (
+      {!isMinimalIntegration(integration) && activeTab === "webhooks" ? (
         <WebhooksTab
           integration={integration}
           copied={copiedWebhook}
@@ -1749,9 +2915,12 @@ export function IntegrationManagePage() {
         />
       ) : null}
 
-      {activeTab === "activity" ? (
+      {(isMinimalIntegration(integration)
+        ? integration.connected && activeTab === "activity"
+        : activeTab === "activity") ? (
         <ActivityTab
           integration={integration}
+          resources={resources}
           logsLoading={logsLoading}
           logsError={logsError}
           eventLogs={eventLogs}
@@ -1768,7 +2937,7 @@ export function IntegrationManagePage() {
         />
       ) : null}
 
-      {activeTab === "settings" ? (
+      {!isMinimalIntegration(integration) && activeTab === "settings" ? (
         <SettingsTab
           integration={integration}
           busyAction={busyAction}
@@ -1790,6 +2959,7 @@ export function IntegrationManagePage() {
         }}
         onConfirm={disconnectIntegration}
       />
-    </div>
+    </>,
+    { toolbar: integrationTabButtons },
   );
 }

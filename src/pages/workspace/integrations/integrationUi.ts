@@ -6,12 +6,16 @@ import type { Integration } from "../types";
 
 export interface IntegrationViewModel extends IntegrationMetadata {
   icon: string;
+  routeId: string;
   connected: boolean;
   status: string;
   integrationId: string | null;
   routingChannelId: string | null;
+  externalAccountId: string | null;
+  externalAccountName: string | null;
   webhookPath: string | null;
   health: unknown;
+  connectedAt: string | null;
   lastSyncedAt: string | null;
   lastWebhookAt: string | null;
   actions: Integration["actions"];
@@ -22,35 +26,53 @@ export const API_ROOT =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/api\/?$/, "") ||
   "http://localhost:3000";
 
+function integrationViewModel(
+  metadata: IntegrationMetadata,
+  remote?: Integration | null,
+): IntegrationViewModel {
+  return {
+    ...metadata,
+    icon: metadata.simpleIconUrl,
+    routeId: remote?.integrationId ?? metadata.id,
+    connected: remote?.connected ?? false,
+    status: remote?.status ?? metadata.availability,
+    integrationId: remote?.integrationId ?? null,
+    routingChannelId: remote?.routingChannelId ?? null,
+    externalAccountId: remote?.externalAccountId ?? null,
+    externalAccountName: remote?.externalAccountName ?? null,
+    webhookPath: remote?.webhookPath ?? null,
+    health: remote?.health ?? null,
+    connectedAt: remote?.connectedAt ?? null,
+    lastSyncedAt: remote?.lastSyncedAt ?? null,
+    lastWebhookAt: remote?.lastWebhookAt ?? null,
+    actions:
+      remote?.actions ?? {
+        connect: metadata.connectMode,
+        disconnect: false,
+        refresh: false,
+        sync: false,
+        providerActions: [],
+        configure: metadata.availability === "available",
+      },
+    summary: remote?.summary ?? null,
+  };
+}
+
 export function mergeIntegrationCatalog(remoteItems: Integration[] = []): IntegrationViewModel[] {
   const remoteById = new Map(remoteItems.map((item) => [item.id, item]));
 
-  return INTEGRATION_METADATA.map((metadata) => {
-    const remote = remoteById.get(metadata.id);
+  return INTEGRATION_METADATA.map((metadata) =>
+    integrationViewModel(metadata, remoteById.get(metadata.id)),
+  );
+}
 
-    return {
-      ...metadata,
-      icon: metadata.simpleIconUrl,
-      connected: remote?.connected ?? false,
-      status: remote?.status ?? metadata.availability,
-      integrationId: remote?.integrationId ?? null,
-      routingChannelId: remote?.routingChannelId ?? null,
-      webhookPath: remote?.webhookPath ?? null,
-      health: remote?.health ?? null,
-      lastSyncedAt: remote?.lastSyncedAt ?? null,
-      lastWebhookAt: remote?.lastWebhookAt ?? null,
-      actions:
-        remote?.actions ?? {
-          connect: metadata.connectMode,
-          disconnect: false,
-          refresh: false,
-          sync: false,
-          providerActions: [],
-          configure: metadata.availability === "available",
-        },
-      summary: remote?.summary ?? null,
-    };
-  });
+export function mergeIntegrationConnections(remoteItems: Integration[] = []): IntegrationViewModel[] {
+  return remoteItems
+    .map((remote) => {
+      const metadata = INTEGRATION_METADATA.find((item) => item.id === remote.id);
+      return metadata ? integrationViewModel(metadata, remote) : null;
+    })
+    .filter((item): item is IntegrationViewModel => item !== null);
 }
 
 export function statusLabel(integration: Pick<IntegrationViewModel, "connected" | "status" | "availability">) {

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { Layout } from "../components/Layout";
 import { SettingsIndexRedirect } from "../components/settings/navigation";
@@ -65,6 +65,15 @@ import { ApprovalQueuePage } from "../modules/ai-agents/pages/ApprovalQueuePage"
 import { AiUsagePage } from "../modules/ai-agents/pages/AiUsagePage";
 
 // ... all your existing imports ...
+
+function LegacyIntegrationRedirect() {
+  const { providerId, tabId } = useParams<{ providerId?: string; tabId?: string }>();
+  const target = providerId
+    ? `/integrations/${providerId}${tabId ? `/${tabId}` : ""}`
+    : "/integrations";
+
+  return <Navigate to={target} replace />;
+}
 
 export const WorkspaceRouter = () => {
   const { steps, dismiss, complete } = useGetStarted();
@@ -302,6 +311,31 @@ export const WorkspaceRouter = () => {
           }
         />
 
+        <Route
+          path="integrations"
+          element={
+            <ProtectedRoute ws="ws:channels:manage">
+              <Integrations />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="integrations/:providerId"
+          element={
+            <ProtectedRoute ws="ws:channels:manage">
+              <IntegrationManagePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="integrations/:providerId/:tabId"
+          element={
+            <ProtectedRoute ws="ws:channels:manage">
+              <IntegrationManagePage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Workspace settings — owner only for manage, manager for view */}
 
         <Route
@@ -338,30 +372,9 @@ export const WorkspaceRouter = () => {
           />
           <Route path="ai-assist" element={<AIAssist />} />
           <Route path="ai-prompts" element={<AIPrompts />} />
-          <Route
-            path="integrations"
-            element={
-              <ProtectedRoute ws="ws:channels:manage">
-                <Integrations />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="integrations/:providerId"
-            element={
-              <ProtectedRoute ws="ws:channels:manage">
-                <IntegrationManagePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="integrations/:providerId/:tabId"
-            element={
-              <ProtectedRoute ws="ws:channels:manage">
-                <IntegrationManagePage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="integrations" element={<LegacyIntegrationRedirect />} />
+          <Route path="integrations/:providerId" element={<LegacyIntegrationRedirect />} />
+          <Route path="integrations/:providerId/:tabId" element={<LegacyIntegrationRedirect />} />
         </Route>
 
         {/* Profile — everyone */}

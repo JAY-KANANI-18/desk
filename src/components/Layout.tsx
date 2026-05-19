@@ -1,13 +1,11 @@
 import { Outlet, matchPath, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useMemo, useState } from "react";
-import { ArrowLeft } from "@/components/ui/icons";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
 import { NotificationListWrapper } from "./NotificationList";
 import { IncomingCallWindow } from "./IncomingCallWindow";
 import { ActiveCallWindow } from "./ActiveCallWindow";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { IconButton } from "./ui/button/IconButton";
 import {
   MobileHeaderActionButtons,
   MobileHeaderActionsContext,
@@ -17,7 +15,7 @@ import {
 import { BackButton } from "./channels/BackButton";
 
 type MobileHeaderConfig = {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   backTo?: string;
 };
@@ -33,6 +31,20 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
     path: "/channels",
     eyebrow: "Workspace",
     title: "Channels",
+  },
+  {
+    path: "/integrations",
+    title: "Integrations",
+  },
+  {
+    path: "/integrations/:providerId",
+    title: "Integration",
+    backTo: "/integrations",
+  },
+  {
+    path: "/integrations/:providerId/:tabId",
+    title: "Integration",
+    backTo: "/integrations",
   },
   {
     path: "/workflows/templates",
@@ -84,27 +96,35 @@ function MobileRouteHeader({
   title,
   backTo,
   actions,
+  leading,
   onBack,
 }: MobileHeaderConfig & {
   actions?: MobileHeaderAction[];
+  leading?: ReactNode;
   onBack: (path: string) => void;
 }) {
   return (
     <div className="flex flex-shrink-0 items-center gap-3 bg-white px-4 py-3 md:hidden">
       {backTo ? (
-
-         <BackButton
+        <BackButton
           ariaLabel="Back"
           onClick={() => onBack(backTo)}
           size="sm"
         />
-        
+      ) : null}
+
+      {leading ? (
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center">
+          {leading}
+        </div>
       ) : null}
 
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-          {eyebrow}
-        </p>
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            {eyebrow}
+          </p>
+        ) : null}
         <h1 className="truncate text-base font-semibold text-slate-900">
           {title}
         </h1>
@@ -157,62 +177,65 @@ export const Layout = () => {
 
   return (
     <MobileHeaderActionsContext.Provider value={mobileHeaderActionsContextValue}>
-    <div className="app-shell flex h-screen min-h-0 overflow-hidden bg-slate-50">
-      <div className="hidden md:flex md:flex-shrink-0">
-        <AppSidebar />
-      </div>
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div
-        className={`fixed inset-y-3 left-3 z-50 transition-all duration-300 md:hidden ${
-          sidebarOpen
-            ? "translate-x-0 opacity-100"
-            : "-translate-x-[calc(100%+1.5rem)] opacity-0"
-        }`}
-      >
-        <AppSidebar variant="mobile" onNavigate={() => setSidebarOpen(false)} />
-      </div>
-
-      <div className="app-main-shell flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className={hideTopBarOnMobile ? "hidden md:block" : "block"}>
-          <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
+      <div className="app-shell flex h-screen min-h-0 overflow-hidden bg-slate-50">
+        <div className="hidden md:flex md:flex-shrink-0">
+          <AppSidebar />
         </div>
-        {!hideTopBarOnMobile && mobileRouteHeader ? (
-          <MobileRouteHeader
-            {...mobileRouteHeader}
-            actions={mobileHeaderRegistration.actions}
-            onBack={(path) => navigate(path)}
-          />
-        ) : null}
-        {!hideTopBarOnMobile &&
-        mobileRouteHeader &&
-        mobileHeaderRegistration.panel ? (
-          <div className="bg-white px-4 pb-3 md:hidden">
-            {mobileHeaderRegistration.panel}
-          </div>
-        ) : null}
-        <main className="app-content-shell flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div
-            className={`flex min-h-0 flex-1 flex-col ${
-              hideTopBarOnMobile ? "" : "pb-[4.5rem] md:pb-0" 
-            }`}
-          >
-            <Outlet />
-          </div>
-        </main>
-        {!hideBottomNavOnMobile ? <MobileBottomNav /> : null}
-      </div>
 
-      <NotificationListWrapper />
-      <IncomingCallWindow />
-      <ActiveCallWindow />
-    </div>
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        <div
+          className={`fixed inset-y-3 left-3 z-50 transition-all duration-300 md:hidden ${
+            sidebarOpen
+              ? "translate-x-0 opacity-100"
+              : "-translate-x-[calc(100%+1.5rem)] opacity-0"
+          }`}
+        >
+          <AppSidebar variant="mobile" onNavigate={() => setSidebarOpen(false)} />
+        </div>
+
+        <div className="app-main-shell flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className={hideTopBarOnMobile ? "hidden md:block" : "block"}>
+            <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
+          </div>
+          {!hideTopBarOnMobile && mobileRouteHeader ? (
+            <MobileRouteHeader
+              eyebrow={mobileHeaderRegistration.eyebrow ?? mobileRouteHeader.eyebrow}
+              title={mobileHeaderRegistration.title ?? mobileRouteHeader.title}
+              backTo={mobileHeaderRegistration.backTo ?? mobileRouteHeader.backTo}
+              actions={mobileHeaderRegistration.actions}
+              leading={mobileHeaderRegistration.leading}
+              onBack={(path) => navigate(path)}
+            />
+          ) : null}
+          {!hideTopBarOnMobile &&
+          mobileRouteHeader &&
+          mobileHeaderRegistration.panel ? (
+            <div className="bg-white px-4 pb-3 md:hidden">
+              {mobileHeaderRegistration.panel}
+            </div>
+          ) : null}
+          <main className="app-content-shell flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              className={`flex min-h-0 flex-1 flex-col ${
+                hideTopBarOnMobile ? "" : "pb-[4.5rem] md:pb-0"
+              }`}
+            >
+              <Outlet />
+            </div>
+          </main>
+          {!hideBottomNavOnMobile ? <MobileBottomNav /> : null}
+        </div>
+
+        <NotificationListWrapper />
+        <IncomingCallWindow />
+        <ActiveCallWindow />
+      </div>
     </MobileHeaderActionsContext.Provider>
   );
 };

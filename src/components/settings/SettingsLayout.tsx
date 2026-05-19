@@ -74,7 +74,11 @@ export const SettingsLayout = ({
       : undefined;
   const desktopHeaderLeading =
     mobileHeaderRegistration.backTo || mobileHeaderRegistration.leading ? (
-      <div className="flex items-center gap-2">
+      <div
+        className={`flex items-center gap-2 ${
+          desktopHeaderEyebrow ? "pt-5" : ""
+        }`}
+      >
         {mobileHeaderRegistration.backTo ? (
           <BackButton
             ariaLabel="Back"

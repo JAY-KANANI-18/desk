@@ -36,6 +36,14 @@ export function delay(ms: number) {
   });
 }
 
+function isIntegrationsReturnUrl(href?: string | null) {
+  return Boolean(
+    href &&
+      (href.includes("/integrations") ||
+        href.includes("/workspace/settings/integrations")),
+  );
+}
+
 export async function connectMetaAdsViaPopup() {
   const start = (await workspaceApi.getMetaAdsOAuthUrl()) as {
     url?: string;
@@ -130,10 +138,7 @@ function waitForMetaAdsOAuthPopup(
         }
 
         const href = popup.location.href;
-        if (
-          href?.includes("/workspace/settings/integrations") &&
-          href.includes("oauthProvider=meta_ads")
-        ) {
+        if (isIntegrationsReturnUrl(href) && href.includes("oauthProvider=meta_ads")) {
           const url = new URL(href);
           popup.close();
           cleanup();
@@ -244,10 +249,7 @@ function waitForShopifyOAuthPopup(
         }
 
         const href = popup.location.href;
-        if (
-          href?.includes("/workspace/settings/integrations") &&
-          href.includes("oauthProvider=shopify")
-        ) {
+        if (isIntegrationsReturnUrl(href) && href.includes("oauthProvider=shopify")) {
           const url = new URL(href);
           popup.close();
           cleanup();

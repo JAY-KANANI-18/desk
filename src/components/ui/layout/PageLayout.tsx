@@ -4,6 +4,7 @@ import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
 
 export interface PageLayoutProps {
   leading?: ReactNode;
+  titleLeading?: ReactNode;
   eyebrow?: ReactNode;
   title: string;
   subtitle?: string;
@@ -21,6 +22,7 @@ export interface PageLayoutProps {
 
 export function PageLayout({
   leading,
+  titleLeading,
   eyebrow,
   title,
   subtitle,
@@ -81,15 +83,36 @@ export function PageLayout({
               </p>
             ) : null}
 
-            <h1 className="truncate text-2xl font-semibold text-[var(--color-gray-900)]">
-              {title}
-            </h1>
+            {titleLeading ? (
+              <div className="flex min-w-0 items-start gap-2.5">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center pt-0.5">
+                  {titleLeading}
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate text-2xl font-semibold text-[var(--color-gray-900)]">
+                    {title}
+                  </h1>
 
-            {subtitle ? (
-              <p className="mt-[var(--spacing-xs)] max-w-3xl text-sm text-[var(--color-gray-500)]">
-                {subtitle}
-              </p>
-            ) : null}
+                  {subtitle ? (
+                    <p className="mt-[var(--spacing-xs)] max-w-3xl text-sm text-[var(--color-gray-500)]">
+                      {subtitle}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="truncate text-2xl font-semibold text-[var(--color-gray-900)]">
+                  {title}
+                </h1>
+
+                {subtitle ? (
+                  <p className="mt-[var(--spacing-xs)] max-w-3xl text-sm text-[var(--color-gray-500)]">
+                    {subtitle}
+                  </p>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
 

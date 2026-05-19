@@ -7,7 +7,6 @@ import {
   CircleUserRound,
   GitBranch,
   Key,
-  Link,
   MessageSquareText,
   RadioTower,
   
@@ -71,13 +70,6 @@ export const workspaceSettingsConfig: SettingsModuleConfig = {
           icon: <AlignLeft size={22} />,
           permission: { ws: "ws:shortcuts:manage" },
           to: "/workspace/settings/snippets",
-        },
-        {
-          id: "workspace-integrations",
-          label: "Integrations",
-          icon: <Link size={22} weight="regular" />,
-          permission: { ws: "ws:channels:manage" },
-          to: "/workspace/settings/integrations",
         },
       ],
     },

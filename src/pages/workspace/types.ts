@@ -69,8 +69,11 @@ export interface Integration {
   status?: string;
   integrationId?: string | null;
   routingChannelId?: string | null;
+  externalAccountId?: string | null;
+  externalAccountName?: string | null;
   webhookPath?: string | null;
   health?: unknown;
+  connectedAt?: string | null;
   lastSyncedAt?: string | null;
   lastWebhookAt?: string | null;
   actions?: {

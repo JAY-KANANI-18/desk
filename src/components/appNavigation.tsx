@@ -1,9 +1,10 @@
-import type { AppIcon } from "@/components/ui/icons";
+import type { AppIcon, IconProps } from "@/components/ui/icons";
 import {
   ChartColumnBig,
   Bot,
   ContactRound,
   LayoutDashboard,
+  Link,
   Megaphone,
   MessageCircleMore,
   RadioTower,
@@ -17,6 +18,7 @@ export type AppNavItem = {
   icon: AppIcon;
   label: string;
   path: string;
+  activeIconWeight?: IconProps["weight"];
   ws?: WorkspacePermission;
   mobile?: boolean;
   feature?: FeatureFlagName;
@@ -87,6 +89,14 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: "Channels",
     path: "/channels",
     ws: "ws:settings:view",
+    mobile: true,
+  },
+  {
+    icon: Link,
+    label: "Integrations",
+    path: "/integrations",
+    activeIconWeight: "regular",
+    ws: "ws:channels:manage",
     mobile: true,
   },
 ];

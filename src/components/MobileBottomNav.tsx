@@ -36,11 +36,12 @@ export function MobileBottomNav() {
     matchPath("/inbox/:conversationId", location.pathname),
   );
 
-  const isSettingsRouteActive = settingsLinks.some(
-    (link) =>
-      location.pathname === link.path ||
-      location.pathname.startsWith(`${link.path}/`),
-  );
+  const isSettingsRouteActive =
+    settingsLinks.some(
+      (link) =>
+        location.pathname === link.path ||
+        location.pathname.startsWith(`${link.path}/`),
+    );
 
   const showGetStartedTab = !dismissed && !isComplete;
 
@@ -189,6 +190,9 @@ export function MobileBottomNav() {
       isActive ? "text-[var(--color-primary)]" : "text-slate-500"
     }`;
 
+    const activeIconWeight =
+      "activeIconWeight" in item ? item.activeIconWeight : undefined;
+
     const labelClassName = `relative z-10 text-[11px] leading-none whitespace-nowrap transition-colors duration-300 ${
       isActive ? "font-semibold text-[var(--color-primary)]" : "text-slate-500"
     }`;
@@ -197,7 +201,7 @@ export function MobileBottomNav() {
       <div className="flex h-[64px] flex-col items-center justify-center gap-1.5">
         <item.icon
           size={24}
-          weight={isActive ? "fill" : "regular"}
+          weight={isActive ? activeIconWeight ?? "fill" : "regular"}
           className={iconClassName}
         />
         <span className={labelClassName}>
