@@ -32,6 +32,8 @@ export function SelectableCard({
   size = "lg",
   radius = "lg",
   fullWidth = true,
+  className,
+  style,
   ...props
 }: SelectableCardProps) {
   const resolvedIndicator = indicator ?? (
@@ -56,11 +58,16 @@ export function SelectableCard({
       size={size}
       radius={radius}
       fullWidth={fullWidth}
+      className={["max-w-full min-w-0", className].filter(Boolean).join(" ")}
       contentAlign="start"
       preserveChildLayout
       aria-pressed={selected}
+      style={{
+        whiteSpace: "normal",
+        ...style,
+      }}
     >
-      <div className="flex w-full items-center justify-between gap-3 text-left">
+      <div className="flex w-full min-w-0 items-center justify-between gap-3 text-left">
         <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
           {leading ? (
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-gray-500 transition-all">
@@ -97,7 +104,9 @@ export function SelectableCard({
           </div>
         </div>
 
-        {showIndicator ? <span className="ml-3 shrink-0">{resolvedIndicator}</span> : null}
+        {showIndicator ? (
+          <span className="ml-1 shrink-0 sm:ml-3">{resolvedIndicator}</span>
+        ) : null}
       </div>
     </Button>
   );

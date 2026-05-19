@@ -112,6 +112,11 @@ export const NODE_X_CENTER = 400;
 export const TRIGGER_Y = 80;
 const FIT_VIEW_PADDING = 0.5;
 const FIT_VIEW_MAX_ZOOM = 0.95;
+const WORKFLOW_MIN_ZOOM = 0.5;
+const WORKFLOW_MAX_ZOOM = 2;
+const TOUCHPAD_ZOOM_DELTA_THRESHOLD = 50;
+const TOUCHPAD_ZOOM_DELTA_CLAMP = 28;
+const TOUCHPAD_ZOOM_SENSITIVITY = 0.012;
 
 type PendingNavigation =
   | { kind: "route"; to: string; replace?: boolean }
@@ -167,6 +172,10 @@ function getNodeDataHeight(data: unknown) {
 
   const height = (data as { height?: unknown }).height;
   return typeof height === "number" ? height : undefined;
+}
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function isPreviewChannel(
@@ -1046,6 +1055,7 @@ export function WorkflowCanvas() {
   const addMenu = useDisclosure();
   const insertCtxRef = useRef<InsertCtx | null>(null);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const structureSignatureRef = useRef<string | null>(null);
   const stepCounter = useRef(1);
   const jumpHighlightTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
@@ -1097,6 +1107,63 @@ export function WorkflowCanvas() {
   const currentUrl = useMemo(
     () => `${location.pathname}${location.search}${location.hash}`,
     [location.hash, location.pathname, location.search],
+  );
+
+  const handleCanvasWheel = useCallback(
+    (event: WheelEvent) => {
+      const instance = reactFlowRef.current;
+      const target = event.target as Element | null;
+      const canvasViewport = canvasViewportRef.current;
+      const shouldHandleTouchpadZoom =
+        event.ctrlKey ||
+        (
+          event.deltaMode === 0 &&
+          Math.abs(event.deltaY) < TOUCHPAD_ZOOM_DELTA_THRESHOLD
+        );
+
+      if (
+        !instance ||
+        !canvasViewport ||
+        !shouldHandleTouchpadZoom ||
+        target?.closest(".nowheel")
+      ) {
+        return;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      const paneBounds = canvasViewport.getBoundingClientRect();
+      const viewport = instance.getViewport();
+      const pointer = {
+        x: event.clientX - paneBounds.left,
+        y: event.clientY - paneBounds.top,
+      };
+      const flowPoint = {
+        x: (pointer.x - viewport.x) / viewport.zoom,
+        y: (pointer.y - viewport.y) / viewport.zoom,
+      };
+      const wheelDelta = clampValue(
+        event.deltaY,
+        -TOUCHPAD_ZOOM_DELTA_CLAMP,
+        TOUCHPAD_ZOOM_DELTA_CLAMP,
+      );
+      const zoom = clampValue(
+        viewport.zoom * Math.exp(-wheelDelta * TOUCHPAD_ZOOM_SENSITIVITY),
+        WORKFLOW_MIN_ZOOM,
+        WORKFLOW_MAX_ZOOM,
+      );
+
+      instance.setViewport({
+        x: pointer.x - flowPoint.x * zoom,
+        y: pointer.y - flowPoint.y * zoom,
+        zoom,
+      });
+    },
+    [],
   );
 
   const loadWorkspaceTags = useCallback(async () => {
@@ -1295,6 +1362,25 @@ export function WorkflowCanvas() {
   useEffect(() => {
     currentUrlRef.current = currentUrl;
   }, [currentUrl]);
+
+  useEffect(() => {
+    const canvasViewport = canvasViewportRef.current;
+
+    if (!canvasViewport) {
+      return undefined;
+    }
+
+    canvasViewport.addEventListener("wheel", handleCanvasWheel, {
+      capture: true,
+      passive: false,
+    });
+
+    return () => {
+      canvasViewport.removeEventListener("wheel", handleCanvasWheel, {
+        capture: true,
+      });
+    };
+  }, [handleCanvasWheel]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -1610,7 +1696,7 @@ export function WorkflowCanvas() {
       />
 
       <div className="flex min-h-0 flex-1">
-        <div className="min-h-0 flex-1">
+        <div ref={canvasViewportRef} className="min-h-0 flex-1">
           <ReactFlow
             nodes={rfNodes}
             edges={rfEdges}
@@ -1623,6 +1709,8 @@ export function WorkflowCanvas() {
             }}
             fitView
             fitViewOptions={{ padding: FIT_VIEW_PADDING, maxZoom: FIT_VIEW_MAX_ZOOM }}
+            minZoom={WORKFLOW_MIN_ZOOM}
+            maxZoom={WORKFLOW_MAX_ZOOM}
             nodesDraggable={false}
             nodesConnectable={false}
             edgesFocusable={false}

@@ -66,7 +66,7 @@ const STEP_SUPPORT_TEXT: Record<OnboardingStepKey, string> = {
   channels: "Select all the channels you use today.",
   primaryGoal: "Choose the main outcome you want first.",
   painPoint: "We'll help you solve this first.",
-  workspaceName: "This becomes your workspace URL.",
+  // workspaceName: "This becomes your workspace URL.",
   profile: "This helps personalize the workspace.",
 };
 
@@ -688,10 +688,10 @@ export const OnboardingMinimalFlow = () => {
               leftIcon={<Building2 size={16} />}
             />
 
-            <p className="text-center text-sm text-gray-500">
+            {/* <p className="text-center text-sm text-gray-500">
               <span className="font-medium text-gray-900">{workspaceSlug}</span>
               <span className="text-gray-400">.axodesk.com</span>
-            </p>
+            </p> */}
           </div>
         );
 
@@ -841,7 +841,7 @@ export const OnboardingMinimalFlow = () => {
               </p>
             </div>
 
-            <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto overscroll-contain py-2 sm:py-3">
+            <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto overflow-x-hidden overscroll-contain py-2 sm:py-3">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={currentStepConfig.key}
@@ -850,7 +850,7 @@ export const OnboardingMinimalFlow = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: direction > 0 ? -20 : 20 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="mx-auto w-full max-w-[28rem] overflow-visible px-1 py-1"
+                  className="mx-auto w-full min-w-0 max-w-[28rem] overflow-hidden px-1 py-1"
                 >
                   {renderStep()}
                 </motion.div>
