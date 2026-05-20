@@ -143,6 +143,7 @@ export function ConversationList({
     resetFilters,
     convSearch,
     setConvSearch,
+    conversationCounts,
     selectedConversation,
     lifecycles,
     fetchLifecycles,
@@ -200,10 +201,18 @@ useEffect(() => {
     void fetchLifecycles();
   }, [fetchLifecycles, filters.lifecycleId, lifecycles.length]);
 
-  const totalUnread = convList.reduce(
+  const visibleListUnread = convList.reduce(
     (sum, conversation) => sum + (conversation.unreadCount ?? 0),
     0,
   );
+  const totalUnread =
+    filters.assigneeId === "me"
+      ? conversationCounts.mine.unread
+      : filters.assigneeId === "unassigned"
+        ? conversationCounts.unassigned.unread
+        : filters.lifecycleId != null
+          ? visibleListUnread
+          : conversationCounts.all.unread;
   const activeCategoryLabel = getActiveCategoryLabel(filters, lifecycles as any);
   const showChannelsLoadingState = channelsLoading && convList.length === 0;
   const showNoChannelsState =

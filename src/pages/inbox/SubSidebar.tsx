@@ -13,8 +13,10 @@ import { IconButton } from "../../components/ui/button/IconButton";
 import { useInbox } from "../../context/InboxContext";
 import type { ConvStatus } from "../../lib/inboxApi";
 
+type SectionId = "all" | "mine" | "unassigned";
+
 interface SidebarItem {
-  id: string;
+  id: SectionId;
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
   filter?: Partial<{
@@ -22,7 +24,6 @@ interface SidebarItem {
     assigneeId: string;
     unreplied: boolean;
   }>;
-  shortcut?: string;
 }
 
 interface LifecycleItem {
@@ -38,21 +39,18 @@ const SECTIONS: SidebarItem[] = [
     id: "all",
     label: "All",
     icon: Inbox,
-    shortcut: "1",
   },
   {
     id: "mine",
     label: "Mine",
     icon: UserCircle2,
     filter: { assigneeId: "me" },
-    shortcut: "2",
   },
   {
     id: "unassigned",
     label: "Unassigned",
     icon: UserMinus,
     filter: { assigneeId: "unassigned" },
-    shortcut: "3",
   },
 ];
 
@@ -104,14 +102,7 @@ function SidebarItemBtn({
         <span className="min-w-0 flex-1 truncate text-left text-xs font-medium">
           {item.label}
         </span>
-        <span className="flex items-center gap-1.5">
-          {item.shortcut ? (
-            <kbd className="hidden items-center rounded bg-gray-100 px-1 py-0.5 font-mono text-[9px] text-gray-400 group-hover:inline-flex">
-              {item.shortcut}
-            </kbd>
-          ) : null}
-          <CountBadge count={count} />
-        </span>
+        <CountBadge count={count} aria-label={`${count} unread`} />
       </span>
     </Button>
   );
@@ -196,7 +187,7 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 export function SubSidebar() {
-  const { filters, setFilters, convList, lifecycles, fetchLifecycles } = useInbox();
+  const { filters, setFilters, conversationCounts, lifecycles, fetchLifecycles } = useInbox();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -214,18 +205,10 @@ export function SubSidebar() {
     return "all";
   })();
 
-  const unreadBySection: Record<string, number> = {
-    all: convList.reduce((sum, conversation) => sum + conversation.unreadCount, 0),
-    mine: convList
-      .filter((conversation) => conversation.contact?.assigneeId != null)
-      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
-    unassigned: convList
-      .filter((conversation) => conversation.contact?.assigneeId == null)
-      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
-    unreplied: convList.filter((conversation) => conversation.unreadCount > 0).length,
-    pending: convList.filter((conversation) => conversation.contact?.status === "pending").length,
-    resolved: convList.filter((conversation) => conversation.contact?.status === "resolved").length,
-    closed: convList.filter((conversation) => conversation.contact?.status === "closed").length,
+  const unreadBySection: Record<SectionId, number> = {
+    all: conversationCounts.all.unread,
+    mine: conversationCounts.mine.unread,
+    unassigned: conversationCounts.unassigned.unread,
   };
 
   const handleSelectSection = (item: SidebarItem) => {
@@ -296,7 +279,7 @@ export function SubSidebar() {
                 key={item.id}
                 item={item}
                 isActive={activeId === String(item.id)}
-                count={unreadBySection[String(item.id)]}
+                count={undefined}
                 collapsed={collapsed}
                 onClick={() => handleSelectLifecycle(item)}
               />
@@ -309,7 +292,7 @@ export function SubSidebar() {
             key={item.id}
             item={item}
             isActive={activeId === String(item.id)}
-            count={unreadBySection[String(item.id)]}
+            count={undefined}
             collapsed={collapsed}
             onClick={() => handleSelectLifecycle(item)}
           />

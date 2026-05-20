@@ -201,12 +201,24 @@ export interface ConversationFilters {
   search?: string;           // contact name / email / phone search
   cursor?: string;           // for cursor pagination
   limit?: number;
+  lifecycleId?: string | number | null;
 }
 
 export interface PaginatedConversations {
   data: ApiConversation[];
   nextCursor?: string;
   total: number;
+}
+
+export interface ConversationCountBucket {
+  total: number;
+  unread: number;
+}
+
+export interface ConversationCountSummary {
+  all: ConversationCountBucket;
+  mine: ConversationCountBucket;
+  unassigned: ConversationCountBucket;
 }
 
 export interface MessageSearchResult {
@@ -299,6 +311,20 @@ export const inboxApi = {
     });
     const qs = params.toString();
     return api.get(`/conversations${qs ? `?${qs}` : ""}`, options);
+  },
+
+  getConversationCounts(
+    filters: ConversationFilters = {},
+    options?: RequestInit,
+  ): Promise<ConversationCountSummary> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "" && v !== "all") {
+        params.set(k, String(v));
+      }
+    });
+    const qs = params.toString();
+    return api.get(`/conversations/counts${qs ? `?${qs}` : ""}`, options);
   },
 
   /**

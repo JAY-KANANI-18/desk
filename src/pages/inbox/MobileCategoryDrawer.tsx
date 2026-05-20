@@ -12,8 +12,10 @@ type LifecycleItem = {
   type: "lifecycle" | "lost";
 };
 
+type SectionId = "all" | "mine" | "unassigned";
+
 type SidebarItem = {
-  id: string;
+  id: SectionId;
   label: string;
   icon: React.ElementType;
   filter?: Partial<{
@@ -88,7 +90,7 @@ export function MobileCategoryDrawer({
   open,
   onClose,
 }: MobileCategoryDrawerProps) {
-  const { filters, setFilters, convList, lifecycles, fetchLifecycles } = useInbox();
+  const { filters, setFilters, conversationCounts, lifecycles, fetchLifecycles } = useInbox();
 
   useEffect(() => {
     if (!open) return;
@@ -107,14 +109,10 @@ export function MobileCategoryDrawer({
     return "all";
   })();
 
-  const unreadBySection: Record<string, number> = {
-    all: convList.reduce((sum, conversation) => sum + conversation.unreadCount, 0),
-    mine: convList
-      .filter((conversation) => conversation.contact?.assigneeId != null)
-      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
-    unassigned: convList
-      .filter((conversation) => conversation.contact?.assigneeId == null)
-      .reduce((sum, conversation) => sum + conversation.unreadCount, 0),
+  const unreadBySection: Record<SectionId, number> = {
+    all: conversationCounts.all.unread,
+    mine: conversationCounts.mine.unread,
+    unassigned: conversationCounts.unassigned.unread,
   };
 
   const lifecycleStages = lifecycles.filter(

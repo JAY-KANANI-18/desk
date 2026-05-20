@@ -32,6 +32,11 @@ export type IntegrationTabId =
   | "overview"
   | "ads"
   | "commerce"
+  | "customers"
+  | "orders"
+  | "products"
+  | "carts"
+  | "checkouts"
   | "payments"
   | "mapping"
   | "webhooks"
@@ -124,7 +129,11 @@ export const INTEGRATION_METADATA: IntegrationMetadata[] = [
     plannedDomains: ["commerce", "automation"],
     tabs: tabs(
       overviewTab,
-      { id: "commerce", label: "Store Data" },
+      { id: "customers", label: "Customers" },
+      { id: "orders", label: "Orders" },
+      { id: "products", label: "Products" },
+      { id: "carts", label: "Carts" },
+      { id: "checkouts", label: "Checkouts" },
       webhooksTab,
       activityTab,
       settingsTab,

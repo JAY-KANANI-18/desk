@@ -72,6 +72,13 @@ export interface WorkflowAiBuilderChatResponse {
   };
 }
 
+export type IntegrationCommerceResourceType =
+  | "customers"
+  | "orders"
+  | "products"
+  | "carts"
+  | "checkouts";
+
 
 /* =========================================================
    Workspace API
@@ -271,6 +278,20 @@ export const workspaceApi = {
     if (params?.type) query.set("type", params.type);
     const suffix = query.toString();
     return api.get(`/integrations/${integrationId}/resources${suffix ? `?${suffix}` : ""}`);
+  },
+
+  getIntegrationCommerceRecords: (
+    integrationId: string,
+    resourceType: IntegrationCommerceResourceType,
+    params?: { page?: number; limit?: number },
+  ) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const suffix = query.toString();
+    return api.get(
+      `/integrations/${integrationId}/commerce/${resourceType}${suffix ? `?${suffix}` : ""}`,
+    );
   },
 
   updateIntegrationResource: (

@@ -40,6 +40,7 @@ import {
   ApiTimelineItem,
   TimelineWindowResult,
   ConversationFilters,
+  ConversationCountSummary,
   ConvStatus,
   ConvPriority,
 } from "../lib/inboxApi";
@@ -75,8 +76,11 @@ export interface InboxContextType {
   convList: ApiConversation[];
   convLoading: boolean;
   hasMoreConvs: boolean;
+  conversationCounts: ConversationCountSummary;
+  conversationCountsLoading: boolean;
   loadMoreConversations: () => void;
   refreshConversations: () => Promise<ApiConversation[]>;
+  refreshConversationCounts: () => Promise<ConversationCountSummary | null>;
 
   /* Filters */
   filters: InboxFilters;
@@ -159,7 +163,7 @@ export interface InboxContextType {
 ══════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_FILTERS: InboxFilters = {
-  // status: "open",
+  status: "open",
   // priority: "all",
   // direction: "all",
   // // channelType: "all",
@@ -168,6 +172,30 @@ const DEFAULT_FILTERS: InboxFilters = {
   // unreplied: false,
   limit: 25,
 };
+
+const DEFAULT_CONVERSATION_COUNTS: ConversationCountSummary = {
+  all: { total: 0, unread: 0 },
+  mine: { total: 0, unread: 0 },
+  unassigned: { total: 0, unread: 0 },
+};
+
+function buildConversationCountFilters(
+  filters: InboxFilters,
+  search: string,
+): ConversationFilters {
+  const {
+    assigneeId: _assigneeId,
+    lifecycleId: _lifecycleId,
+    cursor: _cursor,
+    limit: _limit,
+    ...countFilters
+  } = filters;
+
+  return {
+    ...countFilters,
+    search: search || undefined,
+  };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -270,9 +298,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
   const [convLoading, setConvLoading] = useState(false);
   const [nextConvCursor, setNextConvCursor] = useState<string | undefined>();
   const [hasMoreConvs, setHasMoreConvs] = useState(false);
+  const [conversationCounts, setConversationCounts] =
+    useState<ConversationCountSummary>(DEFAULT_CONVERSATION_COUNTS);
+  const [conversationCountsLoading, setConversationCountsLoading] = useState(false);
   const conversationRequestIdRef = useRef(0);
   const conversationAbortRef = useRef<AbortController | null>(null);
   const conversationLoadingRef = useRef(false);
+  const conversationCountsRequestIdRef = useRef(0);
+  const conversationCountsAbortRef = useRef<AbortController | null>(null);
 
   /* ── Selected conversation ── */
   const [selectedConversation, setSelectedConversation] =
@@ -439,11 +472,49 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [wsId, filters, convSearch]);
 
+  const refreshConversationCounts = useCallback(async () => {
+    if (!wsId) {
+      setConversationCounts(DEFAULT_CONVERSATION_COUNTS);
+      return null;
+    }
+
+    const requestId = conversationCountsRequestIdRef.current + 1;
+    conversationCountsRequestIdRef.current = requestId;
+    conversationCountsAbortRef.current?.abort();
+    const controller = new AbortController();
+    conversationCountsAbortRef.current = controller;
+    setConversationCountsLoading(true);
+
+    try {
+      const result = await inboxApi.getConversationCounts(
+        buildConversationCountFilters(filters, convSearch),
+        { signal: controller.signal },
+      );
+      if (requestId !== conversationCountsRequestIdRef.current) return null;
+      setConversationCounts(result);
+      return result;
+    } catch (err) {
+      if (controller.signal.aborted) return null;
+      return null;
+    } finally {
+      if (requestId === conversationCountsRequestIdRef.current) {
+        if (conversationCountsAbortRef.current === controller) {
+          conversationCountsAbortRef.current = null;
+        }
+        setConversationCountsLoading(false);
+      }
+    }
+  }, [wsId, filters, convSearch]);
+
   /* Initial load + re-load when filters change */
   useEffect(() => {
     fetchConversations(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wsId, filters, convSearch]);
+
+  useEffect(() => {
+    void refreshConversationCounts();
+  }, [refreshConversationCounts]);
 
   const loadMoreConversations = useCallback(() => {
     if (!conversationLoadingRef.current && hasMoreConvs) fetchConversations(false);
@@ -453,6 +524,8 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       conversationRequestIdRef.current += 1;
       conversationAbortRef.current?.abort();
+      conversationCountsRequestIdRef.current += 1;
+      conversationCountsAbortRef.current?.abort();
     };
   }, []);
 
@@ -738,6 +811,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           ...rest,
         ];
       });
+      void refreshConversationCounts();
 
       if (message.conversationId !== selectedConvIdRef.current) {
         notifyRef.current({
@@ -806,6 +880,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           prev ? mergeConversation(prev, conv) : conv,
         );
       }
+      void refreshConversationCounts();
 
       if (conv.contact && conv.contact.id === selectedContactRef.current?.id) {
         setSelectedContact((prev: any) =>
@@ -854,6 +929,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           : prev,
       );
+      void refreshConversationCounts();
     };
 
     const onContactMerged = async (payload: {
@@ -866,6 +942,7 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (mergedIds.size > 0) {
         setConvList((prev) => prev.filter((conv) => !mergedIds.has(conv.id)));
+        void refreshConversationCounts();
       }
 
       const selectedConvId = selectedConvIdRef.current;
@@ -938,7 +1015,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("activity", onActivity);
       socket.off("contact:merged", onContactMerged);
     };
-  }, [socket, activeWorkspace?.id, fetchConversations, refreshConversations, fetchLatestTimeline]);
+  }, [
+    socket,
+    activeWorkspace?.id,
+    fetchConversations,
+    refreshConversations,
+    refreshConversationCounts,
+    fetchLatestTimeline,
+  ]);
 
   /* ══════════════════════════════════════════════════════════════
      SEND MESSAGE
@@ -1135,19 +1219,22 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!wsId || !selectedConversation) return;
     await inboxApi.close(wsId, selectedConversation.id);
     updateSelectedContactStatus("closed");
-  }, [wsId, selectedConversation]);
+    void refreshConversationCounts();
+  }, [wsId, selectedConversation, refreshConversationCounts]);
 
   const openConversation = useCallback(async () => {
     if (!wsId || !selectedConversation) return;
     await inboxApi.open(wsId, selectedConversation.id);
     updateSelectedContactStatus("open");
-  }, [wsId, selectedConversation]);
+    void refreshConversationCounts();
+  }, [wsId, selectedConversation, refreshConversationCounts]);
 
   const setPendingConversation = useCallback(async () => {
     if (!wsId || !selectedConversation) return;
     await inboxApi.setPending(wsId, selectedConversation.id);
     updateSelectedContactStatus("pending");
-  }, [wsId, selectedConversation]);
+    void refreshConversationCounts();
+  }, [wsId, selectedConversation, refreshConversationCounts]);
 
   const assignUser = useCallback(
     async (userId: string | null) => {
@@ -1163,8 +1250,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           contact: { ...selectedConversation.contact, assigneeId: undefined },
         });
       }
+      void refreshConversationCounts();
     },
-    [wsId, selectedConversation],
+    [wsId, selectedConversation, refreshConversationCounts],
   );
 
   const assignTeam = useCallback(
@@ -1181,8 +1269,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
           contact: { ...selectedConversation.contact, teamId: undefined },
         });
       }
+      void refreshConversationCounts();
     },
-    [wsId, selectedConversation],
+    [wsId, selectedConversation, refreshConversationCounts],
   );
 
   const setPriority = useCallback(
@@ -1190,8 +1279,9 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!wsId || !selectedConversation) return;
       await inboxApi.setPriority(wsId, selectedConversation.id, priority);
       updateSelectedConv({ priority });
+      void refreshConversationCounts();
     },
-    [wsId, selectedConversation],
+    [wsId, selectedConversation, refreshConversationCounts],
   );
 
   /* ══════════════════════════════════════════════════════════════
@@ -1259,7 +1349,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       setSelectedChannel(matchedChannel ?? contactScopedChannels[0] ?? channels?.[0] ?? null);
 
       // Mark read
-      if (wsId) inboxApi.markRead(wsId, conv.id).catch(() => {});
+      if (wsId) {
+        inboxApi
+          .markRead(wsId, conv.id)
+          .then(() => {
+            void refreshConversationCounts();
+          })
+          .catch(() => {});
+      }
 
       // Zero unread in list
       setConvList((prev) =>
@@ -1317,7 +1414,14 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
     },
-    [wsId, channels, fetchLatestTimeline, fetchTimelineAroundMessage, clearChannelIdentityConflict],
+    [
+      wsId,
+      channels,
+      fetchLatestTimeline,
+      fetchTimelineAroundMessage,
+      clearChannelIdentityConflict,
+      refreshConversationCounts,
+    ],
   );
 
   /* ── Channel helpers ── */
@@ -1447,8 +1551,11 @@ export const InboxProvider: React.FC<{ children: React.ReactNode }> = ({
         convList,
         convLoading,
         hasMoreConvs,
+        conversationCounts,
+        conversationCountsLoading,
         loadMoreConversations,
         refreshConversations,
+        refreshConversationCounts,
         filters,
         lifecycles,
         setFilters,
