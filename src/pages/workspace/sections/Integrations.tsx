@@ -381,12 +381,10 @@ export const Integrations = () => {
       ) : (
         <div className="space-y-8">
           {connectionItems.length ? (
-            <section className="space-y-3">
+            <section className="space-y-4">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">My integrations</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Connected stores and ad accounts AxoDesk is using now.
-                </p>
+        
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {connectionItems.map((integration) => (
@@ -401,12 +399,10 @@ export const Integrations = () => {
             </section>
           ) : null}
 
-          <section className="space-y-3">
+          <section className="space-y-4">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Available integrations</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Add another supported store or ad account whenever you need it.
-              </p>
+           
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {availableItems.map((integration) => (

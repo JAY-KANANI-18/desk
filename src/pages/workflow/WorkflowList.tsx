@@ -277,7 +277,7 @@ export function WorkflowList() {
   const handleRequestCreateFromScratch = useCallback(() => {
     setMobileCreateMenuOpen(false);
     setDesktopCreateMenuOpen(false);
-    setScratchWorkflowName('Untitled Workflow');
+    setScratchWorkflowName('');
     setScratchNameError('');
     setScratchNameModalOpen(true);
   }, []);

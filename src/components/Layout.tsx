@@ -35,6 +35,7 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
   {
     path: "/integrations",
     title: "Integrations",
+    backTo: "/more",
   },
   {
     path: "/integrations/:providerId",
