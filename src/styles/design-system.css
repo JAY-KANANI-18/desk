@@ -131,6 +131,17 @@ body {
   min-height: 100dvh;
 }
 
+@media (max-width: 767px) {
+  html,
+  body,
+  #app,
+  .app-shell,
+  .app-main-shell,
+  .app-content-shell {
+    background-color: #ffffff;
+  }
+}
+
 html[data-appearance-theme="dark"] {
   color-scheme: dark;
   --appearance-bg: #0c0e14;
