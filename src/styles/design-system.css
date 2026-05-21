@@ -1539,3 +1539,25 @@ html[data-appearance-contrast="high"] *:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  overscroll-behavior: none;
+}
+body {
+  padding-top: env(safe-area-inset-top);
+}
+
+body {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+html {
+  background: white;
+}
