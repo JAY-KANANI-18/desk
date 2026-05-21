@@ -29,7 +29,7 @@ export default defineConfig({
         short_name: "Axodesk",
         description:
           "Enterprise omnichannel inbox for customer conversations, workflows, contacts, channels, and team collaboration.",
-        theme_color: "#4f46e5",
+        theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",

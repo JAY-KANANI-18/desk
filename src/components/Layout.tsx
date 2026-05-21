@@ -163,13 +163,19 @@ export const Layout = () => {
   const isInboxConversationRoute = Boolean(
     matchPath("/inbox/:conversationId", location.pathname),
   );
-  const hideTopBarOnMobile = Boolean(
+  const isMoreRoute = Boolean(
+    matchPath({ path: "/more", end: true }, location.pathname),
+  );
+  const hideRouteChromeOnMobile = Boolean(
     isInboxRoute || isWorkflowBuilderRoute,
   );
+  const hideAppTopBarOnMobile = !isMoreRoute;
   const hideBottomNavOnMobile = Boolean(
     isInboxConversationRoute || isWorkflowBuilderRoute,
   );
   const mobileRouteHeader = getMobileRouteHeader(location.pathname);
+  const showMobileRouteHeader =
+    !hideRouteChromeOnMobile && Boolean(mobileRouteHeader);
   const clearMobileHeaderRegistration = useCallback(
     () => setMobileHeaderRegistration({}),
     [],
@@ -208,10 +214,10 @@ export const Layout = () => {
         </div>
 
         <div className="app-main-shell flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className={hideTopBarOnMobile ? "hidden md:block" : "block"}>
+          <div className={hideAppTopBarOnMobile ? "hidden md:block" : "block"}>
             <TopBar onOpenSidebar={() => setSidebarOpen(true)} />
           </div>
-          {!hideTopBarOnMobile && mobileRouteHeader ? (
+          {showMobileRouteHeader && mobileRouteHeader ? (
             <MobileRouteHeader
               eyebrow={mobileHeaderRegistration.eyebrow ?? mobileRouteHeader.eyebrow}
               title={mobileHeaderRegistration.title ?? mobileRouteHeader.title}
@@ -221,9 +227,7 @@ export const Layout = () => {
               onBack={(path) => navigate(path)}
             />
           ) : null}
-          {!hideTopBarOnMobile &&
-          mobileRouteHeader &&
-          mobileHeaderRegistration.panel ? (
+          {showMobileRouteHeader && mobileHeaderRegistration.panel ? (
             <div className="bg-white px-4 pb-3 md:hidden">
               {mobileHeaderRegistration.panel}
             </div>
@@ -231,7 +235,7 @@ export const Layout = () => {
           <main className="app-content-shell flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
               className={`flex min-h-0 flex-1 flex-col ${
-                hideTopBarOnMobile ? "" : "pb-[4.5rem] md:pb-0"
+                hideRouteChromeOnMobile ? "" : "pb-[4.5rem] md:pb-0"
               }`}
             >
               <Outlet />
