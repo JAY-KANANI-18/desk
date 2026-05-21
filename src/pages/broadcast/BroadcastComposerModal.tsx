@@ -10,7 +10,8 @@ import {
   ChannelSelectMenu,
   LifecycleSelectMenu,
 } from "../../components/ui/Select";
-import { Textarea } from "../../components/ui/Textarea";
+import { VariableHtmlEditor } from "../../components/ui/variable-editor";
+import { getVariableOptionsForContext } from "../../config/variableMetadata";
 import { ResponsiveModal } from "../../components/ui/modal";
 import {
   SnippetSuggestionMenu,
@@ -80,6 +81,7 @@ export function BroadcastComposerModal({
   const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
   const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
   const { snippets, snippetsLoading } = useWorkspaceSnippets();
+  const emailVariables = useMemo(() => getVariableOptionsForContext("broadcast"), []);
   const templateOptions = [
     { value: "", label: "Choose approved message" },
     ...waTemplates.map((template) => ({
@@ -116,7 +118,7 @@ export function BroadcastComposerModal({
     });
   }, [form, onFormChange]);
 
-  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleSnippetKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     if (!snippetMenuOpen) return;
 
     if (event.key === "Escape") {
@@ -290,14 +292,20 @@ export function BroadcastComposerModal({
             onSelect={handleSelectSnippet}
             loading={snippetsLoading}
           />
-          <Textarea
-            label="Message"
-            value={form.text}
-            onChange={(event) => updateBroadcastText(event.target.value)}
-            onKeyDown={handleSnippetKeyDown}
-            rows={4}
-            placeholder="Write the message for this channel..."
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Message</label>
+            <VariableHtmlEditor
+              value={form.text}
+              onChange={updateBroadcastText}
+              onKeyDown={handleSnippetKeyDown}
+              variables={emailVariables}
+              appearance="default"
+              menuPlacement="top"
+              editorClassName="min-h-[128px] text-sm leading-6"
+              placeholder="Write the email... type $ for variables"
+              aria-label="Broadcast email message"
+            />
+          </div>
         </div>
       )}
 

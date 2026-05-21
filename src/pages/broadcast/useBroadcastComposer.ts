@@ -6,6 +6,7 @@ import {
   type BroadcastCommerceAudienceFilters,
   type BroadcastSendResult,
 } from "../../lib/broadcastApi";
+import { richHtmlToPlainText } from "../../components/ui/variable-editor";
 import { useFeatureFlags } from "../../context/FeatureFlagContext";
 import { workspaceApi } from "../../lib/workspaceApi";
 import type {
@@ -250,6 +251,8 @@ export function useBroadcastComposer({
       toast.error("Broadcasts are available for WhatsApp and Email only");
       return null;
     }
+    const emailText = isWhatsApp ? "" : richHtmlToPlainText(form.text);
+
     if (isWhatsApp) {
       if (!selectedTemplate) {
         toast.error("Choose an approved WhatsApp message");
@@ -261,7 +264,7 @@ export function useBroadcastComposer({
           return null;
         }
       }
-    } else if (!form.text.trim()) {
+    } else if (!emailText) {
       toast.error("Write your message");
       return null;
     }
@@ -283,7 +286,8 @@ export function useBroadcastComposer({
       const result = await broadcastApi.send({
         name: form.name.trim(),
         channelId: form.channelId,
-        text: isWhatsApp ? undefined : form.text.trim(),
+        text: isWhatsApp ? undefined : emailText,
+        htmlBody: isWhatsApp ? undefined : form.text,
         template:
           isWhatsApp && selectedTemplate
             ? {

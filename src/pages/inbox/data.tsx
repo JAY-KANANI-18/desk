@@ -1,4 +1,5 @@
 import { CHANNEL_DISPLAY_CONFIG } from "../../config/channelMetadata";
+import { getVariableOptionsForContext } from "../../config/variableMetadata";
 import type { Conversation, CallLog, ChannelConfig } from "./types";
 
 export const conversations: Conversation[] = [
@@ -389,62 +390,7 @@ export const emojiCategories = [
   },
 ];
 
-export const variables = [
-  {
-    key: "contact.name",
-    label: "Contact Name",
-    description: "Full name of the contact",
-    category: "Contact",
-  },
-  {
-    key: "contact.email",
-    label: "Contact Email",
-    description: "Email address of the contact",
-    category: "Contact",
-  },
-  {
-    key: "contact.phone",
-    label: "Contact Phone",
-    description: "Phone number of the contact",
-    category: "Contact",
-  },
-  {
-    key: "contact.company",
-    label: "Company",
-    description: "Contact's company name",
-    category: "Contact",
-  },
-  {
-    key: "agent.name",
-    label: "Agent Name",
-    description: "Assigned agent's name",
-    category: "Agent",
-  },
-  {
-    key: "agent.email",
-    label: "Agent Email",
-    description: "Assigned agent's email",
-    category: "Agent",
-  },
-  {
-    key: "company.name",
-    label: "Company Name",
-    description: "Your company name",
-    category: "Company",
-  },
-  {
-    key: "conversation.id",
-    label: "Conversation ID",
-    description: "Unique conversation ID",
-    category: "System",
-  },
-  {
-    key: "today.date",
-    label: "Today's Date",
-    description: "Current date",
-    category: "System",
-  },
-];
+export const variables = getVariableOptionsForContext("conversation");
 
 export const snoozeOptions = [
   { label: "30 minutes", value: "30m" },

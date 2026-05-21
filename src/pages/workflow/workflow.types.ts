@@ -39,6 +39,99 @@ export interface Workflow {
   updatedAt?: string;
 }
 
+export type WorkflowRunStatus = 'running' | 'waiting' | 'completed' | 'failed' | 'cancelled';
+
+export interface WorkflowRunContactSummary {
+  id: string;
+  firstName: string;
+  lastName?: string | null;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface WorkflowRunTriggerSummary {
+  type: string;
+  label: string;
+  event: string;
+  reference?: string | null;
+}
+
+export interface WorkflowRunProgressSummary {
+  completed: number;
+  failed: number;
+  running: number;
+  pending: number;
+  total: number;
+  percent: number;
+}
+
+export interface WorkflowRunStepEvent {
+  id: string;
+  stepId: string;
+  name: string;
+  type: string;
+  status: string;
+  attempts: number;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  durationMs?: number | null;
+  error?: string | null;
+  input?: unknown;
+  output?: unknown;
+}
+
+export interface WorkflowRunListItem {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  workflowStatus: WorkflowStatus | string;
+  contactId: string;
+  contact: WorkflowRunContactSummary;
+  status: WorkflowRunStatus;
+  currentStepId?: string | null;
+  currentStepName?: string | null;
+  currentStepType?: string | null;
+  trigger: WorkflowRunTriggerSummary;
+  startedAt: string;
+  completedAt?: string | null;
+  failedAt?: string | null;
+  error?: string | null;
+  durationMs: number;
+  progress: WorkflowRunProgressSummary;
+  stepTrail: WorkflowRunStepEvent[];
+  steps?: WorkflowRunStepEvent[];
+  triggerData?: unknown;
+  variables?: unknown;
+}
+
+export interface WorkflowRunSummary {
+  total: number;
+  running: number;
+  waiting: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  active: number;
+  attention: number;
+  successRate: number | null;
+}
+
+export interface WorkflowRunListResponse {
+  items: WorkflowRunListItem[];
+  summary: WorkflowRunSummary;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 export interface WorkflowBuilderUpdate {
   name?: string;
   description?: string | null;
@@ -325,6 +418,7 @@ export interface SendMessageData {
   channelResponses: ChannelResponse[];
   connectors?: string[];
   addMessageFailureBranch: boolean;
+  templateButtonBranching?: boolean;
   attachments?: MessageAttachment[];
   metadata?: SendMessageMetadata;
 }
@@ -718,12 +812,7 @@ export const BRANCH_CATS: { value: BranchCategory; label: string }[] = [
 // Sub-fields per category
 export const SUB_FIELDS: Partial<Record<BranchCategory, { value: string; label: string }[]>> = {
   contact_field: [...WORKFLOW_BRANCH_CONTACT_FIELD_OPTIONS],
-  variable: [
-    { value: 'conversation_id',  label: 'conversation_id' },
-    { value: 'conversation_at',  label: 'conversation_at' },
-    { value: 'last_seen',        label: 'last_seen' },
-    { value: 'created_at',       label: 'created_at' },
-  ],
+  variable: [],
 };
 
 
@@ -757,14 +846,6 @@ export const WEEKDAYS     = ['monday','tuesday','wednesday','thursday','friday',
 export const OPERATORS    = [{ value: 'is_equal_to', label: 'Is equal to' }, { value: 'is_not_equal_to', label: 'Is not equal to' }, { value: 'is_greater_than', label: 'Is greater than' }, { value: 'is_less_than', label: 'Is less than' }, { value: 'is_between', label: 'Is between' }, { value: 'exists', label: 'Exists' }, { value: 'does_not_exist', label: 'Does not exist' }, { value: 'contains', label: 'Contains' }, { value: 'does_not_contain', label: 'Does not contain' }, { value: 'has_any_of', label: 'Has any of' }, { value: 'has_all_of', label: 'Has all of' }, { value: 'has_none_of', label: 'Has none of' }];
 export const HTTP_METHODS = ['GET','POST','PUT','PATCH','DELETE'];
 export const genId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
-
-export const VARIABLE_OPTIONS = [
-  "contact.first_name",
-  "contact.last_name",
-  "contact.email",
-  "contact.phone",
-  "contact.language",
-];
 
 export const TRIGGER_FIELDS = [
   { value: 'first_name', label: 'First Name' },

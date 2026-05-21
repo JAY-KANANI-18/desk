@@ -92,6 +92,7 @@ const workflowConfigSidebarTransition: Transition = {
 
 // ── Node dimensions ──────────────────────────────────────────────────────────
 export const NODE_W = 192; // TriggerNode, StepNode, BranchNode
+export const NODE_W_MESSAGE_PREVIEW = 232;
 export const NODE_H = 64; // compact normal node fallback
 export const NODE_H_MAX = 112; // cap for expanded context previews
 export const TRIGGER_NODE_H = 68;
@@ -117,6 +118,10 @@ const WORKFLOW_MAX_ZOOM = 2;
 const TOUCHPAD_ZOOM_DELTA_THRESHOLD = 50;
 const TOUCHPAD_ZOOM_DELTA_CLAMP = 28;
 const TOUCHPAD_ZOOM_SENSITIVITY = 0.012;
+type WorkflowLayoutDirection = "vertical" | "horizontal";
+const WORKFLOW_LAYOUT_DIRECTION: WorkflowLayoutDirection = "vertical";
+const HORIZONTAL_LAYOUT_DEPTH_SCALE = 1.8;
+const HORIZONTAL_LAYOUT_X_OFFSET = NODE_W;
 
 type PendingNavigation =
   | { kind: "route"; to: string; replace?: boolean }
@@ -163,6 +168,10 @@ interface WorkflowGraphBuildOptions {
   showAddNodes?: boolean;
   showValidation?: boolean;
   showActions?: boolean;
+}
+
+function isHorizontalLayout() {
+  return WORKFLOW_LAYOUT_DIRECTION === "horizontal";
 }
 
 function getNodeDataHeight(data: unknown) {
@@ -218,6 +227,80 @@ function getGraphStructureSignature(config: WorkflowGraphConfig) {
   ].join("::");
 }
 
+function getCanvasNodeSize(node: Node) {
+  const width =
+    typeof node.width === "number"
+      ? node.width
+      : node.type === "branchPillNode"
+        ? NODE_W_PILL
+        : node.type === "addStepNode"
+          ? NODE_W_ADD
+          : NODE_W;
+  const height =
+    typeof node.height === "number"
+      ? node.height
+      : getNodeDataHeight(node.data) ??
+        (node.type === "branchPillNode"
+          ? NODE_H_PILL
+          : node.type === "addStepNode"
+            ? NODE_H_ADD
+            : node.type === "triggerNode"
+              ? TRIGGER_NODE_H
+              : NODE_H);
+
+  return { width, height };
+}
+
+function estimateWrappedLines(text: string | undefined, charsPerLine: number) {
+  if (!text) return 0;
+
+  return text
+    .split(/\r?\n/)
+    .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
+}
+
+function estimateNodeWidth(preview?: WorkflowNodePreview) {
+  return preview?.templatePreview ? NODE_W_MESSAGE_PREVIEW : NODE_W;
+}
+
+function withLayoutDirectionData<T extends { data?: unknown }>(item: T): T {
+  if (!item.data || typeof item.data !== "object") return item;
+
+  return {
+    ...item,
+    data: {
+      ...(item.data as Record<string, unknown>),
+      layoutDirection: WORKFLOW_LAYOUT_DIRECTION,
+    },
+  };
+}
+
+function applyLayoutDirection(nodes: Node[], edges: Edge[]) {
+  const nodesWithDirection = nodes.map((node) => {
+    const nextNode = withLayoutDirectionData(node);
+    if (!isHorizontalLayout()) return nextNode;
+
+    const { width, height } = getCanvasNodeSize(nextNode);
+    const oldCenterX = nextNode.position.x + width / 2;
+    const newCenterX =
+      HORIZONTAL_LAYOUT_X_OFFSET + nextNode.position.y * HORIZONTAL_LAYOUT_DEPTH_SCALE;
+    const newCenterY = oldCenterX;
+
+    return {
+      ...nextNode,
+      position: {
+        x: newCenterX - width / 2,
+        y: newCenterY - height / 2,
+      },
+    };
+  });
+
+  return {
+    nodes: nodesWithDirection,
+    edges: edges.map((edge) => withLayoutDirectionData(edge)),
+  };
+}
+
 function estimateNodeHeight(preview?: WorkflowNodePreview) {
   if (!preview) return NODE_H;
 
@@ -227,43 +310,58 @@ function estimateNodeHeight(preview?: WorkflowNodePreview) {
   const needsSecondTextLine = textLength > 50;
 
   if (preview.variant === "message") {
+    if (preview.templatePreview) {
+      const template = preview.templatePreview;
+      const headerLines = estimateWrappedLines(template.headerText, 30);
+      const bodyLines = estimateWrappedLines(template.bodyText, 30);
+      const footerLines = estimateWrappedLines(template.footerText, 30);
+      const buttonRows = template.buttons.length;
+      const lineHeight = 13;
+
+      return (
+        108 +
+        (headerLines + bodyLines + footerLines) * lineHeight +
+        buttonRows * 28
+      );
+    }
+
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 50 + textRows);
+    return Math.min(NODE_H_MAX, 68 + textRows);
   }
 
   if (preview.variant === "question") {
-    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 48 + textRows);
+    const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 16;
+    return Math.min(NODE_H_MAX, 54 + textRows);
   }
 
   if (preview.variant === "assignment") {
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 48 + textRows);
+    return Math.min(NODE_H_MAX, 54 + textRows);
   }
 
   if (preview.variant === "branch") {
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 48 + textRows);
+    return Math.min(NODE_H_MAX, 54 + textRows);
   }
 
   if (preview.variant === "plain") {
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 48 + textRows);
+    return Math.min(NODE_H_MAX, 54 + textRows);
   }
 
   if (preview.variant === "jump") {
-    return Math.min(NODE_H_MAX, 64);
+    return Math.min(NODE_H_MAX, 72);
   }
 
   if (preview.variant === "field") {
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
-    return Math.min(NODE_H_MAX, 62 + textRows);
+    return Math.min(NODE_H_MAX, 72 + textRows);
   }
 
   if (preview.variant === "conversation") {
     const textRows = needsTextLine ? (needsSecondTextLine ? 28 : 14) : 0;
     const statusRow = preview.tokens.length > 0 ? 14 : 0;
-    return Math.min(NODE_H_MAX, 48 + statusRow + textRows);
+    return Math.min(NODE_H_MAX, 54 + statusRow + textRows);
   }
 
   if (preview.variant === "tags") {
@@ -307,7 +405,11 @@ function isConnectorOwnerStepType(type: StepType): type is ConnectorOwnerStepTyp
 
 function isConnectorOwnerStep(step: Pick<StepConfig, "type" | "data">): step is StepConfig & { type: ConnectorOwnerStepType } {
   if (step.type === "send_message") {
-    return Boolean((step.data as { addMessageFailureBranch?: boolean }).addMessageFailureBranch);
+    const data = step.data as {
+      addMessageFailureBranch?: boolean;
+      templateButtonBranching?: boolean;
+    };
+    return Boolean(data.addMessageFailureBranch || data.templateButtonBranching);
   }
 
   return isConnectorOwnerStepType(step.type);
@@ -328,8 +430,56 @@ function getDefaultConnectorNames(type: ConnectorOwnerStepType) {
   return connectorNames[type];
 }
 
+function getTemplateQuickReplyConnectorNames(step: StepConfig) {
+  const data = step.data as {
+    metadata?: {
+      template?: {
+        components?: unknown[];
+      };
+    };
+  };
+  const components = Array.isArray(data.metadata?.template?.components)
+    ? data.metadata.template.components
+    : [];
+  const labels: string[] = [];
+
+  components.forEach((component) => {
+    if (!component || typeof component !== "object") return;
+    const entry = component as { type?: unknown; buttons?: unknown };
+    if (String(entry.type ?? "").toUpperCase() !== "BUTTONS") return;
+    if (!Array.isArray(entry.buttons)) return;
+
+    entry.buttons.forEach((button) => {
+      if (!button || typeof button !== "object") return;
+      const item = button as { type?: unknown; text?: unknown };
+      if (String(item.type ?? "").toUpperCase() !== "QUICK_REPLY") return;
+      const label = typeof item.text === "string" ? item.text.trim() : "";
+      if (label) labels.push(label);
+    });
+  });
+
+  return Array.from(new Set(labels));
+}
+
 function createConnectorId(prefix: string, index: number) {
   return `conn-${prefix}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function orderConnectorsByStepData(step: StepConfig, connectors: StepConfig[]) {
+  const connectorIds = (step.data as { connectors?: unknown })?.connectors;
+  if (!Array.isArray(connectorIds)) return connectors;
+
+  const order = new Map(
+    connectorIds
+      .filter((id): id is string => typeof id === "string")
+      .map((id, index) => [id, index] as const),
+  );
+
+  return [...connectors].sort((a, b) => {
+    const aIndex = order.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const bIndex = order.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+    return aIndex - bIndex;
+  });
 }
 
 function withConnectorIds(
@@ -397,10 +547,21 @@ function getConnectorTemplatesForStep(
   );
 
   if (connectors.length > 0) {
-    return step.type === "branch" ? orderBranchConnectors(connectors) : connectors;
+    return step.type === "branch"
+      ? orderBranchConnectors(connectors)
+      : orderConnectorsByStepData(step, connectors);
   }
 
-  return getDefaultConnectorNames(step.type).map((name, index) =>
+  const fallbackNames =
+    step.type === "send_message" &&
+    Boolean((step.data as { templateButtonBranching?: boolean }).templateButtonBranching)
+      ? Array.from(new Set([
+          ...getTemplateQuickReplyConnectorNames(step),
+          ...((step.data as { addMessageFailureBranch?: boolean }).addMessageFailureBranch ? ["Failure"] : []),
+        ]))
+      : getDefaultConnectorNames(step.type);
+
+  return fallbackNames.map((name, index) =>
     createDefaultConnectorStep(
       step.type,
       step.id,
@@ -602,7 +763,7 @@ export function buildGraph(
       source,
       target,
       type: "step",
-      data: { color },
+      data: { color, layoutDirection: WORKFLOW_LAYOUT_DIRECTION },
     });
   }
 
@@ -619,8 +780,10 @@ export function buildGraph(
     type: "triggerNode",
     position: { x: toLeftEdge(NODE_X_CENTER, "normal"), y: TRIGGER_Y },
     width: NODE_W,
+    height: TRIGGER_NODE_H,
     data: {
       triggerType: raw?.trigger?.type ?? null,
+      height: TRIGGER_NODE_H,
       isConfigured: Boolean(raw?.trigger?.type),
       hasError: false,
       highlightPulse: previewContext.highlightStepId === "trigger",
@@ -632,7 +795,7 @@ export function buildGraph(
   // ── Empty state ──
   if (rootChildren.length === 0) {
     if (!showAddNodes) {
-      return { nodes, edges };
+      return applyLayoutDirection(nodes, edges);
     }
 
     const addId = "add-trigger";
@@ -648,7 +811,7 @@ export function buildGraph(
 
     pushStepEdge("trigger", addId);
 
-    return { nodes, edges };
+    return applyLayoutDirection(nodes, edges);
   }
 
   // ── Subtree width in slots ──
@@ -703,6 +866,7 @@ export function buildGraph(
               connectorIndex,
               siblingConnectors,
             ),
+            color: getEdgeColor(parentId),
             onSelect: () => cb.onSelectStep(step.id),
           },
         });
@@ -719,14 +883,15 @@ export function buildGraph(
       const validationIssue = getStepValidationIssue(step, previewContext.steps, validationContext);
       const stepNumber = getStepNumber(step.id, previewContext.steps);
       const nodeHeight = estimateNodeHeight(nodePreview);
+      const nodeWidth = estimateNodeWidth(nodePreview);
       const hasValidationIssue = showValidation && Boolean(validationIssue);
 
       nodes.push({
         id: step.id,
         type: step.type === "branch" ? "branchNode" : "stepNode",
-        position: { x: toLeftEdge(nodeX, "normal"), y: nodeY },
+        position: { x: nodeX - nodeWidth / 2, y: nodeY },
         height: nodeHeight,
-        width: NODE_W,
+        width: nodeWidth,
         data: {
           stepId: step.id,
           stepType: step.type,
@@ -734,6 +899,7 @@ export function buildGraph(
           stepNumber,
           preview: nodePreview,
           height: nodeHeight,
+          width: nodeWidth,
           isConfigured: !hasValidationIssue,
           hasError: hasValidationIssue,
           validationIssue: showValidation ? validationIssue : undefined,
@@ -760,19 +926,25 @@ if (isConnectorOwnerStep(step)) {
   const connectors =
     step.type === "branch"
       ? orderBranchConnectors(rawConnectors)
-      : rawConnectors;
+      : orderConnectorsByStepData(step, rawConnectors);
   const branchWidth = connectors.reduce(
     (sum, c) => sum + getSubtreeWidth(c.id),
     0,
   );
+  const color = getWorkflowNodeColor(step.type);
   let branchX = nodeX - (branchWidth * H_SPACING) / 2;
-
-  connectors.forEach((conn, i) => {
+  const connectorLayouts = connectors.map((conn) => {
     const connWidth = getSubtreeWidth(conn.id);
     const cx = branchX + (connWidth * H_SPACING) / 2;
-    const connectorY = yAfterNormal(nodeY, nodeHeight);
+    branchX += connWidth * H_SPACING;
+    return {
+      conn,
+      cx,
+      connectorY: yAfterNormal(nodeY, nodeHeight),
+    };
+  });
 
-    const color = getWorkflowNodeColor(step.type);
+  connectorLayouts.forEach(({ conn, cx, connectorY }, i) => {
     connectorColorById.set(conn.id, color);
 
     nodes.push({
@@ -790,7 +962,7 @@ if (isConnectorOwnerStep(step)) {
       },
     });
 
-    pushStepEdge(step.id, conn.id);
+    pushStepEdge(step.id, conn.id, color);
 
     const childSteps = childrenMap.get(conn.id) || [];
 
@@ -811,7 +983,6 @@ if (isConnectorOwnerStep(step)) {
     }
 
     render(conn.id, cx, connectorY, "pill", NODE_H_PILL);
-    branchX += connWidth * H_SPACING;
   });
 
 } else {
@@ -842,7 +1013,7 @@ if (isConnectorOwnerStep(step)) {
   // start: trigger is a normal node at TRIGGER_Y
   render("trigger", NODE_X_CENTER, TRIGGER_Y, "normal", TRIGGER_NODE_H);
 
-  return { nodes, edges };
+  return applyLayoutDirection(nodes, edges);
 }
 /* ───────────────────────────────────────────── */
 // DEFAULT DATA
@@ -968,6 +1139,7 @@ function getDefaultStepData(type: StepType): StepConfig["data"] {
         defaultMessage: { type: "text", text: "" },
         channelResponses: [],
         addMessageFailureBranch: false,
+        templateButtonBranching: false,
       };
     case "ask_question":
       return {

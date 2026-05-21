@@ -12,7 +12,7 @@ import {
 import { Button } from "../../../components/ui/Button";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import { TruncatedText } from "../../../components/ui/TruncatedText";
-import type { Message, MessageGroupPosition } from "./types";
+import type { Message, MessageGroupPosition, WaTemplateComponent } from "./types";
 import { getWaTemplateButtonIcon, highlightText, formatWaBody } from "./helpers";
 import { AttachmentItem } from "./AttachmentItem";
 import { QuotedPreview } from "./QuotedPreview";
@@ -42,6 +42,34 @@ function getBubbleShapeClass(
     return "rounded-2xl rounded-tl-md rounded-bl-md";
   }
   return "rounded-2xl rounded-tl-md rounded-bl-md";
+}
+
+function renderTemplateValue(
+  value: string | undefined,
+  variables: Record<string, string>,
+) {
+  return value?.replace(
+    /\{\{\s*\$?([a-zA-Z0-9._-]+)\s*\}\}/g,
+    (_match, key: string) => variables[key] ?? `{{${key}}}`,
+  );
+}
+
+function renderTemplateComponents(
+  components: WaTemplateComponent[] | undefined,
+  variables: Record<string, string>,
+): WaTemplateComponent[] {
+  return (components ?? []).map((component) => ({
+    ...component,
+    text: renderTemplateValue(component.text, variables),
+    buttons: component.buttons?.map((button) => ({
+      ...button,
+      text: renderTemplateValue(button.text, variables) ?? button.text,
+    })),
+    cards: component.cards?.map((card) => ({
+      ...card,
+      components: renderTemplateComponents(card.components, variables),
+    })),
+  }));
 }
 
 export function MessageBubble({
@@ -189,7 +217,10 @@ export function MessageBubble({
     );
 
   if (isWaTemplate) {
-    const components = msg.metadata?.template?.components ?? [];
+    const components = renderTemplateComponents(
+      msg.metadata?.template?.components,
+      msg.metadata?.template?.variables ?? {},
+    );
 
     const header = components.find((c) => c.type === "HEADER");
     const body = components.find((c) => c.type === "BODY");

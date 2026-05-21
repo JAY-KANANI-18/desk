@@ -31,7 +31,6 @@ import {
   ChannelSelectMenu,
   LifecycleSelectMenu,
   type ChannelSelectMenuChannel,
-  type VariableSuggestionOption,
 } from "../../components/ui/Select";
 import { PageLayout } from "../../components/ui/PageLayout";
 import { VariableTextEditor } from "../../components/ui/variable-editor";
@@ -41,6 +40,7 @@ import {
 } from "../../components/snippets/SnippetSuggestionMenu";
 import { FeatureGate, useFeatureFlags } from "../../context/FeatureFlagContext";
 import { channelSupportsBroadcast } from "../../config/channelMetadata";
+import { getVariableOptionsForContext } from "../../config/variableMetadata";
 import type { BroadcastSendResult } from "../../lib/broadcastApi";
 import {
   filterSnippets,
@@ -136,43 +136,7 @@ const COMPOSER_STEPS: Array<{
   },
 ];
 
-const BROADCAST_VARIABLE_OPTIONS: VariableSuggestionOption[] = [
-  {
-    key: "contact_name",
-    label: "Contact name",
-    description: "Full name, email, or phone",
-  },
-  {
-    key: "contact_first_name",
-    label: "First name",
-    description: "Contact first name",
-  },
-  {
-    key: "contact_last_name",
-    label: "Last name",
-    description: "Contact last name",
-  },
-  {
-    key: "contact_email",
-    label: "Email",
-    description: "Contact email address",
-  },
-  {
-    key: "contact_phone",
-    label: "Phone",
-    description: "Contact phone number",
-  },
-  {
-    key: "agent_name",
-    label: "Agent name",
-    description: "Broadcast sender",
-  },
-  {
-    key: "last_message",
-    label: "Last message",
-    description: "Most recent conversation message",
-  },
-];
+const BROADCAST_VARIABLE_OPTIONS = getVariableOptionsForContext("broadcast");
 
 function stepIcon(step: ComposerStepId) {
   if (step === "setup") return <Sparkles size={15} />;

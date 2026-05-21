@@ -86,6 +86,27 @@ function getTemplateVariableKeys(data: SendMessageData) {
   return Array.from(keys);
 }
 
+function getTemplateQuickReplyLabels(data: SendMessageData) {
+  const labels: string[] = [];
+
+  (data.metadata?.template?.components ?? []).forEach((component) => {
+    if (!component || typeof component !== "object") return;
+    const entry = component as { type?: unknown; buttons?: unknown };
+    if (String(entry.type ?? "").toUpperCase() !== "BUTTONS") return;
+    if (!Array.isArray(entry.buttons)) return;
+
+    entry.buttons.forEach((button) => {
+      if (!button || typeof button !== "object") return;
+      const item = button as { type?: unknown; text?: unknown };
+      if (String(item.type ?? "").toUpperCase() !== "QUICK_REPLY") return;
+      const label = typeof item.text === "string" ? item.text.trim() : "";
+      if (label) labels.push(label);
+    });
+  });
+
+  return Array.from(new Set(labels));
+}
+
 function getSendMessageIssue(data: SendMessageData, context?: WorkflowValidationContext) {
   if (!hasText(data.channel)) return "Select a channel";
 
@@ -99,6 +120,10 @@ function getSendMessageIssue(data: SendMessageData, context?: WorkflowValidation
       (key) => !hasText(selectedTemplate.variables?.[key]),
     );
     if (missingTemplateVariables.length > 0) return "Fill template variables";
+
+    if (data.templateButtonBranching && getTemplateQuickReplyLabels(data).length === 0) {
+      return "Template needs quick reply buttons";
+    }
 
     return undefined;
   }

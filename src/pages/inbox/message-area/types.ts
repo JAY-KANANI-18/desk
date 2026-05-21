@@ -171,6 +171,7 @@ export interface Message {
     };
     template?: {
       components?: WaTemplateComponent[];
+      variables?: Record<string, string>;
     };
     error?: string;
     providerError?: string;

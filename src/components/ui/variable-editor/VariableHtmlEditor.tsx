@@ -13,9 +13,7 @@ import {
 
 import { useDisclosure } from "@/hooks/useDisclosure";
 import {
-  MentionSuggestionMenu,
   VariableSuggestionMenu,
-  type MentionSuggestionOption,
   type VariableSuggestionMenuPlacement,
   type VariableSuggestionOption,
 } from "../select";
@@ -25,47 +23,29 @@ import {
   type InputAppearance,
   type InputSize,
 } from "../inputs/shared";
+import { createVariableTokenElement, VARIABLE_TRIGGER_PATTERN } from "./shared";
 import {
-  createMentionTokenElement,
-  createVariableTokenElement,
-  formatMentionToken,
-  formatVariableToken,
-  MENTION_TRIGGER_PATTERN,
-  renderVariableTokenHtml,
-  VARIABLE_TRIGGER_PATTERN,
-} from "./shared";
+  createRichVariableFragmentFromHtml,
+  createRichVariableFragmentFromClipboard,
+  isRichHtmlEmpty,
+  renderRichVariableHtml,
+  serializeRichVariableEditorHtml,
+} from "./html";
 
-const BLOCK_ELEMENT_TAGS = new Set(["DIV", "P"]);
-const SUGGESTION_CONTROL_KEYS = new Set(["ArrowDown", "ArrowUp", "Enter", "Escape"]);
+const SUGGESTION_CONTROL_KEYS = new Set([
+  "ArrowDown",
+  "ArrowUp",
+  "Enter",
+  "Escape",
+]);
 const SUGGESTION_MENU_OPEN_EVENT = "axodesk:suggestion-menu-open";
 
-type SuggestionTrigger = { type: "variable" | "mention"; query: string };
+type SuggestionTrigger = { query: string };
 
-function getSuggestionMenuOpenInstanceId(event: Event) {
-  if (!(event instanceof CustomEvent)) {
-    return null;
-  }
-
-  const detail = event.detail;
-
-  if (
-    typeof detail === "object" &&
-    detail !== null &&
-    "instanceId" in detail &&
-    typeof detail.instanceId === "string"
-  ) {
-    return detail.instanceId;
-  }
-
-  return null;
-}
-
-export interface VariableTextEditorProps {
+export interface VariableHtmlEditorProps {
   value: string;
   onChange: (value: string) => void;
   variables: VariableSuggestionOption[];
-  mentionOptions?: MentionSuggestionOption[];
-  mentionTitle?: string;
   placeholder?: string;
   readOnly?: boolean;
   disabled?: boolean;
@@ -80,61 +60,30 @@ export interface VariableTextEditorProps {
   "aria-label"?: string;
 }
 
-export interface VariableTextEditorHandle {
+export interface VariableHtmlEditorHandle {
   focus: () => void;
-  insertText: (text: string) => void;
+  insertHtml: (html: string) => void;
+}
+
+function getSuggestionMenuOpenInstanceId(event: Event) {
+  if (!(event instanceof CustomEvent)) return null;
+
+  const detail = event.detail;
+  if (
+    typeof detail === "object" &&
+    detail !== null &&
+    "instanceId" in detail &&
+    typeof detail.instanceId === "string"
+  ) {
+    return detail.instanceId;
+  }
+
+  return null;
 }
 
 function isEditorSelection(editor: HTMLElement, selection: Selection | null) {
   if (!selection || !selection.anchorNode) return false;
   return editor.contains(selection.anchorNode);
-}
-
-function serializeNode(node: ChildNode): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent ?? "";
-  }
-
-  if (node.nodeType !== Node.ELEMENT_NODE) {
-    return "";
-  }
-
-  const element = node as HTMLElement;
-  const variable = element.dataset.variable;
-  const mentionId = element.dataset.mentionId;
-  const mentionLabel = element.dataset.mentionLabel;
-
-  if (variable) {
-    return formatVariableToken(variable);
-  }
-
-  if (mentionId && mentionLabel) {
-    return formatMentionToken(mentionId, mentionLabel);
-  }
-
-  if (element.tagName === "BR") {
-    return "\n";
-  }
-
-  return Array.from(element.childNodes).map(serializeNode).join("");
-}
-
-function extractRawText(editor: HTMLElement) {
-  const pieces = Array.from(editor.childNodes).map((node, index, nodes) => {
-    const text = serializeNode(node);
-    const isBlock =
-      node.nodeType === Node.ELEMENT_NODE &&
-      BLOCK_ELEMENT_TAGS.has((node as HTMLElement).tagName);
-    const hasNext = index < nodes.length - 1;
-
-    if (isBlock && hasNext && !text.endsWith("\n")) {
-      return `${text}\n`;
-    }
-
-    return text;
-  });
-
-  return pieces.join("").replace(/\u00a0/g, " ").replace(/\n{3,}/g, "\n\n");
 }
 
 function setCaretAfter(node: Node) {
@@ -148,24 +97,37 @@ function setCaretAfter(node: Node) {
   selection.addRange(range);
 }
 
-function createRenderedTextFragment(text: string) {
-  const template = document.createElement("template");
-  template.innerHTML = renderVariableTokenHtml(text);
-  return template.content;
+function insertFragmentAtSelection(editor: HTMLElement, fragment: DocumentFragment) {
+  const selection = window.getSelection();
+  let range: Range;
+
+  if (selection?.rangeCount && isEditorSelection(editor, selection)) {
+    range = selection.getRangeAt(0);
+  } else {
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+  }
+
+  const lastNode = fragment.lastChild;
+  range.deleteContents();
+  range.insertNode(fragment);
+
+  if (lastNode) {
+    setCaretAfter(lastNode);
+  }
 }
 
-export const VariableTextEditor = forwardRef<
-  VariableTextEditorHandle,
-  VariableTextEditorProps
+export const VariableHtmlEditor = forwardRef<
+  VariableHtmlEditorHandle,
+  VariableHtmlEditorProps
 >(
   (
     {
       value,
       onChange,
       variables,
-      mentionOptions = [],
-      mentionTitle = "Mention a teammate",
-      placeholder = "Type your message...",
+      placeholder = "Write your message... type $ for variables",
       readOnly = false,
       disabled = false,
       size = "md",
@@ -176,7 +138,7 @@ export const VariableTextEditor = forwardRef<
       menuPlacement = "top",
       onSubmit,
       onKeyDown: onKeyDownProp,
-      "aria-label": ariaLabel = "Message editor",
+      "aria-label": ariaLabel = "Rich text editor",
     },
     ref,
   ) => {
@@ -187,7 +149,7 @@ export const VariableTextEditor = forwardRef<
     const [query, setQuery] = useState("");
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [isFocused, setIsFocused] = useState(false);
-    const isEditorEmpty = value.trim().length === 0;
+    const isEditorEmpty = isRichHtmlEmpty(value);
 
     const filteredVariables = useMemo(() => {
       if (!query) return variables;
@@ -199,15 +161,6 @@ export const VariableTextEditor = forwardRef<
       });
     }, [query, variables]);
 
-    const filteredMentions = useMemo(() => {
-      if (!query) return mentionOptions;
-      const normalizedQuery = query.toLowerCase();
-      return mentionOptions.filter((mention) => {
-        const haystack = `${mention.label} ${mention.subtitle ?? ""}`.toLowerCase();
-        return haystack.includes(normalizedQuery);
-      });
-    }, [mentionOptions, query]);
-
     const closeSuggestionMenu = useCallback(() => {
       suggestionMenu.close();
       setTrigger(null);
@@ -217,8 +170,7 @@ export const VariableTextEditor = forwardRef<
 
     const openSuggestionMenu = useCallback(
       (nextTrigger: SuggestionTrigger) => {
-        const shouldResetHighlight =
-          trigger?.type !== nextTrigger.type || trigger.query !== nextTrigger.query;
+        const shouldResetHighlight = trigger?.query !== nextTrigger.query;
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(
@@ -236,13 +188,11 @@ export const VariableTextEditor = forwardRef<
           setHighlightedIndex(0);
         }
       },
-      [instanceId, suggestionMenu, trigger],
+      [instanceId, suggestionMenu, trigger?.query],
     );
 
     useEffect(() => {
-      if (typeof window === "undefined") {
-        return undefined;
-      }
+      if (typeof window === "undefined") return undefined;
 
       const handleSuggestionMenuOpen = (event: Event) => {
         const openInstanceId = getSuggestionMenuOpenInstanceId(event);
@@ -253,35 +203,25 @@ export const VariableTextEditor = forwardRef<
       };
 
       window.addEventListener(SUGGESTION_MENU_OPEN_EVENT, handleSuggestionMenuOpen);
-
-      return () => {
+      return () =>
         window.removeEventListener(
           SUGGESTION_MENU_OPEN_EVENT,
           handleSuggestionMenuOpen,
         );
-      };
     }, [closeSuggestionMenu, instanceId]);
 
     useEffect(() => {
-      if (!suggestionMenu.isOpen) {
-        return undefined;
-      }
+      if (!suggestionMenu.isOpen) return undefined;
 
       const handlePointerDown = (event: MouseEvent | TouchEvent) => {
         const target = event.target;
+        if (!(target instanceof Node)) return;
 
-        if (!(target instanceof Node)) {
-          return;
-        }
-
-        if (editorRef.current?.contains(target)) {
-          return;
-        }
+        if (editorRef.current?.contains(target)) return;
 
         if (
           target instanceof Element &&
-          (target.closest("[data-variable-suggestion-menu='true']") ||
-            target.closest("[data-mention-suggestion-menu='true']"))
+          target.closest("[data-variable-suggestion-menu='true']")
         ) {
           return;
         }
@@ -316,15 +256,6 @@ export const VariableTextEditor = forwardRef<
       }
 
       const textBeforeCursor = (node.textContent ?? "").slice(0, range.startOffset);
-      const mentionMatch =
-        mentionOptions.length > 0 ? textBeforeCursor.match(MENTION_TRIGGER_PATTERN) : null;
-
-      if (mentionMatch) {
-        const nextQuery = mentionMatch[1] ?? "";
-        openSuggestionMenu({ type: "mention", query: nextQuery });
-        return;
-      }
-
       const variableMatch = textBeforeCursor.match(VARIABLE_TRIGGER_PATTERN);
 
       if (!variableMatch) {
@@ -332,40 +263,25 @@ export const VariableTextEditor = forwardRef<
         return;
       }
 
-      const nextQuery = variableMatch[1] ?? "";
-      openSuggestionMenu({ type: "variable", query: nextQuery });
-    }, [closeSuggestionMenu, mentionOptions.length, openSuggestionMenu]);
+      openSuggestionMenu({ query: variableMatch[1] ?? "" });
+    }, [closeSuggestionMenu, openSuggestionMenu]);
 
     const emitChange = useCallback(() => {
       const editor = editorRef.current;
       if (!editor) return;
 
-      onChange(extractRawText(editor));
+      onChange(serializeRichVariableEditorHtml(editor));
       updateTrigger();
     }, [onChange, updateTrigger]);
 
-    const insertTextAtSelection = useCallback(
-      (text: string) => {
+    const insertHtmlAtSelection = useCallback(
+      (html: string) => {
         const editor = editorRef.current;
-        const selection = window.getSelection();
         if (!editor) return;
 
         editor.focus();
-
-        let range: Range;
-        if (selection?.rangeCount && isEditorSelection(editor, selection)) {
-          range = selection.getRangeAt(0);
-        } else {
-          range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-        }
-
-        const textNode = document.createTextNode(text);
-        range.deleteContents();
-        range.insertNode(textNode);
-        setCaretAfter(textNode);
-        onChange(extractRawText(editor));
+        insertFragmentAtSelection(editor, createRichVariableFragmentFromHtml(html));
+        onChange(serializeRichVariableEditorHtml(editor));
         updateTrigger();
       },
       [onChange, updateTrigger],
@@ -375,30 +291,30 @@ export const VariableTextEditor = forwardRef<
       ref,
       () => ({
         focus: () => editorRef.current?.focus(),
-        insertText: insertTextAtSelection,
+        insertHtml: insertHtmlAtSelection,
       }),
-      [insertTextAtSelection],
+      [insertHtmlAtSelection],
     );
 
     useEffect(() => {
       const editor = editorRef.current;
       if (!editor) return;
 
-      if (document.activeElement === editor && extractRawText(editor) === value) {
+      if (
+        document.activeElement === editor &&
+        serializeRichVariableEditorHtml(editor) === value
+      ) {
         return;
       }
 
-      const html = renderVariableTokenHtml(value);
+      const html = renderRichVariableHtml(value);
       if (editor.innerHTML !== html) {
         editor.innerHTML = html;
       }
     }, [value]);
 
-    const insertToken = useCallback(
-      (
-        option: VariableSuggestionOption | MentionSuggestionOption,
-        tokenType: "variable" | "mention",
-      ) => {
+    const insertVariable = useCallback(
+      (variable: VariableSuggestionOption) => {
         const editor = editorRef.current;
         const selection = window.getSelection();
         if (!editor || !selection) return;
@@ -419,9 +335,7 @@ export const VariableTextEditor = forwardRef<
           const text = node.textContent ?? "";
           const before = text.slice(0, range.startOffset);
           const after = text.slice(range.startOffset);
-          const match = before.match(
-            tokenType === "mention" ? MENTION_TRIGGER_PATTERN : VARIABLE_TRIGGER_PATTERN,
-          );
+          const match = before.match(VARIABLE_TRIGGER_PATTERN);
 
           if (match) {
             const nextBefore = before.slice(0, before.length - match[0].length);
@@ -434,13 +348,7 @@ export const VariableTextEditor = forwardRef<
           }
         }
 
-        const token =
-          tokenType === "mention"
-            ? createMentionTokenElement(
-                (option as MentionSuggestionOption).id,
-                option.label,
-              )
-            : createVariableTokenElement((option as VariableSuggestionOption).key);
+        const token = createVariableTokenElement(variable.key);
         const space = document.createTextNode(" ");
         const fragment = document.createDocumentFragment();
         fragment.append(token, space);
@@ -448,38 +356,26 @@ export const VariableTextEditor = forwardRef<
         range.insertNode(fragment);
         setCaretAfter(space);
         closeSuggestionMenu();
-        onChange(extractRawText(editor));
+        onChange(serializeRichVariableEditorHtml(editor));
       },
       [closeSuggestionMenu, onChange],
     );
 
-    const insertVariable = useCallback(
-      (variable: VariableSuggestionOption) => insertToken(variable, "variable"),
-      [insertToken],
-    );
-
-    const insertMention = useCallback(
-      (mention: MentionSuggestionOption) => insertToken(mention, "mention"),
-      [insertToken],
-    );
-
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
       onKeyDownProp?.(event);
-      if (event.defaultPrevented) {
-        return;
-      }
+      if (event.defaultPrevented) return;
 
       if (readOnly || disabled) {
         event.preventDefault();
         return;
       }
 
-      const activeOptions = trigger?.type === "mention" ? filteredMentions : filteredVariables;
-
-      if (suggestionMenu.isOpen && activeOptions.length > 0) {
+      if (suggestionMenu.isOpen && filteredVariables.length > 0) {
         if (event.key === "ArrowDown") {
           event.preventDefault();
-          setHighlightedIndex((index) => Math.min(index + 1, activeOptions.length - 1));
+          setHighlightedIndex((index) =>
+            Math.min(index + 1, filteredVariables.length - 1),
+          );
           return;
         }
 
@@ -491,11 +387,7 @@ export const VariableTextEditor = forwardRef<
 
         if (event.key === "Enter") {
           event.preventDefault();
-          if (trigger?.type === "mention") {
-            insertMention(filteredMentions[highlightedIndex]);
-          } else {
-            insertVariable(filteredVariables[highlightedIndex]);
-          }
+          insertVariable(filteredVariables[highlightedIndex]);
           return;
         }
       }
@@ -528,29 +420,14 @@ export const VariableTextEditor = forwardRef<
 
       event.preventDefault();
       const editor = editorRef.current;
-      const text = event.clipboardData.getData("text/plain");
-      const selection = window.getSelection();
       if (!editor) return;
 
-      let range: Range;
-      if (selection?.rangeCount && isEditorSelection(editor, selection)) {
-        range = selection.getRangeAt(0);
-      } else {
-        range = document.createRange();
-        range.selectNodeContents(editor);
-        range.collapse(false);
-      }
+      const html = event.clipboardData.getData("text/html");
+      const text = event.clipboardData.getData("text/plain");
+      const fragment = createRichVariableFragmentFromClipboard(html, text);
 
-      const fragment = createRenderedTextFragment(text);
-      const lastNode = fragment.lastChild;
-      range.deleteContents();
-      range.insertNode(fragment);
-
-      if (lastNode) {
-        setCaretAfter(lastNode);
-      }
-
-      onChange(extractRawText(editor));
+      insertFragmentAtSelection(editor, fragment);
+      onChange(serializeRichVariableEditorHtml(editor));
       updateTrigger();
     };
 
@@ -558,14 +435,13 @@ export const VariableTextEditor = forwardRef<
       const editor = editorRef.current;
       if (!editor) return;
 
-      event.preventDefault();
-      event.clipboardData.setData("text/plain", extractRawText(editor));
+      event.clipboardData.setData("text/html", serializeRichVariableEditorHtml(editor));
     };
 
     return (
       <div className={cx("relative", className)}>
         <VariableSuggestionMenu
-          isOpen={suggestionMenu.isOpen && trigger?.type === "variable"}
+          isOpen={suggestionMenu.isOpen}
           query={query}
           options={filteredVariables}
           highlightedIndex={highlightedIndex}
@@ -574,17 +450,6 @@ export const VariableTextEditor = forwardRef<
           showEmptyState={Boolean(query)}
           placement={menuPlacement}
           anchorRef={editorRef}
-        />
-        <MentionSuggestionMenu
-          isOpen={suggestionMenu.isOpen && trigger?.type === "mention"}
-          query={query}
-          title={mentionTitle}
-          options={filteredMentions}
-          highlightedIndex={highlightedIndex}
-          onHighlightChange={setHighlightedIndex}
-          onSelect={insertMention}
-          showEmptyState={Boolean(query)}
-          placement={menuPlacement}
         />
 
         <div
@@ -612,7 +477,7 @@ export const VariableTextEditor = forwardRef<
                   multiline: true,
                 })
               : "block w-full",
-            "whitespace-pre-wrap break-words outline-none",
+            "break-words outline-none [&_a]:text-[var(--color-primary)] [&_a]:underline [&_img]:max-w-full [&_ol]:list-decimal [&_ol]:pl-5 [&_table]:max-w-full [&_table]:border-collapse [&_td]:border [&_td]:border-gray-200 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-200 [&_th]:p-1.5 [&_ul]:list-disc [&_ul]:pl-5",
             readOnly || disabled ? "cursor-wait text-[var(--color-gray-500)]" : undefined,
             editorClassName,
           )}
@@ -624,9 +489,7 @@ export const VariableTextEditor = forwardRef<
               "pointer-events-none absolute select-none text-sm leading-6 transition-transform duration-150",
               isFocused && "translate-x-[6px]",
               placeholderClassName ??
-                (appearance === "composer-note"
-                  ? "left-3 top-2 text-amber-400"
-                  : "left-3 top-2 text-[var(--color-gray-400)]"),
+                "left-3 top-2 text-[var(--color-gray-400)]",
             )}
           >
             {placeholder}
@@ -637,4 +500,4 @@ export const VariableTextEditor = forwardRef<
   },
 );
 
-VariableTextEditor.displayName = "VariableTextEditor";
+VariableHtmlEditor.displayName = "VariableHtmlEditor";

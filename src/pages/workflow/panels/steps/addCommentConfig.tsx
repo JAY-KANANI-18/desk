@@ -7,13 +7,12 @@ import {
   VariableTextEditor,
 } from "../../../../components/ui/variable-editor";
 import type { MentionSuggestionOption, VariableSuggestionOption } from "../../../../components/ui/Select";
-import { AddCommentData, SP, VARIABLE_OPTIONS } from "../../workflow.types";
+import { getVariableOptionsForContext } from "../../../../config/variableMetadata";
+import { AddCommentData, SP } from "../../workflow.types";
 import { Field, Section } from "../PanelShell";
 
-const workflowVariableOptions: VariableSuggestionOption[] = VARIABLE_OPTIONS.map((key) => ({
-  key,
-  label: key,
-}));
+const workflowVariableOptions: VariableSuggestionOption[] =
+  getVariableOptionsForContext("workflowContact");
 
 function getUserLabel(user: User) {
   return [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.email || "Teammate";

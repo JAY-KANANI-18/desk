@@ -168,6 +168,7 @@ export const broadcastApi = {
     name: string;
     channelId: string;
     text?: string;
+    htmlBody?: string;
     template?: { name: string; language: string; variables?: Record<string, string> };
     tagIds?: string[];
     lifecycleId?: string;

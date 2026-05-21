@@ -54,6 +54,12 @@ const MOBILE_ROUTE_HEADERS: Array<MobileHeaderConfig & { path: string }> = [
     backTo: "/workflows",
   },
   {
+    path: "/workflows/progress",
+    eyebrow: "Automation",
+    title: "Workflow progress",
+    backTo: "/workflows",
+  },
+  {
     path: "/workflows",
     eyebrow: "Automation",
     title: "Workflows",
@@ -147,7 +153,8 @@ export const Layout = () => {
     location.pathname,
   );
   const isWorkflowBuilderRoute = Boolean(
-    workflowBuilderMatch && workflowBuilderMatch.params.workflowId !== "templates",
+    workflowBuilderMatch &&
+      !["templates", "progress"].includes(workflowBuilderMatch.params.workflowId ?? ""),
   );
   const isInboxRoute = Boolean(
     matchPath("/inbox", location.pathname) ||

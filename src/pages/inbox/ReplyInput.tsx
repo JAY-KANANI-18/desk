@@ -518,9 +518,15 @@ export function ReplyInput({
     } as any);
   };
 
+  const templateContact = hasLoadedSelectedContact ? selectedContact : selectedConversation?.contact;
   const templateContextValues: Record<string, string> = {
-    conversation_id: String(selectedConversation?.id ?? ''),
-    contact_name: contactName,
+    'conversation.id': String(selectedConversation?.id ?? ''),
+    'contact.name': contactName,
+    'contact.first_name': String(templateContact?.firstName ?? ''),
+    'contact.last_name': String(templateContact?.lastName ?? ''),
+    'contact.email': String(templateContact?.email ?? ''),
+    'contact.phone': String(templateContact?.phone ?? ''),
+    'contact.company': String(templateContact?.company ?? ''),
   };
 
   /* ── bg ── */

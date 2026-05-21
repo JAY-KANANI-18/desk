@@ -49,7 +49,7 @@ const DEFAULT_FORM: EmailChannelFormValues = {
   encryption: 'STARTTLS',
   forwardingEmail: '',
   forwardingConfirmed: false,
-  signatureHtml: '<p>Regards,<br />{{agent_name}}</p>',
+  signatureHtml: '<p>Regards,<br />{{agent.name}}</p>',
   signatureEnabled: true,
 };
 

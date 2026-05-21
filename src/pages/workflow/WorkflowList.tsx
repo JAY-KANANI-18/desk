@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, useEffect, useRef, type ChangeEvent, type DragEvent, type ReactNode } from 'react';
 import {
-  Blocks, Plus, Play, Square, Pencil,
+  Activity, Blocks, Plus, Play, Square, Pencil,
   Copy, Trash2, Download, Upload, ExternalLink, Zap, ChevronDown, ChevronRight, Calendar, User,
   X,
 } from '@/components/ui/icons';
@@ -705,6 +705,13 @@ export function WorkflowList() {
 
   const desktopActions = isMobile ? undefined : (
     <div className="flex items-center gap-2">
+      <Button
+        variant="secondary"
+        leftIcon={<Activity size={14} />}
+        onClick={() => navigate('/workflows/progress')}
+      >
+        Progress
+      </Button>
       <Tooltip content={importing ? 'Importing workflow JSON...' : 'Import workflow JSON'}>
         <span className="inline-flex">
           <IconButton

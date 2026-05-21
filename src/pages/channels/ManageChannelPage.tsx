@@ -558,11 +558,13 @@ const SectionContent = ({
   channelType,
   channel,
   onDisconnect,
+  onChannelSaved,
 }: {
   sectionId: string;
   channelType: string;
   channel: ConnectedChannel;
   onDisconnect: () => void;
+  onChannelSaved?: () => Promise<void> | void;
 }) => {
   if (sectionId === "profile") return <ProfileSection channel={channel} />;
   if (sectionId === "troubleshoot")
@@ -606,7 +608,11 @@ const SectionContent = ({
       );
     case "email":
       return (
-        <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />
+        <EmailConfiguration
+          channel={channel}
+          onDisconnect={onDisconnect}
+          onSaved={onChannelSaved}
+        />
       );
     case "gmail":
       return (
@@ -621,7 +627,11 @@ const SectionContent = ({
       );
     default:
       return (
-        <EmailConfiguration channel={channel} onDisconnect={onDisconnect} />
+        <EmailConfiguration
+          channel={channel}
+          onDisconnect={onDisconnect}
+          onSaved={onChannelSaved}
+        />
       );
   }
 };
@@ -926,6 +936,7 @@ export const ManageChannelPage = () => {
                   sectionId={activeSection}
                   channelType={channelType}
                   channel={channel}
+                  onChannelSaved={() => refreshChannels(true)}
                   onDisconnect={() => {
                     void refreshChannels();
                     navigate("/channels");

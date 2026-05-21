@@ -5,16 +5,15 @@ import type {
   SendMessageData,
   SP,
 } from "../../workflow.types";
-import { VARIABLE_OPTIONS } from "../../workflow.types";
 import { Field, Section, ToggleRow } from "../PanelShell";
-import { AlertCircle, FileText, Upload, X } from "@/components/ui/icons";
+import { AlertCircle, Upload, X } from "@/components/ui/icons";
 import { useWorkflow } from "../../WorkflowContext";
 import { useChannel } from "../../../../context/ChannelContext";
-import { Button } from "../../../../components/ui/Button";
 import { IconButton } from "../../../../components/ui/button/IconButton";
 import { BaseSelect, ChannelSelectMenu } from "../../../../components/ui/Select";
 import { VariableTextEditor } from "../../../../components/ui/variable-editor";
 import type { VariableSuggestionOption } from "../../../../components/ui/Select";
+import { getVariableOptionsForContext } from "../../../../config/variableMetadata";
 import { ChannelApi } from "../../../../lib/channelApi";
 import {
   SnippetSuggestionMenu,
@@ -52,23 +51,24 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-const workflowVariableOptions: VariableSuggestionOption[] = VARIABLE_OPTIONS.map((key) => ({
-  key,
-  label: key,
-}));
-
-const commerceVariableOptions: VariableSuggestionOption[] = [
-  "trigger.orderNumber",
-  "trigger.orderTotalAmount",
-  "trigger.currency",
-  "trigger.checkoutUrl",
-  "trigger.customerEmail",
-  "trigger.customerPhone",
-].map((key) => ({ key, label: key }));
+const workflowVariableOptions: VariableSuggestionOption[] =
+  getVariableOptionsForContext("workflowContact");
+const commerceVariableOptions: VariableSuggestionOption[] =
+  getVariableOptionsForContext("workflowCommerce");
 
 const messageVariableOptions = [...workflowVariableOptions, ...commerceVariableOptions];
 
 type MessageMode = "text" | "media" | "template";
+
+function isMessageMode(value: string): value is MessageMode {
+  return value === "text" || value === "media" || value === "template";
+}
+
+function getMessageModeLabel(mode: MessageMode): string {
+  if (mode === "text") return "Text";
+  if (mode === "media") return "Media";
+  return "Template";
+}
 
 type TemplateOption = {
   id: string;
@@ -118,6 +118,25 @@ function extractTemplateKeysFromComponents(components: unknown[]) {
   };
   components.forEach(visit);
   return Array.from(keys);
+}
+
+function extractTemplateQuickReplyButtons(components: unknown[]) {
+  const labels: string[] = [];
+
+  components.forEach((component) => {
+    if (!isRecord(component)) return;
+    if (String(component.type ?? "").toUpperCase() !== "BUTTONS") return;
+    const buttons = Array.isArray(component.buttons) ? component.buttons : [];
+
+    buttons.forEach((button) => {
+      if (!isRecord(button)) return;
+      if (String(button.type ?? "").toUpperCase() !== "QUICK_REPLY") return;
+      const label = typeof button.text === "string" ? button.text.trim() : "";
+      if (label) labels.push(label);
+    });
+  });
+
+  return Array.from(new Set(labels));
 }
 
 function normalizeTemplate(row: unknown): TemplateOption | null {
@@ -224,6 +243,10 @@ export function SendMessageConfig({ step, onChange }: SP) {
   const messageModes: MessageMode[] = templateChannel
     ? ["text", "media", "template"]
     : ["text", "media"];
+  const messageModeOptions = messageModes.map((mode) => ({
+    value: mode,
+    label: getMessageModeLabel(mode),
+  }));
   const selectedTemplateId = templateId(selectedTemplate);
   const isCommerceTrigger = Boolean(state.workflow?.config?.trigger?.type?.startsWith("commerce."));
   const snippetQuery = getSnippetTriggerQuery(messageText);
@@ -302,6 +325,10 @@ export function SendMessageConfig({ step, onChange }: SP) {
       variables: templateVariableKeys,
     } satisfies TemplateOption;
   }, [selectedTemplate, selectedTemplateId, templateVariableKeys, templates]);
+  const templateQuickReplyButtons = useMemo(
+    () => extractTemplateQuickReplyButtons(selectedTemplateOption?.components ?? []),
+    [selectedTemplateOption],
+  );
 
   const commerceWindowWarning = useMemo(() => {
     if (!isCommerceTrigger) return null;
@@ -443,8 +470,14 @@ export function SendMessageConfig({ step, onChange }: SP) {
         ...data.defaultMessage,
         type: mode,
       },
+      ...(mode !== "template" ? { templateButtonBranching: false } : {}),
       metadata: clearTemplateMetadata(data.metadata),
     });
+  };
+
+  const handleMessageModeChange = (value: string) => {
+    if (!isMessageMode(value) || !messageModes.includes(value)) return;
+    setMessageMode(value);
   };
 
   const handleTemplateChange = (value: string) => {
@@ -452,9 +485,12 @@ export function SendMessageConfig({ step, onChange }: SP) {
     if (!nextTemplate) {
       u({
         metadata: clearTemplateMetadata(data.metadata),
+        templateButtonBranching: false,
       });
       return;
     }
+
+    const hasQuickReplyButtons = extractTemplateQuickReplyButtons(nextTemplate.components).length > 0;
 
     u({
       defaultMessage: {
@@ -463,6 +499,7 @@ export function SendMessageConfig({ step, onChange }: SP) {
         text: "",
       },
       attachments: [],
+      templateButtonBranching: hasQuickReplyButtons,
       metadata: {
         ...(data.metadata ?? {}),
         template: buildTemplateMetadata(nextTemplate, data.metadata?.template),
@@ -527,21 +564,12 @@ export function SendMessageConfig({ step, onChange }: SP) {
           </div>
         ) : null}
         <Field label="Type">
-          <div className="flex gap-2 mb-3">
-            {messageModes.map((t) => (
-              <div key={t} className="flex-1">
-                <Button
-                  onClick={() => setMessageMode(t)}
-                  variant={currentMode === t ? "dark" : "secondary"}
-                  size="sm"
-                  fullWidth
-                  leftIcon={t === "template" ? <FileText size={13} /> : undefined}
-                >
-                  {t === "text" ? "Text" : t === "media" ? "Media" : "Template"}
-                </Button>
-              </div>
-            ))}
-          </div>
+          <BaseSelect
+            options={messageModeOptions}
+            value={currentMode}
+            onChange={handleMessageModeChange}
+            placeholder="Select message type"
+          />
         </Field>
 
         {currentMode === "template" ? (
@@ -589,6 +617,33 @@ export function SendMessageConfig({ step, onChange }: SP) {
                       />
                     </div>
                   ))}
+                </div>
+              ) : null}
+              {selectedTemplateOption ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <ToggleRow
+                    label="Branch on quick replies"
+                    description={
+                      templateQuickReplyButtons.length > 0
+                        ? "Each quick reply becomes a canvas path from this message."
+                        : "Choose a template with quick reply buttons to branch from customer taps."
+                    }
+                    checked={Boolean(data.templateButtonBranching && templateQuickReplyButtons.length > 0)}
+                    disabled={templateQuickReplyButtons.length === 0}
+                    onChange={(value) => u({ templateButtonBranching: value })}
+                  />
+                  {templateQuickReplyButtons.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {templateQuickReplyButtons.map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>

@@ -37,6 +37,7 @@ import { ReportsLayout } from "../pages/reports/ReportsLayout";
 import { TemplateGallery } from "../pages/workflow/TemplateGallery";
 import { WorkflowCanvas } from "../pages/workflow/WorkflowCanvas";
 import { WorkflowList } from "../pages/workflow/WorkflowList";
+import { WorkflowProgressPage } from "../pages/workflow/WorkflowProgressPage";
 import { WorkspaceSettings } from "../pages/workspace";
 import { UserSettings } from "../pages/workspace/sections/UserSettings";
 import { UserSettingsLayout } from "../pages/user";
@@ -178,6 +179,14 @@ export const WorkspaceRouter = () => {
           element={
             <ProtectedRoute ws="ws:workflows:view">
               <WorkflowList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="workflows/progress"
+          element={
+            <ProtectedRoute ws="ws:workflows:view">
+              <WorkflowProgressPage />
             </ProtectedRoute>
           }
         />

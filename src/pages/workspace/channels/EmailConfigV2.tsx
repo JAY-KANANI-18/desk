@@ -4,10 +4,11 @@ import { Button } from '../../../components/ui/button/Button';
 import { BaseInput } from '../../../components/ui/inputs/BaseInput';
 import { CopyInput } from '../../../components/ui/inputs/CopyInput';
 import { PasswordInput } from '../../../components/ui/inputs/PasswordInput';
-import { TextareaInput } from '../../../components/ui/inputs/TextareaInput';
 import { BaseSelect } from '../../../components/ui/select/BaseSelect';
 import type { SelectOption } from '../../../components/ui/select/shared';
 import { ToggleSwitch } from '../../../components/ui/toggle/ToggleSwitch';
+import { VariableHtmlEditor } from '../../../components/ui/variable-editor';
+import { getVariableOptionsForContext } from '../../../config/variableMetadata';
 import { ChannelApi } from '../../../lib/channelApi';
 import {
   buildEmailChannelFormValues,
@@ -25,7 +26,12 @@ const encryptionOptions: SelectOption[] = [
 export const EmailConfiguration = ({
   channel,
   onDisconnect,
-}: { channel: ConnectedChannel; onDisconnect: () => void }) => {
+  onSaved,
+}: {
+  channel: ConnectedChannel;
+  onDisconnect: () => void;
+  onSaved?: () => Promise<void> | void;
+}) => {
   const { saving, saved, error, save } = useSave();
   const initial = useMemo(() => buildEmailChannelFormValues(channel), [channel]);
 
@@ -44,6 +50,10 @@ export const EmailConfiguration = ({
     initial.signatureEnabled,
   );
   const [signatureHtml, setSignatureHtml] = useState(initial.signatureHtml);
+  const signatureVariables = useMemo(
+    () => getVariableOptionsForContext('conversation'),
+    [],
+  );
 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(
@@ -65,8 +75,8 @@ export const EmailConfiguration = ({
   };
 
   const handleSave = () =>
-    save(() =>
-      ChannelApi.updateEmailChannel(
+    save(async () => {
+      const updatedChannel = await ChannelApi.updateEmailChannel(
         String(channel.id),
         buildEmailChannelPayload({
           channelName,
@@ -82,8 +92,10 @@ export const EmailConfiguration = ({
           signatureHtml,
           signatureEnabled,
         }),
-      ),
-    );
+      );
+      await onSaved?.();
+      return updatedChannel;
+    });
 
   const summaryItems = [
     { label: 'Forwarding Email', value: initial.forwardingEmail || '-' },
@@ -209,17 +221,24 @@ export const EmailConfiguration = ({
             label="Use this signature when sending email"
           />
         </div>
-        <TextareaInput
-          label="Signature HTML"
-          value={signatureHtml}
-          onChange={(event) => setSignatureHtml(event.target.value)}
-          rows={6}
-          autoResize
-          placeholder="<p>Regards,<br />{{agent_name}}</p>"
-        />
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-700">
+            Signature
+          </label>
+          <VariableHtmlEditor
+            value={signatureHtml}
+            onChange={setSignatureHtml}
+            variables={signatureVariables}
+            appearance="default"
+            menuPlacement="top"
+            editorClassName="min-h-[132px] text-sm leading-6"
+            placeholder="Regards, type $ to personalize"
+            aria-label="Email signature"
+          />
+        </div>
         <p className="text-xs text-slate-400">
-          Variables like <code>{'{{agent_name}}'}</code> and{' '}
-          <code>{'{{contact_name}}'}</code> are supported when the email is sent.
+          Variables like <code>{'{{agent.name}}'}</code> and{' '}
+          <code>{'{{contact.name}}'}</code> are supported when the email is sent.
         </p>
       </div>
 

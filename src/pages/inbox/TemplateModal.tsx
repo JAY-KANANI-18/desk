@@ -9,10 +9,11 @@ import { ChannelApi } from '../../lib/channelApi';
 import { Button } from '../../components/ui/Button';
 import { IconButton } from '../../components/ui/button/IconButton';
 import { ResponsiveModal } from '../../components/ui/modal';
-import { BaseInput } from '../../components/ui/inputs/BaseInput';
 import { SearchInput } from '../../components/ui/inputs';
 import { Tag } from '../../components/ui/Tag';
+import { VariableTextEditor } from '../../components/ui/variable-editor';
 import { useInbox } from '../../context/InboxContext';
+import { variables as conversationVariables } from './data';
 import {
     normalizeWhatsAppTemplateComponents,
     WhatsAppTemplateMessageWindow,
@@ -109,7 +110,7 @@ function mapApiTemplate(api: ApiTemplate): Template {
     });
 
     const bodyText = bodyComp?.text ?? '';
-    const keys = [...new Set([...bodyText.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]))];
+    const keys = [...new Set([...bodyText.matchAll(/\{\{\s*([a-zA-Z0-9._-]+)\s*\}\}/g)].map(m => m[1]))];
     const variables = Array.isArray(api.variables)
         ? api.variables.map((entry) =>
             typeof entry === 'string'
@@ -136,10 +137,10 @@ function mapApiTemplate(api: ApiTemplate): Template {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function renderTpl(text: string, vals: Record<string, string>) {
-    return text.replace(/\{\{(\w+)\}\}/g, (_, k) => vals[k] || `{{${k}}}`);
+    return text.replace(/\{\{\s*([a-zA-Z0-9._-]+)\s*\}\}/g, (_, k) => vals[k] || `{{${k}}}`);
 }
 function extractKeys(text: string): string[] {
-    return [...new Set([...text.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]))];
+    return [...new Set([...text.matchAll(/\{\{\s*([a-zA-Z0-9._-]+)\s*\}\}/g)].map(m => m[1]))];
 }
 function allKeys(t: Template): string[] {
     const srcs = [t.header, t.body, t.footer, t.couponCode,
@@ -402,21 +403,39 @@ function getTemplateLivePreviewValues(values: Record<string, string>) {
     return filledValues;
 }
 
+function resolveInsertedVariables(
+    values: Record<string, string>,
+    contextValues: Record<string, string>,
+) {
+    const resolvedValues: Record<string, string> = {};
+
+    Object.entries(values).forEach(([key, value]) => {
+        resolvedValues[key] = value.replace(
+            /\{\{\s*\$?([a-zA-Z0-9._-]+)\s*\}\}/g,
+            (_match, variableKey: string) => contextValues[variableKey] ?? `{{${variableKey}}}`,
+        );
+    });
+
+    return resolvedValues;
+}
+
 function TemplateLivePreview({
     template,
     values,
+    contextValues,
     className,
 }: {
     template: Template;
     values: Record<string, string>;
+    contextValues?: Record<string, string>;
     className?: string;
 }) {
     const components = useMemo(
         () => normalizeWhatsAppTemplateComponents(
             template.components,
-            getTemplateLivePreviewValues(values),
+            getTemplateLivePreviewValues(resolveInsertedVariables(values, contextValues ?? {})),
         ),
-        [template.components, values],
+        [contextValues, template.components, values],
     );
 
     return (
@@ -549,7 +568,12 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
 
     const handleUse = () => {
         if (!selected || missing.length > 0) return;
-        onUse({...(originalTemplates.find(t => t.id === selected.id) || {}), name: selected?.name, language: selected.language, variables: varValues});
+        onUse({
+            ...(originalTemplates.find(t => t.id === selected.id) || {}),
+            name: selected?.name,
+            language: selected.language,
+            variables: resolveInsertedVariables(varValues, contextValues),
+        });
         onClose();
     };
 
@@ -791,13 +815,23 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                                         <span>{def?.label ?? key}</span>
                                                         {empty && <span className="ml-auto text-[9.5px] text-red-400 font-medium">required</span>}
                                                     </label>
-                                                    <BaseInput
-                                                        type="text"
+                                                    <VariableTextEditor
                                                         value={varValues[key] ?? ''}
-                                                        onChange={e => setVarValues(p => ({ ...p, [key]: e.target.value }))}
+                                                        onChange={value => setVarValues(p => ({ ...p, [key]: value }))}
+                                                        variables={conversationVariables}
                                                         placeholder={def?.description ?? `Enter ${def?.label ?? key}...`}
-                                                        error={empty ? 'Required field' : undefined}
+                                                        appearance="default"
+                                                        size="sm"
+                                                        menuPlacement="bottom"
+                                                        aria-label={`Template field ${def?.label ?? key}`}
+                                                        editorClassName={`min-h-[2.125rem] max-h-24 overflow-y-auto ${empty ? '!border-red-400 focus:!border-red-400' : ''}`}
+                                                        placeholderClassName="left-3 top-1.5 text-sm leading-5 text-gray-400"
                                                     />
+                                                    {empty ? (
+                                                        <p className="mt-1 text-xs leading-normal text-red-500">
+                                                            Required field
+                                                        </p>
+                                                    ) : null}
                                                 </div>
                                             );
                                         })}
@@ -817,6 +851,7 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                     <TemplateLivePreview
                                         template={selected}
                                         values={varValues}
+                                        contextValues={contextValues}
                                         className="h-[calc(100vh-14rem)] min-h-[420px] max-h-[620px]"
                                     />
                                 </div>
@@ -849,6 +884,7 @@ export function TemplateModal({ open, onClose, onUse, contextValues = {} }: Temp
                                 <TemplateLivePreview
                                     template={selected}
                                     values={varValues}
+                                    contextValues={contextValues}
                                     className="h-full max-h-full"
                                 />
                             </div>

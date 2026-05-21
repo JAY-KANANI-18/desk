@@ -12,22 +12,23 @@ import { WORKFLOW_TRIGGER_NODE_METADATA } from '../../../../config/workflowMetad
 import { getQuestionTypeVisual } from '../../questionTypeVisuals';
 
 const base = 'relative group bg-white border rounded-md cursor-pointer select-none transition-all duration-150 hover:shadow-md';
+type WorkflowLayoutDirection = 'vertical' | 'horizontal';
 
 function withAlpha(color: string, alpha: string) {
   return color.startsWith('#') && color.length === 7 ? `${color}${alpha}` : color;
 }
 
-function getCardStyle(color: string, selected: boolean, highlighted = false): React.CSSProperties {
+function getCardStyle(color: string, selected: boolean, highlighted = false, width = NODE_W): React.CSSProperties {
   if (highlighted) {
     return {
-      width: NODE_W,
+      width,
       borderColor: color,
       boxShadow: `0 0 0 3px ${withAlpha(color, '30')}, 0 10px 24px ${withAlpha(color, '20')}`,
     };
   }
 
   return {
-    width: NODE_W,
+    width,
     borderColor: selected ? color : '#e5e7eb',
     boxShadow: selected
       ? `0 0 0 1px ${color}, 0 8px 20px ${withAlpha(color, '18')}`
@@ -35,7 +36,30 @@ function getCardStyle(color: string, selected: boolean, highlighted = false): Re
   };
 }
 
-function getHandleStyle(color: string): React.CSSProperties {
+function getHeightStyle(height?: number): React.CSSProperties {
+  return typeof height === 'number' ? { height } : {};
+}
+
+function getHandlePosition(layoutDirection?: WorkflowLayoutDirection, kind: 'source' | 'target' = 'source') {
+  if (layoutDirection === 'horizontal') {
+    return kind === 'source' ? Position.Right : Position.Left;
+  }
+
+  return kind === 'source' ? Position.Bottom : Position.Top;
+}
+
+function getHandleStyle(color: string, layoutDirection?: WorkflowLayoutDirection): React.CSSProperties {
+  if (layoutDirection === 'horizontal') {
+    return {
+      top: '50%',
+      transform: 'translateY(-50%)',
+      backgroundColor: color,
+      borderColor: '#ffffff',
+      opacity: 0,
+      pointerEvents: 'none',
+    };
+  }
+
   return {
     left: '50%',
     transform: 'translateX(-50%)',
@@ -44,6 +68,18 @@ function getHandleStyle(color: string): React.CSSProperties {
     opacity: 0,
     pointerEvents: 'none',
   };
+}
+
+function getHandleClass(layoutDirection: WorkflowLayoutDirection | undefined, kind: 'source' | 'target') {
+  if (layoutDirection === 'horizontal') {
+    return kind === 'source'
+      ? '!right-[-5px] !h-2 !w-2 !border-2'
+      : '!left-[-5px] !h-2 !w-2 !border-2';
+  }
+
+  return kind === 'source'
+    ? '!bottom-[-5px] !h-2 !w-2 !border-2'
+    : '!top-[-5px] !h-2 !w-2 !border-2';
 }
 
 function NodeActionButton({
@@ -105,6 +141,9 @@ function WorkflowNodeCard({
   highlighted = false,
   dashed = false,
   title,
+  height,
+  width,
+  layoutDirection,
   icon,
   content,
   showWarning = false,
@@ -119,6 +158,9 @@ function WorkflowNodeCard({
   highlighted?: boolean;
   dashed?: boolean;
   title: string;
+  height?: number;
+  width?: number;
+  layoutDirection?: WorkflowLayoutDirection;
   icon: React.ReactNode;
   content?: React.ReactNode;
   showWarning?: boolean;
@@ -131,15 +173,19 @@ function WorkflowNodeCard({
   return (
     <div
       onClick={onClick}
-      style={{ ...getCardStyle(color, selected, highlighted), borderStyle: dashed ? 'dashed' : 'solid' }}
+      style={{
+        ...getCardStyle(color, selected, highlighted, width),
+        ...getHeightStyle(height),
+        borderStyle: dashed ? 'dashed' : 'solid',
+      }}
       className={`${base} ${highlighted ? 'animate-pulse' : ''}`}
     >
       {showTargetHandle ? (
         <Handle
           type="target"
-          position={Position.Top}
-          style={getHandleStyle(color)}
-          className="!top-[-5px] !h-2 !w-2 !border-2"
+          position={getHandlePosition(layoutDirection, 'target')}
+          style={getHandleStyle(color, layoutDirection)}
+          className={getHandleClass(layoutDirection, 'target')}
         />
       ) : null}
       {actions}
@@ -168,9 +214,9 @@ function WorkflowNodeCard({
       <Handle
         type="source"
         id={sourceHandleId}
-        position={Position.Bottom}
-        style={getHandleStyle(color)}
-        className="!bottom-[-5px] !h-2 !w-2 !border-2"
+        position={getHandlePosition(layoutDirection, 'source')}
+        style={getHandleStyle(color, layoutDirection)}
+        className={getHandleClass(layoutDirection, 'source')}
       />
     </div>
   );
@@ -230,6 +276,79 @@ function PreviewToken({ token }: { token: WorkflowNodePreviewToken }) {
   );
 }
 
+function TemplatePreviewText({ text, strong = false, muted = false }: { text?: string; strong?: boolean; muted?: boolean }) {
+  if (!text) return null;
+
+  return (
+    <p
+      className={[
+        'whitespace-pre-wrap break-words text-[10px] leading-[13px]',
+        strong ? 'font-semibold text-slate-950' : '',
+        muted ? 'text-slate-500' : 'text-slate-800',
+      ].filter(Boolean).join(' ')}
+    >
+      {text}
+    </p>
+  );
+}
+
+function WhatsAppTemplatePreview({ preview }: { preview: WorkflowNodePreview }) {
+  const template = preview.templatePreview;
+  if (!template) return null;
+
+  const statusLabel = [template.language, template.status ? template.status[0] + template.status.slice(1).toLowerCase() : undefined]
+    .filter(Boolean)
+    .join(' | ');
+
+  return (
+    <div title={getPreviewTitle(preview)} className="min-w-0">
+      <div
+        className="rounded-md border border-[#e2d5c3] bg-[#eee3d3] p-1.5"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 8px 8px, rgba(120, 113, 108, 0.12) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
+      >
+        <div className="mb-1 min-w-0">
+          <p className="truncate text-[11px] font-semibold leading-[13px] text-slate-800">
+            {template.name || preview.text}
+          </p>
+          {statusLabel ? (
+            <p className="truncate text-[9px] leading-[11px] text-slate-500">{statusLabel}</p>
+          ) : null}
+        </div>
+
+        <div className="rounded-md bg-white px-2 py-1.5 shadow-sm">
+          <TemplatePreviewText text={template.headerText} strong />
+          {template.headerText ? <div className="h-1" /> : null}
+          <TemplatePreviewText text={template.bodyText} />
+          {template.footerText ? (
+            <>
+              <div className="h-1" />
+              <TemplatePreviewText text={template.footerText} muted />
+            </>
+          ) : null}
+          <p className="pt-1 text-right text-[8px] leading-none text-slate-400">12:35 PM</p>
+        </div>
+
+        {template.buttons.length > 0 ? (
+          <div className="mt-1 space-y-1">
+            {template.buttons.map((button, index) => (
+              <div
+                key={`${button.text}-${index}`}
+                className="flex h-6 items-center justify-center rounded-md bg-white px-2 text-center text-[10px] font-semibold leading-none text-slate-900 shadow-sm"
+              >
+                <span className="min-w-0 truncate">{button.text}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function NodePreview({
   preview,
   onNavigateToStep,
@@ -240,6 +359,10 @@ function NodePreview({
   if (!preview || (preview.tokens.length === 0 && !preview.text)) return null;
 
   if (preview.variant === 'message') {
+    if (preview.templatePreview) {
+      return <WhatsAppTemplatePreview preview={preview} />;
+    }
+
     const channelToken = preview.tokens.find((token) => token.kind === 'channel');
 
     return (
@@ -465,6 +588,8 @@ function NodePreview({
 
 export interface TriggerNodeData {
   triggerType: TriggerType | null;
+  height?: number;
+  layoutDirection?: WorkflowLayoutDirection;
   isConfigured: boolean;
   hasError: boolean;
   validationIssue?: string;
@@ -483,6 +608,8 @@ export const TriggerNode = memo(({ data, selected }: NodeProps<TriggerNodeData>)
       selected={selected}
       highlighted={data.highlightPulse}
       dashed={data.hasError}
+      height={data.height}
+      layoutDirection={data.layoutDirection}
       title="Trigger"
       icon={<HeaderIcon size={16} style={{ color }} />}
       showWarning={!data.isConfigured}
@@ -514,6 +641,8 @@ export interface StepNodeData {
   stepNumber?: number;
   preview?: WorkflowNodePreview;
   height?: number;
+  width?: number;
+  layoutDirection?: WorkflowLayoutDirection;
   isConfigured: boolean;
   hasError: boolean;
   validationIssue?: string;
@@ -535,6 +664,9 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeData>) => {
       selected={selected}
       highlighted={data.highlightPulse}
       showTargetHandle
+      height={data.height}
+      width={data.width}
+      layoutDirection={data.layoutDirection}
       title={getStepHeading(data.label, meta.label, data.stepNumber)}
       icon={<Icon size={15} style={{ color }} />}
       showWarning={data.hasError}
@@ -562,6 +694,8 @@ export interface BranchNodeData {
   stepNumber?: number;
   preview?: WorkflowNodePreview;
   height?: number;
+  width?: number;
+  layoutDirection?: WorkflowLayoutDirection;
   isConfigured: boolean;
   hasError: boolean;
   validationIssue?: string;
@@ -584,6 +718,9 @@ export const BranchNode = memo(({ data, selected }: NodeProps<BranchNodeData>) =
       highlighted={data.highlightPulse}
       showTargetHandle
       sourceHandleId="branch-out"
+      height={data.height}
+      width={data.width}
+      layoutDirection={data.layoutDirection}
       title={getStepHeading(data.label, 'Branch', data.stepNumber)}
       icon={<Icon size={15} style={{ color }} />}
       showWarning={data.hasError}
@@ -609,6 +746,7 @@ export interface BranchPillData {
   label: string;
   color: string;
   isElse?: boolean;
+  layoutDirection?: WorkflowLayoutDirection;
 }
 
 export const BranchPillNode = memo(({ data }: NodeProps<BranchPillData>) => (
@@ -618,8 +756,8 @@ export const BranchPillNode = memo(({ data }: NodeProps<BranchPillData>) => (
   >
     <Handle
       type="target"
-      position={Position.Top}
-      style={{ left: '50%', transform: 'translateX(-50%)', opacity: 0, pointerEvents: 'none' }}
+      position={getHandlePosition(data.layoutDirection, 'target')}
+      style={getHandleStyle(data.color, data.layoutDirection)}
     />
     <div
       className="inline-flex h-5 max-w-full items-center rounded-md border px-2.5 text-[10px] font-semibold leading-none select-none whitespace-nowrap"
@@ -634,8 +772,8 @@ export const BranchPillNode = memo(({ data }: NodeProps<BranchPillData>) => (
     </div>
     <Handle
       type="source"
-      position={Position.Bottom}
-      style={{ left: '50%', transform: 'translateX(-50%)', opacity: 0, pointerEvents: 'none' }}
+      position={getHandlePosition(data.layoutDirection, 'source')}
+      style={getHandleStyle(data.color, data.layoutDirection)}
     />
   </div>
 ));
@@ -648,6 +786,7 @@ export interface AddStepNodeData {
   onPaste?: () => void;
   copiedStepLabel?: string;
   color?: string;
+  layoutDirection?: WorkflowLayoutDirection;
 }
 
 export const AddStepNode = memo(({ data }: NodeProps<AddStepNodeData>) => {
@@ -658,8 +797,12 @@ export const AddStepNode = memo(({ data }: NodeProps<AddStepNodeData>) => {
     <div className="relative flex items-center justify-center" style={{ width: NODE_W_ADD, height: NODE_W_ADD }}>
       <Handle
         type="target"
-        position={Position.Top}
-        style={{ left: '50%', transform: 'translateX(-50%)', opacity: 0, width: 4, height: 4 }}
+        position={getHandlePosition(data.layoutDirection, 'target')}
+        style={{
+          ...getHandleStyle(c, data.layoutDirection),
+          width: 4,
+          height: 4,
+        }}
       />
       {canPaste ? (
         <Tooltip content={`Paste ${data.copiedStepLabel} here`}>

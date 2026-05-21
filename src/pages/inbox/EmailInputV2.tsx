@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import {
   AtSign,
   Bold,
@@ -31,7 +31,6 @@ import {
   useInboxAiComposer,
   useWorkspaceSnippets,
 } from './composerShared';
-import { extractMentionIds } from './utils';
 import { normalizeEmailChannelConfig } from '../../lib/emailChannel';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useDisclosure } from '../../hooks/useDisclosure';
@@ -44,6 +43,19 @@ import {
   VariableSuggestionMenu,
   type MentionSuggestionOption,
 } from '../../components/ui/Select';
+import {
+  createMentionTokenElement,
+  createVariableTokenElement,
+  createRichVariableFragmentFromClipboard,
+  extractMentionIds,
+  formatMentionToken,
+  formatVariableToken,
+  MENTION_TRIGGER_PATTERN,
+  sanitizeRichVariableHtml,
+  serializeRichVariableEditorHtml,
+  renderVariableTokenHtml,
+  VARIABLE_TRIGGER_PATTERN,
+} from '../../components/ui/variable-editor';
 import { workspaceUserLabel } from './contact-sidebar/utils';
 import type { WorkspaceUserLike } from './contact-sidebar/types';
 import {
@@ -59,8 +71,8 @@ type AttachedFile = {
   url: string;
   previewUrl?: string;
 };
-type SelectedMention = { id: string; label: string };
 type TriggerState = { type: 'variable' | 'mention'; query: string } | null;
+const BLOCK_ELEMENT_TAGS = new Set(['DIV', 'P', 'LI']);
 
 function getMentionStatus(user: WorkspaceUserLike): MentionSuggestionOption['status'] | undefined {
   switch (user.activityStatus?.toLowerCase()) {
@@ -101,17 +113,96 @@ function snippetAttachmentToAttachedFile(attachment: SnippetAttachment): Attache
   };
 }
 
-function escapeHtml(text: string) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function isEditorSelection(editor: HTMLElement, selection: Selection | null) {
+  if (!selection || !selection.anchorNode) return false;
+  return editor.contains(selection.anchorNode);
 }
 
-function plainTextToHtml(text: string) {
-  return escapeHtml(text).replace(/\n/g, '<br />');
+function setCaretAfter(node: Node) {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.setStartAfter(node);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function serializeEditorNode(node: ChildNode): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent ?? '';
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return '';
+  }
+
+  const element = node as HTMLElement;
+  const variable = element.dataset.variable;
+  const mentionId = element.dataset.mentionId;
+  const mentionLabel = element.dataset.mentionLabel;
+
+  if (variable) {
+    return formatVariableToken(variable);
+  }
+
+  if (mentionId && mentionLabel) {
+    return formatMentionToken(mentionId, mentionLabel);
+  }
+
+  if (element.tagName === 'BR') {
+    return '\n';
+  }
+
+  return Array.from(element.childNodes).map(serializeEditorNode).join('');
+}
+
+function extractEditorText(editor: HTMLElement) {
+  const pieces = Array.from(editor.childNodes).map((node, index, nodes) => {
+    const text = serializeEditorNode(node);
+    const isBlock =
+      node.nodeType === Node.ELEMENT_NODE &&
+      BLOCK_ELEMENT_TAGS.has((node as HTMLElement).tagName);
+    const hasNext = index < nodes.length - 1;
+
+    if (isBlock && hasNext && !text.endsWith('\n')) {
+      return `${text}\n`;
+    }
+
+    return text;
+  });
+
+  return pieces.join('').replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n');
+}
+
+function renderEditorHtml(text: string) {
+  return renderVariableTokenHtml(text).replace(/\n/g, '<br />');
+}
+
+function getEditorHtmlForSend(editor: HTMLElement) {
+  return serializeRichVariableEditorHtml(editor);
+}
+
+function insertEditorFragment(editor: HTMLElement, fragment: DocumentFragment) {
+  const selection = window.getSelection();
+  let range: Range;
+
+  if (selection?.rangeCount && isEditorSelection(editor, selection)) {
+    range = selection.getRangeAt(0);
+  } else {
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+  }
+
+  const lastNode = fragment.lastChild;
+  range.deleteContents();
+  range.insertNode(fragment);
+
+  if (lastNode) {
+    setCaretAfter(lastNode);
+  }
 }
 
 type EmailThreadDraft = {
@@ -175,9 +266,9 @@ export function EmailInput({
   const [showBcc, setShowBcc] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [draftText, setDraftText] = useState('');
-  const [selectedMentions, setSelectedMentions] = useState<SelectedMention[]>([]);
   const [trigger, setTrigger] = useState<TriggerState>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const [isEditorFocused, setIsEditorFocused] = useState(false);
   const [snippetHighlightIndex, setSnippetHighlightIndex] = useState(0);
   const [dismissedSnippetDraft, setDismissedSnippetDraft] = useState<string | null>(null);
   const emojiMenu = useDisclosure();
@@ -238,7 +329,7 @@ export function EmailInput({
     getDraft: () => draftText,
     setDraft: (text) => {
       setDraftText(text);
-      if (editorRef.current) editorRef.current.innerHTML = plainTextToHtml(text);
+      if (editorRef.current) editorRef.current.innerHTML = renderEditorHtml(text);
     },
     switchToReply: () => onInputModeChange('reply'),
     switchToNote: () => onInputModeChange('note'),
@@ -340,7 +431,6 @@ export function EmailInput({
   useEffect(() => {
     setAttachedFiles([]);
     setTrigger(null);
-    setSelectedMentions([]);
     setDismissedSnippetDraft(null);
     setDraftText('');
     if (editorRef.current) editorRef.current.innerHTML = '';
@@ -364,17 +454,15 @@ export function EmailInput({
 
   const updateDraftState = useCallback(() => {
     aiComposer.clearAiComposerNotice();
-    const text = editorRef.current?.innerText?.replace(/\n{3,}/g, '\n\n') ?? '';
+    const editor = editorRef.current;
+    const text = editor ? extractEditorText(editor) : '';
     const nextText = text.trimEnd();
     setDraftText(nextText);
     if (nextText !== draftText) {
       setDismissedSnippetDraft(null);
     }
-    setSelectedMentions((prev) =>
-      prev.filter((mention) => text.includes(`@${mention.label}`)),
-    );
     const selection = window.getSelection();
-    if (!selection || !selection.rangeCount) {
+    if (!editor || !isEditorSelection(editor, selection) || !selection?.rangeCount) {
       setTrigger(null);
       return;
     }
@@ -386,25 +474,26 @@ export function EmailInput({
     }
     const textBeforeCursor = (node.textContent ?? '').slice(0, range.startOffset);
     if (isNote) {
-      const mentionMatch = textBeforeCursor.match(/@([\w.-]*)$/);
+      const mentionMatch = textBeforeCursor.match(MENTION_TRIGGER_PATTERN);
       if (mentionMatch) {
-        setTrigger({ type: 'mention', query: mentionMatch[1] });
+        setTrigger({ type: 'mention', query: mentionMatch[1] ?? '' });
         setHighlightIndex(0);
         return;
       }
     }
-    const variableMatch = textBeforeCursor.match(/\$(\w*)$/);
+    const variableMatch = textBeforeCursor.match(VARIABLE_TRIGGER_PATTERN);
     if (variableMatch) {
-      setTrigger({ type: 'variable', query: variableMatch[1] });
+      setTrigger({ type: 'variable', query: variableMatch[1] ?? '' });
       setHighlightIndex(0);
       return;
     }
     setTrigger(null);
   }, [aiComposer, draftText, isNote]);
 
-  const insertAtSelection = useCallback((replacement: string, pattern: RegExp) => {
+  const insertTokenAtSelection = useCallback((token: HTMLElement, pattern: RegExp) => {
+    const editor = editorRef.current;
     const selection = window.getSelection();
-    if (!selection || !selection.rangeCount) return;
+    if (!editor || !selection || !selection.rangeCount) return;
     const range = selection.getRangeAt(0);
     const node = range.startContainer;
     if (node.nodeType !== Node.TEXT_NODE) return;
@@ -418,17 +507,14 @@ export function EmailInput({
     replacementRange.setEnd(node, range.startOffset);
     replacementRange.deleteContents();
 
-    const textNode = document.createTextNode(replacement);
-    replacementRange.insertNode(textNode);
-
-    const after = document.createRange();
-    after.setStartAfter(textNode);
-    after.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(after);
+    const space = document.createTextNode(' ');
+    const fragment = document.createDocumentFragment();
+    fragment.append(token, space);
+    replacementRange.insertNode(fragment);
+    setCaretAfter(space);
     setTrigger(null);
     updateDraftState();
-    editorRef.current?.focus();
+    editor.focus();
   }, [updateDraftState]);
 
   useEffect(() => {
@@ -441,7 +527,7 @@ export function EmailInput({
     setDismissedSnippetDraft(null);
     setTrigger(null);
     if (editorRef.current) {
-      editorRef.current.innerHTML = plainTextToHtml(nextDraft);
+      editorRef.current.innerHTML = renderEditorHtml(nextDraft);
     }
     if (snippet.attachments?.length) {
       setAttachedFiles((current) => [
@@ -488,19 +574,16 @@ export function EmailInput({
   }, [draftText, handleSelectSnippet, snippetHighlightIndex, snippetMenuOpen, snippetOptions]);
 
   const insertVariable = useCallback((variable: typeof variables[number]) => {
-    insertAtSelection(`{{${variable.key}}}`, /\$(\w*)$/);
-  }, [insertAtSelection]);
+    insertTokenAtSelection(createVariableTokenElement(variable.key), VARIABLE_TRIGGER_PATTERN);
+  }, [insertTokenAtSelection]);
 
   const insertMention = useCallback((user: WorkspaceUserLike) => {
     const label = workspaceUserLabel(user);
-    setSelectedMentions((prev) => {
-      const nextMention = { id: String(user.id), label };
-      return prev.some((mention) => mention.id === nextMention.id)
-        ? prev.map((mention) => (mention.id === nextMention.id ? nextMention : mention))
-        : [...prev, nextMention];
-    });
-    insertAtSelection(`@${label} `, /@([\w.-]*)$/);
-  }, [insertAtSelection]);
+    insertTokenAtSelection(
+      createMentionTokenElement(String(user.id), label),
+      MENTION_TRIGGER_PATTERN,
+    );
+  }, [insertTokenAtSelection]);
 
   const addFiles = async (files: FileList | null) => {
     if (!files || !selectedConversation?.id) return;
@@ -523,6 +606,21 @@ export function EmailInput({
     updateDraftState();
   };
 
+  const handleEditorPaste = useCallback((event: ClipboardEvent<HTMLDivElement>) => {
+    if (isNote) return;
+
+    event.preventDefault();
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const html = event.clipboardData.getData('text/html');
+    const text = event.clipboardData.getData('text/plain');
+    const fragment = createRichVariableFragmentFromClipboard(html, text);
+
+    insertEditorFragment(editor, fragment);
+    updateDraftState();
+  }, [isNote, updateDraftState]);
+
   const canSend = !isAiBusy && (draftText.trim().length > 0 || attachedFiles.length > 0);
   const actionButtonSize = 'xs';
 
@@ -532,14 +630,7 @@ export function EmailInput({
     if (isNote) {
       onSendNote({
         text: draftText.trim(),
-        mentionedUserIds: Array.from(
-          new Set([
-            ...extractMentionIds(draftText),
-            ...selectedMentions
-              .filter((mention) => draftText.includes(`@${mention.label}`))
-              .map((mention) => mention.id),
-          ]),
-        ),
+        mentionedUserIds: extractMentionIds(draftText),
       } as any);
     } else {
       const attachments: MediaAttachment[] = attachedFiles.map((file) => ({
@@ -550,9 +641,9 @@ export function EmailInput({
         mimeType: file.file.type,
       }));
       const signatureHtml = normalizedChannel.signatureEnabled && normalizedChannel.signatureHtml
-        ? `<div data-email-signature="true">${normalizedChannel.signatureHtml}</div>`
+        ? `<div data-email-signature="true">${sanitizeRichVariableHtml(normalizedChannel.signatureHtml)}</div>`
         : '';
-      const htmlBody = `${editorRef.current?.innerHTML ?? ''}${signatureHtml}`;
+      const htmlBody = `${editorRef.current ? getEditorHtmlForSend(editorRef.current) : ''}${signatureHtml}`;
 
       onSendMessage({
         id: Date.now(),
@@ -587,7 +678,6 @@ export function EmailInput({
     setDraftText('');
     setAttachedFiles([]);
     setTrigger(null);
-    setSelectedMentions([]);
     if (editorRef.current) editorRef.current.innerHTML = '';
     if (!isNote) setSubject('');
     onClearReplyContext?.();
@@ -771,7 +861,7 @@ export function EmailInput({
                 onHighlightChange={setHighlightIndex}
                 onSelect={insertVariable}
                 showEmptyState={Boolean(trigger.query)}
-                className="left-2 right-2 w-auto sm:left-4 sm:right-auto sm:w-[320px]"
+                anchorRef={editorRef}
               />
             ) : null}
             <MentionSuggestionMenu
@@ -798,7 +888,7 @@ export function EmailInput({
             />
 
             {!draftText && !aiComposer.aiLoadingAction && !aiComposer.aiComposerNotice && (
-              <div className={`absolute left-3 top-3 pr-3 text-[13px] pointer-events-none select-none sm:left-4 sm:text-sm ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
+              <div className={`pointer-events-none absolute left-3 top-2 select-none pr-3 text-[13px] leading-6 transition-transform duration-150 sm:left-4 sm:text-sm sm:leading-relaxed ${isEditorFocused ? 'translate-x-[6px]' : ''} ${isNote ? 'text-amber-400' : 'text-gray-400'}`}>
                 {isNote ? "Internal note... type '@' to mention teammates" : <>Write your email... type <span className="font-mono text-[var(--color-primary)]">$</span> for variables</>}
               </div>
             )}
@@ -808,8 +898,11 @@ export function EmailInput({
               contentEditable={!isAiBusy}
               suppressContentEditableWarning
               onInput={updateDraftState}
+              onFocus={() => setIsEditorFocused(true)}
+              onBlur={() => setIsEditorFocused(false)}
               onKeyUp={updateDraftState}
               onMouseUp={updateDraftState}
+              onPaste={handleEditorPaste}
               onKeyDown={(e) => {
                 if (isAiBusy) {
                   e.preventDefault();
@@ -838,7 +931,7 @@ export function EmailInput({
                 }
               }}
               aria-busy={isAiBusy}
-              className={`min-h-[80px] px-3 py-3 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-[var(--color-primary)] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
+              className={`min-h-[80px] whitespace-pre-wrap px-3 py-2 text-[13px] leading-6 text-gray-800 focus:outline-none sm:px-4 sm:text-sm sm:leading-relaxed [&_a]:text-[var(--color-primary)] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${isAiBusy ? 'cursor-wait opacity-70' : ''} ${activeBg}`}
               style={{ wordBreak: 'break-word' }}
             />
           </div>

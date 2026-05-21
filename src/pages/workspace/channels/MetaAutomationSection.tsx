@@ -1514,8 +1514,8 @@ export const MetaAutomationSection = ({
               }
               rows={5}
               autoResize
-              hint="Personalize with {{commenter_name}} or {{comment_text}}."
-              placeholder="Hi {{commenter_name}}, thanks for commenting. We just sent you a DM."
+              hint="Personalize with {{commenter.name}} or {{comment.text}}."
+              placeholder="Hi {{commenter.name}}, thanks for commenting. We just sent you a DM."
             />
           ) : (
             <div className="space-y-4">
@@ -1610,7 +1610,7 @@ export const MetaAutomationSection = ({
                             }
                             rows={3}
                             autoResize
-                            hint="Personalize with {{commenter_name}} or {{comment_text}}."
+                            hint="Personalize with {{commenter.name}} or {{comment.text}}."
                             placeholder="Write the DM people receive after commenting on this post."
                           />
                         </div>
@@ -1648,8 +1648,8 @@ export const MetaAutomationSection = ({
             }
             rows={5}
             autoResize
-            hint="Variables: {{contact_name}} {{reply_text}} {{story_id}}"
-            placeholder="Thanks {{contact_name}}. We saw your story reply and will follow up shortly."
+            hint="Variables: {{contact.name}} {{message.text}} {{story.id}}"
+            placeholder="Thanks {{contact.name}}. We saw your story reply and will follow up shortly."
           />
         </div>
       ) : null}

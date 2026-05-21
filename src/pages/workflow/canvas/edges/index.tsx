@@ -216,6 +216,7 @@ BranchFanEdge.displayName = 'BranchFanEdge';
 export interface StepEdgeData {
   color?: string;
   dashed?: boolean;
+  layoutDirection?: 'vertical' | 'horizontal';
 }
 
 function getRoundedStepPath(
@@ -248,6 +249,36 @@ function getRoundedStepPath(
   ].join(' ');
 }
 
+function getRoundedHorizontalStepPath(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+) {
+  const isHorizontal = Math.abs(sourceY - targetY) < 1;
+  if (isHorizontal) return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+
+  const horizontalGap = Math.abs(targetX - sourceX);
+  const horizontalDirection = targetX > sourceX ? 1 : -1;
+  const verticalDirection = targetY > sourceY ? 1 : -1;
+  const midX = sourceX + horizontalDirection * Math.max(28, Math.min(72, horizontalGap / 2));
+  const radius = Math.min(
+    12,
+    Math.abs(midX - sourceX) / 2,
+    Math.abs(targetX - midX) / 2,
+    Math.abs(targetY - sourceY) / 2,
+  );
+
+  return [
+    `M ${sourceX} ${sourceY}`,
+    `L ${midX - horizontalDirection * radius} ${sourceY}`,
+    `Q ${midX} ${sourceY} ${midX} ${sourceY + verticalDirection * radius}`,
+    `L ${midX} ${targetY - verticalDirection * radius}`,
+    `Q ${midX} ${targetY} ${midX + horizontalDirection * radius} ${targetY}`,
+    `L ${targetX} ${targetY}`,
+  ].join(' ');
+}
+
 export function StepEdge({
   id,
   sourceX,
@@ -258,7 +289,9 @@ export function StepEdge({
   data,
 }: EdgeProps<StepEdgeData>) {
   const color = data?.color ?? '#cbd5e1';
-  const edgePath = getRoundedStepPath(sourceX, sourceY, targetX, targetY);
+  const edgePath = data?.layoutDirection === 'horizontal'
+    ? getRoundedHorizontalStepPath(sourceX, sourceY, targetX, targetY)
+    : getRoundedStepPath(sourceX, sourceY, targetX, targetY);
 
   return (
     <BaseEdge

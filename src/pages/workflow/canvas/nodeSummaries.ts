@@ -12,6 +12,7 @@ import {
   type DateTimeData,
   type HttpRequestData,
   type JumpToData,
+  type MessageTemplateData,
   type SendMessageData,
   type StepConfig,
   type TriggerAnotherWorkflowData,
@@ -69,12 +70,28 @@ export interface WorkflowNodePreviewToken {
   textColor?: string;
 }
 
+export interface WorkflowTemplateButtonPreview {
+  text: string;
+  type?: string;
+}
+
+export interface WorkflowTemplateMessagePreview {
+  name: string;
+  language: string;
+  status?: string;
+  headerText?: string;
+  bodyText: string;
+  footerText?: string;
+  buttons: WorkflowTemplateButtonPreview[];
+}
+
 export interface WorkflowNodePreview {
   label: string;
   text?: string;
   tokens: WorkflowNodePreviewToken[];
   variant?: "message" | "question" | "assignment" | "branch" | "tags" | "field" | "conversation" | "plain" | "jump";
   isPlaceholder?: boolean;
+  templatePreview?: WorkflowTemplateMessagePreview;
 }
 
 function cleanText(value: string | null | undefined, maxLength = 90) {
@@ -134,6 +151,73 @@ function getChannelToken(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function renderTemplateText(text: string, variables?: Record<string, string>) {
+  return text.replace(/\{\{\s*(\d+)\s*\}\}/g, (match, key) => {
+    const value = variables?.[key]?.trim();
+    return value || match;
+  });
+}
+
+function getTemplateMessagePreview(template: MessageTemplateData | undefined) {
+  if (!template) return undefined;
+
+  const components = Array.isArray(template.components) ? template.components : [];
+  let headerText = "";
+  let bodyText = "";
+  let footerText = "";
+  const buttons: WorkflowTemplateButtonPreview[] = [];
+
+  components.forEach((component) => {
+    if (!isRecord(component)) return;
+    const type = stringValue(component.type).toUpperCase();
+
+    if (type === "HEADER") {
+      headerText = renderTemplateText(stringValue(component.text), template.variables);
+      return;
+    }
+
+    if (type === "BODY") {
+      bodyText = renderTemplateText(stringValue(component.text), template.variables);
+      return;
+    }
+
+    if (type === "FOOTER") {
+      footerText = renderTemplateText(stringValue(component.text), template.variables);
+      return;
+    }
+
+    if (type === "BUTTONS" && Array.isArray(component.buttons)) {
+      component.buttons.forEach((button) => {
+        if (!isRecord(button)) return;
+        const text = stringValue(button.text).trim();
+        if (!text) return;
+        buttons.push({
+          text,
+          type: stringValue(button.type),
+        });
+      });
+    }
+  });
+
+  return {
+    name: template.name,
+    language: template.language,
+    status: template.status,
+    headerText,
+    bodyText: bodyText || "No template body provided",
+    footerText,
+    buttons,
+  };
+}
+
 function getMessageDetails(data: SendMessageData) {
   if (data.metadata?.template) {
     const template = data.metadata.template;
@@ -142,6 +226,7 @@ function getMessageDetails(data: SendMessageData) {
       text: label || "Choose approved template",
       typeLabel: "Template",
       isPlaceholder: !label,
+      templatePreview: getTemplateMessagePreview(template),
     };
   }
 
@@ -510,6 +595,7 @@ export function getStepNodePreview(
         tokens: [getChannelToken(data.channel, context.channels)],
         variant: "message",
         isPlaceholder: message.isPlaceholder,
+        templatePreview: message.templatePreview,
       };
     }
     case "ask_question":

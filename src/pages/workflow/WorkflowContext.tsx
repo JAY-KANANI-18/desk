@@ -91,8 +91,8 @@ function normalizeWorkflow(workflow: Workflow): Workflow {
     (currentSteps, step) =>
       step.type === "ask_question"
         ? syncAskQuestionBranches(currentSteps, step)
-        : isSendMessageFailureBranchStep(step)
-        ? syncSendMessageFailureBranch(currentSteps, step)
+        : isSendMessageBranchStep(step)
+        ? syncSendMessageBranches(currentSteps, step)
         : currentSteps,
     rawSteps,
   );
@@ -121,8 +121,19 @@ function isSendMessageFailureBranchStep(step: StepConfig) {
   );
 }
 
+function isSendMessageButtonBranchStep(step: StepConfig) {
+  return (
+    step.type === "send_message" &&
+    Boolean((step.data as { templateButtonBranching?: boolean })?.templateButtonBranching)
+  );
+}
+
+function isSendMessageBranchStep(step: StepConfig) {
+  return isSendMessageFailureBranchStep(step) || isSendMessageButtonBranchStep(step);
+}
+
 function isConnectorOwnerStep(step: StepConfig) {
-  return CONNECTOR_OWNER_STEP_TYPES.has(step.type) || isSendMessageFailureBranchStep(step);
+  return CONNECTOR_OWNER_STEP_TYPES.has(step.type) || isSendMessageBranchStep(step);
 }
 
 function collectDescendantStepIds(steps: StepConfig[], parentId: string): Set<string> {
@@ -144,9 +155,10 @@ function collectDescendantStepIds(steps: StepConfig[], parentId: string): Set<st
   return descendantIds;
 }
 
-function createSendMessageConnector(parentId: string, name: "Success" | "Failure"): StepConfig {
+function createSendMessageConnector(parentId: string, name: string): StepConfig {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "path";
   return {
-    id: `conn-${name.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `conn-${slug}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type: "branch_connector",
     name,
     parentId,
@@ -158,7 +170,7 @@ function createSendMessageConnector(parentId: string, name: "Success" | "Failure
 function findSendMessageConnector(
   steps: StepConfig[],
   parentId: string,
-  name: "Success" | "Failure",
+  name: string,
 ) {
   return steps.find(
     (candidate) =>
@@ -166,6 +178,92 @@ function findSendMessageConnector(
       candidate.type === "branch_connector" &&
       candidate.name === name,
   );
+}
+
+function getTemplateQuickReplyLabels(data: StepConfig["data"]) {
+  const sendData = data as {
+    metadata?: {
+      template?: {
+        components?: unknown[];
+      };
+    };
+  };
+  const components = Array.isArray(sendData.metadata?.template?.components)
+    ? sendData.metadata.template.components
+    : [];
+  const labels: string[] = [];
+
+  components.forEach((component) => {
+    if (!component || typeof component !== "object") return;
+    const entry = component as { type?: unknown; buttons?: unknown };
+    if (String(entry.type ?? "").toUpperCase() !== "BUTTONS") return;
+    if (!Array.isArray(entry.buttons)) return;
+
+    entry.buttons.forEach((button) => {
+      if (!button || typeof button !== "object") return;
+      const item = button as { type?: unknown; text?: unknown };
+      if (String(item.type ?? "").toUpperCase() !== "QUICK_REPLY") return;
+      const label = typeof item.text === "string" ? item.text.trim() : "";
+      if (label) labels.push(label);
+    });
+  });
+
+  return Array.from(new Set(labels));
+}
+
+function getSendMessageConnectorNames(data: StepConfig["data"]) {
+  const sendData = data as {
+    addMessageFailureBranch?: boolean;
+    templateButtonBranching?: boolean;
+  };
+
+  if (sendData.templateButtonBranching) {
+    return Array.from(new Set([
+      ...getTemplateQuickReplyLabels(data),
+      ...(sendData.addMessageFailureBranch ? ["Failure"] : []),
+    ]));
+  }
+
+  return sendData.addMessageFailureBranch ? ["Success", "Failure"] : [];
+}
+
+function resolveSendMessageConnectors(
+  steps: StepConfig[],
+  parentId: string,
+  names: string[],
+  existingConnectors: StepConfig[],
+  primaryExistingConnector?: StepConfig,
+) {
+  const usedIds = new Set<string>();
+
+  return names.map((name, index) => {
+    const existingByName = findSendMessageConnector(steps, parentId, name);
+    if (existingByName && !usedIds.has(existingByName.id)) {
+      usedIds.add(existingByName.id);
+      return existingByName;
+    }
+
+    const reusable =
+      name !== "Failure" && index === 0 && primaryExistingConnector && !usedIds.has(primaryExistingConnector.id)
+        ? primaryExistingConnector
+        : name !== "Failure"
+          ? existingConnectors.find(
+              (connector) =>
+                connector.name !== "Failure" &&
+                !names.includes(connector.name) &&
+                !usedIds.has(connector.id),
+            )
+          : undefined;
+
+    if (reusable) {
+      usedIds.add(reusable.id);
+      return { ...reusable, name };
+    }
+
+    const created = createSendMessageConnector(parentId, name);
+    usedIds.add(created.id);
+    return created;
+  });
 }
 
 type AskQuestionConnectorName = "Success" | "Failure" | "Timeout" | "Message Failure";
@@ -258,51 +356,89 @@ function syncAskQuestionBranches(
   ];
 }
 
-function syncSendMessageFailureBranch(
+function syncSendMessageBranches(
   steps: StepConfig[],
   updatedStep: StepConfig,
 ): StepConfig[] {
   if (updatedStep.type !== "send_message") return steps;
 
-  const data = (updatedStep.data ?? {}) as { addMessageFailureBranch?: boolean };
-  const enabled = Boolean(data.addMessageFailureBranch);
-  const successConnector = findSendMessageConnector(steps, updatedStep.id, "Success");
-  const failureConnector = findSendMessageConnector(steps, updatedStep.id, "Failure");
+  const enabledNames = getSendMessageConnectorNames(updatedStep.data);
+  const existingConnectors = steps.filter(
+    (candidate) =>
+      candidate.parentId === updatedStep.id &&
+      candidate.type === "branch_connector",
+  );
+  const primaryExistingConnector =
+    existingConnectors.find((connector) => connector.name === "Success") ??
+    existingConnectors.find((connector) => connector.name !== "Failure") ??
+    existingConnectors[0];
 
-  if (enabled) {
-    const resolvedSuccess = successConnector ?? createSendMessageConnector(updatedStep.id, "Success");
-    const resolvedFailure = failureConnector ?? createSendMessageConnector(updatedStep.id, "Failure");
-    const connectorIds = new Set([resolvedSuccess.id, resolvedFailure.id]);
-
-    const withConnectors = steps.map((candidate) => {
-      if (candidate.id === updatedStep.id) {
-        return {
-          ...candidate,
-          data: {
-            ...((candidate.data ?? {}) as Record<string, unknown>),
-            connectors: [resolvedSuccess.id, resolvedFailure.id],
-          } as StepConfig["data"],
-        };
-      }
-
-      if (candidate.parentId === updatedStep.id && candidate.type !== "branch_connector") {
-        return { ...candidate, parentId: resolvedSuccess.id };
-      }
-
-      return candidate;
+  if (enabledNames.length > 0) {
+    const resolvedConnectors = resolveSendMessageConnectors(
+      steps,
+      updatedStep.id,
+      enabledNames,
+      existingConnectors,
+      primaryExistingConnector,
+    );
+    const resolvedIds = new Set(resolvedConnectors.map((connector) => connector.id));
+    const resolvedConnectorById = new Map(
+      resolvedConnectors.map((connector) => [connector.id, connector] as const),
+    );
+    const firstConnector = resolvedConnectors[0];
+    const disabledConnectors = existingConnectors.filter(
+      (connector) => !resolvedIds.has(connector.id),
+    );
+    const disabledIds = new Set(disabledConnectors.map((connector) => connector.id));
+    const disabledDescendantIds = new Set<string>();
+    disabledConnectors.forEach((connector) => {
+      if (connector.id === primaryExistingConnector?.id) return;
+      collectDescendantStepIds(steps, connector.id).forEach((id) => disabledDescendantIds.add(id));
     });
+
+    const withConnectors = steps
+      .map((candidate) => {
+        if (candidate.id === updatedStep.id) {
+          return {
+            ...candidate,
+            data: {
+              ...((candidate.data ?? {}) as Record<string, unknown>),
+              connectors: resolvedConnectors.map((connector) => connector.id),
+            } as StepConfig["data"],
+          };
+        }
+
+        const resolvedConnector = resolvedConnectorById.get(candidate.id);
+        if (resolvedConnector) {
+          return resolvedConnector;
+        }
+
+        if (candidate.parentId === updatedStep.id && candidate.type !== "branch_connector") {
+          return { ...candidate, parentId: firstConnector.id };
+        }
+
+        if (
+          primaryExistingConnector &&
+          disabledIds.has(primaryExistingConnector.id) &&
+          candidate.parentId === primaryExistingConnector.id
+        ) {
+          return { ...candidate, parentId: firstConnector.id };
+        }
+
+        return candidate;
+      })
+      .filter((candidate) => !disabledIds.has(candidate.id) && !disabledDescendantIds.has(candidate.id));
 
     return [
       ...withConnectors,
-      ...[resolvedSuccess, resolvedFailure].filter(
-        (connector) => !steps.some((candidate) => candidate.id === connector.id) && connectorIds.has(connector.id),
+      ...resolvedConnectors.filter(
+        (connector) =>
+          !steps.some((candidate) => candidate.id === connector.id) && resolvedIds.has(connector.id),
       ),
     ];
   }
 
-  const connectorIds = new Set(
-    [successConnector?.id, failureConnector?.id].filter(Boolean) as string[],
-  );
+  const connectorIds = new Set(existingConnectors.map((connector) => connector.id));
   if (connectorIds.size === 0) {
     return steps.map((candidate) =>
       candidate.id === updatedStep.id
@@ -317,12 +453,14 @@ function syncSendMessageFailureBranch(
     );
   }
 
-  const failureDescendantIds = failureConnector
-    ? collectDescendantStepIds(steps, failureConnector.id)
-    : new Set<string>();
+  const removedDescendantIds = new Set<string>();
+  existingConnectors.forEach((connector) => {
+    if (connector.id === primaryExistingConnector?.id) return;
+    collectDescendantStepIds(steps, connector.id).forEach((id) => removedDescendantIds.add(id));
+  });
 
   return steps
-    .filter((candidate) => !connectorIds.has(candidate.id) && !failureDescendantIds.has(candidate.id))
+    .filter((candidate) => !connectorIds.has(candidate.id) && !removedDescendantIds.has(candidate.id))
     .map((candidate) => {
       if (candidate.id === updatedStep.id) {
         return {
@@ -334,7 +472,7 @@ function syncSendMessageFailureBranch(
         };
       }
 
-      if (successConnector && candidate.parentId === successConnector.id) {
+      if (primaryExistingConnector && candidate.parentId === primaryExistingConnector.id) {
         return { ...candidate, parentId: updatedStep.id };
       }
 
@@ -470,7 +608,7 @@ function reducer(
         s.id === action.payload.id ? updatedStep : s,
       );
       const steps = syncAskQuestionBranches(
-        syncSendMessageFailureBranch(updatedSteps, updatedStep),
+        syncSendMessageBranches(updatedSteps, updatedStep),
         updatedStep,
       );
       return {

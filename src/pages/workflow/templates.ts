@@ -39,7 +39,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
               "channel": "last_interacted",
               "defaultMessage": {
                 "type": "text",
-                "text": "hello {{$contact.first_name}} ,\nwelcome to chat."
+                "text": "hello {{contact.first_name}} ,\nwelcome to chat."
               },
               "channelResponses": [],
               "addMessageFailureBranch": false
@@ -390,7 +390,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
               "channel": "last_interacted",
               "defaultMessage": {
                 "type": "text",
-                "text": "Hello {{$contact.firstname}} welcome to the chat!"
+                "text": "Hello {{contact.first_name}} welcome to the chat!"
               },
               "channelResponses": [],
               "addMessageFailureBranch": false
@@ -1168,7 +1168,7 @@ export const TEMPLATES: WorkflowTemplate[] = [
               channel: 'last_interacted',
               defaultMessage: {
                 type: 'text',
-                text: 'Hi {{contact.firstName}}, you left items in your cart. You can finish checkout here: {{trigger.checkoutUrl}}',
+                text: 'Hi {{contact.first_name}}, you left items in your cart. You can finish checkout here: {{trigger.checkoutUrl}}',
               },
               channelResponses: [],
               addMessageFailureBranch: true,
@@ -1250,6 +1250,327 @@ export const TEMPLATES: WorkflowTemplate[] = [
               addMessageFailureBranch: true,
             },
             parentId: 'step-commerce-order-wait',
+            position: { x: 0, y: 0 },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'commerce-shopify-order-confirmation-address-check',
+    name: 'Shopify Order Confirmation',
+    description: 'Confirm new Shopify orders on WhatsApp, ask customers to verify their delivery address, and route address edits to the team.',
+    category: 'commerce',
+    tags: ['commerce', 'orders', 'shopify', 'whatsapp'],
+    popular: true,
+    iconName: 'Package',
+    color: 'bg-emerald-600',
+    defaultWorkflow: {
+      config: {
+        trigger: {
+          type: 'commerce.order_created',
+          conditions: [
+            {
+              id: 'cond-commerce-shopify-order-provider',
+              field: 'provider',
+              operator: 'is_equal_to',
+              value: 'shopify',
+            },
+          ],
+          advancedSettings: {
+            triggerOncePerContact: false,
+          },
+          data: {},
+        },
+        steps: [
+          {
+            id: 'step-commerce-order-confirmation-template',
+            type: 'send_message',
+            name: 'Send order confirmation',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: '',
+              },
+              channelResponses: [],
+              connectors: [
+                'conn-commerce-order-address-correct',
+                'conn-commerce-order-address-edit',
+                'conn-commerce-order-talk-support',
+                'conn-commerce-order-confirmation-failure',
+              ],
+              addMessageFailureBranch: true,
+              templateButtonBranching: true,
+              metadata: {
+                template: {
+                  name: 'order_confirmation',
+                  language: 'en',
+                  category: 'UTILITY',
+                  status: 'APPROVED',
+                  variables: {
+                    '1': '{{contact.first_name}}',
+                    '2': '{{trigger.orderNumber}}',
+                    '3': '{{trigger.orderTotalAmount}} {{trigger.currency}}',
+                    '4': '{{trigger.order.metadata.shipping_address.address1}} {{trigger.order.metadata.shipping_address.address2}} {{trigger.order.metadata.shipping_address.city}} {{trigger.order.metadata.shipping_address.province}} {{trigger.order.metadata.shipping_address.zip}}',
+                  },
+                  components: [
+                    {
+                      type: 'HEADER',
+                      format: 'TEXT',
+                      text: 'Your order has been confirmed',
+                    },
+                    {
+                      type: 'BODY',
+                      text: 'Hello {{1}},\nYour order {{2}} worth {{3}} has been successfully placed.\n\nDelivery address:\n{{4}}\n\nPlease confirm if this address is correct before shipping.',
+                    },
+                    {
+                      type: 'BUTTONS',
+                      buttons: [
+                        {
+                          type: 'QUICK_REPLY',
+                          text: 'Address Correct',
+                        },
+                        {
+                          type: 'QUICK_REPLY',
+                          text: 'Edit Address',
+                        },
+                        {
+                          type: 'QUICK_REPLY',
+                          text: 'Talk To Support',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            parentId: 'trigger',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-order-confirmation-failure',
+            type: 'branch_connector',
+            name: 'Failure',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-confirmation-template',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-confirmation-failure-open',
+            type: 'open_conversation',
+            name: 'Open failed confirmation',
+            data: {},
+            parentId: 'conn-commerce-order-confirmation-failure',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-confirmation-failure-note',
+            type: 'add_comment',
+            name: 'Record failed confirmation',
+            data: {
+              comment: 'Order confirmation template failed or could not be sent for Shopify order {{trigger.orderNumber}}. Please review the contact channel and approved WhatsApp template.',
+            },
+            parentId: 'step-commerce-order-confirmation-failure-open',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-confirmation-failure-assign',
+            type: 'assign_to',
+            name: 'Assign failed confirmation',
+            data: {
+              action: 'user_in_workspace',
+              assignmentLogic: 'round_robin',
+              onlyOnlineUsers: false,
+              addTimeoutBranch: false,
+              timeoutValue: 2,
+              timeoutUnit: 'days',
+            },
+            parentId: 'step-commerce-order-confirmation-failure-note',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-order-address-correct',
+            type: 'branch_connector',
+            name: 'Address Correct',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-confirmation-template',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-order-address-edit',
+            type: 'branch_connector',
+            name: 'Edit Address',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-confirmation-template',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-order-talk-support',
+            type: 'branch_connector',
+            name: 'Talk To Support',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-confirmation-template',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-correct-note',
+            type: 'add_comment',
+            name: 'Record confirmed address',
+            data: {
+              comment: 'Customer confirmed the delivery address for Shopify order {{trigger.orderNumber}}.',
+            },
+            parentId: 'conn-commerce-order-address-correct',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-correct-message',
+            type: 'send_message',
+            name: 'Send address confirmed reply',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: 'Thanks. Your delivery address is confirmed for order {{trigger.orderNumber}}. We will keep you updated on shipping.',
+              },
+              channelResponses: [],
+              addMessageFailureBranch: false,
+            },
+            parentId: 'step-commerce-address-correct-note',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-support-open',
+            type: 'open_conversation',
+            name: 'Open support request',
+            data: {},
+            parentId: 'conn-commerce-order-talk-support',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-support-note',
+            type: 'add_comment',
+            name: 'Record support request',
+            data: {
+              comment: 'Customer requested support from the Shopify order confirmation message for order {{trigger.orderNumber}}.',
+            },
+            parentId: 'step-commerce-order-support-open',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-support-assign',
+            type: 'assign_to',
+            name: 'Assign support request',
+            data: {
+              action: 'user_in_workspace',
+              assignmentLogic: 'round_robin',
+              onlyOnlineUsers: false,
+              addTimeoutBranch: false,
+              timeoutValue: 2,
+              timeoutUnit: 'days',
+            },
+            parentId: 'step-commerce-order-support-note',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-order-new-address-question',
+            type: 'ask_question',
+            name: 'Collect corrected address',
+            data: {
+              connectors: [
+                'conn-commerce-new-address-success',
+                'conn-commerce-new-address-failure',
+              ],
+              timeoutUnit: 'days',
+              timeoutValue: 2,
+              questionText: 'Please send the full corrected delivery address for order {{trigger.orderNumber}} in one message.',
+              questionType: 'text',
+              variableName: 'new_shipping_address',
+              saveAsVariable: true,
+              saveAsTag: false,
+              saveAsContactField: false,
+              addTimeoutBranch: false,
+              addMessageFailureBranch: false,
+              multipleChoiceOptions: [],
+            },
+            parentId: 'conn-commerce-order-address-edit',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-new-address-success',
+            type: 'branch_connector',
+            name: 'Success',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-new-address-question',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'conn-commerce-new-address-failure',
+            type: 'branch_connector',
+            name: 'Failure',
+            data: {
+              conditions: [],
+            },
+            parentId: 'step-commerce-order-new-address-question',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-edit-note',
+            type: 'add_comment',
+            name: 'Record address edit',
+            data: {
+              comment: 'Customer requested an address update for Shopify order {{trigger.orderNumber}}.\n\nNew address:\n{{vars.new_shipping_address}}',
+            },
+            parentId: 'conn-commerce-new-address-success',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-edit-open',
+            type: 'open_conversation',
+            name: 'Open support conversation',
+            data: {},
+            parentId: 'step-commerce-address-edit-note',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-edit-assign',
+            type: 'assign_to',
+            name: 'Assign to support',
+            data: {
+              action: 'user_in_workspace',
+              assignmentLogic: 'round_robin',
+              onlyOnlineUsers: false,
+              addTimeoutBranch: false,
+              timeoutValue: 2,
+              timeoutUnit: 'days',
+            },
+            parentId: 'step-commerce-address-edit-open',
+            position: { x: 0, y: 0 },
+          },
+          {
+            id: 'step-commerce-address-edit-message',
+            type: 'send_message',
+            name: 'Send edit received reply',
+            data: {
+              channel: 'last_interacted',
+              defaultMessage: {
+                type: 'text',
+                text: 'Thanks. We have shared your updated address with the team for order {{trigger.orderNumber}}.',
+              },
+              channelResponses: [],
+              addMessageFailureBranch: false,
+            },
+            parentId: 'step-commerce-address-edit-assign',
             position: { x: 0, y: 0 },
           },
         ],

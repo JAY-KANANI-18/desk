@@ -547,8 +547,8 @@ export const Snippets = () => {
             value={form.content}
             onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))}
             rows={5}
-            placeholder="Hi {{contact_name}}, how can we help you?"
-            hint="Supported variables: {{contact_name}}, {{agent_name}}, {{last_message}}"
+            placeholder="Hi {{contact.name}}, how can we help you?"
+            hint="Supported variables: {{contact.name}}, {{agent.name}}, {{conversation.last_message}}"
             required
           />
 

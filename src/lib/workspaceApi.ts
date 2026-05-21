@@ -1,6 +1,11 @@
 import type { Workspace } from "../context/WorkspaceContext";
 import { api } from "../lib/api";
-import type { Workflow } from "../pages/workflow/workflow.types";
+import type {
+  Workflow,
+  WorkflowRunListItem,
+  WorkflowRunListResponse,
+  WorkflowRunStatus,
+} from "../pages/workflow/workflow.types";
 import type {
   PaginatedSnippetResponse,
   Snippet,
@@ -546,6 +551,24 @@ export const workspaceApi = {
   },
   getWorkflow: (id: string): Promise<Workflow> =>
     api.get(`/workflows/${id}`),
+  listWorkflowRuns: (params?: {
+    workflowId?: string;
+    status?: WorkflowRunStatus | "all";
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<WorkflowRunListResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.workflowId) searchParams.set("workflowId", params.workflowId);
+    if (params?.status && params.status !== "all") searchParams.set("status", params.status);
+    if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    const query = searchParams.toString();
+    return api.get(`/workflows/runs${query ? `?${query}` : ""}`);
+  },
+  getWorkflowRun: (runId: string): Promise<WorkflowRunListItem> =>
+    api.get(`/workflows/runs/${runId}`),
   createWorkflow: (payload: WorkflowCreatePayload): Promise<Workflow> =>
     api.post(`/workflows`, payload),
   saveWorkflow: (id: string, payload: WorkflowSavePayload): Promise<Workflow> =>

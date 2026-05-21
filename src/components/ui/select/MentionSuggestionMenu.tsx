@@ -83,6 +83,7 @@ export const MentionSuggestionMenu = forwardRef<
     return (
       <div
         ref={ref}
+        data-mention-suggestion-menu="true"
         className={`absolute left-0 z-[var(--z-dropdown)] w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-gray-200)] bg-white shadow-md ${placementClassName} ${className}`}
       >
         <div className="flex items-center gap-[var(--spacing-sm)] border-b border-[var(--color-gray-100)] px-[var(--spacing-md)] py-[var(--spacing-sm)]">

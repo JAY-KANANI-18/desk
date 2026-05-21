@@ -30,7 +30,7 @@ export interface EmailChannelFormValues {
   signatureEnabled: boolean;
 }
 
-const DEFAULT_SIGNATURE = '<p>Regards,<br />{{agent_name}}</p>';
+const DEFAULT_SIGNATURE = '<p>Regards,<br />{{agent.name}}</p>';
 
 export function normalizeEmailChannelConfig(channel: any): NormalizedEmailChannelConfig {
   const cfg = channel?.config ?? {};
